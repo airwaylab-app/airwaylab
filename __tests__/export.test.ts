@@ -45,7 +45,7 @@ describe('exportCSV', () => {
   });
 
   it('handles nights without oximetry data', () => {
-    const nightsNoOx = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: undefined }));
+    const nightsNoOx = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
     const csv = exportCSV(nightsNoOx);
     const firstDataRow = csv.split('\n')[1];
     // Oximetry columns should be empty

@@ -34,8 +34,8 @@ export function ProgressDisplay({ current, total, stage }: ProgressDisplayProps)
       </div>
 
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {current} / {total} steps
+        <span className="font-mono tabular-nums">
+          {current} / {total}
         </span>
         <span className="font-mono tabular-nums">{pct}%</span>
       </div>
