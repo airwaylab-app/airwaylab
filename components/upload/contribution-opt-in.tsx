@@ -7,7 +7,7 @@ const OPTED_IN_KEY = 'airwaylab-contribute-optin';
 
 /**
  * Contribution opt-in checkbox shown during the upload flow.
- * Pre-checked by default. Stores preference in localStorage.
+ * Unchecked by default. Stores preference in localStorage.
  */
 export function ContributionOptIn({
   onChange,
@@ -15,13 +15,13 @@ export function ContributionOptIn({
   onChange: (optedIn: boolean) => void;
 }) {
   const [checked, setChecked] = useState(() => {
-    if (typeof window === 'undefined') return true;
+    if (typeof window === 'undefined') return false;
     try {
       const stored = localStorage.getItem(OPTED_IN_KEY);
-      // Default to true (opt-in) if never set
-      return stored !== '0';
+      // Default to false (opt-out) if never set
+      return stored === '1';
     } catch {
-      return true;
+      return false;
     }
   });
 
@@ -42,7 +42,7 @@ export function ContributionOptIn({
 
   return (
     <div
-      className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/[0.03] px-4 py-3 cursor-pointer select-none"
+      className="flex items-start gap-3.5 rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] to-primary/[0.02] px-5 py-4 cursor-pointer select-none transition-all hover:border-primary/40 hover:from-primary/[0.1] hover:to-primary/[0.04]"
       onClick={toggle}
       role="checkbox"
       aria-checked={checked}
@@ -54,28 +54,31 @@ export function ContributionOptIn({
         }
       }}
     >
-      <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+      <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
         checked
           ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-muted-foreground/30 bg-background'
+          : 'border-muted-foreground/40 bg-background'
       }`}>
         {checked && (
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         )}
       </div>
       <div className="flex-1">
-        <div className="flex items-center gap-1.5">
-          <Heart className="h-3.5 w-3.5 text-primary" />
-          <span className="text-sm font-medium">Contribute anonymised data to research</span>
+        <div className="flex items-center gap-2">
+          <Heart className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">
+            Help fellow CPAP users — share your scores
+          </span>
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Share your analysis scores (no raw data, no personal info) to help build the largest open CPAP dataset.
+        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+          Your anonymised analysis scores help us build the first open CPAP dataset — so everyone
+          can benchmark their therapy and researchers can improve treatment for millions.
         </p>
-        <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/60">
-          <Shield className="h-2.5 w-2.5" />
-          <span>Only anonymised metrics · Cannot be traced back to you</span>
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground/70">
+          <Shield className="h-3 w-3" />
+          <span>No raw data shared · Fully anonymous · Cannot be traced back to you</span>
         </div>
       </div>
     </div>

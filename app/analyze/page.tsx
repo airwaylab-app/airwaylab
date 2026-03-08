@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionOptIn } from '@/components/upload/contribution-opt-in';
+import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
 import { DataContribution } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -59,7 +60,9 @@ function AnalyzePageInner() {
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
-  const contributeOptInRef = useRef(true);
+  const contributeOptInRef = useRef(false);
+  const [showContributeNudge, setShowContributeNudge] = useState(false);
+  const pendingNightsRef = useRef<NightResult[]>([]);
   const [showDemoStar, setShowDemoStar] = useState(false);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lifetimeNights, setLifetimeNights] = useState(0);
@@ -121,20 +124,12 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Auto-contribute if user opted in during upload
+        // Contribute data: auto if opted in, show nudge dialog if not
         if (contributeOptInRef.current) {
-          fetch('/api/contribute-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nights: newState.nights }),
-          }).then((res) => {
-            if (res.ok) {
-              try {
-                const prev = parseInt(localStorage.getItem('airwaylab-contributed-nights') || '0', 10);
-                localStorage.setItem('airwaylab-contributed-nights', String(prev + newState.nights.length));
-              } catch { /* noop */ }
-            }
-          }).catch(() => { /* non-critical */ });
+          submitContribution(newState.nights);
+        } else {
+          pendingNightsRef.current = newState.nights;
+          setShowContributeNudge(true);
         }
 
         // Update local lifetime night count
@@ -172,6 +167,32 @@ function AnalyzePageInner() {
     },
     []
   );
+
+  const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
+    fetch('/api/contribute-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nights: nightsToSubmit }),
+    }).then((res) => {
+      if (res.ok) {
+        try {
+          const prev = parseInt(localStorage.getItem('airwaylab-contributed-nights') || '0', 10);
+          localStorage.setItem('airwaylab-contributed-nights', String(prev + nightsToSubmit.length));
+        } catch { /* noop */ }
+      }
+    }).catch(() => { /* non-critical */ });
+  }, []);
+
+  const handleNudgeContribute = useCallback(() => {
+    submitContribution(pendingNightsRef.current);
+    setShowContributeNudge(false);
+    pendingNightsRef.current = [];
+  }, [submitContribution]);
+
+  const handleNudgeDismiss = useCallback(() => {
+    setShowContributeNudge(false);
+    pendingNightsRef.current = [];
+  }, []);
 
   const loadDemo = useCallback(() => {
     setIsDemo(true);
@@ -516,6 +537,15 @@ function AnalyzePageInner() {
 
         </div>
         </ThresholdsProvider>
+      )}
+
+      {/* Contribution nudge dialog — shown after analysis if user didn't opt in */}
+      {showContributeNudge && (
+        <ContributionNudgeDialog
+          nightCount={pendingNightsRef.current.length}
+          onContribute={handleNudgeContribute}
+          onDismiss={handleNudgeDismiss}
+        />
       )}
 
       {/* Hidden oximetry file input — triggered by clickable "No Oximetry Data" card */}
