@@ -235,6 +235,27 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* ─── Social Proof (pinned to bottom of hero viewport) ─── */}
+        <div className="relative border-t border-border/50 bg-card/20">
+          <div className="container mx-auto flex flex-wrap items-center justify-center gap-4 px-4 py-4 sm:gap-8 sm:px-6 sm:py-5">
+            <GitHubStars className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:text-sm" />
+            <CommunityCounter variant="research" className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
+            <CommunityCounter className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+              <Activity className="h-3.5 w-3.5 text-blue-400" />
+              <span>4 research-grade engines</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+              <Shield className="h-3.5 w-3.5 text-emerald-400" />
+              <span>100% client-side</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              <span>GPL-3.0 open source</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ─── Trust Bar ─── */}
@@ -417,26 +438,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* ─── Social Proof (pinned to bottom of hero viewport) ─── */}
-        <div className="border-t border-border/50 bg-card/20">
-          <div className="container mx-auto flex flex-wrap items-center justify-center gap-4 px-4 py-4 sm:gap-8 sm:px-6 sm:py-5">
-            <GitHubStars className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:text-sm" />
-            <CommunityCounter variant="research" className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
-            <CommunityCounter className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
-              <Activity className="h-3.5 w-3.5 text-blue-400" />
-              <span>4 research-grade engines</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
-              <Shield className="h-3.5 w-3.5 text-emerald-400" />
-              <span>100% client-side</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              <span>GPL-3.0 open source</span>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ─── How It Works ─── */}
