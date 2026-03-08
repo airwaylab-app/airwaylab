@@ -13,7 +13,6 @@ import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, C
 import { ProTease } from '@/components/common/pro-tease';
 import { AIKeyInput } from '@/components/common/ai-key-input';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
-import { DataContribution } from '@/components/dashboard/data-contribution';
 import type { GlasgowComponents } from '@/lib/types';
 
 const AI_INSIGHTS_URL = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
@@ -223,9 +222,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.reraIndex}
         />
       </div>
-
-      {/* Anonymous Data Contribution — shown early for visibility */}
-      <DataContribution nights={nights} isDemo={isDemo} />
 
       {/* Glasgow Component Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">

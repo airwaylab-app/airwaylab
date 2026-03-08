@@ -4,6 +4,8 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useSearchParams } from 'next/navigation';
 import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
+import { ContributionOptIn } from '@/components/upload/contribution-opt-in';
+import { DataContribution } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
 import { EmailOptIn } from '@/components/common/email-opt-in';
@@ -57,6 +59,7 @@ function AnalyzePageInner() {
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
+  const contributeOptInRef = useRef(true);
   const [showDemoStar, setShowDemoStar] = useState(false);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lifetimeNights, setLifetimeNights] = useState(0);
@@ -117,6 +120,22 @@ function AnalyzePageInner() {
             glasgowAvg: Math.round((glasgowSum / newState.nights.length) * 100) / 100,
           }),
         }).catch(() => { /* non-critical */ });
+
+        // Auto-contribute if user opted in during upload
+        if (contributeOptInRef.current) {
+          fetch('/api/contribute-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nights: newState.nights }),
+          }).then((res) => {
+            if (res.ok) {
+              try {
+                const prev = parseInt(localStorage.getItem('airwaylab-contributed-nights') || '0', 10);
+                localStorage.setItem('airwaylab-contributed-nights', String(prev + newState.nights.length));
+              } catch { /* noop */ }
+            }
+          }).catch(() => { /* non-critical */ });
+        }
 
         // Update local lifetime night count
         try {
@@ -268,6 +287,11 @@ function AnalyzePageInner() {
         <div className="mx-auto max-w-lg">
           <FileUpload onFilesSelected={handleFiles} />
 
+          {/* Data contribution opt-in — shown during upload for higher conversion */}
+          <div className="mt-4">
+            <ContributionOptIn onChange={(v) => { contributeOptInRef.current = v; }} />
+          </div>
+
           {/* Demo CTA */}
           <div className="mt-6 flex flex-col items-center gap-2">
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
@@ -359,6 +383,9 @@ function AnalyzePageInner() {
               </Button>
             </div>
           )}
+
+          {/* Data Contribution — prominent placement at top of dashboard */}
+          <DataContribution nights={nights} isDemo={isDemo} />
 
           {/* Controls Bar */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">

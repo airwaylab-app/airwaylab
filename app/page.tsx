@@ -173,14 +173,14 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href="/analyze?demo">
+                <Link href="/analyze">
                   <Button size="lg" className="w-full gap-2 shadow-glow sm:w-auto">
-                    <Play className="h-4 w-4" /> See Demo
+                    <Upload className="h-4 w-4" /> Upload Your SD Card
                   </Button>
                 </Link>
-                <Link href="/analyze">
+                <Link href="/analyze?demo">
                   <Button variant="outline" size="lg" className="w-full gap-2 sm:w-auto">
-                    Upload Your SD Card <ArrowRight className="h-4 w-4" />
+                    <Play className="h-4 w-4" /> See Demo
                   </Button>
                 </Link>
               </div>
