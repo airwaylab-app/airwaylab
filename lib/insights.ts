@@ -127,21 +127,22 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
   }
 
   // Estimated Arousal Index
-  const eaiL = getTrafficLight(n.ned.estimatedArousalIndex, THRESHOLDS.eai);
+  const eaiVal = n.ned.estimatedArousalIndex ?? 0;
+  const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai);
   if (eaiL === 'bad') {
     insights.push({
       id: 'eai-high',
       type: 'warning',
       title: 'Elevated estimated arousal index',
-      body: `EAI of ${fmt(n.ned.estimatedArousalIndex)}/hr suggests frequent respiratory rate and tidal volume spikes, indicating possible sleep fragmentation.`,
+      body: `EAI of ${fmt(eaiVal)}/hr suggests frequent respiratory rate and tidal volume spikes, indicating possible sleep fragmentation.`,
       category: 'ned',
     });
-  } else if (eaiL === 'good' && n.ned.estimatedArousalIndex > 0) {
+  } else if (eaiL === 'good' && eaiVal > 0) {
     insights.push({
       id: 'eai-good',
       type: 'positive',
       title: 'Low estimated arousal burden',
-      body: `EAI of ${fmt(n.ned.estimatedArousalIndex)}/hr indicates few respiratory arousal-like events — sleep continuity appears well-maintained.`,
+      body: `EAI of ${fmt(eaiVal)}/hr indicates few respiratory arousal-like events — sleep continuity appears well-maintained.`,
       category: 'ned',
     });
   }

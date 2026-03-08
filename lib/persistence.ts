@@ -103,9 +103,13 @@ export function loadPersistedResults(): {
       return null;
     }
 
-    // Restore Date objects (they get serialised as strings)
+    // Restore Date objects and migrate missing fields
     for (const night of data.nights) {
       night.date = new Date(night.date);
+      // Migrate: estimatedArousalIndex added in v0.6.0
+      if (night.ned && night.ned.estimatedArousalIndex === undefined) {
+        night.ned.estimatedArousalIndex = 0;
+      }
     }
 
     return {

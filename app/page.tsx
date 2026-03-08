@@ -422,6 +422,7 @@ export default function Home() {
       <section className="border-y border-border/50 bg-card/20">
         <div className="container mx-auto flex flex-wrap items-center justify-center gap-4 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8">
           <GitHubStars className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:text-sm" />
+          <CommunityCounter variant="research" className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
           <CommunityCounter className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
             <Activity className="h-3.5 w-3.5 text-blue-400" />
