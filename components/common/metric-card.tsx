@@ -16,6 +16,7 @@ interface MetricCardProps {
 }
 
 function formatValue(value: number, format?: string): string {
+  if (value == null || isNaN(value)) return '—';
   if (format === 'int') return Math.round(value).toString();
   if (format === 'pct') return value.toFixed(0) + '%';
   return value.toFixed(1);

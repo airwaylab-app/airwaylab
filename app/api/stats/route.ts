@@ -14,7 +14,7 @@ export async function GET() {
   if (!supabase) {
     // Return fallback zeros when Supabase isn't configured
     return NextResponse.json(
-      { totalUploads: 0, totalNights: 0, totalContributions: 0 },
+      { totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0 },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -46,7 +46,7 @@ export async function GET() {
 
     const totalNights = nightsData?.reduce((sum, row) => sum + (row.night_count || 0), 0) ?? 0;
 
-    // Count data contributions
+    // Count data contributions and sum contributed nights
     const { count: totalContributions, error: contribError } = await supabase
       .from('data_contributions')
       .select('*', { count: 'exact', head: true });
@@ -56,11 +56,25 @@ export async function GET() {
       console.info('[stats] contributions count skipped:', contribError.message);
     }
 
+    // Sum night_count from data_contributions for research counter
+    const { data: contribNightsData, error: contribNightsError } = await supabase
+      .from('data_contributions')
+      .select('night_count');
+
+    if (contribNightsError) {
+      console.info('[stats] contributed nights sum skipped:', contribNightsError.message);
+    }
+
+    const totalContributedNights = contribNightsData?.reduce(
+      (sum, row) => sum + (row.night_count || 0), 0
+    ) ?? 0;
+
     return NextResponse.json(
       {
         totalUploads: totalUploads ?? 0,
         totalNights: totalNights,
         totalContributions: totalContributions ?? 0,
+        totalContributedNights,
       },
       {
         headers: {
@@ -70,7 +84,7 @@ export async function GET() {
     );
   } catch {
     return NextResponse.json(
-      { totalUploads: 0, totalNights: 0, totalContributions: 0 },
+      { totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0 },
       { status: 500 }
     );
   }
