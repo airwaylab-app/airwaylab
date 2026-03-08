@@ -7,6 +7,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: new Date().toISOString(),
+  },
+
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
