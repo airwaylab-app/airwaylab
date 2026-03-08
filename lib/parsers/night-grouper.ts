@@ -104,36 +104,41 @@ export function groupByNight(edfs: EDFFile[]): FileGroup[] {
 }
 
 /**
- * Filter uploaded files to only valid BRP.edf files (> 2MB).
+ * Filter uploaded files to only valid BRP.edf files (> 50KB).
+ * Previous 2MB threshold was too aggressive — short sessions (common with
+ * UARS patients who wake frequently) can produce legitimately small BRP files.
  */
 export function filterBRPFiles(
   files: { name: string; path: string; size: number }[]
 ): { name: string; path: string; size: number }[] {
   return files.filter(
-    (f) =>
-      (f.name.endsWith('BRP.edf') || f.name.endsWith('_BRP.edf')) &&
-      f.size > 2 * 1024 * 1024
+    (f) => {
+      const name = f.name.toLowerCase();
+      return (name.endsWith('brp.edf') || name.endsWith('_brp.edf')) &&
+        f.size > 50 * 1024;
+    }
   );
 }
 
 /**
- * Find STR.edf file from file list.
+ * Find STR.edf file from file list (case-insensitive).
  */
 export function findSTRFile(
   files: { name: string; path: string }[]
 ): { name: string; path: string } | null {
-  return files.find((f) => f.name === 'STR.edf') ?? null;
+  return files.find((f) => f.name.toLowerCase() === 'str.edf') ?? null;
 }
 
 /**
- * Find Identification file from file list.
+ * Find Identification file from file list (case-insensitive).
  */
 export function findIdentificationFile(
   files: { name: string; path: string }[]
 ): { name: string; path: string } | null {
   return (
-    files.find(
-      (f) => f.name === 'Identification.tgt' || f.name === 'Identification.json'
-    ) ?? null
+    files.find((f) => {
+      const name = f.name.toLowerCase();
+      return name === 'identification.tgt' || name === 'identification.json';
+    }) ?? null
   );
 }

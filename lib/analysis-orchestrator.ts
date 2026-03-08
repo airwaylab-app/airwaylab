@@ -146,7 +146,13 @@ export class AnalysisOrchestrator {
       this.worker.onerror = (err) => {
         settle();
         this.terminate();
-        reject(new Error(err.message || 'Worker error'));
+        const detail = [
+          err.message,
+          err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
+        ].filter(Boolean).join(' ');
+        reject(new Error(
+          detail || 'Analysis worker failed to load. Try refreshing the page.'
+        ));
       };
 
       // Transfer ArrayBuffers for zero-copy
