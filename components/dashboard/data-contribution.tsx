@@ -10,16 +10,16 @@ const CONTRIBUTED_KEY = 'airwaylab-contributed';
 
 interface Props {
   nights: NightResult[];
-  isDemo: boolean;
+  isDemo?: boolean;
 }
 
 /**
  * Opt-in anonymous data contribution banner.
- * Shown after analysis completes (real data only).
+ * Shown after analysis completes. Dismissible, remembers choice.
  * Users can contribute their anonymised metrics to help
  * improve analysis algorithms and therapy insights.
  */
-export function DataContribution({ nights, isDemo }: Props) {
+export function DataContribution({ nights }: Props) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -70,8 +70,8 @@ export function DataContribution({ nights, isDemo }: Props) {
     }
   }, [nights]);
 
-  // Don't show for demo data or if already contributed/dismissed
-  if (isDemo || dismissed || alreadyContributed) return null;
+  // Don't show if already contributed or dismissed
+  if (dismissed || alreadyContributed) return null;
 
   // Success state
   if (status === 'success') {
