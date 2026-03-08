@@ -17,6 +17,10 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
+// ── Allowed feedback types ────────────────────────────────────
+const ALLOWED_TYPES = ['feature', 'bug', 'support', 'feedback'] as const;
+const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
+
 /**
  * POST /api/feedback
  *
@@ -34,12 +38,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Size guard
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json(
+        { error: 'Payload too large.' },
+        { status: 413 }
+      );
+    }
+
     const body = await request.json();
     const { message, email, type, page } = body as {
-      message: string;
-      email?: string;
-      type?: string;
-      page?: string;
+      message: unknown;
+      email?: unknown;
+      type?: unknown;
+      page?: unknown;
     };
 
     // Validate message
@@ -58,20 +71,32 @@ export async function POST(request: Request) {
     }
 
     // Validate email if provided
-    if (email && (typeof email !== 'string' || !email.includes('@') || email.length > 200)) {
-      return NextResponse.json(
-        { error: 'Invalid email address.' },
-        { status: 400 }
-      );
+    if (email !== undefined && email !== null && email !== '') {
+      if (typeof email !== 'string' || !email.includes('@') || email.length > 254) {
+        return NextResponse.json(
+          { error: 'Invalid email address.' },
+          { status: 400 }
+        );
+      }
     }
+
+    // Sanitize type — only allow known values
+    const cleanType = typeof type === 'string' && (ALLOWED_TYPES as readonly string[]).includes(type)
+      ? type
+      : 'feedback';
+
+    // Sanitize page — only allow path-like strings, max 200 chars
+    const cleanPage = typeof page === 'string' && page.length <= 200 && /^\/[\w/\-]*$/.test(page)
+      ? page
+      : null;
 
     const supabase = getSupabaseAdmin();
 
     if (supabase) {
       const { error } = await supabase.from('feedback').insert({
-        message: `[${type || 'feedback'}] ${message.trim()}`,
-        email: email?.trim() || null,
-        page: page || null,
+        message: `[${cleanType}] ${message.trim()}`,
+        email: typeof email === 'string' ? email.trim() || null : null,
+        page: cleanPage,
       });
 
       if (error) {
@@ -79,7 +104,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      console.info(`[feedback] ${type}: ${message.slice(0, 100)} (Supabase not configured)`);
+      console.info(`[feedback] ${cleanType}: ${message.slice(0, 100)} (Supabase not configured)`);
     }
 
     return NextResponse.json({ ok: true });

@@ -8,12 +8,11 @@ AirwayLab is a free, open-source, browser-based CPAP flow limitation analysis to
 npm run dev          # Start dev server (localhost:3000)
 npm run build        # Production build
 npm run lint         # ESLint
+npm run typecheck    # TypeScript type checking (tsc --noEmit)
 npm test             # Vitest test suite
 npm run test:watch   # Vitest watch mode
 npm run analyze      # Bundle analysis (ANALYZE=true)
 ```
-
-Note: There is no separate `typecheck` script. TypeScript checking happens during `npm run build`.
 
 ## Architecture
 

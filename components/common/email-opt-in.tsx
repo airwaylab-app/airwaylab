@@ -58,6 +58,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
+            aria-label="Email address"
             className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <Button type="submit" size="sm" disabled={status === 'loading'} className="w-full sm:w-auto">
@@ -88,6 +89,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
+            aria-label="Email address"
             className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <Button type="submit" size="sm" disabled={status === 'loading'} className="w-full sm:w-auto">
@@ -113,6 +115,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
+          aria-label="Email address"
           className="h-7 w-40 rounded-md border border-border bg-background px-2 text-[11px] placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <Button type="submit" variant="ghost" size="sm" className="h-7 px-2 text-[11px]" disabled={status === 'loading'}>
@@ -133,6 +136,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
+        aria-label="Email address"
         className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <Button type="submit" variant="ghost" size="sm" className="h-8 text-xs" disabled={status === 'loading'}>

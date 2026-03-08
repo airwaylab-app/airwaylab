@@ -74,15 +74,20 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const fetchAI = useCallback(async () => {
     if (!AI_INSIGHTS_URL || !aiKey) return;
     setAiLoading(true);
-    const selectedIdx = nights.indexOf(selectedNight);
-    const result = await fetchAIInsights(
-      nights,
-      selectedIdx >= 0 ? selectedIdx : 0,
-      therapyChangeDate,
-      aiKey
-    );
-    setAiInsights(result);
-    setAiLoading(false);
+    try {
+      const selectedIdx = nights.indexOf(selectedNight);
+      const result = await fetchAIInsights(
+        nights,
+        selectedIdx >= 0 ? selectedIdx : 0,
+        therapyChangeDate,
+        aiKey
+      );
+      setAiInsights(result);
+    } catch {
+      setAiInsights(null);
+    } finally {
+      setAiLoading(false);
+    }
   }, [aiKey, nights, selectedNight, therapyChangeDate]);
 
   useEffect(() => {
@@ -247,11 +252,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                       {val.toFixed(1)}
                     </span>
                     {prevVal !== undefined && Math.abs(val - prevVal) > 0.1 && (
-                      <span className={val < prevVal ? 'text-emerald-500' : 'text-red-400'}>
+                      <span
+                        className={val < prevVal ? 'text-emerald-500' : 'text-red-400'}
+                        aria-label={val < prevVal ? 'Decreased from previous night' : 'Increased from previous night'}
+                      >
                         {val < prevVal ? (
-                          <TrendingDown className="inline h-3 w-3" />
+                          <TrendingDown className="inline h-3 w-3" aria-hidden="true" />
                         ) : (
-                          <TrendingUp className="inline h-3 w-3" />
+                          <TrendingUp className="inline h-3 w-3" aria-hidden="true" />
                         )}
                       </span>
                     )}

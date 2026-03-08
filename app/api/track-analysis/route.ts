@@ -24,12 +24,20 @@ function isRateLimited(ip: string): boolean {
  * Called once when analysis completes (not on demo loads).
  * No PII is collected — just aggregate metrics.
  */
+const MAX_PAYLOAD_BYTES = 4_000; // 4 KB
+
 export async function POST(request: Request) {
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+    }
+
+    // Size guard
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
     const body = await request.json();
