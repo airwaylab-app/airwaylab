@@ -17,6 +17,7 @@ export async function GET() {
     {
       version: packageJson.version,
       buildId: process.env.NEXT_PUBLIC_BUILD_ID ?? null,
+      gitSha: process.env.NEXT_PUBLIC_GIT_SHA ?? null,
     },
     {
       headers: {

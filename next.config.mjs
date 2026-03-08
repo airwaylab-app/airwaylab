@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 
@@ -5,10 +6,20 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Git short hash for build traceability (falls back to timestamp in non-git envs like Vercel)
+const gitSha = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'unknown';
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: new Date().toISOString(),
+    NEXT_PUBLIC_GIT_SHA: gitSha,
   },
 
   webpack: (config) => {
