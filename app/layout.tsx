@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://airwaylab.app'),
   title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
   description:
-    'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
+    'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
   keywords: [
     'CPAP', 'BiPAP', 'ResMed', 'sleep apnea', 'flow limitation',
     'Glasgow Index', 'OSCAR alternative', 'sleep analysis',
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
     description:
-      'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
+      'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
     type: 'website',
     url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
     description:
-      'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
+      'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
   },
   robots: {
     index: true,

@@ -142,17 +142,63 @@ export default function AboutPage() {
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           About AirwayLab
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          AirwayLab is a free, open-source sleep analysis dashboard that
-          processes ResMed CPAP and BiPAP SD card data directly in your browser.
-          Four research-grade analysis engines run entirely client-side using Web
-          Workers &mdash; your data never leaves your device.
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          CPAP machines collect detailed breath-by-breath data every night — but most of it stays
+          locked on an SD card, invisible to patients and ignored by clinicians who only check AHI.
+          Millions of people are &ldquo;treated&rdquo; with AHI under 5 but still wake up exhausted because
+          flow limitation, RERAs, and breathing pattern instability go undetected.
+        </p>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          We believe your breathing data belongs to you. AirwayLab makes that data visible,
+          understandable, and actionable — with open-source code you can audit, analysis that runs
+          entirely in your browser, and a free tier that will always include the complete toolkit.
+        </p>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Four research-grade analysis engines process your ResMed SD card data client-side
+          via Web Workers. No uploads, no accounts, no tracking — just the insights your
+          machine already collected but never showed you.
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
           <span>100% client-side processing &middot; Zero data upload &middot; Your sleep data never leaves your device</span>
         </div>
       </div>
+
+      {/* ---- Our Approach ---- */}
+      <section id="our-approach" className="mb-12 sm:mb-16">
+        <div className="mb-6 flex items-center gap-2.5">
+          <Scale className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+            Our Approach
+          </h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+            <h3 className="mb-2 text-sm font-semibold text-emerald-400">Free Tier — Complete Analysis</h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              AirwayLab&apos;s core analysis — Glasgow Index, WAT, NED, oximetry, insights, exports — is free
+              and always will be. We believe everyone on PAP therapy deserves access to research-grade
+              analysis, regardless of their budget or technical skill.
+            </p>
+          </div>
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
+            <h3 className="mb-2 text-sm font-semibold text-blue-400">Open Source — Verifiable Trust</h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Every line of code is open source (GPL-3.0). In a space where you&apos;re asked to upload
+              medical data to unknown servers, we think you should be able to verify exactly what
+              happens with your data. Nothing leaves your browser. Ever.
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+            <h3 className="mb-2 text-sm font-semibold text-amber-400">Premium — Sustaining Development</h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Building and maintaining a tool like this takes time. Premium features like AI-powered
+              therapy insights help fund continued development. They&apos;re genuinely useful
+              additions — not features we removed from the free tier to charge for.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* ---- Methodology Section ---- */}
       <section className="mb-12 sm:mb-16">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Sparkles, X } from 'lucide-react';
 import { EmailOptIn } from '@/components/common/email-opt-in';
 
@@ -36,6 +37,12 @@ export function ProTease({ feature, source }: Props) {
           <p className="text-xs leading-snug text-muted-foreground">
             <span className="font-medium text-foreground/80">Coming soon:</span>{' '}
             {feature}
+          </p>
+          <p className="text-[10px] leading-snug text-muted-foreground/60">
+            Premium features fund AirwayLab&apos;s continued development as a free, open-source tool.{' '}
+            <Link href="/about#our-approach" className="text-primary/60 underline underline-offset-2 hover:text-primary">
+              Learn more
+            </Link>
           </p>
           {!showOptIn ? (
             <button

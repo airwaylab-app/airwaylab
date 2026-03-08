@@ -18,6 +18,10 @@ import {
   Stethoscope,
   MessageSquare,
   Play,
+  Eye,
+  Users,
+  Heart,
+  Star,
 } from 'lucide-react';
 
 /* ─── Mocked dashboard metrics for hero visualization ─── */
@@ -156,10 +160,10 @@ export default function Home() {
               </h1>
 
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Four research-grade analysis engines process your SD card data
-                entirely in-browser. Understand your therapy beyond AHI — see
-                breath-by-breath flow limitation, RERA detection, and oximetry
-                correlations.
+                Your CPAP says your AHI is fine. But you still wake up exhausted.
+                AirwayLab looks deeper — detecting flow limitation, RERAs, and
+                breathing pattern instability that standard metrics miss. Free,
+                open source, and 100% in your browser.
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -241,6 +245,64 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ─── Mission ─── */}
+      <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Why We Built This
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Your machine collects thousands of data points every night. Most of it never gets looked at. We think that&apos;s wrong.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-emerald-500/10 p-2">
+                <Eye className="h-4 w-4 text-emerald-400" />
+              </div>
+              <h3 className="text-sm font-semibold">AHI Doesn&apos;t Tell the Whole Story</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Millions of CPAP users have an AHI under 5 but still feel terrible. Flow limitation, RERAs, and breathing pattern instability go undetected by the one number most clinicians check. AirwayLab makes that hidden data visible.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-blue-500/10 p-2">
+                <Lock className="h-4 w-4 text-blue-400" />
+              </div>
+              <h3 className="text-sm font-semibold">Your Data Belongs to You</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Every analysis runs in your browser. Nothing is uploaded, stored, or tracked. The code is open source and GPL-3.0 licensed — you can verify exactly what happens with your data.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-amber-500/10 p-2">
+                <Users className="h-4 w-4 text-amber-400" />
+              </div>
+              <h3 className="text-sm font-semibold">Accessible to Everyone</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Not just patients with technical skills. Not just those who can afford specialist clinics. Everyone on PAP therapy deserves to know if their treatment is actually working beyond a single number.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-rose-500/10 p-2">
+                <Heart className="h-4 w-4 text-rose-400" />
+              </div>
+              <h3 className="text-sm font-semibold">Premium Funds Development</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              The free tier is complete and always will be. Premium features like AI-powered therapy insights exist to fund continued development — not to gate essential analysis. If you never pay a cent, you still get the full toolkit.
+            </p>
+          </div>
         </div>
       </section>
 

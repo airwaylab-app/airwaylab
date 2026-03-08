@@ -30,6 +30,12 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 - localStorage persistence (7-day history)
 - Therapy change date marker for before/after comparison
 
+## Why AirwayLab exists
+
+Your CPAP machine collects detailed breath-by-breath data every night. Most of it goes unanalysed. Clinicians typically check AHI and move on, but AHI misses flow limitation, RERAs, and breathing pattern instability — the things that explain why you might still feel exhausted with an AHI under 5.
+
+AirwayLab makes that data visible. It's free because we believe therapy insight should be accessible to everyone. It's open source because we believe you should be able to verify what happens with your medical data. It runs in your browser because your data is yours.
+
 ## Privacy first
 
 - **All processing happens in your browser** — your sleep data never leaves your device
@@ -101,6 +107,15 @@ Open an issue before submitting large PRs. We especially welcome help with:
 - Philips Respironics device support
 - Additional pulse oximeter formats
 - Internationalisation (i18n)
+
+## Support AirwayLab
+
+If AirwayLab helps you understand your therapy data:
+
+- ⭐ **Star this repo** — it helps others discover the project
+- 🐛 **Report bugs** — [open an issue](https://github.com/airwaylab-app/airwaylab/issues)
+- 💬 **Share your results** — post on [r/SleepApnea](https://reddit.com/r/SleepApnea) or [ApneaBoard](https://apneaboard.com)
+- 🔧 **Contribute** — PRs welcome, especially for device support
 
 ## Community
 

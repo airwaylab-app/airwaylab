@@ -15,8 +15,7 @@ export function Footer() {
               <span className="text-sm font-bold tracking-tight">AirwayLab</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Free, open-source breath-by-breath analysis for ResMed CPAP &amp; BiPAP therapy.
-              Built by CPAP users, for CPAP users.
+              Free, open-source airway analysis. Because your breathing data belongs to you.
             </p>
           </div>
 
