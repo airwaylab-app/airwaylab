@@ -45,6 +45,22 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 | ResMed AirCurve 10 (VPAP) | ✅ Fully supported |
 | ResMed AirSense 11 | ⚠️ Experimental |
 
+## How AirwayLab Compares
+
+| Feature | AirwayLab | OSCAR | SleepHQ | myAir |
+|---------|-----------|-------|---------|-------|
+| Price | Free | Free | Free / $150yr Pro | Free |
+| Platform | Web (any device) | Desktop | Web + Mobile | Mobile |
+| Install required | No | Yes | No | Yes (app) |
+| Data stays local | ✅ Yes | ✅ Yes | ❌ Cloud | ❌ Cloud |
+| Flow limitation engines | 4 (Glasgow, WAT, NED, Oximetry) | 1 | Basic | None |
+| Breath shape scoring | ✅ Glasgow Index | ❌ | ❌ | ❌ |
+| RERA detection | ✅ Automated | Manual | ❌ | ❌ |
+| Multi-manufacturer | ResMed only | Multi | ResMed focus | ResMed only |
+| Open source | ✅ GPL-3.0 | ✅ GPL-3.0 | ❌ | ❌ |
+
+*AirwayLab is designed to complement OSCAR, not replace it.*
+
 ## Getting started
 
 ### Hosted version
