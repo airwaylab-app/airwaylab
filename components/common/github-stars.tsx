@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Star } from 'lucide-react';
 
 const REPO = 'airwaylab-app/airwaylab';
-const CACHE_KEY = 'airwaylab-gh-stars';
+const CACHE_KEY = 'airwaylab-gh-stars-v2';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const REFRESH_INTERVAL = 60 * 1000; // 60 seconds auto-refresh
 

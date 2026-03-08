@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Moon, HeartHandshake } from 'lucide-react';
 
-const CACHE_KEY = 'airwaylab-community-stats';
+const CACHE_KEY = 'airwaylab-community-stats-v2';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (matches API cache)
 const REFRESH_INTERVAL = 60 * 1000; // 60 seconds auto-refresh
 
