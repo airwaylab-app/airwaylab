@@ -13,6 +13,7 @@ import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, C
 import { ProTease } from '@/components/common/pro-tease';
 import { AIKeyInput } from '@/components/common/ai-key-input';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
+import { DataContribution } from '@/components/dashboard/data-contribution';
 import type { GlasgowComponents } from '@/lib/types';
 
 const AI_INSIGHTS_URL = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
@@ -380,6 +381,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       {nights.length > 1 && (
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
+
+      {/* Anonymous Data Contribution (real data only) */}
+      <DataContribution nights={nights} isDemo={isDemo} />
 
       {/* Share Prompts (real data only) */}
       <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
