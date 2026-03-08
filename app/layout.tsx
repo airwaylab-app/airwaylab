@@ -55,27 +55,20 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
+  '@type': 'SoftwareApplication',
   name: 'AirwayLab',
   description:
-    'Free, open-source, browser-based sleep analysis dashboard for ResMed CPAP/BiPAP data. Glasgow Index, WAT, NED, and Oximetry engines — 100% client-side.',
+    'Free, open-source browser-based CPAP data analysis for ResMed devices',
   url: 'https://airwaylab.app',
   applicationCategory: 'HealthApplication',
-  operatingSystem: 'Any',
+  operatingSystem: 'Any (Web Browser)',
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'USD',
   },
-  featureList: [
-    'Glasgow Index flow limitation scoring',
-    'WAT ventilation pattern analysis',
-    'NED breath-by-breath analysis with RERA detection',
-    'Pulse oximetry analysis (16-metric framework)',
-    '100% client-side processing',
-    'ResMed AirSense 10 / AirCurve 10 support (AirSense 11 experimental)',
-  ],
-  license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+  license: 'https://opensource.org/licenses/GPL-3.0',
+  isAccessibleForFree: true,
 };
 
 export default function RootLayout({
