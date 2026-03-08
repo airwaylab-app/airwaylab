@@ -15,6 +15,10 @@ import {
   Scale,
   AlertTriangle,
   ArrowRight,
+  Compass,
+  TrendingUp,
+  Eye,
+  Users,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -196,6 +200,85 @@ export default function AboutPage() {
               therapy insights help fund continued development. They&apos;re genuinely useful
               additions — not features we removed from the free tier to charge for.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- Our Vision ---- */}
+      <section id="our-vision" className="mb-12 sm:mb-16">
+        <div className="mb-6 flex items-center gap-2.5">
+          <Compass className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+            Our Vision
+          </h2>
+        </div>
+        <div className="flex flex-col gap-5">
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                <Eye className="h-4 w-4 text-emerald-400" />
+              </div>
+              <div className="mt-2 h-full w-px bg-border/50" />
+            </div>
+            <div className="pb-4">
+              <div className="mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Your data, visible</h3>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                  Now
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                CPAP machines collect rich breath-by-breath flow data every night, but most of it stays invisible —
+                locked on an SD card, inaccessible to the people it belongs to. AirwayLab makes that data visible
+                and understandable. Four research-grade engines analyse flow limitation, RERAs, and breathing
+                patterns that standard AHI metrics miss. Everything runs in your browser, so your data stays yours.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                <Users className="h-4 w-4 text-blue-400" />
+              </div>
+              <div className="mt-2 h-full w-px bg-border/50" />
+            </div>
+            <div className="pb-4">
+              <div className="mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Shared insights, collective intelligence</h3>
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-400">
+                  Next
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Individual analysis is powerful, but the real potential is collective. With your explicit consent,
+                anonymised breathing data could be contributed to an open research dataset — the largest of its kind.
+                Patterns hidden in thousands of real-world therapy nights that no single sleep lab has the scale to
+                find. Think of it as open-source science for airway therapy.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
+                <TrendingUp className="h-4 w-4 text-amber-400" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Smarter therapy for everyone</h3>
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+                  Future
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Aggregated insights from thousands of real-world nights could help researchers, clinicians, and
+                device manufacturers understand what truly effective therapy looks like — beyond AHI. Better data
+                means better algorithms. Better algorithms mean better therapy. Better therapy means better sleep
+                for millions of people.
+              </p>
+            </div>
           </div>
         </div>
       </section>

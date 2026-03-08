@@ -25,6 +25,7 @@ import {
   Star,
   Shield,
   FileText,
+  TrendingUp,
 } from 'lucide-react';
 
 /* ─── Mocked dashboard metrics for hero visualization ─── */
@@ -305,6 +306,64 @@ export default function Home() {
             <p className="text-xs leading-relaxed text-muted-foreground">
               The free tier is complete and always will be. Premium features like AI-powered therapy insights exist to fund continued development — not to gate essential analysis. If you never pay a cent, you still get the full toolkit.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Vision ─── */}
+      <section className="border-y border-border/50 bg-card/20">
+        <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Where We&apos;re Going
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              AirwayLab is more than a tool — it&apos;s the first step toward a future where breathing data drives better therapy for everyone.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 sm:p-6">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-500/10 p-2">
+                  <Eye className="h-4 w-4 text-emerald-400" />
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                  Now
+                </span>
+              </div>
+              <h3 className="mb-2 text-sm font-semibold">Your data, visible</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                AirwayLab analyses your SD card data and shows you what your machine can&apos;t — flow limitation, RERAs, breathing patterns. Free, open source, private.
+              </p>
+            </div>
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5 sm:p-6">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="rounded-lg bg-blue-500/10 p-2">
+                  <Users className="h-4 w-4 text-blue-400" />
+                </div>
+                <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-400">
+                  Next
+                </span>
+              </div>
+              <h3 className="mb-2 text-sm font-semibold">Shared insights, collective intelligence</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                With your explicit consent, contribute anonymised breathing data to the largest open CPAP research dataset ever built. Patterns that no single sleep lab has the data to find.
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="rounded-lg bg-amber-500/10 p-2">
+                  <TrendingUp className="h-4 w-4 text-amber-400" />
+                </div>
+                <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+                  Future
+                </span>
+              </div>
+              <h3 className="mb-2 text-sm font-semibold">Smarter therapy for everyone</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Aggregated insights from thousands of real-world nights could help researchers, clinicians, and device manufacturers understand what truly effective therapy looks like — beyond AHI.
+              </p>
+            </div>
           </div>
         </div>
       </section>
