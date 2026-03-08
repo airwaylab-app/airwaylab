@@ -7,7 +7,7 @@ import { parseEDF } from '../lib/parsers/edf-parser';
 import { groupByNight, filterBRPFiles, findSTRFile, findIdentificationFile } from '../lib/parsers/night-grouper';
 import { extractSettings, parseIdentification, getSettingsForDate } from '../lib/parsers/settings-extractor';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
-import { computeGlasgowIndex, computeNightGlasgow } from '../lib/analyzers/glasgow-index';
+import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
 import { computeOximetry } from '../lib/analyzers/oximetry-engine';
@@ -20,6 +20,17 @@ import type {
   EDFFile,
   MachineSettings,
 } from '../lib/types';
+
+// Global error handler — catches uncaught errors and sends them as
+// WorkerError messages instead of silently triggering onerror on main thread
+self.addEventListener('error', (e: ErrorEvent) => {
+  e.preventDefault();
+  const detail = [e.message, e.filename && `at ${e.filename}:${e.lineno}:${e.colno}`]
+    .filter(Boolean)
+    .join(' ') || 'Unknown worker error';
+  const response: WorkerError = { type: 'ERROR', error: detail };
+  self.postMessage(response);
+});
 
 // Worker message handler
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
@@ -73,7 +84,7 @@ async function processFiles(
   }
 
   if (strFileInfo) {
-    const strFile = files.find((f) => f.path.endsWith('STR.edf'));
+    const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
       try {
         dailySettings = extractSettings(strFile.buffer, deviceModel);

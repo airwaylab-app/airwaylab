@@ -47,23 +47,30 @@ export class AnalysisOrchestrator {
     oximetryFiles?: FileList | File[]
   ): Promise<NightResult[]> {
     this.terminate();
+    const sdArr = Array.from(sdFiles);
+    const totalFiles = sdArr.length;
     this.setState({
       ...initialState,
       status: 'uploading',
-      progress: { current: 0, total: 1, stage: 'Reading files...' },
+      progress: { current: 0, total: totalFiles, stage: `Reading ${totalFiles} files...` },
     });
 
     try {
-      // Read SD card files into ArrayBuffers
-      const files = await readFileList(sdFiles);
-      this.setState({
-        progress: { current: 0, total: 1, stage: 'Reading oximetry files...' },
+      // Read SD card files into ArrayBuffers with progress
+      const files = await readFileList(sdArr, (done) => {
+        this.setState({
+          progress: { current: done, total: totalFiles, stage: `Reading files (${done}/${totalFiles})...` },
+        });
       });
 
       // Read oximetry CSVs as text
       let oximetryCSVs: string[] | undefined;
       if (oximetryFiles && oximetryFiles.length > 0) {
-        oximetryCSVs = await readCSVFiles(oximetryFiles);
+        const oxArr = Array.from(oximetryFiles);
+        this.setState({
+          progress: { current: 0, total: oxArr.length, stage: `Reading ${oxArr.length} oximetry files...` },
+        });
+        oximetryCSVs = await readCSVFiles(oxArr);
       }
 
       this.setState({
@@ -146,7 +153,13 @@ export class AnalysisOrchestrator {
       this.worker.onerror = (err) => {
         settle();
         this.terminate();
-        reject(new Error(err.message || 'Worker error'));
+        const detail = [
+          err.message,
+          err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
+        ].filter(Boolean).join(' ');
+        reject(new Error(
+          detail || 'Analysis worker failed to load. Try refreshing the page.'
+        ));
       };
 
       // Transfer ArrayBuffers for zero-copy
@@ -174,19 +187,31 @@ export class AnalysisOrchestrator {
 // ── Helpers ──────────────────────────────────────────────────
 
 async function readFileList(
-  files: FileList | File[]
+  files: File[],
+  onProgress?: (done: number) => void
 ): Promise<{ buffer: ArrayBuffer; path: string }[]> {
-  const arr = Array.from(files);
+  const results: { buffer: ArrayBuffer; path: string }[] = [];
+  let done = 0;
 
-  // Read all files in parallel for faster uploads
-  return Promise.all(
-    arr.map(async (file) => {
-      const path =
-        (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
-      const buffer = await file.arrayBuffer();
-      return { buffer, path };
-    })
-  );
+  // Read in batches of 20 to avoid overwhelming the browser with
+  // hundreds of concurrent file reads from a large SD card
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < files.length; i += BATCH_SIZE) {
+    const batch = files.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (file) => {
+        const path =
+          (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const buffer = await file.arrayBuffer();
+        return { buffer, path };
+      })
+    );
+    results.push(...batchResults);
+    done += batchResults.length;
+    onProgress?.(done);
+  }
+
+  return results;
 }
 
 async function readCSVFiles(
