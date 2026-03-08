@@ -25,6 +25,7 @@ import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
+import { clearManifest } from '@/lib/file-manifest';
 import {
   RotateCcw,
   Shield,
@@ -217,6 +218,7 @@ function AnalyzePageInner() {
     setSelectedNight(0);
     setPersistedData(null);
     clearPersistedResults();
+    clearManifest();
   }, [isDemo]);
 
   const { status, progress, error } = state;
@@ -398,7 +400,14 @@ function AnalyzePageInner() {
             <div className="flex flex-col gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Previous session restored</span>{' '}
-                — showing your last analysis. Upload new data to start fresh.
+                — {persistedData.nights.length} night{persistedData.nights.length !== 1 ? 's' : ''}
+                {persistedData.nights.length >= 2 && (() => {
+                  const sorted = [...persistedData.nights].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                  const first = sorted[0].dateStr.slice(5); // MM-DD
+                  const last = sorted[sorted.length - 1].dateStr.slice(5);
+                  return ` (${first} – ${last})`;
+                })()}
+                . Upload new data to update.
               </p>
               <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 self-start sm:self-auto">
                 <Upload className="h-3 w-3" /> New Analysis
