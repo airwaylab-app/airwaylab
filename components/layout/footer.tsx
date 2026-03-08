@@ -28,6 +28,9 @@ export function Footer() {
               <Link href="/analyze" className="transition-colors hover:text-foreground">
                 Analyze Data
               </Link>
+              <Link href="/blog" className="transition-colors hover:text-foreground">
+                Blog
+              </Link>
               <Link href="/about" className="transition-colors hover:text-foreground">
                 About &amp; Methodology
               </Link>
