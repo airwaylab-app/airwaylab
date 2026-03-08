@@ -141,6 +141,7 @@ function AnalyzePageInner() {
         } catch { /* noop */ }
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFiles = useCallback(
