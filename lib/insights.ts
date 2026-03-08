@@ -107,22 +107,42 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     });
   }
 
-  // WAT regularity
+  // WAT regularity (higher = more regular = worse during CPAP therapy)
   if (regL === 'bad') {
     insights.push({
       id: 'regularity-bad',
       type: 'warning',
-      title: 'Irregular breathing patterns',
-      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates significant breath-to-breath variability. This may correlate with arousals.`,
+      title: 'Highly repetitive breathing pattern',
+      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates very predictable breathing cycles. During CPAP therapy, this may signal persistent flow limitation with uniform effort.`,
       category: 'wat',
     });
   } else if (regL === 'good') {
     insights.push({
       id: 'regularity-good',
       type: 'positive',
-      title: 'Stable breathing regularity',
-      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% shows consistent breathing patterns.`,
+      title: 'Healthy breathing variability',
+      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% shows natural breath-to-breath variability — a sign of unobstructed breathing.`,
       category: 'wat',
+    });
+  }
+
+  // Estimated Arousal Index
+  const eaiL = getTrafficLight(n.ned.estimatedArousalIndex, THRESHOLDS.eai);
+  if (eaiL === 'bad') {
+    insights.push({
+      id: 'eai-high',
+      type: 'warning',
+      title: 'Elevated estimated arousal index',
+      body: `EAI of ${fmt(n.ned.estimatedArousalIndex)}/hr suggests frequent respiratory rate and tidal volume spikes, indicating possible sleep fragmentation.`,
+      category: 'ned',
+    });
+  } else if (eaiL === 'good' && n.ned.estimatedArousalIndex > 0) {
+    insights.push({
+      id: 'eai-good',
+      type: 'positive',
+      title: 'Low estimated arousal burden',
+      body: `EAI of ${fmt(n.ned.estimatedArousalIndex)}/hr indicates few respiratory arousal-like events — sleep continuity appears well-maintained.`,
+      category: 'ned',
     });
   }
 

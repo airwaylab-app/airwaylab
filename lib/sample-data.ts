@@ -58,6 +58,7 @@ const night1NED: NEDResults = {
   h1NedMean: 17.8,
   h2NedMean: 21.2,
   combinedFLPct: 22,
+  estimatedArousalIndex: 12.4,
 };
 
 const night1Ox: OximetryResults = {
@@ -121,6 +122,7 @@ const night2NED: NEDResults = {
   h1NedMean: 13.5,
   h2NedMean: 16.1,
   combinedFLPct: 16,
+  estimatedArousalIndex: 8.2,
 };
 
 const night2Ox: OximetryResults = {
@@ -184,6 +186,7 @@ const night3NED: NEDResults = {
   h1NedMean: 24.2,
   h2NedMean: 32.8,
   combinedFLPct: 38,
+  estimatedArousalIndex: 22.5,
 };
 
 // Night 4: Good-moderate, no oximetry
@@ -222,6 +225,7 @@ const night4NED: NEDResults = {
   h1NedMean: 15.2,
   h2NedMean: 18.4,
   combinedFLPct: 18,
+  estimatedArousalIndex: 9.8,
 };
 
 // Night 5: Oldest — moderate FL
@@ -260,6 +264,7 @@ const night5NED: NEDResults = {
   h1NedMean: 20.0,
   h2NedMean: 24.0,
   combinedFLPct: 28,
+  estimatedArousalIndex: 16.1,
 };
 
 const night5Ox: OximetryResults = {

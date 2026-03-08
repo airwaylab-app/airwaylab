@@ -52,7 +52,7 @@ const METRICS: MetricDef[] = [
     key: 'regularity',
     label: 'Regularity',
     get: (n) => n.wat.regularityScore,
-    thresholds: [80, 60, 40],
+    thresholds: [30, 50, 70],
     unit: '%',
   },
   {
@@ -82,6 +82,13 @@ const METRICS: MetricDef[] = [
     get: (n) => n.ned.combinedFLPct,
     thresholds: [20, 40, 60],
     unit: '%',
+  },
+  {
+    key: 'eai',
+    label: 'Est. AI',
+    get: (n) => n.ned.estimatedArousalIndex,
+    thresholds: [10, 20, 30],
+    unit: '/hr',
   },
 ];
 

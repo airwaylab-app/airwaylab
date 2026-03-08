@@ -54,7 +54,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               <strong className="text-foreground">FL Score</strong> measures the median
               tidal volume ratio — higher values indicate greater flow limitation.{' '}
               <strong className="text-foreground">Regularity</strong> uses Sample Entropy
-              to quantify breathing pattern consistency (higher = more regular).{' '}
+              to quantify breathing pattern consistency — higher scores indicate more
+              repetitive patterns, which during CPAP therapy may signal persistent flow limitation.{' '}
               <strong className="text-foreground">Periodicity</strong> uses FFT on minute
               ventilation to detect cyclic breathing patterns.
             </p>
@@ -67,7 +68,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">
           Negative Effort Dependence (NED)
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <MetricCard
             label="NED Mean"
             value={n.ned.nedMean}
@@ -96,6 +97,13 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             value={n.ned.reraCount}
             format="int"
             previousValue={p?.ned.reraCount}
+          />
+          <MetricCard
+            label="Est. Arousal Index"
+            value={n.ned.estimatedArousalIndex}
+            unit="/hr"
+            threshold={THRESHOLDS.eai}
+            previousValue={p?.ned.estimatedArousalIndex}
           />
         </div>
       </div>

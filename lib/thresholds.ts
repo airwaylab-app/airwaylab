@@ -14,8 +14,9 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   combinedFL: { green: 20, amber: 40, lowerIsBetter: true },
   reraIndex: { green: 5, amber: 10, lowerIsBetter: true },
   watFL: { green: 30, amber: 50, lowerIsBetter: true },
-  watRegularity: { green: 70, amber: 50, lowerIsBetter: false },
+  watRegularity: { green: 30, amber: 50, lowerIsBetter: true },
   watPeriodicity: { green: 20, amber: 40, lowerIsBetter: true },
+  eai: { green: 10, amber: 20, lowerIsBetter: true },
   hrClin10: { green: 10, amber: 20, lowerIsBetter: true },
   odi3: { green: 5, amber: 15, lowerIsBetter: true },
   odi4: { green: 3, amber: 10, lowerIsBetter: true },
@@ -32,7 +33,7 @@ export function getTrafficLight(value: number, threshold: ThresholdDef): Traffic
     if (value <= threshold.amber) return 'warn';
     return 'bad';
   }
-  // Higher is better (spo2Mean, watRegularity)
+  // Higher is better (spo2Mean)
   if (value >= threshold.green) return 'good';
   if (value >= threshold.amber) return 'warn';
   return 'bad';

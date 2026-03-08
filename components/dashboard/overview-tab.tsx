@@ -273,7 +273,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </details>
 
       {/* Secondary Metrics */}
-      <div className="grid gap-3 sm:grid-cols-3 stagger-children">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
         <MetricCard
           label="Regularity"
           value={n.wat.regularityScore}
@@ -299,6 +299,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="int"
           threshold={THRESHOLDS.combinedFL}
           previousValue={p?.ned.combinedFLPct}
+          compact
+        />
+        <MetricCard
+          label="Est. Arousal Index"
+          value={n.ned.estimatedArousalIndex}
+          unit="/hr"
+          threshold={THRESHOLDS.eai}
+          previousValue={p?.ned.estimatedArousalIndex}
           compact
         />
       </div>
