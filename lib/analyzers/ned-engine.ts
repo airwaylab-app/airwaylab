@@ -23,8 +23,11 @@ export function computeNED(flowData: Float32Array, samplingRate: number): NEDRes
   // Detect RERA sequences
   const reras = detectRERASequences(breaths, samplingRate);
 
+  // Compute Estimated Arousal Index
+  const eai = computeEAI(breaths, samplingRate);
+
   // Compute night summary
-  return summarize(breaths, reras, flowData.length / samplingRate);
+  return summarize(breaths, reras, flowData.length / samplingRate, eai);
 }
 
 // ============================================================
@@ -272,12 +275,91 @@ function evaluateRERACandidate(
 }
 
 // ============================================================
+// Estimated Arousal Index (EAI)
+// Based on existentialblu's wobble-analysis-tool algorithm.
+// Detects arousal events from respiratory rate and tidal volume
+// spikes relative to a 120-second rolling baseline.
+// ============================================================
+function computeEAI(breaths: Breath[], samplingRate: number): number {
+  if (breaths.length < 10) return 0;
+
+  // Compute per-breath respiratory rate and tidal volume
+  const breathData: { time: number; rate: number; volume: number }[] = [];
+
+  for (let i = 1; i < breaths.length; i++) {
+    const prev = breaths[i - 1];
+    const curr = breaths[i];
+
+    // Breath period = time from one insp start to next
+    const period = (curr.inspStart - prev.inspStart) / samplingRate;
+    if (period <= 0 || period > 30) continue; // skip invalid
+
+    const rate = 60 / period; // breaths per minute
+
+    // Tidal volume = integral of inspiratory flow
+    let volume = 0;
+    for (let j = 0; j < curr.inspFlow.length; j++) {
+      volume += curr.inspFlow[j] / samplingRate;
+    }
+
+    breathData.push({
+      time: curr.inspStart / samplingRate,
+      rate,
+      volume,
+    });
+  }
+
+  if (breathData.length < 10) return 0;
+
+  const BASELINE_WINDOW = 120; // seconds
+  const RATE_THRESHOLD = 0.20; // 20% rate increase
+  const VOLUME_THRESHOLD = 0.30; // 30% volume increase
+  const REFRACTORY = 15; // seconds between events
+
+  let arousalCount = 0;
+  let lastArousalTime = -Infinity;
+
+  for (let i = 0; i < breathData.length; i++) {
+    const current = breathData[i];
+
+    // Compute rolling baseline from preceding window
+    let rateSum = 0, volSum = 0, count = 0;
+    for (let j = i - 1; j >= 0; j--) {
+      if (current.time - breathData[j].time > BASELINE_WINDOW) break;
+      rateSum += breathData[j].rate;
+      volSum += breathData[j].volume;
+      count++;
+    }
+
+    if (count < 5) continue; // need minimum baseline
+
+    const baseRate = rateSum / count;
+    const baseVol = volSum / count;
+
+    const rateSpike = baseRate > 0 && (current.rate - baseRate) / baseRate > RATE_THRESHOLD;
+    const volSpike = baseVol > 0 && (current.volume - baseVol) / baseVol > VOLUME_THRESHOLD;
+
+    if ((rateSpike || volSpike) && current.time - lastArousalTime > REFRACTORY) {
+      arousalCount++;
+      lastArousalTime = current.time;
+    }
+  }
+
+  const totalHours =
+    (breathData[breathData.length - 1].time - breathData[0].time) / 3600;
+  if (totalHours <= 0) return 0;
+
+  return round2(arousalCount / totalHours);
+}
+
+// ============================================================
 // Night summary
 // ============================================================
 function summarize(
   breaths: Breath[],
   reras: RERACandidate[],
-  totalSeconds: number
+  totalSeconds: number,
+  estimatedArousalIndex: number
 ): NEDResults {
   const breathCount = breaths.length;
   if (breathCount === 0) return emptyNEDResults();
@@ -348,6 +430,7 @@ function summarize(
     h1NedMean,
     h2NedMean,
     combinedFLPct,
+    estimatedArousalIndex,
   };
 }
 
@@ -380,5 +463,6 @@ function emptyNEDResults(): NEDResults {
     h1NedMean: 0,
     h2NedMean: 0,
     combinedFLPct: 0,
+    estimatedArousalIndex: 0,
   };
 }

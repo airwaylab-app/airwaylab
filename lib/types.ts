@@ -112,6 +112,7 @@ export interface NEDResults {
   h1NedMean: number;
   h2NedMean: number;
   combinedFLPct: number;
+  estimatedArousalIndex: number;
 }
 
 export interface OximetryResults {
