@@ -1,6 +1,8 @@
 // ============================================================
 // AirwayLab — Analysis Orchestrator
-// Manages web worker lifecycle and bridges UI ↔ worker
+// Manages web worker lifecycle and bridges UI ↔ worker.
+// Supports incremental re-analysis: unchanged nights are pulled
+// from cache while only new/modified data hits the worker.
 // ============================================================
 
 import type {
@@ -8,6 +10,13 @@ import type {
   NightResult,
   WorkerResponse,
 } from './types';
+import { loadPersistedResults, persistResults } from './persistence';
+import {
+  diffAgainstManifest,
+  buildManifest,
+  saveManifest,
+  loadManifest,
+} from './file-manifest';
 
 type StateListener = (state: AnalysisState) => void;
 
@@ -41,6 +50,7 @@ export class AnalysisOrchestrator {
 
   /**
    * Start analysis with uploaded SD card files and optional oximetry CSVs.
+   * Automatically skips nights that haven't changed since the last upload.
    */
   async analyze(
     sdFiles: FileList | File[],
@@ -48,22 +58,75 @@ export class AnalysisOrchestrator {
   ): Promise<NightResult[]> {
     this.terminate();
     const sdArr = Array.from(sdFiles);
-    const totalFiles = sdArr.length;
     this.setState({
       ...initialState,
       status: 'uploading',
-      progress: { current: 0, total: totalFiles, stage: `Reading ${totalFiles} files...` },
+      progress: { current: 0, total: sdArr.length, stage: 'Checking for cached data...' },
     });
 
     try {
-      // Read SD card files into ArrayBuffers with progress
-      const files = await readFileList(sdArr, (done) => {
+      // ── Incremental check ──
+      const manifest = loadManifest();
+      const cached = loadPersistedResults();
+      let filesToProcess = sdArr;
+      let cachedNights: NightResult[] = [];
+      let skippedCount = 0;
+
+      if (manifest && cached && cached.nights.length > 0) {
+        const diff = diffAgainstManifest(sdArr, manifest);
+        skippedCount = diff.unchanged.length;
+
+        if (diff.changedFiles.length === 0 && skippedCount > 0) {
+          // ALL nights unchanged — instant restore
+          const therapyChangeDate = detectTherapyChange(cached.nights);
+          this.setState({
+            status: 'complete',
+            nights: cached.nights,
+            therapyChangeDate,
+            progress: { current: 1, total: 1, stage: `All ${skippedCount} nights cached` },
+          });
+          // Re-save manifest to refresh its timestamp
+          saveManifest(buildManifest(sdArr));
+          return cached.nights;
+        }
+
+        if (skippedCount > 0) {
+          // Partial cache hit — pull cached results for unchanged nights
+          const unchangedSet = new Set(diff.unchanged);
+          cachedNights = cached.nights.filter((n) => unchangedSet.has(n.dateStr));
+          filesToProcess = diff.changedFiles;
+
+          this.setState({
+            progress: {
+              current: 0,
+              total: filesToProcess.length,
+              stage: `${skippedCount} night${skippedCount !== 1 ? 's' : ''} cached, reading ${diff.changedNights.size} new...`,
+            },
+          });
+        }
+      }
+
+      // ── Read files into ArrayBuffers ──
+      const totalFiles = filesToProcess.length;
+      if (skippedCount === 0) {
         this.setState({
-          progress: { current: done, total: totalFiles, stage: `Reading files (${done}/${totalFiles})...` },
+          progress: { current: 0, total: totalFiles, stage: `Reading ${totalFiles} files...` },
+        });
+      }
+
+      const files = await readFileList(filesToProcess, (done) => {
+        this.setState({
+          progress: {
+            current: done,
+            total: totalFiles,
+            stage: skippedCount > 0
+              ? `${skippedCount} cached • Reading files (${done}/${totalFiles})...`
+              : `Reading files (${done}/${totalFiles})...`,
+          },
         });
       });
 
-      // Read oximetry CSVs as text
+      // ── Read oximetry CSVs ──
       let oximetryCSVs: string[] | undefined;
       if (oximetryFiles && oximetryFiles.length > 0) {
         const oxArr = Array.from(oximetryFiles);
@@ -73,25 +136,36 @@ export class AnalysisOrchestrator {
         oximetryCSVs = await readCSVFiles(oxArr);
       }
 
+      // ── Run worker ──
       this.setState({
         status: 'processing',
-        progress: { current: 0, total: 1, stage: 'Starting analysis...' },
+        progress: {
+          current: 0,
+          total: 1,
+          stage: skippedCount > 0
+            ? `${skippedCount} cached • Analyzing new nights...`
+            : 'Starting analysis...',
+        },
       });
 
-      // Launch worker
-      const nights = await this.runWorker(files, oximetryCSVs);
+      const newNights = await this.runWorker(files, oximetryCSVs);
 
-      // Detect therapy change date
-      const therapyChangeDate = detectTherapyChange(nights);
+      // ── Merge cached + new ──
+      const merged = mergeNights(cachedNights, newNights);
+      const therapyChangeDate = detectTherapyChange(merged);
+
+      // ── Save manifest + results ──
+      saveManifest(buildManifest(sdArr));
+      persistResults(merged, therapyChangeDate);
 
       this.setState({
         status: 'complete',
-        nights,
+        nights: merged,
         therapyChangeDate,
         progress: { current: 1, total: 1, stage: 'Complete' },
       });
 
-      return nights;
+      return merged;
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       this.setState({ status: 'error', error });
@@ -221,6 +295,27 @@ async function readCSVFiles(
 
   // Read all CSV files in parallel
   return Promise.all(arr.map((file) => file.text()));
+}
+
+/**
+ * Merge cached nights with freshly-analyzed nights.
+ * Dedupes by dateStr (fresh wins). Returns sorted most-recent-first.
+ */
+function mergeNights(
+  cached: NightResult[],
+  fresh: NightResult[]
+): NightResult[] {
+  const map = new Map<string, NightResult>();
+
+  // Add cached first
+  for (const n of cached) map.set(n.dateStr, n);
+  // Fresh overwrites cached
+  for (const n of fresh) map.set(n.dateStr, n);
+
+  const merged = Array.from(map.values());
+  // Sort most-recent-first
+  merged.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+  return merged;
 }
 
 /**

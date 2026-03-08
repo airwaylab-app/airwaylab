@@ -1,0 +1,61 @@
+# AirwayLab
+
+> Free, open-source CPAP flow limitation analysis that runs entirely in your browser.
+
+AirwayLab is a privacy-first web application that analyzes ResMed CPAP/BiPAP sleep therapy data to detect flow limitation, RERAs, and breathing pattern instability — metrics that standard AHI reporting misses. All analysis runs client-side via Web Workers; no data ever leaves the user's device.
+
+## Key Facts
+
+- URL: https://airwaylab.app
+- License: GPL-3.0
+- Source: https://github.com/airwaylab-app/airwaylab
+- Stack: Next.js, TypeScript, Web Workers, Tailwind CSS
+- Privacy: 100% client-side analysis, zero server-side data processing
+- Supported devices: ResMed AirSense 10/11, AirCurve 10/11 (CPAP, APAP, BiPAP, BiPAP ST, ASV)
+
+## Analysis Engines
+
+AirwayLab runs four research-grade analysis engines on every night of CPAP data:
+
+### Glasgow Index
+Per-breath flow shape scoring based on 9 morphological components: skewness, spikiness, flat-top pattern, multi-peak pattern, no-pause pattern, variable amplitude, inspiratory time variability, peak flow variability, and tidal volume variability. Produces a composite score from 0 (normal) to 4 (severe flow limitation). Based on methodology from respiratory research at the University of Glasgow.
+
+### WAT (Waveform Analysis Tool)
+Evaluates ventilation regularity and periodic breathing patterns. Metrics include flow limitation score (percentage of breaths with limited flow), sample entropy (breathing pattern regularity), and FFT-based periodicity detection for identifying cyclic breathing patterns.
+
+### NED (Negative Effort Dependence)
+Detects negative effort dependence — where increased respiratory effort paradoxically reduces airflow. Identifies RERA-like events (Respiratory Effort-Related Arousals) using breath-by-breath NED scoring, flatness index, and M-shape pattern detection. Reports estimated RERA index (events/hour).
+
+### Oximetry Analysis
+Optional 16-metric SpO₂ and heart rate analysis framework. Requires a separate pulse oximetry CSV (Viatom/Checkme O2 Max). Metrics include ODI-3, ODI-4, time below 90% SpO₂, HR surge detection, and coupled desaturation-arousal events.
+
+## Pages
+
+- https://airwaylab.app/ — Homepage with overview and methodology summary
+- https://airwaylab.app/analyze — Upload SD card and view analysis dashboard
+- https://airwaylab.app/analyze?demo — Demo mode with sample data
+- https://airwaylab.app/about — Detailed methodology documentation
+- https://airwaylab.app/about/glasgow-index — Glasgow Index deep dive
+- https://airwaylab.app/about/flow-limitation — Flow limitation analysis methodology
+- https://airwaylab.app/about/oximetry-analysis — Oximetry framework documentation
+- https://airwaylab.app/blog — Blog with sleep analysis insights
+
+## How It Works
+
+1. User uploads their ResMed SD card DATALOG folder (or selects individual EDF files)
+2. Files are read into ArrayBuffers in the browser (batched to avoid overwhelming the browser)
+3. A Web Worker groups files by night date and runs all four analysis engines per night
+4. Results are displayed in an interactive dashboard with per-night and multi-night trend views
+5. Results are cached locally so returning users see their data instantly
+6. Re-uploading the same folder with new nights triggers incremental analysis — only new/changed nights are processed
+
+## Data Contribution
+
+Users can optionally contribute anonymized aggregate metrics (no raw waveforms) to a research dataset. All contributions are opt-in with informed consent. Contributed data helps improve algorithms and supports open sleep science research.
+
+## Important Notes
+
+- AirwayLab is not a medical device and does not provide medical advice
+- Results should be discussed with a qualified sleep medicine physician
+- The tool is designed for informed self-advocacy, not self-diagnosis
+- All algorithms are research-grade implementations, not FDA-cleared diagnostics
