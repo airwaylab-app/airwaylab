@@ -46,6 +46,7 @@ export const metadata: Metadata = {
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
     description:
       'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,

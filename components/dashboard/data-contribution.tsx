@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Users, Check, Loader2, X, Shield } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Users, Loader2, X, Shield, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { NightResult } from '@/lib/types';
 
@@ -17,7 +17,7 @@ interface Props {
  * Opt-in anonymous data contribution banner.
  * Shown after analysis completes. Dismissible, remembers choice.
  * Users can contribute their anonymised metrics to help
- * improve analysis algorithms and therapy insights.
+ * build the largest open CPAP flow limitation dataset.
  */
 export function DataContribution({ nights }: Props) {
   const [dismissed, setDismissed] = useState(() => {
@@ -40,6 +40,19 @@ export function DataContribution({ nights }: Props) {
 
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [expanded, setExpanded] = useState(false);
+  const [contributionCount, setContributionCount] = useState<number | null>(null);
+
+  // Fetch community contribution count for social proof
+  useEffect(() => {
+    fetch('/api/stats', { signal: AbortSignal.timeout(3000) })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
+        if (data.totalContributions > 0) {
+          setContributionCount(data.totalContributions);
+        }
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -78,14 +91,14 @@ export function DataContribution({ nights }: Props) {
     return (
       <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
         <div className="flex items-center gap-2.5">
-          <Check className="h-4 w-4 text-emerald-500" />
+          <Heart className="h-4 w-4 text-emerald-500" />
           <div>
             <p className="text-sm font-medium text-foreground">
               Thank you for contributing!
             </p>
             <p className="text-xs text-muted-foreground">
               {nights.length} night{nights.length !== 1 ? 's' : ''} of anonymised data submitted.
-              Your contribution helps improve therapy analysis for everyone.
+              You&apos;re helping build the largest open CPAP flow limitation dataset.
             </p>
           </div>
         </div>
@@ -94,7 +107,7 @@ export function DataContribution({ nights }: Props) {
   }
 
   return (
-    <div className="relative rounded-lg border border-primary/15 bg-primary/[0.03] px-4 py-3 animate-fade-in-up">
+    <div className="relative rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 animate-fade-in-up">
       <button
         onClick={handleDismiss}
         className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
@@ -104,13 +117,19 @@ export function DataContribution({ nights }: Props) {
       </button>
 
       <div className="flex items-start gap-3 pr-6">
-        <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+        <Heart className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="flex flex-col gap-2">
           <div>
-            <p className="text-sm font-medium">Help improve CPAP analysis</p>
+            <p className="text-sm font-medium">
+              Help build the largest open CPAP dataset
+            </p>
             <p className="text-xs text-muted-foreground">
-              Submit your breathing data anonymously to help us improve analysis algorithms
-              and build better therapy insights for everyone.
+              Contribute your anonymised scores to improve flow limitation analysis for everyone.
+              {contributionCount !== null && contributionCount > 0 && (
+                <span className="ml-1 text-primary/70">
+                  {contributionCount} other{contributionCount !== 1 ? 's have' : ' has'} already contributed.
+                </span>
+              )}
             </p>
           </div>
 
@@ -143,7 +162,6 @@ export function DataContribution({ nights }: Props) {
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="outline"
               size="sm"
               className="h-7 gap-1.5 text-xs"
               onClick={handleContribute}
@@ -170,7 +188,7 @@ export function DataContribution({ nights }: Props) {
           </div>
 
           <p className="text-[10px] text-muted-foreground/50">
-            100% voluntary · No account needed · Data cannot be traced back to you
+            One click · No account needed · Cannot be traced back to you
           </p>
         </div>
       </div>

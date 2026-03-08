@@ -46,8 +46,11 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
   if (variant === 'hero') {
     return (
       <div className="w-full max-w-lg rounded-xl border border-border/50 bg-card/50 p-4 sm:p-6">
-        <p className="mb-3 text-xs text-muted-foreground sm:text-sm">
-          Join other CPAP users getting updates on new analysis features and community insights. We&apos;ll never spam you or share your email.
+        <p className="mb-1 text-xs font-medium sm:text-sm">
+          Get notified when we add AI-powered therapy insights and multi-device support
+        </p>
+        <p className="mb-3 text-[11px] text-muted-foreground">
+          Join other CPAP users shaping the future of breathing data analysis. No spam, ever.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input

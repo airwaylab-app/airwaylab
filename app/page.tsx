@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Disclaimer } from '@/components/common/disclaimer';
 import { EmailOptIn } from '@/components/common/email-opt-in';
 import { GitHubStars } from '@/components/common/github-stars';
+import { CommunityCounter } from '@/components/common/community-counter';
+import packageJson from '../package.json';
 import {
   Activity,
   Waves,
@@ -153,7 +155,7 @@ export default function Home() {
                   Privacy-First
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/60 px-3 py-1 text-[11px] font-medium text-muted-foreground">
-                  v1.0 — Free &amp; Open Source
+                  v{packageJson.version} — Free &amp; Open Source
                 </span>
               </div>
 
@@ -171,14 +173,14 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href="/analyze">
+                <Link href="/analyze?demo">
                   <Button size="lg" className="w-full gap-2 shadow-glow sm:w-auto">
-                    Upload Your SD Card <ArrowRight className="h-4 w-4" />
+                    <Play className="h-4 w-4" /> See Demo
                   </Button>
                 </Link>
-                <Link href="/analyze?demo">
+                <Link href="/analyze">
                   <Button variant="outline" size="lg" className="w-full gap-2 sm:w-auto">
-                    <Play className="h-4 w-4" /> See Demo
+                    Upload Your SD Card <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
               </div>
@@ -420,6 +422,7 @@ export default function Home() {
       <section className="border-y border-border/50 bg-card/20">
         <div className="container mx-auto flex flex-wrap items-center justify-center gap-4 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8">
           <GitHubStars className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:text-sm" />
+          <CommunityCounter className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm" />
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
             <Activity className="h-3.5 w-3.5 text-blue-400" />
             <span>4 research-grade engines</span>
@@ -528,6 +531,7 @@ export default function Home() {
           </div>
 
           {/* Community Links */}
+          {/* TODO: Update to specific AirwayLab thread URLs once community posts exist */}
           <div>
             <p className="mb-3 text-sm font-medium text-muted-foreground">
               Join the conversation

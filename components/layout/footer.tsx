@@ -48,6 +48,7 @@ export function Footer() {
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Community
             </h4>
+            {/* TODO: Update to specific AirwayLab thread URLs once community posts exist */}
             <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
               <a
                 href="https://www.apneaboard.com"

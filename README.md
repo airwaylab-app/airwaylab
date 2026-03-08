@@ -1,5 +1,6 @@
 # AirwayLab
 
+[![CI](https://github.com/airwaylab-app/airwaylab/actions/workflows/ci.yml/badge.svg)](https://github.com/airwaylab-app/airwaylab/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 [![Demo](https://img.shields.io/badge/Demo-airwaylab.app-brightgreen)](https://airwaylab.app)
 [![Privacy](https://img.shields.io/badge/Privacy-Data%20Never%20Leaves%20Your%20Device-blueviolet)]()

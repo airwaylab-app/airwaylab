@@ -35,6 +35,7 @@ import {
   Upload,
   ArrowLeftRight,
   Star,
+  Moon,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -58,6 +59,15 @@ function AnalyzePageInner() {
   const oxInputRef = useRef<HTMLInputElement>(null);
   const [showDemoStar, setShowDemoStar] = useState(false);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lifetimeNights, setLifetimeNights] = useState(0);
+
+  // Load lifetime night count from localStorage
+  useEffect(() => {
+    try {
+      const stored = parseInt(localStorage.getItem('airwaylab-nights-analyzed') || '0', 10);
+      if (stored > 0) setLifetimeNights(stored);
+    } catch { /* noop */ }
+  }, []);
 
   // Show GitHub star prompt after 30s in demo mode (once per session)
   useEffect(() => {
@@ -93,6 +103,28 @@ function AnalyzePageInner() {
       if (newState.status === 'complete' && newState.nights.length > 0) {
         persistResults(newState.nights, newState.therapyChangeDate);
         setPersistedData(null);
+
+        // Track analysis session (fire-and-forget, non-blocking)
+        const hasOximetry = newState.nights.some((n) => !!n.oximetry);
+        const glasgowSum = newState.nights.reduce((s, n) => s + n.glasgow.overall, 0);
+        fetch('/api/track-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nightCount: newState.nights.length,
+            hasOximetry,
+            isDemo: false,
+            glasgowAvg: Math.round((glasgowSum / newState.nights.length) * 100) / 100,
+          }),
+        }).catch(() => { /* non-critical */ });
+
+        // Update local lifetime night count
+        try {
+          const prev = parseInt(localStorage.getItem('airwaylab-nights-analyzed') || '0', 10);
+          const updated = prev + newState.nights.length;
+          localStorage.setItem('airwaylab-nights-analyzed', String(updated));
+          setLifetimeNights(updated);
+        } catch { /* noop */ }
       }
     });
   }, []);
@@ -187,9 +219,17 @@ function AnalyzePageInner() {
                 : 'Upload your ResMed SD card folder to begin analysis'}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-emerald-500">
-            <Shield className="h-3.5 w-3.5 shrink-0" />
-            <span>All data stays on your device</span>
+          <div className="flex items-center gap-3">
+            {lifetimeNights > 0 && !isDemo && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Moon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>{lifetimeNights} night{lifetimeNights !== 1 ? 's' : ''} analyzed</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-emerald-500">
+              <Shield className="h-3.5 w-3.5 shrink-0" />
+              <span>All data stays on your device</span>
+            </div>
           </div>
         </div>
       </div>

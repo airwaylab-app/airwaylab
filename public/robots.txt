@@ -1,0 +1,5 @@
+# AirwayLab — https://airwaylab.app
+User-agent: *
+Allow: /
+
+Sitemap: https://airwaylab.app/sitemap.xml

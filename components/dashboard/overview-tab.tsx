@@ -219,6 +219,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         />
       </div>
 
+      {/* Anonymous Data Contribution — shown early for visibility */}
+      <DataContribution nights={nights} isDemo={isDemo} />
+
       {/* Glasgow Component Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">
         <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -377,16 +380,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </Card>
       )}
 
+      {/* Share Prompts (real data only) */}
+      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
+
       {/* Heatmap */}
       {nights.length > 1 && (
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
-
-      {/* Anonymous Data Contribution (real data only) */}
-      <DataContribution nights={nights} isDemo={isDemo} />
-
-      {/* Share Prompts (real data only) */}
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
 
       {/* AI Key Input or Pro Tease */}
       {hasAIAccess && !hasAIKey ? (
