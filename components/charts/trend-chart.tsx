@@ -91,10 +91,13 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
       </CardHeader>
       <CardContent>
         <div
-          className="h-[300px] w-full sm:h-[380px]"
+          className="relative h-[300px] w-full sm:h-[380px]"
           role="img"
           aria-label={`Multi-night trend chart showing ${data.length} nights. Metrics displayed: ${METRICS.filter((m) => visible[m.key]).map((m) => m.label).join(', ')}.`}
         >
+          <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+            airwaylab.app
+          </span>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid

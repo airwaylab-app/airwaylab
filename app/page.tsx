@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Disclaimer } from '@/components/common/disclaimer';
 import { EmailOptIn } from '@/components/common/email-opt-in';
+import { GitHubStars } from '@/components/common/github-stars';
 import {
   Activity,
   Waves,
@@ -22,6 +23,8 @@ import {
   Users,
   Heart,
   Star,
+  Shield,
+  FileText,
 } from 'lucide-react';
 
 /* ─── Mocked dashboard metrics for hero visualization ─── */
@@ -354,6 +357,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── Social Proof ─── */}
+      <section className="border-y border-border/50 bg-card/20">
+        <div className="container mx-auto flex flex-wrap items-center justify-center gap-4 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8">
+          <GitHubStars className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:text-sm" />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+            <Activity className="h-3.5 w-3.5 text-blue-400" />
+            <span>4 research-grade engines</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+            <Shield className="h-3.5 w-3.5 text-emerald-400" />
+            <span>100% client-side</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+            <FileText className="h-3.5 w-3.5 text-primary" />
+            <span>GPL-3.0 open source</span>
+          </div>
+        </div>
+      </section>
+
       {/* ─── How It Works ─── */}
       <section className="border-y border-border/50 bg-card/20 py-12 sm:py-16">
         <div className="container mx-auto px-4 sm:px-6">
@@ -415,46 +437,62 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Community ─── */}
+      {/* ─── Open Source & Community ─── */}
       <section className="container mx-auto px-4 py-12 sm:px-6 sm:py-16">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-              Built by CPAP Users, for CPAP Users
-            </h2>
-            <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-              AirwayLab fills the gap between OSCAR&apos;s raw signal viewer and the clinical sleep lab.
-              Designed for the technical CPAP community who want deeper flow limitation analysis.
+        <div className="flex flex-col items-center gap-8 text-center">
+          {/* GitHub CTA */}
+          <div className="w-full max-w-xl rounded-xl border border-border/50 bg-card/50 p-6 sm:p-8">
+            <div className="mb-3 flex items-center justify-center gap-2">
+              <Github className="h-5 w-5 text-foreground" />
+              <h2 className="text-lg font-bold tracking-tight sm:text-xl">
+                Open Source on GitHub
+              </h2>
+            </div>
+            <p className="mx-auto mb-5 max-w-md text-sm text-muted-foreground">
+              AirwayLab is GPL-3.0. Star the repo to follow development, report issues, or contribute.
             </p>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <a href="https://github.com/airwaylab-app/airwaylab" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Star className="h-4 w-4" /> Star on GitHub
+                </Button>
+              </a>
+              <a
+                href="https://github.com/airwaylab-app/airwaylab"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                View source code →
+              </a>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="https://www.apneaboard.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              ApneaBoard
-            </a>
-            <a
-              href="https://reddit.com/r/SleepApnea"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              r/SleepApnea
-            </a>
-            <a
-              href="https://github.com/airwaylab-app/airwaylab"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-            >
-              <Github className="h-3.5 w-3.5" />
-              GitHub
-            </a>
+
+          {/* Community Links */}
+          <div>
+            <p className="mb-3 text-sm font-medium text-muted-foreground">
+              Join the conversation
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="https://www.apneaboard.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                ApneaBoard
+              </a>
+              <a
+                href="https://reddit.com/r/SleepApnea"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                r/SleepApnea
+              </a>
+            </div>
           </div>
         </div>
       </section>

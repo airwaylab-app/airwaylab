@@ -34,6 +34,7 @@ import {
   Play,
   Upload,
   ArrowLeftRight,
+  Star,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -55,6 +56,24 @@ function AnalyzePageInner() {
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
+  const [showDemoStar, setShowDemoStar] = useState(false);
+  const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Show GitHub star prompt after 30s in demo mode (once per session)
+  useEffect(() => {
+    if (isDemo && !showDemoStar) {
+      try {
+        if (sessionStorage.getItem('airwaylab-demo-star-shown') === '1') return;
+      } catch { /* noop */ }
+      demoTimerRef.current = setTimeout(() => {
+        setShowDemoStar(true);
+        try { sessionStorage.setItem('airwaylab-demo-star-shown', '1'); } catch { /* noop */ }
+      }, 30000);
+      return () => {
+        if (demoTimerRef.current) clearTimeout(demoTimerRef.current);
+      };
+    }
+  }, [isDemo, showDemoStar]);
 
   // Auto-load demo or persisted results on mount
   useEffect(() => {
@@ -111,12 +130,21 @@ function AnalyzePageInner() {
   }, []);
 
   const handleReset = useCallback(() => {
+    // Show demo star prompt when exiting demo (if not already shown)
+    if (isDemo) {
+      try {
+        if (sessionStorage.getItem('airwaylab-demo-star-shown') !== '1') {
+          setShowDemoStar(true);
+          sessionStorage.setItem('airwaylab-demo-star-shown', '1');
+        }
+      } catch { /* noop */ }
+    }
     setIsDemo(false);
     orchestrator.reset();
     setSelectedNight(0);
     setPersistedData(null);
     clearPersistedResults();
-  }, []);
+  }, [isDemo]);
 
   const { status, progress, error } = state;
 
@@ -165,6 +193,35 @@ function AnalyzePageInner() {
           </div>
         </div>
       </div>
+
+      {/* Demo Star Prompt */}
+      {showDemoStar && status === 'idle' && !isDemo && (
+        <div className="mx-auto mb-6 max-w-lg animate-fade-in-up">
+          <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center sm:px-6">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Like what you see?</span>{' '}
+              Star us on GitHub to follow development.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <a
+                href="https://github.com/airwaylab-app/airwaylab"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Star className="h-3.5 w-3.5" /> Star on GitHub
+                </Button>
+              </a>
+              <button
+                onClick={() => setShowDemoStar(false)}
+                className="text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upload State */}
       {status === 'idle' && !isDemo && (
@@ -331,6 +388,7 @@ function AnalyzePageInner() {
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
+                  isDemo={isDemo}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry && sdFilesRef.current.length > 0
                       ? handleOximetryUpload

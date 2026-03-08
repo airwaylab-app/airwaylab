@@ -68,10 +68,13 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
       </CardHeader>
       <CardContent>
         <div
-          className="h-[300px] w-full sm:h-[380px]"
+          className="relative h-[300px] w-full sm:h-[380px]"
           role="img"
           aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 8. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(0)}`).join(', ')}.`}
         >
+          <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+            airwaylab.app
+          </span>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
               <PolarGrid stroke="hsl(217 33% 15% / 0.5)" />

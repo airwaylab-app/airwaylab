@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2 } from 'lucide-react';
 import { ProTease } from '@/components/common/pro-tease';
 import { AIKeyInput } from '@/components/common/ai-key-input';
+import { SharePrompts } from '@/components/dashboard/share-prompts';
 import type { GlasgowComponents } from '@/lib/types';
 
 const AI_INSIGHTS_URL = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
@@ -47,9 +48,10 @@ interface Props {
   previousNight: NightResult | null;
   therapyChangeDate: string | null;
   onUploadOximetry?: () => void;
+  isDemo?: boolean;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, isDemo = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -378,6 +380,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       {nights.length > 1 && (
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
+
+      {/* Share Prompts (real data only) */}
+      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
 
       {/* AI Key Input or Pro Tease */}
       {hasAIAccess && !hasAIKey ? (

@@ -47,7 +47,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
     return (
       <div className="w-full max-w-lg rounded-xl border border-border/50 bg-card/50 p-4 sm:p-6">
         <p className="mb-3 text-xs text-muted-foreground sm:text-sm">
-          Get updates on new analysis features and community insights. We&apos;ll never spam you or share your email.
+          Join other CPAP users getting updates on new analysis features and community insights. We&apos;ll never spam you or share your email.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input
@@ -77,7 +77,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
       <div className="rounded-xl border border-border/50 bg-card p-4 sm:p-6">
         <p className="mb-1 text-sm font-medium">AI-powered therapy insights are coming</p>
         <p className="mb-3 text-xs text-muted-foreground sm:mb-4">
-          Sign up for early access — and help us keep AirwayLab free.
+          Sign up for early access — and help us keep AirwayLab free for everyone.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input

@@ -247,10 +247,13 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
       <CardContent>
         <TooltipProvider>
           <div
-            className="max-w-full overflow-x-auto"
+            className="relative max-w-full overflow-x-auto"
             role="region"
             aria-label="Night-by-night heatmap of sleep metrics"
           >
+            <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+              airwaylab.app
+            </span>
             <table
               className="w-full text-xs"
               aria-label={`Sleep metrics heatmap for ${sortedNights.length} nights. Color indicates severity: green is normal, amber is borderline, red is elevated.`}

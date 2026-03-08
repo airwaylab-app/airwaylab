@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Moon, ExternalLink } from 'lucide-react';
+import { Moon, Github } from 'lucide-react';
+import { GitHubStars } from '@/components/common/github-stars';
 
 export function Header() {
   return (
@@ -26,14 +27,16 @@ export function Header() {
           >
             About
           </Link>
+          {/* Desktop: star count badge */}
+          <GitHubStars className="ml-0.5 hidden items-center gap-1.5 rounded-md border border-border/50 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground sm:ml-1 sm:flex sm:px-3 sm:py-1.5 sm:text-sm" />
+          {/* Mobile: compact GitHub icon */}
           <a
             href="https://github.com/airwaylab-app/airwaylab"
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-0.5 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:ml-1 sm:px-3 sm:py-2 sm:text-sm"
+            className="ml-0.5 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
           >
-            <span className="hidden sm:inline">GitHub</span>
-            <ExternalLink className="h-3 w-3" />
+            <Github className="h-3.5 w-3.5" />
           </a>
         </nav>
       </div>
