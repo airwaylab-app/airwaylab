@@ -5,6 +5,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { FeedbackWidget } from '@/components/common/feedback-widget';
 
 const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
@@ -106,6 +107,7 @@ export default function RootLayout({
           <Header />
           <main id="main-content" className="flex-1 overflow-x-hidden">{children}</main>
           <Footer />
+          <FeedbackWidget />
         </div>
       </body>
     </html>

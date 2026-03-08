@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab-contribute-dismissed';
-const CONTRIBUTED_KEY = 'airwaylab-contributed';
+const CONTRIBUTED_NIGHTS_KEY = 'airwaylab-contributed-nights';
 
 interface Props {
   nights: NightResult[];
@@ -16,10 +16,10 @@ interface Props {
 /**
  * Opt-in anonymous data contribution banner.
  * Shown after analysis completes. Dismissible, remembers choice.
- * Users can contribute their anonymised metrics to help
- * build the largest open CPAP flow limitation dataset.
+ * Tracks how many nights were previously contributed so users
+ * can contribute again when they upload new data.
  */
-export function DataContribution({ nights }: Props) {
+export function DataContribution({ nights, isDemo = false }: Props) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -29,12 +29,13 @@ export function DataContribution({ nights }: Props) {
     }
   });
 
-  const [alreadyContributed] = useState(() => {
-    if (typeof window === 'undefined') return false;
+  // Track how many nights were previously contributed (not a boolean flag)
+  const [contributedNightCount] = useState(() => {
+    if (typeof window === 'undefined') return 0;
     try {
-      return localStorage.getItem(CONTRIBUTED_KEY) === '1';
+      return parseInt(localStorage.getItem(CONTRIBUTED_NIGHTS_KEY) || '0', 10);
     } catch {
-      return false;
+      return 0;
     }
   });
 
@@ -47,9 +48,7 @@ export function DataContribution({ nights }: Props) {
     fetch('/api/stats', { signal: AbortSignal.timeout(3000) })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
-        if (data.totalContributions > 0) {
-          setContributionCount(data.totalContributions);
-        }
+        setContributionCount(data.totalContributions ?? 0);
       })
       .catch(() => { /* non-critical */ });
   }, []);
@@ -73,7 +72,8 @@ export function DataContribution({ nights }: Props) {
       if (res.ok) {
         setStatus('success');
         try {
-          localStorage.setItem(CONTRIBUTED_KEY, '1');
+          const prev = parseInt(localStorage.getItem(CONTRIBUTED_NIGHTS_KEY) || '0', 10);
+          localStorage.setItem(CONTRIBUTED_NIGHTS_KEY, String(prev + nights.length));
         } catch { /* noop */ }
       } else {
         setStatus('error');
@@ -83,8 +83,35 @@ export function DataContribution({ nights }: Props) {
     }
   }, [nights]);
 
-  // Don't show if already contributed or dismissed
-  if (dismissed || alreadyContributed) return null;
+  // Check if user has new data beyond what they already contributed
+  const hasNewData = nights.length > contributedNightCount;
+
+  // Don't show if dismissed this session, or if no new data to contribute (for real uploads)
+  if (dismissed || (!isDemo && !hasNewData && contributedNightCount > 0)) return null;
+
+  // Demo mode — show teaser encouraging real upload
+  if (isDemo) {
+    return (
+      <div className="rounded-lg border border-primary/10 bg-primary/[0.02] px-4 py-3 animate-fade-in-up">
+        <div className="flex items-start gap-3">
+          <Heart className="mt-0.5 h-4 w-4 shrink-0 text-primary/50" />
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-medium text-muted-foreground">
+              Help build the largest open CPAP dataset
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Upload your own SD card data to contribute anonymised scores to the research dataset.
+              {contributionCount !== null && contributionCount > 0 && (
+                <span className="ml-1 text-primary/60">
+                  {contributionCount} user{contributionCount !== 1 ? 's have' : ' has'} already contributed.
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Success state
   if (status === 'success') {
@@ -100,11 +127,17 @@ export function DataContribution({ nights }: Props) {
               {nights.length} night{nights.length !== 1 ? 's' : ''} of anonymised data submitted.
               You&apos;re helping build the largest open CPAP flow limitation dataset.
             </p>
+            <p className="mt-1 text-[10px] text-muted-foreground/50">
+              Upload more data anytime to contribute additional nights.
+            </p>
           </div>
         </div>
       </div>
     );
   }
+
+  // Returning contributor state — user has contributed before but has new data
+  const isReturning = contributedNightCount > 0;
 
   return (
     <div className="relative rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 animate-fade-in-up">
@@ -121,26 +154,43 @@ export function DataContribution({ nights }: Props) {
         <div className="flex flex-col gap-2">
           <div>
             <p className="text-sm font-medium">
-              Help build the largest open CPAP dataset
+              {isReturning
+                ? 'Contribute your new data'
+                : 'Help build the largest open CPAP dataset'}
             </p>
             <p className="text-xs text-muted-foreground">
-              Contribute your anonymised scores to improve flow limitation analysis for everyone.
-              {contributionCount !== null && contributionCount > 0 && (
-                <span className="ml-1 text-primary/70">
-                  {contributionCount} other{contributionCount !== 1 ? 's have' : ' has'} already contributed.
-                </span>
+              {isReturning ? (
+                <>
+                  You&apos;ve previously contributed {contributedNightCount} night{contributedNightCount !== 1 ? 's' : ''}.
+                  Share your latest analysis to keep the dataset growing.
+                </>
+              ) : (
+                <>
+                  Contribute your anonymised scores to improve flow limitation analysis for everyone.
+                  {contributionCount !== null && contributionCount > 0 ? (
+                    <span className="ml-1 text-primary/70">
+                      {contributionCount} other{contributionCount !== 1 ? 's have' : ' has'} already contributed.
+                    </span>
+                  ) : (
+                    <span className="ml-1 text-primary/70">
+                      Be among the first to contribute.
+                    </span>
+                  )}
+                </>
               )}
             </p>
           </div>
 
           {/* What gets shared (expandable) */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
-          >
-            <Shield className="h-3 w-3" />
-            {expanded ? 'Hide details' : 'What gets shared?'}
-          </button>
+          {!isReturning && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+            >
+              <Shield className="h-3 w-3" />
+              {expanded ? 'Hide details' : 'What gets shared?'}
+            </button>
+          )}
 
           {expanded && (
             <div className="rounded-md border border-border/30 bg-background/50 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
