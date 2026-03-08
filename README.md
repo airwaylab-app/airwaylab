@@ -1,5 +1,9 @@
 # AirwayLab
 
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
+[![Demo](https://img.shields.io/badge/Demo-airwaylab.app-brightgreen)](https://airwaylab.app)
+[![Privacy](https://img.shields.io/badge/Privacy-Data%20Never%20Leaves%20Your%20Device-blueviolet)]()
+
 Free, open-source flow limitation analysis for ResMed CPAP/BiPAP data.
 
 [Try the demo →](https://airwaylab.app/analyze?demo) · [Live site →](https://airwaylab.app)
