@@ -3,20 +3,22 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import packageJson from '../../package.json';
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Build ID is set at build time in next.config — unique per deployment
+const CURRENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? '';
+
 /**
  * Polls /api/version and shows a full-screen overlay when a newer
- * version is deployed. Forces reload so users never run stale code.
+ * version is deployed. Compares build IDs (which change on every build)
+ * so users never run stale code.
  */
 export function VersionChecker() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [newVersion, setNewVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    const currentVersion = packageJson.version;
+    if (!CURRENT_BUILD_ID) return; // No build ID — skip checking
 
     const check = async () => {
       try {
@@ -26,8 +28,7 @@ export function VersionChecker() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (data.version && data.version !== currentVersion) {
-          setNewVersion(data.version);
+        if (data.buildId && data.buildId !== CURRENT_BUILD_ID) {
           setUpdateAvailable(true);
         }
       } catch {
@@ -56,7 +57,7 @@ export function VersionChecker() {
         <div>
           <h2 className="text-lg font-bold">New Version Available</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            AirwayLab {newVersion} is available. You&apos;re running {packageJson.version}.
+            A new version of AirwayLab has been deployed.
             Please refresh to get the latest features and fixes.
           </p>
         </div>
