@@ -24,26 +24,28 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://airwaylab.app'),
-  title: 'AirwayLab — Flow Limitation Analysis for ResMed CPAP Data',
+  title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
   description:
-    'Free, open-source, browser-based sleep analysis dashboard for ResMed CPAP/BiPAP data. Glasgow Index, WAT, NED, and Oximetry engines — 100% client-side. Your data never leaves your device.',
+    'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
   keywords: [
     'CPAP', 'BiPAP', 'ResMed', 'sleep apnea', 'flow limitation',
     'Glasgow Index', 'OSCAR alternative', 'sleep analysis',
   ],
   authors: [{ name: 'AirwayLab' }],
   openGraph: {
-    title: 'AirwayLab — Flow Limitation Analysis for ResMed CPAP Data',
+    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
     description:
-      'Free, open-source, privacy-first sleep analysis. Upload your ResMed SD card and get detailed breath-by-breath analytics with 4 research-grade engines.',
+      'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
     type: 'website',
+    url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
+    images: [{ url: '/og-image.png' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AirwayLab — Flow Limitation Analysis for ResMed CPAP Data',
+    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
     description:
-      'Free, open-source sleep analysis dashboard for ResMed CPAP/BiPAP data. 100% client-side.',
+      'Open-source, browser-based CPAP data analysis. Upload your ResMed SD card data and get flow limitation scores, breath shape analysis, and multi-night trends. No account required. Your data never leaves your device.',
   },
   robots: {
     index: true,
