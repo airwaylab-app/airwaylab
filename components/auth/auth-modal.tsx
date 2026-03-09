@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { X, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import * as Sentry from '@sentry/nextjs';
+import { events } from '@/lib/analytics';
 
 interface Props {
   open: boolean;
@@ -50,6 +51,7 @@ export function AuthModal({ open, onClose }: Props) {
       }
 
       setSent(true);
+      events.authMagicLinkSent();
     },
     [email, signIn]
   );

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { events } from '@/lib/analytics';
 import Link from 'next/link';
 import { Check, Heart, Crown, Sparkles, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -72,6 +73,10 @@ export default function PricingPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  useEffect(() => {
+    events.pricingViewed();
+  }, []);
+
   const handleCheckout = async (priceId: string | undefined) => {
     if (!priceId) {
       console.error('[pricing] Missing price ID for checkout — env var not configured');
@@ -81,6 +86,7 @@ export default function PricingPage() {
     }
 
     if (!user) {
+      events.authStarted('pricing');
       setAuthModalOpen(true);
       return;
     }
@@ -97,6 +103,8 @@ export default function PricingPage() {
 
       const data = await res.json();
       if (data.url) {
+        const checkoutTier = priceId === PRICES.supporter[billing] ? 'supporter' : 'champion';
+        events.checkoutStarted(checkoutTier, billing);
         window.location.href = data.url;
       } else {
         setCheckoutError(data.error || 'Could not start checkout. Please try again.');

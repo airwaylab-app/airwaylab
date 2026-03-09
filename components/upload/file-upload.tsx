@@ -5,6 +5,7 @@ import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle } from 'luci
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
+import { events } from '@/lib/analytics';
 
 interface FileUploadProps {
   onFilesSelected: (sdFiles: File[], oximetryFiles: File[]) => void;
@@ -29,6 +30,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
         setSdValidation(result);
         setSdFiles(files);
         if (result.valid) {
+          events.uploadStart();
           onFilesSelected(files, oxFiles);
         }
       }

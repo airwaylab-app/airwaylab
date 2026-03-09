@@ -5,6 +5,7 @@ import { Settings, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { THRESHOLDS, type ThresholdDef } from '@/lib/thresholds';
 import { useThresholds, useThresholdActions } from '@/components/common/thresholds-provider';
+import { events } from '@/lib/analytics';
 
 const GROUPS: { title: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -61,11 +62,17 @@ function ThresholdRow({
 }) {
   const handleGreen = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    if (!isNaN(val)) onChange(metricKey, { ...current, green: val });
+    if (!isNaN(val)) {
+      onChange(metricKey, { ...current, green: val });
+      events.thresholdCustomized(metricKey);
+    }
   };
   const handleAmber = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    if (!isNaN(val)) onChange(metricKey, { ...current, amber: val });
+    if (!isNaN(val)) {
+      onChange(metricKey, { ...current, amber: val });
+      events.thresholdCustomized(metricKey);
+    }
   };
 
   return (
