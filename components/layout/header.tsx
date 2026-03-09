@@ -60,17 +60,17 @@ export function Header() {
             </a>
 
             {/* Auth: sign in or user menu */}
-            {!isLoading && (
-              user ? (
-                <UserMenu />
-              ) : (
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="ml-0.5 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:ml-1 sm:px-3 sm:py-2 sm:text-sm"
-                >
-                  Sign in
-                </button>
-              )
+            {isLoading ? (
+              <div className="ml-0.5 h-6 w-6 animate-pulse rounded-full bg-muted/50 sm:ml-1" />
+            ) : user ? (
+              <UserMenu />
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="ml-0.5 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:ml-1 sm:px-3 sm:py-2 sm:text-sm"
+              >
+                Sign in
+              </button>
             )}
           </nav>
         </div>

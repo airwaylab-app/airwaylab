@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { X, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   open: boolean;
@@ -30,7 +31,12 @@ export function AuthModal({ open, onClose }: Props) {
       setLoading(false);
 
       if (signInError) {
-        // L2: Show specific error messages instead of generic fallback
+        Sentry.captureMessage(`Auth modal sign-in error: ${signInError}`, {
+          level: 'warning',
+          tags: { context: 'auth-modal' },
+          extra: { emailDomain: trimmed.split('@')[1] },
+        });
+
         if (signInError.toLowerCase().includes('rate limit') || signInError.toLowerCase().includes('too many')) {
           setError('Too many sign-in attempts. Please wait a minute and try again.');
         } else if (signInError.toLowerCase().includes('invalid') && signInError.toLowerCase().includes('email')) {

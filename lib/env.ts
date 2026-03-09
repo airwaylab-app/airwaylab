@@ -53,6 +53,16 @@ export const serverEnv = {
  */
 export function validateServerEnv() {
   const warnings: string[] = [];
+  const errors: string[] = [];
+
+  // Supabase auth requires both client-side vars as a pair
+  const hasSupabaseUrl = !!env.NEXT_PUBLIC_SUPABASE_URL;
+  const hasSupabaseKey = !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (hasSupabaseUrl !== hasSupabaseKey) {
+    errors.push(
+      `NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must both be set (or both unset). Auth will not work.`
+    );
+  }
 
   if (serverEnv.ANTHROPIC_API_KEY && !serverEnv.AI_INSIGHTS_API_KEY) {
     warnings.push(
@@ -62,13 +72,13 @@ export function validateServerEnv() {
 
   if (serverEnv.SUPABASE_URL && !serverEnv.SUPABASE_SERVICE_ROLE_KEY) {
     warnings.push(
-      'SUPABASE_URL is set but SUPABASE_SERVICE_ROLE_KEY is missing — waitlist capture will fail.'
+      'SUPABASE_URL is set but SUPABASE_SERVICE_ROLE_KEY is missing — service role operations will fail.'
     );
   }
 
   if (serverEnv.SUPABASE_SERVICE_ROLE_KEY && !serverEnv.SUPABASE_URL) {
     warnings.push(
-      'SUPABASE_SERVICE_ROLE_KEY is set but SUPABASE_URL is missing — waitlist capture will fail.'
+      'SUPABASE_SERVICE_ROLE_KEY is set but SUPABASE_URL is missing — service role operations will fail.'
     );
   }
 
@@ -80,6 +90,13 @@ export function validateServerEnv() {
 
   for (const w of warnings) {
     console.warn(`[env] ⚠️  ${w}`);
+  }
+
+  if (errors.length > 0) {
+    for (const e of errors) {
+      console.error(`[env] ❌ ${e}`);
+    }
+    throw new Error(`[env] Environment validation failed:\n${errors.join('\n')}`);
   }
 
   return warnings;
