@@ -556,6 +556,7 @@ function AnalyzePageInner() {
                   selectedNight={currentNight}
                   isDemo={isDemo}
                   sdFiles={sdFilesRef.current}
+                  onReUpload={handleReset}
                 />
               </ErrorBoundary>
             </TabsContent>

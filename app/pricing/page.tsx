@@ -76,7 +76,7 @@ export default function PricingPage() {
     if (!priceId) {
       console.error('[pricing] Missing price ID for checkout — env var not configured');
       Sentry.captureMessage('Checkout attempted with missing price ID', { level: 'error' });
-      setCheckoutError('Something went wrong. Please contact us at support@airwaylab.app so we can help.');
+      setCheckoutError('This plan is not available yet. Please try again later.');
       return;
     }
 
