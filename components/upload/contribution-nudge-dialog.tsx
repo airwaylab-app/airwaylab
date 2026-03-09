@@ -37,7 +37,7 @@ export function ContributionNudgeDialog({
             Your {nightCount} {nightCount === 1 ? 'night' : 'nights'} could help thousands
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            We&apos;re building the first open CPAP dataset so patients and researchers can finally
+            We&apos;re building the largest PAP therapy dataset so patients and researchers can finally
             benchmark therapy outcomes. Your anonymised scores would make a real difference — no
             raw data leaves your device, ever.
           </p>

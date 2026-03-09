@@ -54,19 +54,19 @@ export function generateRadarSVG(glasgow: GlasgowComponents): string {
       const [x, y] = polar(i * angleStep, r);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
-    return `<polygon points="${pts.join(' ')}" fill="none" stroke="#334155" stroke-width="0.5" />`;
+    return `<polygon points="${pts.join(' ')}" fill="none" stroke="#e2e8f0" stroke-width="0.5" />`;
   });
 
   // Axis lines
   const axisLines = AXES.map((_, i) => {
     const [x, y] = polar(i * angleStep, maxR);
-    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#334155" stroke-width="0.5" />`;
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="0.5" />`;
   });
 
   // Axis labels
   const labels = AXES.map((axis, i) => {
     const [x, y] = polar(i * angleStep, maxR + 20);
-    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#94a3b8" font-size="10" text-anchor="middle" dominant-baseline="middle">${axis.label}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#64748b" font-size="10" text-anchor="middle" dominant-baseline="middle">${axis.label}</text>`;
   });
 
   // Normal range reference (green dashed, at ~0.3 for all)
@@ -131,7 +131,7 @@ export function generateTrendSVG(nights: NightResult[]): string {
   const legendItems = TREND_METRICS.map((m, i) => {
     const lx = pad.left + i * 120;
     return `<rect x="${lx}" y="8" width="10" height="10" rx="2" fill="${m.color}" />
-    <text x="${lx + 14}" y="17" fill="#94a3b8" font-size="10">${m.label}</text>`;
+    <text x="${lx + 14}" y="17" fill="#64748b" font-size="10">${m.label}</text>`;
   });
   lines.push(...legendItems);
 
@@ -170,8 +170,8 @@ export function generateTrendSVG(nights: NightResult[]): string {
 
   // Axes
   lines.push(
-    `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + plotH}" stroke="#334155" stroke-width="1" />`,
-    `<line x1="${pad.left}" y1="${pad.top + plotH}" x2="${pad.left + plotW}" y2="${pad.top + plotH}" stroke="#334155" stroke-width="1" />`
+    `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + plotH}" stroke="#e2e8f0" stroke-width="1" />`,
+    `<line x1="${pad.left}" y1="${pad.top + plotH}" x2="${pad.left + plotW}" y2="${pad.top + plotH}" stroke="#e2e8f0" stroke-width="1" />`
   );
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="display:block;margin:0 auto;">

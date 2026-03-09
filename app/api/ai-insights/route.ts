@@ -5,7 +5,7 @@ import type { NightResult } from '@/lib/types';
 
 export const runtime = 'edge';
 
-const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in CPAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed CPAP/BiPAP SD card data.
+const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in PAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
 Your task is to generate 3–6 clinical insights in JSON format. Each insight must follow this exact schema:
 {

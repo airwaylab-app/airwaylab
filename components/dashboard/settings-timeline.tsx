@@ -1,13 +1,42 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import type { NightResult, MachineSettings } from '@/lib/types';
 
 interface Props {
   nights: NightResult[];
   therapyChangeDate: string | null;
+}
+
+type SortKey = 'date' | 'mode' | 'epap' | 'ipap' | 'ps' | 'riseTime' | 'trigger' | 'cycle' | 'easyBreathe';
+
+const cols: { key: SortKey; label: string }[] = [
+  { key: 'date', label: 'Date' },
+  { key: 'mode', label: 'Mode' },
+  { key: 'epap', label: 'EPAP' },
+  { key: 'ipap', label: 'IPAP' },
+  { key: 'ps', label: 'PS' },
+  { key: 'riseTime', label: 'Rise Time' },
+  { key: 'trigger', label: 'Trigger' },
+  { key: 'cycle', label: 'Cycle' },
+  { key: 'easyBreathe', label: 'EasyBreathe' },
+];
+
+function getSortValue(n: NightResult, key: SortKey): number | string {
+  const s = n.settings;
+  switch (key) {
+    case 'date': return new Date(n.dateStr).getTime();
+    case 'mode': return s.papMode;
+    case 'epap': return s.epap;
+    case 'ipap': return s.ipap;
+    case 'ps': return s.pressureSupport;
+    case 'riseTime': return s.riseTime ?? -1;
+    case 'trigger': return s.trigger;
+    case 'cycle': return s.cycle;
+    case 'easyBreathe': return s.easyBreathe ? 1 : 0;
+  }
 }
 
 function settingsChanged(a: MachineSettings, b: MachineSettings): string[] {
@@ -24,19 +53,41 @@ function settingsChanged(a: MachineSettings, b: MachineSettings): string[] {
 }
 
 export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapyChangeDate }: Props) {
-  const sorted = useMemo(() => [...nights].reverse(), [nights]);
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortAsc, setSortAsc] = useState(false); // newest first by default
 
-  // Memoize settings change detection — avoid recomputing on every render
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(key === 'date');
+    }
+  };
+
+  const sorted = useMemo(() => {
+    return [...nights].sort((a, b) => {
+      const av = getSortValue(a, sortKey);
+      const bv = getSortValue(b, sortKey);
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number);
+    });
+  }, [nights, sortKey, sortAsc]);
+
+  // Memoize settings change detection — uses chronological order (reversed nights)
   const changeMap = useMemo(() => {
+    const chrono = [...nights].reverse();
     const map = new Map<string, string[]>();
-    for (let i = 1; i < sorted.length; i++) {
-      const changes = settingsChanged(sorted[i - 1].settings, sorted[i].settings);
+    for (let i = 1; i < chrono.length; i++) {
+      const changes = settingsChanged(chrono[i - 1].settings, chrono[i].settings);
       if (changes.length > 0) {
-        map.set(sorted[i].dateStr, changes);
+        map.set(chrono[i].dateStr, changes);
       }
     }
     return map;
-  }, [sorted]);
+  }, [nights]);
 
   return (
     <Card className="border-border/50">
@@ -49,15 +100,23 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
           <table className="w-full text-xs" aria-label="Machine settings per night">
             <thead>
               <tr className="border-b border-border/50 text-left text-muted-foreground">
-                <th className="pb-2 pr-4 font-medium" scope="col">Date</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">Mode</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">EPAP</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">IPAP</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">PS</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">Rise Time</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">Trigger</th>
-                <th className="pb-2 pr-4 font-medium" scope="col">Cycle</th>
-                <th className="pb-2 font-medium" scope="col">EasyBreathe</th>
+                {cols.map((col) => (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    className={`pb-2 ${col.key === 'easyBreathe' ? '' : 'pr-4'} font-medium cursor-pointer select-none transition-colors hover:text-foreground`}
+                    onClick={() => handleSort(col.key)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {sortKey === col.key && (
+                        sortAsc
+                          ? <ChevronUp className="h-3 w-3" />
+                          : <ChevronDown className="h-3 w-3" />
+                      )}
+                    </span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>

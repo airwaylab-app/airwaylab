@@ -102,7 +102,7 @@ export function MetricDetailModal({
       aria-modal="true"
       aria-label={`${label} trend chart`}
     >
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl">
+      <div className="w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
           <div>

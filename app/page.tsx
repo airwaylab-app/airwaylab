@@ -160,16 +160,21 @@ export default function Home() {
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                Flow Limitation Analysis
+                See If Your PAP Therapy
                 <br />
-                <span className="text-primary">for ResMed CPAP Data</span>
+                <span className="text-primary">Is Actually Working</span>
               </h1>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span>Your data never leaves your browser</span>
+              </div>
 
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Your CPAP says your AHI is fine. But you still wake up exhausted.
-                AirwayLab looks deeper — detecting flow limitation, RERAs, and
-                breathing pattern instability that standard metrics miss. Free,
-                open source, and 100% in your browser.
+                AirwayLab uses the Glasgow Index and three more research-grade engines
+                to detect flow limitation, RERAs, and breathing pattern instability
+                that standard metrics miss — automatically, in 60 seconds.
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -370,7 +375,7 @@ export default function Home() {
               </div>
               <h3 className="mb-2 text-sm font-semibold">Shared insights, collective intelligence</h3>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                With your explicit consent, contribute anonymised breathing data to the largest open CPAP research dataset ever built. Patterns that no single sleep lab has the data to find.
+                With your explicit consent, contribute anonymised breathing scores to the largest PAP therapy research dataset. Patterns that no single sleep lab has the data to find.
               </p>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
@@ -440,6 +445,124 @@ export default function Home() {
 
       </section>
 
+      {/* ─── Dashboard Preview ─── */}
+      <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mb-10 text-center sm:mb-14">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            What Your Analysis Looks Like
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Upload once, get a complete picture. Every metric scored, every
+            breath analyzed.
+          </p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-3">
+          {/* Insight Alerts */}
+          <div className="group rounded-xl border border-border/60 bg-card/40 p-5 transition-colors hover:border-border">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                <MessageSquare className="h-4 w-4 text-amber-400" />
+              </div>
+              <h3 className="text-sm font-semibold">Smart Insights</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                <p className="text-xs font-medium text-amber-300">Glasgow worsened from previous night</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Changed from 1.2 to 1.8 (+0.6).</p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                <p className="text-xs font-medium text-emerald-300">Settings change improved flow limitation</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Glasgow Index went from 2.1 to 1.5.</p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                <p className="text-xs font-medium text-emerald-300">Trending down over 5 nights</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Flow limitation is improving (2.1 → 1.8).</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Metric Scores */}
+          <div className="group rounded-xl border border-border/60 bg-card/40 p-5 transition-colors hover:border-border">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </div>
+              <h3 className="text-sm font-semibold">Research-Grade Scoring</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                <p className="text-[10px] text-muted-foreground">Glasgow Index</p>
+                <p className="font-mono text-xl font-semibold tabular-nums">1.8</p>
+              </div>
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                <p className="text-[10px] text-muted-foreground">FL Score</p>
+                <p className="font-mono text-xl font-semibold tabular-nums">32%</p>
+              </div>
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                <p className="text-[10px] text-muted-foreground">NED Mean</p>
+                <p className="font-mono text-xl font-semibold tabular-nums">20%</p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
+                <p className="text-[10px] text-muted-foreground">RERA Index</p>
+                <p className="font-mono text-xl font-semibold tabular-nums">6.4</p>
+              </div>
+            </div>
+            <p className="mt-3 text-center text-[10px] italic text-muted-foreground/60">Example data</p>
+          </div>
+
+          {/* Glasgow Radar */}
+          <div className="group rounded-xl border border-border/60 bg-card/40 p-5 transition-colors hover:border-border">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                <Activity className="h-4 w-4 text-blue-400" />
+              </div>
+              <h3 className="text-sm font-semibold">Glasgow Breath Shapes</h3>
+            </div>
+            {/* SVG radar chart mockup */}
+            <div className="flex justify-center">
+              <svg viewBox="0 0 200 200" className="h-40 w-40 text-muted-foreground/30" fill="none">
+                {/* Grid lines */}
+                <polygon points="100,20 176,60 176,140 100,180 24,140 24,60" stroke="currentColor" strokeWidth="0.5" />
+                <polygon points="100,40 156,70 156,130 100,160 44,130 44,70" stroke="currentColor" strokeWidth="0.5" />
+                <polygon points="100,60 136,80 136,120 100,140 64,120 64,80" stroke="currentColor" strokeWidth="0.5" />
+                {/* Spokes */}
+                <line x1="100" y1="20" x2="100" y2="180" stroke="currentColor" strokeWidth="0.5" />
+                <line x1="24" y1="60" x2="176" y2="140" stroke="currentColor" strokeWidth="0.5" />
+                <line x1="24" y1="140" x2="176" y2="60" stroke="currentColor" strokeWidth="0.5" />
+                {/* Data shape */}
+                <polygon
+                  points="100,75 120,88 115,115 100,120 85,115 80,88"
+                  fill="hsl(var(--primary))"
+                  fillOpacity="0.15"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="1.5"
+                />
+                {/* Labels */}
+                <text x="100" y="14" textAnchor="middle" className="fill-muted-foreground text-[8px]">Skew</text>
+                <text x="182" y="58" textAnchor="start" className="fill-muted-foreground text-[8px]">Spike</text>
+                <text x="182" y="144" textAnchor="start" className="fill-muted-foreground text-[8px]">Flat Top</text>
+                <text x="100" y="196" textAnchor="middle" className="fill-muted-foreground text-[8px]">Multi-Peak</text>
+                <text x="14" y="144" textAnchor="end" className="fill-muted-foreground text-[8px]">Multi-Breath</text>
+                <text x="14" y="58" textAnchor="end" className="fill-muted-foreground text-[8px]">Var. Amp</text>
+              </svg>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              9-component breath shape analysis
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link href="/analyze?demo">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Play className="h-3.5 w-3.5" />
+              Try the interactive demo
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* ─── How It Works ─── */}
       <section className="border-y border-border/50 bg-card/20 py-12 sm:py-16">
         <div className="container mx-auto px-4 sm:px-6">
@@ -497,6 +620,18 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              Use alongside{' '}
+              <a
+                href="https://www.sleepfiles.com/OSCAR/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-muted-foreground/50 underline-offset-2 transition-colors hover:text-foreground"
+              >
+                OSCAR
+              </a>{' '}
+              for automated scoring and a different lens on your therapy data.
+            </p>
           </div>
         </div>
       </section>
