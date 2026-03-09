@@ -11,8 +11,15 @@ export function loadOverrides(): ThresholdOverrides {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) return {};
-    return parsed as ThresholdOverrides;
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    // Only keep keys that are valid threshold names
+    const validated: ThresholdOverrides = {};
+    for (const [key, val] of Object.entries(parsed)) {
+      if (key in THRESHOLDS && val && typeof val === 'object') {
+        validated[key] = val as ThresholdDef;
+      }
+    }
+    return validated;
   } catch {
     return {};
   }

@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { validateOrigin } from '@/lib/csrf';
 import type { NightResult } from '@/lib/types';
 
 // ── Rate limiter (per-IP, 3 contributions per hour) ──────────
@@ -137,7 +139,11 @@ function anonymiseNight(n: NightResult, index: number) {
  CREATE INDEX idx_contributions_created ON data_contributions(created_at);
 */
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   try {
     // Rate limiting
     const forwarded = request.headers.get('x-forwarded-for');
@@ -200,6 +206,7 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error('[contribute-data] Supabase error:', error.message);
+        Sentry.captureException(error, { tags: { route: 'contribute-data' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
@@ -213,7 +220,8 @@ export async function POST(request: Request) {
       contributionId,
       nightCount: anonymised.length,
     });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'contribute-data' } });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { validateOrigin } from '@/lib/csrf';
 
 // ── In-memory rate limiter (per-IP, resets on cold start) ──────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -33,7 +35,11 @@ function isValidEmail(value: unknown): value is string {
 // ── Allowed sources (prevent injection of arbitrary strings) ───────
 const ALLOWED_SOURCES = ['hero', 'post-analysis', 'footer', 'inline', 'about'];
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   try {
     // Rate limiting by IP
     const forwarded = request.headers.get('x-forwarded-for');
@@ -77,6 +83,7 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error('[subscribe] Supabase error:', error.message);
+        Sentry.captureException(error, { tags: { route: 'subscribe' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
@@ -84,7 +91,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'subscribe' } });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

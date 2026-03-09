@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { validateOrigin } from '@/lib/csrf';
 
 // ── Rate limiter (per-IP, 5 submissions per hour) ──────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -27,7 +29,11 @@ const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
  * Accepts feedback, feature requests, and support messages.
  * Stores in Supabase `feedback` table. No account required.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
@@ -106,6 +112,7 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error('[feedback] Supabase error:', error.message);
+        Sentry.captureException(error, { tags: { route: 'feedback' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
@@ -113,7 +120,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'feedback' } });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

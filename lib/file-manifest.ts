@@ -174,7 +174,11 @@ export function loadManifest(): NightManifest[] | null {
   try {
     const raw = localStorage.getItem(MANIFEST_KEY);
     if (!raw) return null;
-    const data: StoredManifest = JSON.parse(raw);
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || typeof data.savedAt !== 'number' || !Array.isArray(data.manifests)) {
+      localStorage.removeItem(MANIFEST_KEY);
+      return null;
+    }
     if (Date.now() - data.savedAt > MAX_AGE_MS) {
       localStorage.removeItem(MANIFEST_KEY);
       return null;

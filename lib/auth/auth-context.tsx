@@ -71,14 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // M2: Safe field mapping instead of unsafe cast
     if (profileData) {
+      const validTiers: Tier[] = ['community', 'supporter', 'champion'];
+      const profileTier = validTiers.includes(profileData.tier) ? profileData.tier : 'community';
       setProfile({
         id: profileData.id,
         email: profileData.email,
         display_name: profileData.display_name,
-        tier: profileData.tier ?? 'community',
+        tier: profileTier,
         stripe_customer_id: profileData.stripe_customer_id,
         show_on_supporters: profileData.show_on_supporters,
-      } as Profile);
+      });
     }
 
     // M1: Use maybeSingle() — .single() errors when 0 rows
@@ -102,15 +104,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (subData) {
+      const validSubTiers: Tier[] = ['community', 'supporter', 'champion'];
+      const subTier = validSubTiers.includes(subData.tier) ? subData.tier : 'community';
       setSubscription({
         id: subData.id,
         stripe_subscription_id: subData.stripe_subscription_id,
         stripe_price_id: subData.stripe_price_id,
         status: subData.status,
-        tier: subData.tier ?? 'community',
+        tier: subTier,
         current_period_end: subData.current_period_end,
         cancel_at_period_end: subData.cancel_at_period_end,
-      } as Subscription);
+      });
     } else {
       setSubscription(null);
     }

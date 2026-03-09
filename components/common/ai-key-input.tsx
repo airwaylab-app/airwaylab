@@ -15,7 +15,11 @@ export function AIKeyInput({ onActivate }: AIKeyInputProps) {
     e.preventDefault();
     const trimmed = key.trim();
     if (!trimmed) return;
-    localStorage.setItem('airwaylab_ai_key', trimmed);
+    try {
+      localStorage.setItem('airwaylab_ai_key', trimmed);
+    } catch {
+      // Storage unavailable (Safari private browsing, quota exceeded)
+    }
     onActivate(trimmed);
   };
 

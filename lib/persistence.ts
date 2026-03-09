@@ -76,7 +76,13 @@ export function loadPersistedResults(): {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
 
-    const data = JSON.parse(raw) as PersistedData;
+    const data = JSON.parse(raw);
+
+    // Validate basic shape
+    if (!data || typeof data !== 'object' || typeof data.savedAt !== 'number') {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
 
     // Expire after MAX_AGE_MS
     if (Date.now() - data.savedAt > MAX_AGE_MS) {

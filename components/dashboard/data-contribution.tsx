@@ -48,7 +48,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   // Fetch community contribution count for social proof
   useEffect(() => {
     fetch('/api/stats', { signal: AbortSignal.timeout(3000) })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((r) => { if (!r.ok) throw new Error('Failed to fetch stats'); return r.json(); })
       .then((data) => {
         setContributionCount(data.totalContributions ?? 0);
       })

@@ -35,9 +35,19 @@ export async function fetchAIInsights(
     if (!res.ok) return null;
 
     const data = await res.json();
-    if (!data.insights || !Array.isArray(data.insights)) return null;
+    if (!data || typeof data !== 'object' || !Array.isArray(data.insights)) return null;
 
-    return data.insights as Insight[];
+    // Validate each insight has required fields
+    const validInsights = (data.insights as unknown[]).filter(
+      (i): i is Insight =>
+        !!i &&
+        typeof i === 'object' &&
+        typeof (i as Record<string, unknown>).id === 'string' &&
+        typeof (i as Record<string, unknown>).type === 'string' &&
+        typeof (i as Record<string, unknown>).title === 'string'
+    );
+
+    return validInsights.length > 0 ? validInsights : null;
   } catch {
     return null;
   } finally {

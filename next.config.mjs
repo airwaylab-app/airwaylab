@@ -63,6 +63,19 @@ const nextConfig = {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.plausible.io https://plausible.io",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://cdn.plausible.io https://plausible.io https://checkout.stripe.com https://api.stripe.com",
+              "frame-src https://checkout.stripe.com https://js.stripe.com",
+              "worker-src 'self' blob:",
+            ].join('; '),
+          },
         ],
       },
     ];
