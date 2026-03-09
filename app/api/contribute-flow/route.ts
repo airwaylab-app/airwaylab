@@ -19,8 +19,8 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ── Validation ───────────────────────────────────────────────
-// Max 50 MB per request (compressed flow data for multiple nights)
-const MAX_PAYLOAD_BYTES = 50_000_000;
+// Max 500 MB per request (compressed flow data for up to a year of nights)
+const MAX_PAYLOAD_BYTES = 500_000_000;
 const MAX_NIGHTS = 365;
 
 const FlowNightSchema = z.object({
