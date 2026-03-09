@@ -3,10 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Star } from 'lucide-react';
 
-const REPO = 'airwaylab-app/airwaylab';
-const CACHE_KEY = 'airwaylab-gh-stars-v2';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const REFRESH_INTERVAL = 60 * 1000; // 60 seconds auto-refresh
+const CACHE_KEY = 'airwaylab_gh-stars-v3';
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes (matches server cache)
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes auto-refresh
 
 interface CachedStars {
   count: number;
@@ -15,7 +14,8 @@ interface CachedStars {
 
 /**
  * Fetches and displays the live GitHub star count for the repo.
- * Caches in sessionStorage for 5 minutes, auto-refreshes every 60s.
+ * Uses server-side proxy to avoid GitHub API rate limiting.
+ * Caches in sessionStorage for 15 minutes, auto-refreshes every 5 min.
  * Graceful fallback: shows "Star" without count if API fails.
  */
 export function GitHubStars({ className }: { className?: string }) {
@@ -38,10 +38,10 @@ export function GitHubStars({ className }: { className?: string }) {
     }
 
     try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}`, { signal: AbortSignal.timeout(5000) });
+      const r = await fetch('/api/github-stars', { signal: AbortSignal.timeout(5000) });
       if (!r.ok) return;
       const data = await r.json();
-      const count = data.stargazers_count as number;
+      const count = typeof data.stars === 'number' ? data.stars : 0;
       setStars(count);
       try {
         sessionStorage.setItem(CACHE_KEY, JSON.stringify({ count, ts: Date.now() }));
@@ -61,7 +61,7 @@ export function GitHubStars({ className }: { className?: string }) {
 
   return (
     <a
-      href={`https://github.com/${REPO}`}
+      href="https://github.com/airwaylab-app/airwaylab"
       target="_blank"
       rel="noopener noreferrer"
       className={className}

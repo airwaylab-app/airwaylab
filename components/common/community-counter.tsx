@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Moon, HeartHandshake } from 'lucide-react';
 
-const CACHE_KEY = 'airwaylab-community-stats-v2';
+const CACHE_KEY = 'airwaylab_community-stats-v2';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (matches API cache)
 const REFRESH_INTERVAL = 60 * 1000; // 60 seconds auto-refresh
 
@@ -148,9 +148,9 @@ export function CommunityCounter({
 
     return (
       <div className={className}>
-        <HeartHandshake className="h-4 w-4 text-rose-400" />
+        <HeartHandshake className="h-4 w-4 shrink-0" />
         <span>
-          <strong className="font-semibold text-foreground">
+          <strong className="font-semibold">
             <AnimatedNumber value={stats.totalContributions} />
           </strong>{' '}
           {stats.totalContributions === 1 ? 'person' : 'people'} contributed data for research
