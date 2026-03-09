@@ -88,6 +88,22 @@ export function validateServerEnv() {
     );
   }
 
+  // Stripe price IDs — if Stripe is enabled, all four must be set or checkout silently breaks
+  if (serverEnv.STRIPE_SECRET_KEY) {
+    const priceVars = [
+      'NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID',
+      'NEXT_PUBLIC_STRIPE_SUPPORTER_YEARLY_PRICE_ID',
+      'NEXT_PUBLIC_STRIPE_CHAMPION_MONTHLY_PRICE_ID',
+      'NEXT_PUBLIC_STRIPE_CHAMPION_YEARLY_PRICE_ID',
+    ] as const;
+    const missing = priceVars.filter((v) => !process.env[v]);
+    if (missing.length > 0) {
+      warnings.push(
+        `Stripe is enabled but ${missing.length} price ID(s) are missing — checkout buttons will not work: ${missing.join(', ')}`
+      );
+    }
+  }
+
   for (const w of warnings) {
     console.warn(`[env] ⚠️  ${w}`);
   }
