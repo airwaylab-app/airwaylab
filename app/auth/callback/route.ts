@@ -6,6 +6,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 
 /**
  * Validate the `next` redirect parameter to prevent open redirect attacks.
@@ -62,8 +63,15 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[auth/callback] Code exchange failed:', error.message);
+    Sentry.captureException(error, {
+      tags: { route: 'auth-callback' },
+      extra: { hasCode: true },
+    });
     return NextResponse.redirect(`${origin}/analyze?auth_error=true`);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  // Add auth=success param so the client-side AuthProvider can detect
+  // a fresh login and retry session pickup if needed.
+  const separator = next.includes('?') ? '&' : '?';
+  return NextResponse.redirect(`${origin}${next}${separator}auth=success`);
 }

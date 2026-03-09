@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileError) {
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
+      Sentry.captureException(profileError, { tags: { context: 'auth-profile-fetch' } });
       return;
     }
 
@@ -88,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (subError) {
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
+      Sentry.captureException(subError, { tags: { context: 'auth-subscription-fetch' } });
       setSubscription(null);
       return;
     }
@@ -120,8 +123,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Get initial session
-    supabase.auth.getSession().then((result: { data: { session: Session | null } }) => {
-      const initialSession = result.data.session;
+    supabase.auth.getSession().then(async (result: { data: { session: Session | null } }) => {
+      let initialSession = result.data.session;
+
+      // If we just came back from a magic link redirect (auth=success param),
+      // but getSession() didn't find a session yet, retry with getUser()
+      // which reads the cookie set by the auth callback route.
+      if (!initialSession && typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('auth')) {
+          const { data: { user: freshUser } } = await supabase.auth.getUser();
+          if (freshUser) {
+            const { data: { session: freshSession } } = await supabase.auth.getSession();
+            initialSession = freshSession;
+          }
+          // Clean up the URL param without triggering a navigation
+          params.delete('auth');
+          const cleanUrl = params.toString()
+            ? `${window.location.pathname}?${params.toString()}`
+            : window.location.pathname;
+          window.history.replaceState({}, '', cleanUrl);
+        }
+      }
+
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
@@ -163,6 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      Sentry.captureException(error, {
+        tags: { context: 'auth-sign-in' },
+        extra: { emailDomain: email.split('@')[1] },
+      });
       return { error: error.message };
     }
     return { error: null };

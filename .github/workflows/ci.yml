@@ -54,4 +54,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify auth env vars are paired
+        run: |
+          if [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL is set but NEXT_PUBLIC_SUPABASE_ANON_KEY is missing"
+            exit 1
+          fi
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_ANON_KEY is set but NEXT_PUBLIC_SUPABASE_URL is missing"
+            exit 1
+          fi
       - run: npm run build

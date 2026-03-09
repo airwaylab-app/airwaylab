@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth, type Tier } from '@/lib/auth/auth-context';
-import { User, LogOut, CreditCard, Crown, Heart, Loader2 } from 'lucide-react';
+import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2 } from 'lucide-react';
 
 const TIER_CONFIG: Record<Tier, { label: string; color: string; icon: typeof Heart }> = {
   community: { label: 'Community', color: 'text-muted-foreground', icon: User },
@@ -16,6 +16,7 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState(false);
+  const [deleteState, setDeleteState] = useState<'idle' | 'confirm' | 'loading' | 'done' | 'error'>('idle');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -46,6 +47,24 @@ export function UserMenu() {
     setOpen(false);
     await signOut();
   }, [signOut]);
+
+  const handleDeleteRequest = useCallback(async () => {
+    setDeleteState('loading');
+    try {
+      const res = await fetch('/api/request-account-deletion', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        setDeleteState('done');
+      } else {
+        setDeleteState('error');
+      }
+    } catch {
+      console.error('[user-menu] Failed to request account deletion');
+      setDeleteState('error');
+    }
+  }, []);
 
   const handlePortal = useCallback(async () => {
     setPortalLoading(true);
@@ -135,6 +154,57 @@ export function UserMenu() {
           </div>
 
           <div className="border-t border-border/50 py-1">
+            {deleteState === 'done' ? (
+              <p className="px-3 py-2 text-[10px] leading-snug text-emerald-400">
+                Deletion request received. We&apos;ll process it within 30 days.
+              </p>
+            ) : deleteState === 'confirm' ? (
+              <div className="px-3 py-2">
+                <p className="text-[10px] leading-snug text-muted-foreground">
+                  Are you sure? This will send a deletion request to our team.
+                </p>
+                <div className="mt-1.5 flex gap-2">
+                  <button
+                    onClick={handleDeleteRequest}
+                    className="rounded bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                  >
+                    Yes, delete my account
+                  </button>
+                  <button
+                    onClick={() => setDeleteState('idle')}
+                    className="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : deleteState === 'error' ? (
+              <div className="px-3 py-2">
+                <p className="text-[10px] text-red-400">
+                  Could not submit request. Please try again.
+                </p>
+                <button
+                  onClick={() => setDeleteState('idle')}
+                  className="mt-1 text-[10px] text-muted-foreground underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setDeleteState('confirm')}
+                disabled={deleteState === 'loading'}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-red-400 disabled:opacity-50"
+              >
+                {deleteState === 'loading' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                Request account deletion
+              </button>
+            )}
+
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
