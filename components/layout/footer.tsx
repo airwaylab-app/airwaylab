@@ -34,6 +34,9 @@ export function Footer() {
               <Link href="/about" className="transition-colors hover:text-foreground">
                 About &amp; Methodology
               </Link>
+              <Link href="/changelog" className="transition-colors hover:text-foreground">
+                What&apos;s New
+              </Link>
               <a
                 href="https://github.com/airwaylab-app/airwaylab"
                 target="_blank"
