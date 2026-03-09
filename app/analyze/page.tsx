@@ -27,6 +27,7 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
 import { clearManifest } from '@/lib/file-manifest';
+import { getAnonymousToken } from '@/lib/anonymous-token';
 import {
   RotateCcw,
   Shield,
@@ -193,7 +194,10 @@ function AnalyzePageInner() {
     fetch('/api/contribute-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nights: toSubmit }),
+      body: JSON.stringify({
+        nights: toSubmit,
+        anonymousToken: getAnonymousToken(),
+      }),
     }).then((res) => {
       if (res.ok) {
         try {
@@ -443,7 +447,7 @@ function AnalyzePageInner() {
           )}
 
           {/* Data Contribution — prominent placement at top of dashboard */}
-          <DataContribution nights={nights} isDemo={isDemo} />
+          <DataContribution nights={nights} isDemo={isDemo} therapyChangeDate={therapyChangeDate} />
 
           {/* Controls Bar */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
