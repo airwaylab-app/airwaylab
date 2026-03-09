@@ -8,6 +8,8 @@ import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 import { generateInsights, type Insight } from '@/lib/insights';
 import { fetchAIInsights } from '@/lib/ai-insights-client';
+import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
+import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight } from 'lucide-react';
@@ -111,6 +113,12 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
     };
   }, [hasAIAccess, isDemo, nights, selectedNight, therapyChangeDate]);
 
+  // Demo mode: load static AI insights instantly (no API call, no credits)
+  useEffect(() => {
+    if (!isDemo) return;
+    setAiInsights(DEMO_AI_INSIGHTS);
+  }, [isDemo]);
+
   // Track session count for new-user UX (expand explanations for first 5 sessions)
   const [isNewUser, setIsNewUser] = useState(false);
   useEffect(() => {
@@ -181,6 +189,11 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             );
           })}
         </div>
+      )}
+
+      {/* AI Insights CTA (demo or community tier) */}
+      {aiInsights && aiInsights.length > 0 && (
+        <AIInsightsCTA isDemo={isDemo} />
       )}
 
       {/* Rule-based Insights Panel */}
