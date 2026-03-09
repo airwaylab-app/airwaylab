@@ -107,13 +107,13 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     });
   }
 
-  // WAT regularity (higher = more regular = worse during CPAP therapy)
+  // WAT regularity (higher = more regular = worse during PAP therapy)
   if (regL === 'bad') {
     insights.push({
       id: 'regularity-bad',
       type: 'warning',
       title: 'Highly repetitive breathing pattern',
-      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates very predictable breathing cycles. During CPAP therapy, this may signal persistent flow limitation with uniform effort.`,
+      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates very predictable breathing cycles. During PAP therapy, this may signal persistent flow limitation with uniform effort.`,
       category: 'wat',
     });
   } else if (regL === 'good') {
@@ -214,7 +214,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
         id: 'odi-high',
         type: 'warning',
         title: 'Frequent oxygen desaturations',
-        body: `ODI-3 of ${fmt(ox.odi3)} events/hr indicates frequent drops in blood oxygen despite CPAP therapy.`,
+        body: `ODI-3 of ${fmt(ox.odi3)} events/hr indicates frequent drops in blood oxygen despite PAP therapy.`,
         category: 'oximetry',
       });
     }

@@ -35,11 +35,11 @@ function metricRow(
   const tl = thresholdKey && THRESHOLDS[thresholdKey]
     ? getTrafficLight(value, THRESHOLDS[thresholdKey])
     : null;
-  const color = tl ? TL_HEX[tl] : '#94a3b8';
+  const color = tl ? TL_HEX[tl] : '#64748b';
   const emoji = tl ? TL_EMOJI[tl] : '';
   return `<tr>
-    <td style="padding:6px 12px;border-bottom:1px solid #1e293b;color:#cbd5e1;">${label}</td>
-    <td style="padding:6px 12px;border-bottom:1px solid #1e293b;text-align:right;font-weight:600;color:${color};">
+    <td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;color:#475569;">${label}</td>
+    <td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;color:${color};">
       ${emoji} ${fmt(value)}${unit}
     </td>
   </tr>`;
@@ -50,7 +50,7 @@ function buildNightSection(n: NightResult, index: number): string {
 
   return `
     <div style="page-break-inside:avoid;page-break-before:${index > 0 ? 'always' : 'auto'};margin-bottom:32px;">
-      <h2 style="font-size:18px;font-weight:700;margin:0 0 4px;color:#f1f5f9;">
+      <h2 style="font-size:18px;font-weight:700;margin:0 0 4px;color:#0f172a;">
         ${index === 0 ? '\ud83c\udf19' : ''} ${n.dateStr}
       </h2>
       <p style="font-size:12px;color:#64748b;margin:0 0 16px;">
@@ -61,24 +61,24 @@ function buildNightSection(n: NightResult, index: number): string {
 
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;">
         <thead>
-          <tr style="border-bottom:2px solid #334155;">
-            <th style="padding:8px 12px;text-align:left;color:#94a3b8;font-weight:600;">Metric</th>
-            <th style="padding:8px 12px;text-align:right;color:#94a3b8;font-weight:600;">Value</th>
+          <tr style="border-bottom:2px solid #cbd5e1;">
+            <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;">Metric</th>
+            <th style="padding:8px 12px;text-align:right;color:#64748b;font-weight:600;">Value</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#3b82f6;border-bottom:1px solid #1e293b;">Glasgow Index</td></tr>
+          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#3b82f6;border-bottom:1px solid #e2e8f0;">Glasgow Index</td></tr>
           ${metricRow('Overall', n.glasgow.overall, '', 'glasgowOverall')}
           ${metricRow('Skew', n.glasgow.skew, '')}
           ${metricRow('Flat Top', n.glasgow.flatTop, '')}
           ${metricRow('Multi-Peak', n.glasgow.multiPeak, '')}
 
-          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#10b981;border-bottom:1px solid #1e293b;">WAT Analysis</td></tr>
+          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#10b981;border-bottom:1px solid #e2e8f0;">WAT Analysis</td></tr>
           ${metricRow('FL Score', n.wat.flScore, '%', 'watFL')}
           ${metricRow('Regularity', n.wat.regularityScore, '%', 'watRegularity')}
           ${metricRow('Periodicity', n.wat.periodicityIndex, '%', 'watPeriodicity')}
 
-          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#f59e0b;border-bottom:1px solid #1e293b;">NED Analysis</td></tr>
+          <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#f59e0b;border-bottom:1px solid #e2e8f0;">NED Analysis</td></tr>
           ${metricRow('NED Mean', n.ned.nedMean, '%', 'nedMean')}
           ${metricRow('NED P95', n.ned.nedP95, '%', 'nedP95')}
           ${metricRow('Combined FL', n.ned.combinedFLPct, '%', 'combinedFL')}
@@ -86,7 +86,7 @@ function buildNightSection(n: NightResult, index: number): string {
           ${metricRow('M-Shape', n.ned.mShapePct, '%')}
 
           ${ox ? `
-            <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#f43f5e;border-bottom:1px solid #1e293b;">Oximetry</td></tr>
+            <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#f43f5e;border-bottom:1px solid #e2e8f0;">Oximetry</td></tr>
             ${metricRow('ODI-3%', ox.odi3, '/hr', 'odi3')}
             ${metricRow('ODI-4%', ox.odi4, '/hr', 'odi4')}
             ${metricRow('T < 90%', ox.tBelow90, ' min', 'tBelow90')}
@@ -121,7 +121,7 @@ function buildSummaryPage(nights: NightResult[]): string {
   function summaryMetric(label: string, value: string, tl: TrafficLight): string {
     return `<div style="text-align:center;padding:12px;">
       <div style="font-size:24px;font-weight:700;color:${TL_HEX[tl]};">${TL_EMOJI[tl]} ${value}</div>
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">${label}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">${label}</div>
     </div>`;
   }
 
@@ -130,13 +130,13 @@ function buildSummaryPage(nights: NightResult[]): string {
 
   return `
     <div style="page-break-after:always;">
-      <h2 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 4px;">Summary — ${nights.length} Night${nights.length !== 1 ? 's' : ''}</h2>
+      <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 4px;">Summary — ${nights.length} Night${nights.length !== 1 ? 's' : ''}</h2>
       <p style="font-size:12px;color:#64748b;margin:0 0 20px;">
         ${nights[nights.length - 1].dateStr} to ${nights[0].dateStr} &middot;
         ${mostRecent.settings.deviceModel} &middot; ${mostRecent.settings.papMode}
       </p>
 
-      <div style="display:flex;justify-content:space-around;border:1px solid #334155;border-radius:8px;padding:8px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-around;border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin-bottom:24px;">
         ${summaryMetric('Avg Glasgow', fmt(avgGlasgow), glTL)}
         ${summaryMetric('Avg FL Score', fmt(avgFL) + '%', flTL)}
         ${summaryMetric('Avg NED Mean', fmt(avgNED) + '%', nedTL)}
@@ -144,7 +144,7 @@ function buildSummaryPage(nights: NightResult[]): string {
         ${summaryMetric('Avg Regularity', Math.round(avgReg) + '%', getTrafficLight(avgReg, THRESHOLDS.watRegularity))}
       </div>
 
-      <h3 style="font-size:14px;font-weight:600;color:#94a3b8;margin:0 0 8px;">Glasgow Radar — ${mostRecent.dateStr}</h3>
+      <h3 style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 8px;">Glasgow Radar — ${mostRecent.dateStr}</h3>
       ${radarSVG}
     </div>
   `;
@@ -155,7 +155,7 @@ function buildTrendsPage(nights: NightResult[]): string {
   const trendSVG = generateTrendSVG(nights);
   return `
     <div style="page-break-before:always;">
-      <h2 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 4px;">Trends</h2>
+      <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 4px;">Trends</h2>
       <p style="font-size:12px;color:#64748b;margin:0 0 20px;">
         Key metrics across ${nights.length} nights
       </p>
@@ -194,12 +194,12 @@ export function openPDFReport(nights: NightResult[]): void {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f172a;
-      color: #cbd5e1;
+      background: #ffffff;
+      color: #334155;
       padding: 40px;
       line-height: 1.5;
     }
-    h1 { font-size: 24px; font-weight: 800; color: #f1f5f9; }
+    h1 { font-size: 24px; font-weight: 800; color: #0f172a; }
   </style>
 </head>
 <body>
@@ -214,7 +214,7 @@ export function openPDFReport(nights: NightResult[]): void {
   </div>
 
   <!-- Header -->
-  <div style="margin-bottom:32px;border-bottom:2px solid #334155;padding-bottom:20px;">
+  <div style="margin-bottom:32px;border-bottom:2px solid #cbd5e1;padding-bottom:20px;">
     <h1>\ud83c\udf19 AirwayLab Report</h1>
     <p style="font-size:14px;color:#64748b;margin-top:4px;">
       Generated ${now} &middot; ${nights.length} night${nights.length !== 1 ? 's' : ''} analysed
@@ -234,7 +234,7 @@ export function openPDFReport(nights: NightResult[]): void {
   ${trendsPage}
 
   <!-- Footer -->
-  <div style="margin-top:40px;padding-top:16px;border-top:1px solid #334155;font-size:11px;color:#475569;">
+  <div style="margin-top:40px;padding-top:16px;border-top:1px solid #cbd5e1;font-size:11px;color:#475569;">
     <p>Generated by AirwayLab &mdash; free, open-source airway analysis &mdash; airwaylab.app</p>
     <p style="margin-top:4px;">
       This report is for informational purposes only and is not a substitute for professional medical advice.
@@ -244,9 +244,12 @@ export function openPDFReport(nights: NightResult[]): void {
 </body>
 </html>`;
 
-  const win = window.open('', '_blank');
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
   if (win) {
-    win.document.write(html);
-    win.document.close();
+    win.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+  } else {
+    URL.revokeObjectURL(url);
   }
 }

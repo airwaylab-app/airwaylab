@@ -62,7 +62,9 @@ function AnalyzePageInner() {
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
-  const contributeOptInRef = useRef(false);
+  const contributeOptInRef = useRef(
+    typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab-contribute-optin') === '1'; } catch { return false; } })()
+  );
   const [showContributeNudge, setShowContributeNudge] = useState(false);
   const pendingNightsRef = useRef<NightResult[]>([]);
   const [showDemoStar, setShowDemoStar] = useState(false);
@@ -126,20 +128,32 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Contribute data: auto if opted in, show nudge dialog if not
-        if (contributeOptInRef.current) {
+        // Contribute data: auto if opted in, show nudge if first time
+        const contributedDates: string[] = JSON.parse(
+          localStorage.getItem('airwaylab-contributed-dates') || '[]'
+        );
+        const contributedSet = new Set(contributedDates);
+        const hasNewData = newState.nights.some((n) => !contributedSet.has(n.dateStr));
+
+        if (contributeOptInRef.current && hasNewData) {
           submitContribution(newState.nights);
-        } else {
+        } else if (!contributeOptInRef.current && contributedDates.length === 0) {
+          // Only show nudge if user has never contributed before
           pendingNightsRef.current = newState.nights;
           setShowContributeNudge(true);
         }
+        // If user already opted in and no new data, or already contributed,
+        // the DataContribution banner handles re-contribution offers
 
-        // Update local lifetime night count
+        // Update local lifetime night count (deduplicate by date)
         try {
-          const prev = parseInt(localStorage.getItem('airwaylab-nights-analyzed') || '0', 10);
-          const updated = prev + newState.nights.length;
-          localStorage.setItem('airwaylab-nights-analyzed', String(updated));
-          setLifetimeNights(updated);
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-analyzed-dates') || '[]');
+          const dateSet = new Set(storedDates);
+          for (const n of newState.nights) dateSet.add(n.dateStr);
+          const updated = Array.from(dateSet);
+          localStorage.setItem('airwaylab-analyzed-dates', JSON.stringify(updated));
+          localStorage.setItem('airwaylab-nights-analyzed', String(updated.length));
+          setLifetimeNights(updated.length);
         } catch { /* noop */ }
       }
     });
@@ -179,14 +193,21 @@ function AnalyzePageInner() {
     }).then((res) => {
       if (res.ok) {
         try {
-          const prev = parseInt(localStorage.getItem('airwaylab-contributed-nights') || '0', 10);
-          localStorage.setItem('airwaylab-contributed-nights', String(prev + nightsToSubmit.length));
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
+          const dateSet = new Set(storedDates);
+          for (const n of nightsToSubmit) dateSet.add(n.dateStr);
+          const updated = Array.from(dateSet);
+          localStorage.setItem('airwaylab-contributed-dates', JSON.stringify(updated));
+          localStorage.setItem('airwaylab-contributed-nights', String(updated.length));
         } catch { /* noop */ }
       }
     }).catch(() => { /* non-critical */ });
   }, []);
 
   const handleNudgeContribute = useCallback(() => {
+    // Store opt-in so future analyses auto-contribute without re-prompting
+    contributeOptInRef.current = true;
+    try { localStorage.setItem('airwaylab-contribute-optin', '1'); } catch { /* noop */ }
     submitContribution(pendingNightsRef.current);
     setShowContributeNudge(false);
     pendingNightsRef.current = [];
@@ -525,6 +546,11 @@ function AnalyzePageInner() {
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   nights={nights}
+                  onUploadOximetry={
+                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length > 0
+                      ? handleOximetryUpload
+                      : undefined
+                  }
                 />
               </ErrorBoundary>
             </TabsContent>

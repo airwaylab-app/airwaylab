@@ -55,6 +55,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input
             type="email"
+            autoComplete="off"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
@@ -86,6 +87,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input
             type="email"
+            autoComplete="off"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
@@ -112,6 +114,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
           type="email"
+          autoComplete="off"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
@@ -133,6 +136,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
     <form onSubmit={handleSubmit} className="flex items-center gap-2">
       <input
         type="email"
+        autoComplete="off"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"

@@ -29,15 +29,16 @@ export function DataContribution({ nights, isDemo = false }: Props) {
     }
   });
 
-  // Track how many nights were previously contributed (not a boolean flag)
-  const [contributedNightCount] = useState(() => {
-    if (typeof window === 'undefined') return 0;
+  // Track which nights were previously contributed (date-based dedup)
+  const [contributedDates] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
-      return parseInt(localStorage.getItem(CONTRIBUTED_NIGHTS_KEY) || '0', 10);
+      return JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
     } catch {
-      return 0;
+      return [];
     }
   });
+  const contributedNightCount = contributedDates.length;
 
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [expanded, setExpanded] = useState(false);
@@ -72,8 +73,12 @@ export function DataContribution({ nights, isDemo = false }: Props) {
       if (res.ok) {
         setStatus('success');
         try {
-          const prev = parseInt(localStorage.getItem(CONTRIBUTED_NIGHTS_KEY) || '0', 10);
-          localStorage.setItem(CONTRIBUTED_NIGHTS_KEY, String(prev + nights.length));
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
+          const dateSet = new Set(storedDates);
+          for (const n of nights) dateSet.add(n.dateStr);
+          const updated = Array.from(dateSet);
+          localStorage.setItem('airwaylab-contributed-dates', JSON.stringify(updated));
+          localStorage.setItem(CONTRIBUTED_NIGHTS_KEY, String(updated.length));
         } catch { /* noop */ }
       } else {
         setStatus('error');
@@ -83,8 +88,9 @@ export function DataContribution({ nights, isDemo = false }: Props) {
     }
   }, [nights]);
 
-  // Check if user has new data beyond what they already contributed
-  const hasNewData = nights.length > contributedNightCount;
+  // Check if user has new data beyond what they already contributed (date-based)
+  const contributedSet = new Set(contributedDates);
+  const hasNewData = nights.some((n) => !contributedSet.has(n.dateStr));
 
   // Don't show if dismissed this session, or if no new data to contribute (for real uploads)
   if (dismissed || (!isDemo && !hasNewData && contributedNightCount > 0)) return null;
@@ -97,7 +103,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
           <Heart className="mt-0.5 h-4 w-4 shrink-0 text-primary/50" />
           <div className="flex flex-col gap-1.5">
             <p className="text-sm font-medium text-muted-foreground">
-              Help build the largest open CPAP dataset
+              Help build the largest PAP therapy dataset
             </p>
             <p className="text-xs text-muted-foreground/70">
               Upload your own SD card data to contribute anonymised scores to the research dataset.
@@ -125,7 +131,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
             </p>
             <p className="text-xs text-muted-foreground">
               {nights.length} night{nights.length !== 1 ? 's' : ''} of anonymised data submitted.
-              You&apos;re helping build the largest open CPAP flow limitation dataset.
+              You&apos;re helping build the largest PAP flow limitation dataset.
             </p>
             <p className="mt-1 text-[10px] text-muted-foreground/50">
               Upload more data anytime to contribute additional nights.
@@ -156,7 +162,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
             <p className="text-sm font-medium">
               {isReturning
                 ? 'Contribute your new data'
-                : 'Help build the largest open CPAP dataset'}
+                : 'Help build the largest PAP therapy dataset'}
             </p>
             <p className="text-xs text-muted-foreground">
               {isReturning ? (

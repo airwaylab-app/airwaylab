@@ -69,11 +69,11 @@ export function ContributionOptIn({
         <div className="flex items-center gap-2">
           <Heart className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold text-foreground">
-            Help fellow CPAP users — share your scores
+            Help fellow PAP users — share your scores
           </span>
         </div>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Your anonymised analysis scores help us build the first open CPAP dataset — so everyone
+          Your anonymised analysis scores help us build the largest PAP therapy dataset — so everyone
           can benchmark their therapy and researchers can improve treatment for millions.
         </p>
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground/70">

@@ -12,9 +12,10 @@ interface Props {
   selectedNight: NightResult;
   previousNight: NightResult | null;
   nights?: NightResult[];
+  onUploadOximetry?: () => void;
 }
 
-export function OximetryTab({ selectedNight, previousNight, nights = [] }: Props) {
+export function OximetryTab({ selectedNight, previousNight, nights = [], onUploadOximetry }: Props) {
   const THRESHOLDS = useThresholds();
   const ox = selectedNight.oximetry;
   const pOx = previousNight?.oximetry;
@@ -46,6 +47,14 @@ export function OximetryTab({ selectedNight, previousNight, nights = [] }: Props
           <p className="text-xs text-muted-foreground/60">
             Upload Viatom / Checkme O2 Max CSV files alongside your SD card data.
           </p>
+          {onUploadOximetry && (
+            <button
+              onClick={onUploadOximetry}
+              className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/[0.04] px-4 py-2.5 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
+            >
+              Upload Oximetry CSV
+            </button>
+          )}
         </CardContent>
       </Card>
     );
