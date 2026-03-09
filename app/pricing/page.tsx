@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { Check, Heart, Crown, Sparkles, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -73,7 +74,9 @@ export default function PricingPage() {
 
   const handleCheckout = async (priceId: string | undefined) => {
     if (!priceId) {
-      setCheckoutError('This plan is not available yet. Please try again later.');
+      console.error('[pricing] Missing price ID for checkout — env var not configured');
+      Sentry.captureMessage('Checkout attempted with missing price ID', { level: 'error' });
+      setCheckoutError('Something went wrong. Please contact us at support@airwaylab.app so we can help.');
       return;
     }
 
