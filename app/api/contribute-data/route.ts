@@ -19,8 +19,8 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ── Validation ───────────────────────────────────────────────
-const MAX_NIGHTS = 90;
-const MAX_PAYLOAD_BYTES = 512_000; // 512 KB
+const MAX_NIGHTS = 365;
+const MAX_PAYLOAD_BYTES = 2_048_000; // 2 MB
 
 function isValidNight(n: unknown): n is NightResult {
   if (!n || typeof n !== 'object') return false;
@@ -143,6 +143,7 @@ export async function POST(request: Request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
+      console.warn(`[contribute-data] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many contributions. Please try again later.' },
         { status: 429 }
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
     // Size guard
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      console.warn(`[contribute-data] 413 payload too large: ${contentLength} bytes`);
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
@@ -163,6 +165,7 @@ export async function POST(request: Request) {
 
     // Validate
     if (!Array.isArray(nights) || nights.length === 0 || nights.length > MAX_NIGHTS) {
+      console.warn(`[contribute-data] 400 invalid night count: ${Array.isArray(nights) ? nights.length : 'not array'}`);
       return NextResponse.json(
         { error: `Expected 1–${MAX_NIGHTS} nights.` },
         { status: 400 }
@@ -170,6 +173,7 @@ export async function POST(request: Request) {
     }
 
     if (!nights.every(isValidNight)) {
+      console.warn(`[contribute-data] 400 invalid night data format (${nights.length} nights)`);
       return NextResponse.json(
         { error: 'Invalid night data format.' },
         { status: 400 }

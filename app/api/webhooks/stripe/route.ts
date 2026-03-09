@@ -1,0 +1,210 @@
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import * as Sentry from '@sentry/nextjs';
+import { getSupabaseServiceRole } from '@/lib/supabase/server';
+
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+function getTierFromPrice(priceId: string): 'supporter' | 'champion' {
+  const supporter_monthly = process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID;
+  const supporter_yearly = process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_YEARLY_PRICE_ID;
+  const champion_monthly = process.env.NEXT_PUBLIC_STRIPE_CHAMPION_MONTHLY_PRICE_ID;
+  const champion_yearly = process.env.NEXT_PUBLIC_STRIPE_CHAMPION_YEARLY_PRICE_ID;
+
+  if (priceId === supporter_monthly || priceId === supporter_yearly) return 'supporter';
+  if (priceId === champion_monthly || priceId === champion_yearly) return 'champion';
+
+  console.error(`[stripe-webhook] Unknown price ID: ${priceId}, defaulting to supporter`);
+  Sentry.captureMessage(`Unknown Stripe price ID: ${priceId}`, 'warning');
+  return 'supporter';
+}
+
+export async function POST(request: NextRequest) {
+  if (!stripeSecretKey || !webhookSecret) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
+  }
+
+  const supabase = getSupabaseServiceRole();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+  }
+
+  // Verify webhook signature
+  const body = await request.text();
+  const signature = request.headers.get('stripe-signature');
+
+  if (!signature) {
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2026-02-25.clover',
+  });
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.error('[stripe-webhook] Signature verification failed:', err);
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  // Idempotency check (H1) — skip if already processed
+  const { error: insertError } = await supabase
+    .from('stripe_events')
+    .insert({ event_id: event.id, event_type: event.type });
+
+  if (insertError) {
+    // Duplicate event — already processed, return 200 to acknowledge
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.supabase_user_id;
+        const subscriptionId = session.subscription as string;
+
+        if (!userId || !subscriptionId) {
+          // H2: Log silent drops instead of silently breaking
+          console.error(`[stripe-webhook] checkout.session.completed missing data: userId=${userId}, subscriptionId=${subscriptionId}, event=${event.id}`);
+          Sentry.captureMessage('Stripe checkout.session.completed missing userId or subscriptionId', {
+            level: 'warning',
+            extra: { eventId: event.id, userId, subscriptionId },
+          });
+          break;
+        }
+
+        // Fetch the full subscription to get price/tier info
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const firstItem = subscription.items.data[0];
+        const priceId = firstItem?.price.id;
+        const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
+        const periodEnd = firstItem?.current_period_end;
+
+        // Upsert subscription record
+        const { error: upsertErr } = await supabase.from('subscriptions').upsert(
+          {
+            user_id: userId,
+            stripe_subscription_id: subscriptionId,
+            stripe_price_id: priceId || '',
+            status: subscription.status,
+            tier,
+            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          },
+          { onConflict: 'stripe_subscription_id' }
+        );
+        if (upsertErr) {
+          console.error('[stripe-webhook] Subscription upsert failed:', upsertErr);
+          Sentry.captureException(upsertErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        }
+
+        // Update profile tier
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({
+            tier,
+            stripe_customer_id: session.customer as string,
+          })
+          .eq('id', userId);
+        if (profileErr) {
+          console.error('[stripe-webhook] Profile update failed:', profileErr);
+          Sentry.captureException(profileErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        }
+
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId = subscription.metadata?.supabase_user_id;
+        const updatedItem = subscription.items.data[0];
+        const priceId = updatedItem?.price.id;
+        const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
+        const periodEnd = updatedItem?.current_period_end;
+
+        // Update subscription record
+        await supabase
+          .from('subscriptions')
+          .update({
+            stripe_price_id: priceId || '',
+            status: subscription.status,
+            tier,
+            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          })
+          .eq('stripe_subscription_id', subscription.id);
+
+        // Update profile tier if subscription is still active
+        if (userId && ['active', 'trialing'].includes(subscription.status)) {
+          await supabase.from('profiles').update({ tier }).eq('id', userId);
+        }
+
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId = subscription.metadata?.supabase_user_id;
+
+        // Mark subscription as canceled
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'canceled' })
+          .eq('stripe_subscription_id', subscription.id);
+
+        // M8: Only downgrade if no other active subscriptions remain
+        if (userId) {
+          const { data: activeSubs } = await supabase
+            .from('subscriptions')
+            .select('tier')
+            .eq('user_id', userId)
+            .in('status', ['active', 'trialing'])
+            .limit(1);
+
+          if (!activeSubs || activeSubs.length === 0) {
+            await supabase
+              .from('profiles')
+              .update({ tier: 'community' })
+              .eq('id', userId);
+          } else {
+            // Keep the tier of the remaining active subscription
+            const remainingTier = activeSubs[0].tier as string;
+            await supabase
+              .from('profiles')
+              .update({ tier: remainingTier })
+              .eq('id', userId);
+          }
+        }
+
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subDetails = invoice.parent?.subscription_details;
+        const subscriptionId = typeof subDetails?.subscription === 'string'
+          ? subDetails.subscription
+          : subDetails?.subscription?.id;
+
+        if (subscriptionId) {
+          await supabase
+            .from('subscriptions')
+            .update({ status: 'past_due' })
+            .eq('stripe_subscription_id', subscriptionId);
+        }
+
+        break;
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
+    console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
+    return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });
+  }
+
+  return NextResponse.json({ received: true });
+}

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import type { Insight } from '@/lib/insights';
-import type { NightResult } from '@/lib/types';
+import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { aiRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { validateOrigin } from '@/lib/csrf';
 
-export const runtime = 'edge';
+const AI_MONTHLY_LIMIT = 3;
 
 const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in PAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
@@ -32,11 +36,23 @@ Rules:
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
 
-interface RequestBody {
-  nights: NightResult[];
-  selectedNightIndex: number;
-  therapyChangeDate: string | null;
-}
+// Zod schema for request validation (M4)
+const RequestBodySchema = z.object({
+  nights: z.array(z.object({
+    dateStr: z.string(),
+    durationHours: z.number(),
+    sessionCount: z.number(),
+    settings: z.object({}).passthrough(),
+    glasgow: z.object({ overall: z.number() }).passthrough(),
+    wat: z.object({ flScore: z.number() }).passthrough(),
+    ned: z.object({ nedMean: z.number() }).passthrough(),
+    oximetry: z.object({}).passthrough().nullable().optional(),
+  }).passthrough()).min(1).max(365),
+  selectedNightIndex: z.number().int().min(0),
+  therapyChangeDate: z.string().nullable(),
+});
+
+type RequestBody = z.infer<typeof RequestBodySchema>;
 
 function buildUserPrompt(body: RequestBody): string {
   const { nights, selectedNightIndex, therapyChangeDate } = body;
@@ -81,13 +97,67 @@ function buildUserPrompt(body: RequestBody): string {
   return JSON.stringify(context, null, 2);
 }
 
-export async function POST(request: NextRequest) {
-  // Validate API key
-  const apiKey = request.headers.get('x-api-key');
-  const expectedKey = process.env.AI_INSIGHTS_API_KEY;
+/**
+ * Get the current month key in YYYY-MM format.
+ */
+function getCurrentMonth(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  return `${yyyy}-${mm}`;
+}
 
-  if (!expectedKey || apiKey !== expectedKey) {
+export async function POST(request: NextRequest) {
+  // L8: CSRF protection
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  // Rate limiting (C3)
+  const ip = getRateLimitKey(request);
+  if (aiRateLimiter.isLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
+  // Auth check — require signed-in user
+  const supabase = getSupabaseServer();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Server-side AI usage enforcement (C2)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', user.id)
+    .single();
+
+  const userTier = profile?.tier ?? 'community';
+
+  if (userTier === 'community') {
+    const adminClient = getSupabaseServiceRole();
+    if (adminClient) {
+      const month = getCurrentMonth();
+      const { data: usage } = await adminClient
+        .from('ai_usage')
+        .select('count')
+        .eq('user_id', user.id)
+        .eq('month', month)
+        .maybeSingle();
+
+      const currentCount = usage?.count ?? 0;
+      if (currentCount >= AI_MONTHLY_LIMIT) {
+        return NextResponse.json(
+          { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   // Validate Anthropic API key is configured
@@ -96,23 +166,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
   }
 
+  // Parse and validate request body with Zod (M4)
   let body: RequestBody;
   try {
-    body = await request.json();
+    const raw = await request.json();
+    const parsed = RequestBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      console.warn('[ai-insights] 400 Zod validation failed:', parsed.error.issues[0]?.message);
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    }
+    body = parsed.data;
   } catch {
+    console.warn('[ai-insights] 400 invalid request body (JSON parse failed)');
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  // Basic validation
-  if (
-    !body.nights ||
-    !Array.isArray(body.nights) ||
-    body.nights.length === 0 ||
-    body.nights.length > 90 ||
-    typeof body.selectedNightIndex !== 'number' ||
-    body.selectedNightIndex < 0 ||
-    body.selectedNightIndex >= body.nights.length
-  ) {
+  // Cross-field validation: selectedNightIndex must be within bounds
+  if (body.selectedNightIndex >= body.nights.length) {
     return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
   }
 
@@ -164,8 +234,44 @@ export async function POST(request: NextRequest) {
         validCategories.has(i.category)
     );
 
+    // Increment server-side AI usage counter (C2)
+    const adminClient = getSupabaseServiceRole();
+    if (adminClient) {
+      const month = getCurrentMonth();
+      const { error: upsertError } = await adminClient
+        .from('ai_usage')
+        .upsert(
+          { user_id: user.id, month, count: 1 },
+          { onConflict: 'user_id,month' }
+        );
+
+      if (upsertError) {
+        // Upsert doesn't increment — use raw increment via RPC or update
+        // Fallback: fetch + update
+        const { data: existing } = await adminClient
+          .from('ai_usage')
+          .select('count')
+          .eq('user_id', user.id)
+          .eq('month', month)
+          .maybeSingle();
+
+        if (existing) {
+          await adminClient
+            .from('ai_usage')
+            .update({ count: existing.count + 1 })
+            .eq('user_id', user.id)
+            .eq('month', month);
+        } else {
+          await adminClient
+            .from('ai_usage')
+            .insert({ user_id: user.id, month, count: 1 });
+        }
+      }
+    }
+
     return NextResponse.json({ insights, source: 'ai' });
   } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'ai-insights' } });
     console.error('[ai-insights] Error:', err);
     return NextResponse.json(
       { error: 'AI service error' },
