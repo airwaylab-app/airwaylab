@@ -19,8 +19,8 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ── Validation ───────────────────────────────────────────────
-const MAX_NIGHTS = 90;
-const MAX_PAYLOAD_BYTES = 512_000; // 512 KB
+const MAX_NIGHTS = 365;
+const MAX_PAYLOAD_BYTES = 2_048_000; // 2 MB
 
 function isValidNight(n: unknown): n is NightResult {
   if (!n || typeof n !== 'object') return false;

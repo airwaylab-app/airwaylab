@@ -186,10 +186,14 @@ function AnalyzePageInner() {
   );
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
+    // Cap at 365 most recent nights to stay within server limits
+    const toSubmit = nightsToSubmit.length > 365
+      ? nightsToSubmit.slice(0, 365)
+      : nightsToSubmit;
     fetch('/api/contribute-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nights: nightsToSubmit }),
+      body: JSON.stringify({ nights: toSubmit }),
     }).then((res) => {
       if (res.ok) {
         try {
