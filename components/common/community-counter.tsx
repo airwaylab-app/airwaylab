@@ -11,6 +11,7 @@ interface Stats {
   totalNights: number;
   totalUploads: number;
   totalContributedNights: number;
+  totalContributions: number;
 }
 
 interface CachedStats extends Stats {
@@ -78,6 +79,7 @@ function useStats() {
               totalNights: cached.totalNights,
               totalUploads: cached.totalUploads,
               totalContributedNights: cached.totalContributedNights,
+              totalContributions: cached.totalContributions ?? 0,
             });
             return;
           }
@@ -95,6 +97,7 @@ function useStats() {
         totalNights: data.totalNights ?? 0,
         totalUploads: data.totalUploads ?? 0,
         totalContributedNights: data.totalContributedNights ?? 0,
+        totalContributions: data.totalContributions ?? 0,
       };
       setStats(result);
       try {
@@ -141,16 +144,16 @@ export function CommunityCounter({
 
   if (variant === 'research') {
     // Hide if nobody has contributed yet
-    if (stats.totalContributedNights === 0) return null;
+    if (stats.totalContributions === 0) return null;
 
     return (
       <div className={className}>
         <HeartHandshake className="h-4 w-4 text-rose-400" />
         <span>
           <strong className="font-semibold text-foreground">
-            <AnimatedNumber value={stats.totalContributedNights} />
+            <AnimatedNumber value={stats.totalContributions} />
           </strong>{' '}
-          Nights Contributed for Research
+          {stats.totalContributions === 1 ? 'person' : 'people'} contributed data for research
         </span>
       </div>
     );

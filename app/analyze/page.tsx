@@ -6,6 +6,7 @@ import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionOptIn } from '@/components/upload/contribution-opt-in';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
+import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { DataContribution } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -365,7 +366,7 @@ function AnalyzePageInner() {
 
       {/* Error State */}
       {status === 'error' && !isDemo && (
-        <div className="mx-auto max-w-lg">
+        <div className="mx-auto max-w-lg flex flex-col gap-4">
           <div className="flex flex-col gap-3 rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center gap-2.5">
               <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
@@ -375,6 +376,7 @@ function AnalyzePageInner() {
               <RotateCcw className="mr-2 h-3 w-3" /> Try Again
             </Button>
           </div>
+          <ErrorDataSubmission error={error ?? 'Unknown error'} files={sdFilesRef.current} />
         </div>
       )}
 
@@ -512,6 +514,7 @@ function AnalyzePageInner() {
                 <FlowAnalysisTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
+                  nights={nights}
                 />
               </ErrorBoundary>
             </TabsContent>
@@ -521,6 +524,7 @@ function AnalyzePageInner() {
                 <OximetryTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
+                  nights={nights}
                 />
               </ErrorBoundary>
             </TabsContent>

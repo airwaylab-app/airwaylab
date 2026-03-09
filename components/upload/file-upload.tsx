@@ -86,7 +86,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
       <div
         role="button"
         tabIndex={0}
-        aria-label={sdFiles.length > 0 ? `${sdFiles.length} SD card files selected. Click to change selection.` : 'Upload ResMed SD card folder. Click or drag and drop.'}
+        aria-label={sdFiles.length > 0 ? `${sdFiles.length} SD card files selected. Click to change selection.` : 'Upload ResMed SD card root folder. Click or drag and drop.'}
         className={`group relative cursor-pointer rounded-xl border-2 border-dashed transition-all ${
           dragOver
             ? 'border-primary bg-primary/5'
@@ -128,7 +128,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
             <p className="mt-0.5 text-xs text-muted-foreground">
               {sdFiles.length > 0
                 ? 'Click to change selection'
-                : 'Select the DATALOG folder or drag & drop'}
+                : 'Select the SD card root folder or drag & drop'}
             </p>
           </div>
           {/* Validation feedback */}
@@ -153,7 +153,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
               {[
                 'Remove the SD card from your ResMed machine',
                 'Insert it into your computer (use an adapter if needed)',
-                'Click here and select the DATALOG folder',
+                'Click here and select the SD card root folder',
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">

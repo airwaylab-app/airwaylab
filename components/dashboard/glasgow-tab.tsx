@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricCard } from '@/components/common/metric-card';
+import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { GlasgowRadar } from '@/components/charts/glasgow-radar';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
+import type { ThresholdDef } from '@/lib/thresholds';
 
 interface Props {
   nights: NightResult[];
@@ -30,6 +33,23 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
   const n = selectedNight;
   const p = previousNight;
 
+  const [detailMetric, setDetailMetric] = useState<{
+    label: string;
+    unit?: string;
+    accessor: (n: NightResult) => number | undefined;
+    threshold?: ThresholdDef;
+    description?: string;
+  } | null>(null);
+
+  const openMetric = useCallback(
+    (label: string, accessor: (n: NightResult) => number | undefined, opts?: { unit?: string; threshold?: ThresholdDef; description?: string }) => {
+      if (nights.length > 1) setDetailMetric({ label, accessor, ...opts });
+    },
+    [nights.length]
+  );
+
+  const clickable = nights.length > 1;
+
   return (
     <div className="flex flex-col gap-6">
       {/* Overall Score */}
@@ -39,6 +59,8 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
+          tooltip="Sum of 8 breath-shape components (excluding Top Heavy). Lower values indicate more normal breathing. Based on the Glasgow sleep study methodology."
+          onClick={clickable ? () => openMetric('Glasgow Overall', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' }) : undefined}
         />
         <div className="sm:col-span-2">
           <Card className="h-full border-border/50">
@@ -122,6 +144,20 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Metric Detail Modal */}
+      {detailMetric && (
+        <MetricDetailModal
+          label={detailMetric.label}
+          unit={detailMetric.unit}
+          nights={nights}
+          selectedDate={n.dateStr}
+          accessor={detailMetric.accessor}
+          threshold={detailMetric.threshold}
+          description={detailMetric.description}
+          onClose={() => setDetailMetric(null)}
+        />
       )}
     </div>
   );

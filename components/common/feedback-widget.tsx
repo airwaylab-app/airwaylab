@@ -144,6 +144,13 @@ export function FeedbackWidget() {
             className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:border-primary/30 focus:outline-none focus:ring-1 focus:ring-primary/20"
           />
 
+          {/* Character hint */}
+          {message.length > 0 && message.trim().length < 5 && (
+            <p className="text-[10px] text-muted-foreground/60">
+              Please write at least 5 characters ({5 - message.trim().length} more)
+            </p>
+          )}
+
           {/* Submit */}
           <Button
             size="sm"
