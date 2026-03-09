@@ -53,6 +53,20 @@ function postProgress(current: number, total: number, stage: string): void {
   self.postMessage(msg);
 }
 
+/**
+ * Yield control back to the event loop so the worker thread
+ * doesn't starve the browser of message processing.
+ * Called between batches of CPU-intensive work.
+ */
+function yieldControl(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** How many EDF files to parse before yielding */
+const PARSE_BATCH_SIZE = 25;
+/** How many nights to analyze before yielding */
+const ANALYZE_BATCH_SIZE = 10;
+
 async function processFiles(
   files: { buffer: ArrayBuffer; path: string }[],
   oximetryCSVs?: string[]
@@ -96,9 +110,11 @@ async function processFiles(
 
   postProgress(1, brpFiles.length + 2, 'Parsing EDF files...');
 
-  // Step 3: Parse all BRP.edf files
+  // Step 3: Parse BRP.edf files in batches, yielding between batches
+  // to prevent the worker from locking up the browser on large SD cards
   const parsedEdfs: EDFFile[] = [];
-  for (const brp of brpFiles) {
+  for (let i = 0; i < brpFiles.length; i++) {
+    const brp = brpFiles[i];
     const fileData = files.find((f) => f.path === brp.path);
     if (!fileData) continue;
     try {
@@ -106,6 +122,12 @@ async function processFiles(
       parsedEdfs.push(edf);
     } catch {
       // Skip unparseable files
+    }
+
+    // Yield every PARSE_BATCH_SIZE files and report progress
+    if ((i + 1) % PARSE_BATCH_SIZE === 0) {
+      postProgress(1, brpFiles.length + 2, `Parsing EDF files (${i + 1}/${brpFiles.length})...`);
+      await yieldControl();
     }
   }
 
@@ -131,12 +153,17 @@ async function processFiles(
     }
   }
 
-  // Step 6: Run all engines per night
+  // Step 6: Run all engines per night, yielding periodically
   const nights: NightResult[] = [];
 
   for (let i = 0; i < nightGroups.length; i++) {
     const group = nightGroups[i];
     postProgress(i + 3, nightGroups.length + 2, `Analyzing night ${group.nightDate}...`);
+
+    // Yield every ANALYZE_BATCH_SIZE nights to keep the worker responsive
+    if (i > 0 && i % ANALYZE_BATCH_SIZE === 0) {
+      await yieldControl();
+    }
 
     // Get settings for this night
     const settings = getSettingsForDate(dailySettings, group.nightDate) ?? {

@@ -47,7 +47,7 @@ const RequestBodySchema = z.object({
     wat: z.object({ flScore: z.number() }).passthrough(),
     ned: z.object({ nedMean: z.number() }).passthrough(),
     oximetry: z.object({}).passthrough().nullable().optional(),
-  }).passthrough()).min(1).max(365),
+  }).passthrough()).min(1).max(1095),
   selectedNightIndex: z.number().int().min(0),
   therapyChangeDate: z.string().nullable(),
 });
