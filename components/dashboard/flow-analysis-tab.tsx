@@ -1,19 +1,40 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricCard } from '@/components/common/metric-card';
+import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
+import type { ThresholdDef } from '@/lib/thresholds';
 
 interface Props {
   selectedNight: NightResult;
   previousNight: NightResult | null;
+  nights?: NightResult[];
 }
 
-export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
+export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
+
+  const [detailMetric, setDetailMetric] = useState<{
+    label: string;
+    unit?: string;
+    accessor: (n: NightResult) => number | undefined;
+    threshold?: ThresholdDef;
+    description?: string;
+  } | null>(null);
+
+  const openMetric = useCallback(
+    (label: string, accessor: (n: NightResult) => number | undefined, opts?: { unit?: string; threshold?: ThresholdDef; description?: string }) => {
+      if (nights.length > 1) setDetailMetric({ label, accessor, ...opts });
+    },
+    [nights.length]
+  );
+
+  const clickable = nights.length > 1;
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +51,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             format="pct"
             threshold={THRESHOLDS.watFL}
             previousValue={p?.wat.flScore}
+            tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
+            onClick={clickable ? () => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL }) : undefined}
           />
           <MetricCard
             label="Regularity Score"
@@ -38,6 +61,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             format="int"
             threshold={THRESHOLDS.watRegularity}
             previousValue={p?.wat.regularityScore}
+            tooltip="Measures breathing pattern consistency using Sample Entropy. Higher scores mean more repetitive patterns, which on CPAP may signal persistent flow limitation."
+            onClick={clickable ? () => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity }) : undefined}
           />
           <MetricCard
             label="Periodicity Index"
@@ -46,6 +71,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             format="pct"
             threshold={THRESHOLDS.watPeriodicity}
             previousValue={p?.wat.periodicityIndex}
+            tooltip="Detects cyclic breathing patterns using FFT on minute ventilation. May indicate periodic breathing or Cheyne-Stokes. Lower is better."
+            onClick={clickable ? () => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity }) : undefined}
           />
         </div>
         <Card className="mt-3 border-border/50">
@@ -76,6 +103,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             format="pct"
             threshold={THRESHOLDS.nedMean}
             previousValue={p?.ned.nedMean}
+            tooltip="Average Negative Effort Dependence — measures wasted breathing effort due to airway obstruction. Lower is better."
+            onClick={clickable ? () => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean }) : undefined}
           />
           <MetricCard
             label="NED P95"
@@ -84,6 +113,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             format="pct"
             threshold={THRESHOLDS.nedP95}
             previousValue={p?.ned.nedP95}
+            tooltip="95th percentile NED value — captures the worst 5% of breaths. Shows peak obstruction severity."
+            onClick={clickable ? () => openMetric('NED P95', (x) => x.ned.nedP95, { unit: '%', threshold: THRESHOLDS.nedP95 }) : undefined}
           />
           <MetricCard
             label="RERA Index"
@@ -91,12 +122,16 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             unit="/hr"
             threshold={THRESHOLDS.reraIndex}
             previousValue={p?.ned.reraIndex}
+            tooltip="Respiratory Effort-Related Arousals per hour — brief awakenings from breathing effort. Lower is better."
+            onClick={clickable ? () => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex }) : undefined}
           />
           <MetricCard
             label="RERA Count"
             value={n.ned.reraCount}
             format="int"
             previousValue={p?.ned.reraCount}
+            tooltip="Total number of detected RERA events during the entire session."
+            onClick={clickable ? () => openMetric('RERA Count', (x) => x.ned.reraCount) : undefined}
           />
           <MetricCard
             label="Est. Arousal Index"
@@ -104,6 +139,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
             unit="/hr"
             threshold={THRESHOLDS.eai}
             previousValue={p?.ned.estimatedArousalIndex}
+            tooltip="Estimated arousals per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
+            onClick={clickable ? () => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
           />
         </div>
       </div>
@@ -123,6 +160,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               threshold={THRESHOLDS.nedClearFL}
               previousValue={p?.ned.nedClearFLPct}
               compact
+              tooltip="Percentage of breaths with clear flow limitation (NED above threshold). Lower is better."
+              onClick={clickable ? () => openMetric('Clear FL', (x) => x.ned.nedClearFLPct, { unit: '%', threshold: THRESHOLDS.nedClearFL }) : undefined}
             />
             <MetricCard
               label="Borderline FL"
@@ -131,6 +170,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               format="pct"
               previousValue={p?.ned.nedBorderlinePct}
               compact
+              tooltip="Percentage of breaths with borderline flow limitation — not clearly normal but not fully limited."
+              onClick={clickable ? () => openMetric('Borderline FL', (x) => x.ned.nedBorderlinePct, { unit: '%' }) : undefined}
             />
             <MetricCard
               label="Flatness Index"
@@ -138,6 +179,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               format="pct"
               previousValue={p?.ned.fiMean}
               compact
+              tooltip="Measures how flat (vs rounded) the inspiratory flow peak is. Flatter peaks suggest flow limitation."
+              onClick={clickable ? () => openMetric('Flatness Index', (x) => x.ned.fiMean) : undefined}
             />
             <MetricCard
               label="FI > 0.85"
@@ -146,6 +189,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               format="pct"
               previousValue={p?.ned.fiFL85Pct}
               compact
+              tooltip="Percentage of breaths with Flatness Index above 0.85 — a very flat waveform indicating likely flow limitation."
+              onClick={clickable ? () => openMetric('FI > 0.85', (x) => x.ned.fiFL85Pct, { unit: '%' }) : undefined}
             />
             <MetricCard
               label="M-Shape"
@@ -154,6 +199,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               format="pct"
               previousValue={p?.ned.mShapePct}
               compact
+              tooltip="Percentage of breaths with an M-shaped flow pattern — a double-peaked waveform classic for flow limitation."
+              onClick={clickable ? () => openMetric('M-Shape', (x) => x.ned.mShapePct, { unit: '%' }) : undefined}
             />
             <MetricCard
               label="Tpeak/Ti Mean"
@@ -161,6 +208,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
               format="pct"
               previousValue={p?.ned.tpeakMean}
               compact
+              tooltip="Ratio of time to peak flow vs total inspiratory time. Values closer to 0.5 suggest normal ramp; lower values suggest early peaking from obstruction."
+              onClick={clickable ? () => openMetric('Tpeak/Ti Mean', (x) => x.ned.tpeakMean) : undefined}
             />
           </div>
         </CardContent>
@@ -239,6 +288,20 @@ export function FlowAnalysisTab({ selectedNight, previousNight }: Props) {
           <strong className="text-foreground">{n.ned.combinedFLPct.toFixed(0)}%</strong>
         </span>
       </div>
+
+      {/* Metric Detail Modal */}
+      {detailMetric && (
+        <MetricDetailModal
+          label={detailMetric.label}
+          unit={detailMetric.unit}
+          nights={nights}
+          selectedDate={n.dateStr}
+          accessor={detailMetric.accessor}
+          threshold={detailMetric.threshold}
+          description={detailMetric.description}
+          onClose={() => setDetailMetric(null)}
+        />
+      )}
     </div>
   );
 }

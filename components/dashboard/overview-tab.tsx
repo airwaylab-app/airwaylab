@@ -13,7 +13,9 @@ import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, C
 import { ProTease } from '@/components/common/pro-tease';
 import { AIKeyInput } from '@/components/common/ai-key-input';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
+import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import type { GlasgowComponents } from '@/lib/types';
+import type { ThresholdDef } from '@/lib/thresholds';
 
 const AI_INSIGHTS_URL = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
 
@@ -99,6 +101,26 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   const hasAIAccess = !!AI_INSIGHTS_URL;
   const hasAIKey = !!aiKey;
+
+  // Metric detail modal state
+  const [detailMetric, setDetailMetric] = useState<{
+    label: string;
+    unit?: string;
+    accessor: (n: NightResult) => number | undefined;
+    threshold?: ThresholdDef;
+    description?: string;
+  } | null>(null);
+
+  const openMetric = useCallback(
+    (
+      label: string,
+      accessor: (n: NightResult) => number | undefined,
+      opts?: { unit?: string; threshold?: ThresholdDef; description?: string }
+    ) => {
+      setDetailMetric({ label, accessor, ...opts });
+    },
+    []
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -197,6 +219,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
+          tooltip="A composite score measuring how abnormal your breathing waveform looks. Lower is better. Based on 9 breath shape components."
+          onClick={() => openMetric('Glasgow Index', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' })}
         />
         <MetricCard
           label="FL Score"
@@ -205,6 +229,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="pct"
           threshold={THRESHOLDS.watFL}
           previousValue={p?.wat.flScore}
+          tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
+          onClick={() => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL, description: 'Percentage of flow-limited breaths per night' })}
         />
         <MetricCard
           label="NED Mean"
@@ -213,6 +239,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="pct"
           threshold={THRESHOLDS.nedMean}
           previousValue={p?.ned.nedMean}
+          tooltip="Negative Effort Dependence — measures how much your breathing effort is wasted due to airway obstruction. Lower is better."
+          onClick={() => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean, description: 'Average wasted breathing effort due to obstruction' })}
         />
         <MetricCard
           label="RERA Index"
@@ -220,6 +248,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           unit="/hr"
           threshold={THRESHOLDS.reraIndex}
           previousValue={p?.ned.reraIndex}
+          tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort. Lower is better."
+          onClick={() => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex, description: 'Respiratory effort-related arousals per hour' })}
         />
       </div>
 
@@ -282,6 +312,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.watRegularity}
           previousValue={p?.wat.regularityScore}
           compact
+          tooltip="How consistent your breath timing is throughout the night. Higher means more regular breathing rhythm."
+          onClick={() => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity })}
         />
         <MetricCard
           label="Periodicity"
@@ -291,6 +323,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.watPeriodicity}
           previousValue={p?.wat.periodicityIndex}
           compact
+          tooltip="Detects repeating patterns in airflow that may indicate periodic breathing or Cheyne-Stokes. Lower is better."
+          onClick={() => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity })}
         />
         <MetricCard
           label="Combined FL"
@@ -300,6 +334,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.combinedFL}
           previousValue={p?.ned.combinedFLPct}
           compact
+          tooltip="Combined flow limitation from both WAT and NED analysis. Percentage of breaths with restricted airflow. Lower is better."
+          onClick={() => openMetric('Combined FL', (x) => x.ned.combinedFLPct, { unit: '%', threshold: THRESHOLDS.combinedFL })}
         />
         <MetricCard
           label="Est. Arousal Index"
@@ -308,6 +344,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.eai}
           previousValue={p?.ned.estimatedArousalIndex}
           compact
+          tooltip="Estimated arousals (brief awakenings) per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
+          onClick={() => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
 
@@ -328,6 +366,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 threshold={THRESHOLDS.odi3}
                 previousValue={p?.oximetry?.odi3}
                 compact
+                tooltip="Oxygen Desaturation Index — number of times per hour your blood oxygen drops by 3% or more. Lower is better."
+                onClick={() => openMetric('ODI-3', (x) => x.oximetry?.odi3, { unit: '/hr', threshold: THRESHOLDS.odi3 })}
               />
               <MetricCard
                 label="T < 90%"
@@ -336,6 +376,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 threshold={THRESHOLDS.tBelow90}
                 previousValue={p?.oximetry?.tBelow90}
                 compact
+                tooltip="Total minutes your blood oxygen (SpO₂) was below 90%. Less time below 90% is better."
+                onClick={() => openMetric('T < 90%', (x) => x.oximetry?.tBelow90, { unit: 'min', threshold: THRESHOLDS.tBelow90 })}
               />
               <MetricCard
                 label="SpO₂ Mean"
@@ -345,6 +387,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 threshold={THRESHOLDS.spo2Mean}
                 previousValue={p?.oximetry?.spo2Mean}
                 compact
+                tooltip="Average blood oxygen saturation throughout the night. Normal is 94–98%. Higher is better."
+                onClick={() => openMetric('SpO₂ Mean', (x) => x.oximetry?.spo2Mean, { unit: '%', threshold: THRESHOLDS.spo2Mean })}
               />
               <MetricCard
                 label="HR Clin 10"
@@ -353,6 +397,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 threshold={THRESHOLDS.hrClin10}
                 previousValue={p?.oximetry?.hrClin10}
                 compact
+                tooltip="Heart rate clinical events per hour — large heart rate swings often linked to breathing events. Lower is better."
+                onClick={() => openMetric('HR Clin 10', (x) => x.oximetry?.hrClin10, { unit: '/hr', threshold: THRESHOLDS.hrClin10 })}
               />
             </div>
           </CardContent>
@@ -410,6 +456,20 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             source="overview-tab"
           />
         )
+      )}
+
+      {/* Metric Detail Modal */}
+      {detailMetric && (
+        <MetricDetailModal
+          label={detailMetric.label}
+          unit={detailMetric.unit}
+          nights={nights}
+          selectedDate={n.dateStr}
+          accessor={detailMetric.accessor}
+          threshold={detailMetric.threshold}
+          description={detailMetric.description}
+          onClose={() => setDetailMetric(null)}
+        />
       )}
     </div>
   );

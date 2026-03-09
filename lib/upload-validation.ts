@@ -73,11 +73,13 @@ export function validateSDFiles(files: File[]): ValidationResult {
     );
   }
 
-  // Check for very large uploads (likely wrong folder)
-  const nonEdfCount = files.length - edfFiles.length;
-  if (nonEdfCount > 100) {
+  // Check for Identification file (device info — lives in parent folder)
+  const hasIdentification = files.some(
+    (f) => f.name.toUpperCase().startsWith('IDENTIFICATION')
+  );
+  if (!hasIdentification) {
     warnings.push(
-      `${nonEdfCount} non-EDF files included — these will be ignored. You may have selected a parent folder instead of DATALOG.`
+      'No Identification file found. Select the SD card root folder (one level above DATALOG) so we can identify your device model.'
     );
   }
 
