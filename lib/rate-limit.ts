@@ -19,6 +19,7 @@ export class RateLimiter {
   private readonly map = new Map<string, RateLimitEntry>();
   private readonly windowMs: number;
   private readonly max: number;
+  private lastCleanup = Date.now();
 
   constructor(options: RateLimiterOptions) {
     this.windowMs = options.windowMs;
@@ -31,6 +32,15 @@ export class RateLimiter {
    */
   isLimited(key: string): boolean {
     const now = Date.now();
+
+    // Periodic cleanup of expired entries to prevent unbounded growth
+    if (now - this.lastCleanup > this.windowMs) {
+      this.map.forEach((v, k) => {
+        if (now > v.resetAt) this.map.delete(k);
+      });
+      this.lastCleanup = now;
+    }
+
     const entry = this.map.get(key);
 
     if (!entry || now > entry.resetAt) {
@@ -48,10 +58,19 @@ export class RateLimiter {
  * Uses X-Forwarded-For (Vercel), falls back to 'unknown'.
  */
 export function getRateLimitKey(request: Request): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    'unknown'
-  );
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  if (forwarded) return forwarded;
+  // Fallback: use a hash of user-agent + accept-language to differentiate unknown IPs
+  const ua = request.headers.get('user-agent') ?? '';
+  const lang = request.headers.get('accept-language') ?? '';
+  const raw = `${ua}|${lang}`;
+  // Simple FNV-1a-like hash for low-collision bucket keys
+  let hash = 2166136261;
+  for (let i = 0; i < raw.length; i++) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `anon_${(hash >>> 0).toString(36)}`;
 }
 
 // ─── Pre-configured limiters ─────────────────────────────────

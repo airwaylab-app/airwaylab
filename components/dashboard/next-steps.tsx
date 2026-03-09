@@ -44,8 +44,8 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
   if (!hasOximetry) {
     steps.push({
       text: 'Add pulse oximetry data for deeper analysis — oxygen desaturations and heart rate patterns reveal what flow data alone can\'t.',
-      onClick: onUploadOximetry,
-      actionLabel: 'Upload oximetry CSV',
+      onClick: onUploadOximetry ?? (() => window.scrollTo({ top: 0, behavior: 'smooth' })),
+      actionLabel: onUploadOximetry ? 'Upload oximetry CSV' : 'Upload with oximetry data',
     });
   }
 

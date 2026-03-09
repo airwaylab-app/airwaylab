@@ -126,8 +126,16 @@ export async function POST(request: NextRequest) {
         const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
         const periodEnd = updatedItem?.current_period_end;
 
+        if (!userId) {
+          console.error(`[stripe-webhook] subscription.updated missing userId, event=${event.id}`);
+          Sentry.captureMessage('Stripe subscription.updated missing userId', {
+            level: 'warning',
+            extra: { eventId: event.id, subscriptionId: subscription.id },
+          });
+        }
+
         // Update subscription record
-        await supabase
+        const { error: subUpdateErr } = await supabase
           .from('subscriptions')
           .update({
             stripe_price_id: priceId || '',
@@ -137,6 +145,11 @@ export async function POST(request: NextRequest) {
             cancel_at_period_end: subscription.cancel_at_period_end,
           })
           .eq('stripe_subscription_id', subscription.id);
+
+        if (subUpdateErr) {
+          console.error('[stripe-webhook] Subscription update failed:', subUpdateErr);
+          Sentry.captureException(subUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        }
 
         // Update profile tier if subscription is still active
         if (userId && ['active', 'trialing'].includes(subscription.status)) {

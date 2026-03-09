@@ -72,7 +72,10 @@ export class AnalysisOrchestrator {
       let cachedNights: NightResult[] = [];
       let skippedCount = 0;
 
-      if (manifest && cached && cached.nights.length > 0) {
+      // Skip cache fast-path when oximetry files are provided — they must always be processed
+      const hasNewOximetry = oximetryFiles && oximetryFiles.length > 0;
+
+      if (manifest && cached && cached.nights.length > 0 && !hasNewOximetry) {
         const diff = diffAgainstManifest(sdArr, manifest);
         skippedCount = diff.unchanged.length;
 

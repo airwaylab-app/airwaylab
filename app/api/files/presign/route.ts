@@ -47,10 +47,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = presignSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid request', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
     const { filePath, fileName, fileSize, fileHash, nightDate, mimeType } = parsed.data;
+
+    // Path traversal protection
+    if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+      return NextResponse.json({ error: 'Invalid file name' }, { status: 400 });
+    }
+    if (filePath.includes('..')) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+    }
 
     // Check consent
     const consent = await hasStorageConsent(serviceRole, user.id);

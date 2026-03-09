@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { validateOrigin } from '@/lib/csrf';
 
 // ── Rate limiter (per-IP, 3 submissions per hour) ──────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -26,7 +28,11 @@ const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
  * Stores file names, sizes, error message, and optional user email
  * so we can add support for new devices.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
@@ -62,6 +68,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Error message required.' }, { status: 400 });
     }
 
+    // Validate email if provided
+    if (email !== undefined && email !== null && email !== '') {
+      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
+        return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
+      }
+    }
+
     // Sanitize file names — only keep name and extension, limit count
     const sanitizedFiles = fileNames
       .slice(0, 50)
@@ -81,14 +94,14 @@ export async function POST(request: Request) {
       });
 
       if (error) {
-        // Table might not exist — log but don't fail
         console.error('[submit-error-data] Supabase error:', error.message);
-        // Fall through to success (we still want to acknowledge the submission)
+        Sentry.captureException(error, { tags: { route: 'submit-error-data' } });
       }
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'submit-error-data' } });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -46,6 +46,7 @@ import {
   ArrowLeftRight,
   Star,
   Moon,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -66,6 +67,7 @@ function AnalyzePageInner() {
     therapyChangeDate: string | null;
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
+  const oxFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
   const contributeOptInRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab-contribute-optin') === '1'; } catch { return false; } })()
@@ -73,6 +75,8 @@ function AnalyzePageInner() {
   const storageConsentRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_storage_consent') === '1'; } catch { return false; } })()
   );
+  const [oximetryJustAdded, setOximetryJustAdded] = useState(false);
+  const hadOximetryRef = useRef(false);
   const [showContributeNudge, setShowContributeNudge] = useState(false);
   const pendingNightsRef = useRef<NightResult[]>([]);
   const [showDemoStar, setShowDemoStar] = useState(false);
@@ -109,7 +113,10 @@ function AnalyzePageInner() {
       loadDemo();
     } else if (state.status === 'idle') {
       const saved = loadPersistedResults();
-      if (saved) setPersistedData(saved);
+      if (saved) {
+        setPersistedData(saved);
+        hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -123,8 +130,15 @@ function AnalyzePageInner() {
         persistResults(newState.nights, newState.therapyChangeDate);
         setPersistedData(null);
 
-        // Track analysis session (fire-and-forget, non-blocking)
+        // Detect oximetry just added (show confirmation banner)
         const hasOximetry = newState.nights.some((n) => !!n.oximetry);
+        if (hasOximetry && !hadOximetryRef.current) {
+          setOximetryJustAdded(true);
+          setTimeout(() => setOximetryJustAdded(false), 6000);
+        }
+        hadOximetryRef.current = hasOximetry;
+
+        // Track analysis session (fire-and-forget, non-blocking)
         const glasgowSum = newState.nights.reduce((s, n) => s + n.glasgow.overall, 0);
         fetch('/api/track-analysis', {
           method: 'POST',
@@ -157,7 +171,8 @@ function AnalyzePageInner() {
         // Cloud storage: auto-upload raw files if consented
         if (storageConsentRef.current && sdFilesRef.current.length > 0) {
           events.cloudSyncUsed();
-          uploadOrchestrator.upload(sdFilesRef.current).catch(() => { /* handled by orchestrator */ });
+          const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+          uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
         }
 
         // Update local lifetime night count (deduplicate by date)
@@ -195,6 +210,8 @@ function AnalyzePageInner() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0 && sdFilesRef.current.length > 0) {
+        oxFilesRef.current = files;
+        hadOximetryRef.current = false;
         orchestrator.analyze(sdFilesRef.current, files);
       }
       // Reset input so same file can be re-selected
@@ -243,6 +260,7 @@ function AnalyzePageInner() {
   const loadDemo = useCallback(() => {
     setIsDemo(true);
     setSelectedNight(0);
+    hadOximetryRef.current = SAMPLE_NIGHTS.some((n) => !!n.oximetry);
     events.demoLoaded();
     // Bypass the orchestrator — inject sample data directly
     orchestrator.reset();
@@ -463,6 +481,17 @@ function AnalyzePageInner() {
               <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 self-start sm:self-auto">
                 <Upload className="h-3 w-3" /> New Analysis
               </Button>
+            </div>
+          )}
+
+          {/* Oximetry upload confirmation */}
+          {oximetryJustAdded && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Oximetry data added</span>
+                {' '}&mdash; SpO&#8322; and heart rate analysis is now included in your results. Check the Oximetry tab for details.
+              </p>
             </div>
           )}
 

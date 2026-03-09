@@ -24,9 +24,10 @@ export async function loadCloudFiles(
     throw new Error('Failed to fetch file list from cloud');
   }
 
-  const { files } = await listRes.json() as { files: StoredFileMetadata[] };
+  const listData = await listRes.json();
+  const files = Array.isArray(listData?.files) ? listData.files as StoredFileMetadata[] : [];
 
-  if (!files || files.length === 0) {
+  if (files.length === 0) {
     return [];
   }
 
@@ -52,7 +53,10 @@ export async function loadCloudFiles(
 
       if (!urlRes.ok) return null;
 
-      const { url, fileName } = await urlRes.json() as { url: string; fileName: string };
+      const urlData = await urlRes.json();
+      const url = typeof urlData?.url === 'string' ? urlData.url : null;
+      const fileName = typeof urlData?.fileName === 'string' ? urlData.fileName : meta.fileName;
+      if (!url) return null;
 
       // Download the actual file
       const fileRes = await fetch(url);
@@ -99,8 +103,8 @@ export async function hasCloudFiles(nightDate: string): Promise<boolean> {
 
     if (!res.ok) return false;
 
-    const { files } = await res.json() as { files: StoredFileMetadata[] };
-    return (files ?? []).length > 0;
+    const data = await res.json();
+    return Array.isArray(data?.files) && data.files.length > 0;
   } catch {
     return false;
   }
