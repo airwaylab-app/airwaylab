@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         const periodEnd = updatedItem?.current_period_end;
 
         // Update subscription record
-        await supabase
+        const { error: subUpdateErr } = await supabase
           .from('subscriptions')
           .update({
             stripe_price_id: priceId || '',
@@ -138,9 +138,24 @@ export async function POST(request: NextRequest) {
           })
           .eq('stripe_subscription_id', subscription.id);
 
+        if (subUpdateErr) {
+          console.error('[stripe-webhook] Subscription update failed:', subUpdateErr);
+          Sentry.captureException(subUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        }
+
         // Update profile tier if subscription is still active
         if (userId && ['active', 'trialing'].includes(subscription.status)) {
-          await supabase.from('profiles').update({ tier }).eq('id', userId);
+          const { error: profileUpdateErr } = await supabase.from('profiles').update({ tier }).eq('id', userId);
+          if (profileUpdateErr) {
+            console.error('[stripe-webhook] Profile tier update failed:', profileUpdateErr);
+            Sentry.captureException(profileUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          }
+        } else if (!userId) {
+          console.warn(`[stripe-webhook] subscription.updated missing supabase_user_id in metadata, subscription=${subscription.id}, event=${event.id}`);
+          Sentry.captureMessage('Stripe subscription.updated missing supabase_user_id', {
+            level: 'warning',
+            extra: { eventId: event.id, subscriptionId: subscription.id },
+          });
         }
 
         break;
@@ -151,10 +166,15 @@ export async function POST(request: NextRequest) {
         const userId = subscription.metadata?.supabase_user_id;
 
         // Mark subscription as canceled
-        await supabase
+        const { error: cancelErr } = await supabase
           .from('subscriptions')
           .update({ status: 'canceled' })
           .eq('stripe_subscription_id', subscription.id);
+
+        if (cancelErr) {
+          console.error('[stripe-webhook] Subscription cancel update failed:', cancelErr);
+          Sentry.captureException(cancelErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        }
 
         // M8: Only downgrade if no other active subscriptions remain
         if (userId) {
@@ -166,18 +186,32 @@ export async function POST(request: NextRequest) {
             .limit(1);
 
           if (!activeSubs || activeSubs.length === 0) {
-            await supabase
+            const { error: downgradeErr } = await supabase
               .from('profiles')
               .update({ tier: 'community' })
               .eq('id', userId);
+            if (downgradeErr) {
+              console.error('[stripe-webhook] Profile downgrade failed:', downgradeErr);
+              Sentry.captureException(downgradeErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+            }
           } else {
             // Keep the tier of the remaining active subscription
             const remainingTier = activeSubs[0].tier as string;
-            await supabase
+            const { error: tierKeepErr } = await supabase
               .from('profiles')
               .update({ tier: remainingTier })
               .eq('id', userId);
+            if (tierKeepErr) {
+              console.error('[stripe-webhook] Profile tier keep failed:', tierKeepErr);
+              Sentry.captureException(tierKeepErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+            }
           }
+        } else {
+          console.warn(`[stripe-webhook] subscription.deleted missing supabase_user_id in metadata, subscription=${subscription.id}, event=${event.id}`);
+          Sentry.captureMessage('Stripe subscription.deleted missing supabase_user_id', {
+            level: 'warning',
+            extra: { eventId: event.id, subscriptionId: subscription.id },
+          });
         }
 
         break;
@@ -191,12 +225,23 @@ export async function POST(request: NextRequest) {
           : subDetails?.subscription?.id;
 
         if (subscriptionId) {
-          await supabase
+          const { error: pastDueErr } = await supabase
             .from('subscriptions')
             .update({ status: 'past_due' })
             .eq('stripe_subscription_id', subscriptionId);
+          if (pastDueErr) {
+            console.error('[stripe-webhook] Past due update failed:', pastDueErr);
+            Sentry.captureException(pastDueErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          }
+        } else {
+          console.warn(`[stripe-webhook] invoice.payment_failed could not extract subscriptionId, event=${event.id}`);
         }
 
+        break;
+      }
+
+      default: {
+        console.info(`[stripe-webhook] Unhandled event type: ${event.type}, event=${event.id}`);
         break;
       }
     }

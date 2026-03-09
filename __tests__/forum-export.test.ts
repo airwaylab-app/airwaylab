@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { exportForumSingleNight, exportForumMultiNight } from '@/lib/forum-export';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
+import type { Tier } from '@/lib/auth/auth-context';
 
 describe('exportForumSingleNight', () => {
   const night = SAMPLE_NIGHTS[0]; // night1 with oximetry
@@ -147,5 +148,41 @@ describe('exportForumMultiNight', () => {
   it('includes AirwayLab attribution', () => {
     const output = exportForumMultiNight(SAMPLE_NIGHTS);
     expect(output).toContain('AirwayLab');
+  });
+});
+
+describe('tier badges in forum export', () => {
+  const night = SAMPLE_NIGHTS[0];
+
+  it('includes champion badge for champion tier', () => {
+    const output = exportForumSingleNight(night, 'champion' as Tier);
+    expect(output).toContain('\u{1F3C6}'); // 🏆
+  });
+
+  it('includes supporter badge for supporter tier', () => {
+    const output = exportForumSingleNight(night, 'supporter' as Tier);
+    expect(output).toContain('\u{1F49A}'); // 💚
+  });
+
+  it('includes no badge for community tier', () => {
+    const output = exportForumSingleNight(night, 'community' as Tier);
+    expect(output).not.toContain('\u{1F3C6}');
+    expect(output).not.toContain('\u{1F49A}');
+  });
+
+  it('includes no badge when tier is undefined', () => {
+    const output = exportForumSingleNight(night);
+    expect(output).not.toContain('\u{1F3C6}');
+    expect(output).not.toContain('\u{1F49A}');
+  });
+
+  it('multi-night export includes champion badge', () => {
+    const output = exportForumMultiNight(SAMPLE_NIGHTS, 'champion' as Tier);
+    expect(output).toContain('\u{1F3C6}');
+  });
+
+  it('multi-night export includes supporter badge', () => {
+    const output = exportForumMultiNight(SAMPLE_NIGHTS, 'supporter' as Tier);
+    expect(output).toContain('\u{1F49A}');
   });
 });

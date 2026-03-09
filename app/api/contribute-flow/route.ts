@@ -107,7 +107,8 @@ export async function POST(request: Request) {
       contributionId,
       nightCount: nights.length,
     });
-  } catch {
+  } catch (err) {
+    console.error('[contribute-flow] Unexpected error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

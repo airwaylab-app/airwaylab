@@ -213,6 +213,8 @@ export async function POST(request: NextRequest) {
     // Extract text response
     const textBlock = message.content.find((block) => block.type === 'text');
     if (!textBlock || textBlock.type !== 'text') {
+      console.error('[ai-insights] No text block in AI response');
+      Sentry.captureMessage('AI insights returned no text block', { level: 'warning' });
       return NextResponse.json({ error: 'No response from AI' }, { status: 502 });
     }
 
@@ -220,12 +222,19 @@ export async function POST(request: NextRequest) {
     let insights: Insight[];
     try {
       insights = JSON.parse(textBlock.text);
-    } catch {
+    } catch (parseErr) {
+      console.error('[ai-insights] Failed to parse AI response JSON:', (parseErr as Error).message);
+      Sentry.captureMessage('AI insights returned unparseable JSON', {
+        level: 'warning',
+        extra: { responsePreview: textBlock.text.slice(0, 200) },
+      });
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 });
     }
 
     // Validate insight shape
     if (!Array.isArray(insights)) {
+      console.error('[ai-insights] AI response is not an array');
+      Sentry.captureMessage('AI insights returned non-array response', { level: 'warning' });
       return NextResponse.json({ error: 'Invalid AI response format' }, { status: 502 });
     }
 
@@ -255,8 +264,8 @@ export async function POST(request: NextRequest) {
         );
 
       if (upsertError) {
-        // Upsert doesn't increment — use raw increment via RPC or update
-        // Fallback: fetch + update
+        // Upsert doesn't increment — fallback: fetch + update
+        console.warn('[ai-insights] AI usage upsert failed, falling back to fetch+update:', upsertError.message);
         const { data: existing } = await adminClient
           .from('ai_usage')
           .select('count')
