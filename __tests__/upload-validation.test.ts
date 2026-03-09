@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validateSDFiles, validateOximetryFiles } from '@/lib/upload-validation';
+import {
+  validateSDFiles,
+  validateOximetryFiles,
+  detectOximetryFormat,
+  checkOximetryFormats,
+} from '@/lib/upload-validation';
 
 // Helper to create mock File objects
 function mockFile(name: string, size = 1024, webkitRelativePath = ''): File {
@@ -137,5 +142,59 @@ describe('validateOximetryFiles', () => {
     const result = validateOximetryFiles(files);
     expect(result.valid).toBe(true);
     expect(result.edfCount).toBe(3);
+  });
+});
+
+describe('detectOximetryFormat', () => {
+  it('detects Viatom format', () => {
+    expect(detectOximetryFormat('Time, Oxygen Level, Pulse Rate, Motion')).toBe('viatom');
+  });
+
+  it('detects Viatom format case-insensitively', () => {
+    expect(detectOximetryFormat('time,OXYGEN LEVEL,PULSE RATE')).toBe('viatom');
+  });
+
+  it('returns unknown for unrecognized format', () => {
+    expect(detectOximetryFormat('timestamp,spo2,hr,movement')).toBe('unknown');
+  });
+
+  it('returns unknown for empty header', () => {
+    expect(detectOximetryFormat('')).toBe('unknown');
+  });
+
+  it('returns unknown for non-oximetry CSV', () => {
+    expect(detectOximetryFormat('Name,Age,City')).toBe('unknown');
+  });
+});
+
+describe('checkOximetryFormats', () => {
+  it('returns empty array for supported files', async () => {
+    const content = 'Time, Oxygen Level, Pulse Rate, Motion\n12:00,98,65,0';
+    const file = new File([content], 'oximetry.csv', { type: 'text/csv' });
+    const result = await checkOximetryFormats([file]);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns unsupported files with header samples', async () => {
+    const content = 'timestamp,spo2,hr\n1234567890,97,62\n1234567891,96,63';
+    const file = new File([content], 'wellue.csv', { type: 'text/csv' });
+    const result = await checkOximetryFormats([file]);
+    expect(result).toHaveLength(1);
+    expect(result[0].fileName).toBe('wellue.csv');
+    expect(result[0].headerSample).toContain('timestamp,spo2,hr');
+  });
+
+  it('skips non-CSV files', async () => {
+    const file = new File(['binary data'], 'data.edf', { type: '' });
+    const result = await checkOximetryFormats([file]);
+    expect(result).toHaveLength(0);
+  });
+
+  it('handles mixed supported and unsupported files', async () => {
+    const supported = new File(['Time, Oxygen Level, Pulse Rate\n12:00,98,65'], 'good.csv');
+    const unsupported = new File(['ts,o2,hr\n1,97,62'], 'bad.csv');
+    const result = await checkOximetryFormats([supported, unsupported]);
+    expect(result).toHaveLength(1);
+    expect(result[0].fileName).toBe('bad.csv');
   });
 });

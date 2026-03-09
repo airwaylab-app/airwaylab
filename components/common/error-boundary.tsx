@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, RotateCcw, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,6 +27,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    Sentry.captureException(error, {
+      extra: {
+        context: this.props.context ?? 'component',
+        componentStack: info.componentStack,
+      },
+    });
     console.error(
       `[AirwayLab] Error in ${this.props.context ?? 'component'}:`,
       error,
