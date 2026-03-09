@@ -8,6 +8,7 @@ import type { Tier } from './auth-context';
 type Feature =
   | 'ai_insights'
   | 'cloud_sync'
+  | 'raw_storage'
   | 'trends_full'
   | 'pdf_report'
   | 'enhanced_export'
@@ -19,6 +20,7 @@ type Feature =
 const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   ai_insights: ['community', 'supporter', 'champion'], // Community gets 3/month
   cloud_sync: ['supporter', 'champion'],
+  raw_storage: ['supporter', 'champion'],
   trends_full: ['supporter', 'champion'],
   pdf_report: ['supporter', 'champion'],
   enhanced_export: ['supporter', 'champion'],

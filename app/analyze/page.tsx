@@ -7,6 +7,9 @@ import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionOptIn } from '@/components/upload/contribution-opt-in';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
 import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
+import { StorageConsent } from '@/components/upload/storage-consent';
+import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
+import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import { DataContribution } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -65,6 +68,9 @@ function AnalyzePageInner() {
   const oxInputRef = useRef<HTMLInputElement>(null);
   const contributeOptInRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab-contribute-optin') === '1'; } catch { return false; } })()
+  );
+  const storageConsentRef = useRef(
+    typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_storage_consent') === '1'; } catch { return false; } })()
   );
   const [showContributeNudge, setShowContributeNudge] = useState(false);
   const pendingNightsRef = useRef<NightResult[]>([]);
@@ -145,6 +151,11 @@ function AnalyzePageInner() {
         }
         // If user already opted in and no new data, or already contributed,
         // the DataContribution banner handles re-contribution offers
+
+        // Cloud storage: auto-upload raw files if consented
+        if (storageConsentRef.current && sdFilesRef.current.length > 0) {
+          uploadOrchestrator.upload(sdFilesRef.current).catch(() => { /* handled by orchestrator */ });
+        }
 
         // Update local lifetime night count (deduplicate by date)
         try {
@@ -338,6 +349,11 @@ function AnalyzePageInner() {
         <div className="mx-auto max-w-lg">
           <FileUpload onFilesSelected={handleFiles} />
 
+          {/* Cloud storage consent — shown for eligible users */}
+          <div className="mt-4">
+            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
+          </div>
+
           {/* Data contribution opt-in — shown during upload for higher conversion */}
           <div className="mt-4">
             <ContributionOptIn onChange={(v) => { contributeOptInRef.current = v; }} />
@@ -442,6 +458,9 @@ function AnalyzePageInner() {
               </Button>
             </div>
           )}
+
+          {/* Cloud storage progress banner */}
+          <StorageProgressBanner />
 
           {/* Data Contribution — prominent placement at top of dashboard */}
           <DataContribution nights={nights} isDemo={isDemo} />
