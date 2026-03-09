@@ -61,7 +61,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             format="int"
             threshold={THRESHOLDS.watRegularity}
             previousValue={p?.wat.regularityScore}
-            tooltip="Measures breathing pattern consistency using Sample Entropy. Higher scores mean more repetitive patterns, which on PAP may signal persistent flow limitation."
+            tooltip="Measures breathing pattern predictability via Sample Entropy. Higher = more repetitive = worse. On PAP therapy, repetitive breathing often indicates the airway is persistently narrowed, causing uniform restricted breaths. Lower scores reflect healthy natural variability."
             onClick={clickable ? () => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity }) : undefined}
           />
           <MetricCard
@@ -81,8 +81,10 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
               <strong className="text-foreground">FL Score</strong> measures the median
               tidal volume ratio — higher values indicate greater flow limitation.{' '}
               <strong className="text-foreground">Regularity</strong> uses Sample Entropy
-              to quantify breathing pattern consistency — higher scores indicate more
-              repetitive patterns, which during PAP therapy may signal persistent flow limitation.{' '}
+              to quantify breathing pattern predictability — higher scores mean more
+              repetitive breathing, which is <em>worse</em> on PAP therapy (it suggests persistent
+              airway narrowing causing uniform restricted breaths). Lower scores reflect healthy
+              natural breath-to-breath variability.{' '}
               <strong className="text-foreground">Periodicity</strong> uses FFT on minute
               ventilation to detect cyclic breathing patterns.
             </p>
@@ -122,7 +124,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             unit="/hr"
             threshold={THRESHOLDS.reraIndex}
             previousValue={p?.ned.reraIndex}
-            tooltip="Respiratory Effort-Related Arousals per hour — brief awakenings from breathing effort. Lower is better."
+            tooltip="Respiratory Effort-Related Arousals per hour. Detected by finding sequences of 3–15 breaths where NED >20% or Tpeak/Ti >0.40, then validated by rising NED slope, recovery breath (NED <10%), or max NED >34%. Each validated sequence counts as one RERA event. Lower is better."
             onClick={clickable ? () => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex }) : undefined}
           />
           <MetricCard
@@ -139,7 +141,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             unit="/hr"
             threshold={THRESHOLDS.eai}
             previousValue={p?.ned.estimatedArousalIndex}
-            tooltip="Estimated arousals per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
+            tooltip="Estimated arousals per hour. Detects sudden spikes in respiratory rate (>20% above baseline) or tidal volume (>30% above baseline) compared to a 120-second rolling window. A 15-second refractory period prevents double-counting. Lower means less fragmented sleep."
             onClick={clickable ? () => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
           />
         </div>
@@ -279,14 +281,23 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
       </Card>
 
       {/* Breath Stats */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-xs text-muted-foreground sm:gap-4">
-        <span>
-          Total breaths: <strong className="text-foreground">{n.ned.breathCount}</strong>
-        </span>
-        <span>
-          Combined FL:{' '}
-          <strong className="text-foreground">{n.ned.combinedFLPct.toFixed(0)}%</strong>
-        </span>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-xs text-muted-foreground">
+          <span>
+            Total breaths: <strong className="text-foreground">{n.ned.breathCount}</strong>
+          </span>
+        </div>
+        <MetricCard
+          label="Combined FL"
+          value={n.ned.combinedFLPct}
+          unit="%"
+          format="int"
+          threshold={THRESHOLDS.combinedFL}
+          previousValue={p?.ned.combinedFLPct}
+          compact
+          tooltip="Percentage of breaths classified as flow-limited by either NED (≥34%) or Flatness Index (≥0.85). Combines both detection methods to catch obstruction that either metric alone might miss. Lower is better."
+          onClick={clickable ? () => openMetric('Combined FL', (x) => x.ned.combinedFLPct, { unit: '%', threshold: THRESHOLDS.combinedFL, description: 'Percentage of breaths classified as flow-limited by either NED (≥34%) or Flatness Index (≥0.85). Combines both detection methods to catch obstruction that either metric alone might miss.' }) : undefined}
+        />
       </div>
 
       {/* Metric Detail Modal */}

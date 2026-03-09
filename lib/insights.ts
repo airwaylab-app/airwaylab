@@ -162,6 +162,26 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     });
   }
 
+  // Metric divergence: Glasgow/NED low but WAT FL high (or vice versa)
+  const watFLL = getTrafficLight(n.wat.flScore, THRESHOLDS.watFL);
+  if (gl === 'good' && nedL === 'good' && (watFLL === 'bad' || watFLL === 'warn')) {
+    insights.push({
+      id: 'metric-divergence-wat-high',
+      type: 'info',
+      title: 'WAT FL elevated despite low Glasgow/NED',
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% detects inspiratory flow shape flattening that Glasgow (${fmt(n.glasgow.overall)}) and NED (${fmt(n.ned.nedMean)}%) did not flag. These tools measure different aspects of flow limitation — WAT focuses on waveform flatness, while Glasgow and NED use other criteria. This pattern may indicate subtle or intermittent obstruction.`,
+      category: 'wat',
+    });
+  } else if ((gl === 'bad' || nedL === 'bad') && watFLL === 'good') {
+    insights.push({
+      id: 'metric-divergence-wat-low',
+      type: 'info',
+      title: 'Low WAT FL despite elevated Glasgow/NED',
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The obstruction pattern may not involve classic waveform flattening — Glasgow detects skew, spikes, and multi-peak patterns that WAT does not measure.`,
+      category: 'wat',
+    });
+  }
+
   // WAT periodicity
   if (n.wat.periodicityIndex > 40) {
     insights.push({
