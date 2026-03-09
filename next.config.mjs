@@ -78,8 +78,10 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
-  // Hides source maps from generated client bundles
-  hideSourceMaps: true,
+  // Source maps are uploaded to Sentry then deleted from the build output
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
 
   // Webpack-specific options
   webpack: {

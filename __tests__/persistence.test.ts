@@ -109,12 +109,12 @@ describe('persistence', () => {
       expect(first.ned.nedMean).toBe(SAMPLE_NIGHTS[0].ned.nedMean);
     });
 
-    it('returns null for expired data (>7 days)', () => {
+    it('returns null for expired data (>30 days)', () => {
       persistResults(SAMPLE_NIGHTS, null);
-      // Modify the savedAt to be >7 days ago
+      // Modify the savedAt to be >30 days ago (MAX_AGE_MS = 30 days)
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
-      parsed.savedAt = Date.now() - 8 * 24 * 60 * 60 * 1000; // 8 days ago
+      parsed.savedAt = Date.now() - 31 * 24 * 60 * 60 * 1000; // 31 days ago
       storage.set('airwaylab_results', JSON.stringify(parsed));
 
       const result = loadPersistedResults();

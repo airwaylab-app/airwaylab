@@ -71,19 +71,20 @@ describe('validateSDFiles', () => {
     expect(result.warnings.some((w) => w.includes('flow data'))).toBe(true);
   });
 
-  it('warns when many non-EDF files are included', () => {
+  it('accepts uploads with many non-EDF files without warnings about them', () => {
     const files: File[] = [];
-    // Add some EDF files
+    // Add some EDF files in DATALOG structure
     for (let i = 0; i < 5; i++) {
       files.push(mockFile(`file${i}.edf`, 1000, `SD/DATALOG/20250110/file${i}.edf`));
     }
-    // Add >100 non-EDF files
+    // Add >100 non-EDF files — these are simply ignored
     for (let i = 0; i < 105; i++) {
       files.push(mockFile(`photo${i}.jpg`, 500, `SD/photos/photo${i}.jpg`));
     }
     const result = validateSDFiles(files);
     expect(result.valid).toBe(true);
-    expect(result.warnings.some((w) => w.includes('non-EDF files'))).toBe(true);
+    // Non-EDF files are silently ignored — no specific warning about them
+    expect(result.warnings.some((w) => w.includes('non-EDF files'))).toBe(false);
   });
 
   it('warns about missing DATALOG structure when few EDFs and no DATALOG path', () => {
