@@ -179,26 +179,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Authentication is not configured.' };
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-    if (error) {
-      Sentry.captureException(error, {
-        tags: { context: 'auth-sign-in' },
+      if (error) {
+        Sentry.captureException(error, {
+          tags: { context: 'auth-sign-in' },
+          extra: { emailDomain: email.split('@')[1] },
+        });
+        return { error: error.message };
+      }
+      return { error: null };
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { context: 'auth-sign-in', type: 'unexpected' },
         extra: { emailDomain: email.split('@')[1] },
       });
-      return { error: error.message };
+      return { error: 'An unexpected error occurred. Please try again.' };
     }
-    return { error: null };
   }, [supabase]);
 
   const signOut = useCallback(async () => {
     if (!supabase) return;
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('[auth-context] Sign-out failed:', error.message);
+      Sentry.captureException(error, { tags: { context: 'auth-sign-out' } });
+    }
     setUser(null);
     setSession(null);
     setProfile(null);
