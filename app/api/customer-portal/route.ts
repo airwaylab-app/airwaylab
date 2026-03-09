@@ -50,6 +50,25 @@ export async function POST(request: NextRequest) {
   });
 
   try {
+    // Verify customer exists in Stripe before creating portal session
+    try {
+      const customer = await stripe.customers.retrieve(profile.stripe_customer_id);
+      if (customer.deleted) {
+        throw new Error('Customer deleted');
+      }
+    } catch {
+      console.error(`[customer-portal] Stale Stripe customer: ${profile.stripe_customer_id}`);
+      Sentry.captureMessage(`Stale Stripe customer ID on portal access: ${profile.stripe_customer_id}`, {
+        level: 'warning',
+        tags: { route: 'customer-portal' },
+        extra: { userId: user.id },
+      });
+      return NextResponse.json(
+        { error: 'Your billing account could not be found. Please contact us at support@airwaylab.app.' },
+        { status: 404 }
+      );
+    }
+
     // M3: Use env var for origin
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://airwaylab.app';
 
