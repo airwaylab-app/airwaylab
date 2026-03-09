@@ -55,10 +55,11 @@ interface Props {
   previousNight: NightResult | null;
   therapyChangeDate: string | null;
   onUploadOximetry?: () => void;
+  onReUpload?: () => void;
   isDemo?: boolean;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, isDemo = false }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, isDemo = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -238,6 +239,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         hasOximetry={!!n.oximetry}
         nightCount={nights.length}
         onUploadOximetry={onUploadOximetry}
+        onReUpload={onReUpload}
       />
 
       {/* Night Info Bar */}
@@ -465,37 +467,42 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       )}
 
       {/* Oximetry Empty State */}
-      {!n.oximetry && (
-        <Card
-          className={`border-dashed border-border/50 ${
-            onUploadOximetry ? 'cursor-pointer transition-colors hover:border-border hover:bg-card/50' : ''
-          }`}
-          onClick={onUploadOximetry}
-          role={onUploadOximetry ? 'button' : undefined}
-          tabIndex={onUploadOximetry ? 0 : undefined}
-          onKeyDown={onUploadOximetry ? (e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onUploadOximetry();
-            }
-          } : undefined}
-        >
-          <CardContent className="flex items-center gap-3 py-6">
-            <HeartPulse className="h-5 w-5 text-muted-foreground/50" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">No Oximetry Data</p>
-              <p className="text-xs text-muted-foreground/70">
-                {onUploadOximetry
-                  ? 'Click to upload a Viatom/Checkme O2 Max CSV for SpO\u2082 and heart rate analysis.'
-                  : 'Upload a Viatom/Checkme O2 Max CSV alongside your SD card for SpO\u2082 and heart rate analysis.'}
-              </p>
-            </div>
-            {onUploadOximetry && (
-              <Upload className="ml-auto h-4 w-4 text-muted-foreground/40" />
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {!n.oximetry && (() => {
+        const clickHandler = onUploadOximetry ?? onReUpload;
+        return (
+          <Card
+            className={`border-dashed border-border/50 ${
+              clickHandler ? 'cursor-pointer transition-colors hover:border-border hover:bg-card/50' : ''
+            }`}
+            onClick={clickHandler}
+            role={clickHandler ? 'button' : undefined}
+            tabIndex={clickHandler ? 0 : undefined}
+            onKeyDown={clickHandler ? (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                clickHandler();
+              }
+            } : undefined}
+          >
+            <CardContent className="flex items-center gap-3 py-6">
+              <HeartPulse className="h-5 w-5 text-muted-foreground/50" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">No Oximetry Data</p>
+                <p className="text-xs text-muted-foreground/70">
+                  {onUploadOximetry
+                    ? 'Click to upload a Viatom/Checkme O2 Max CSV for SpO\u2082 and heart rate analysis.'
+                    : onReUpload
+                      ? 'Click to re-upload your SD card with an oximetry CSV for SpO\u2082 and heart rate analysis.'
+                      : 'Upload a Viatom/Checkme O2 Max CSV alongside your SD card for SpO\u2082 and heart rate analysis.'}
+                </p>
+              </div>
+              {clickHandler && (
+                <Upload className="ml-auto h-4 w-4 text-muted-foreground/40" />
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Share Prompts (real data only) */}
       <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />

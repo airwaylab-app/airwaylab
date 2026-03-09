@@ -594,6 +594,11 @@ function AnalyzePageInner() {
                       ? handleOximetryUpload
                       : undefined
                   }
+                  onReUpload={
+                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length === 0
+                      ? handleReset
+                      : undefined
+                  }
                 />
               </ErrorBoundary>
             </TabsContent>
@@ -639,6 +644,11 @@ function AnalyzePageInner() {
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry && sdFilesRef.current.length > 0
                       ? handleOximetryUpload
+                      : undefined
+                  }
+                  onReUpload={
+                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length === 0
+                      ? handleReset
                       : undefined
                   }
                 />
