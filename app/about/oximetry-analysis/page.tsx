@@ -8,19 +8,19 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Pulse Oximetry Analysis for CPAP Users — 16 Metrics | AirwayLab',
+  title: 'Pulse Oximetry Analysis for PAP Users — 16 Metrics | AirwayLab',
   description:
     'AirwayLab\'s oximetry engine computes 16 metrics from Viatom/Checkme O2 Max data: ODI, desaturation indices, heart rate surges, coupled events, and half-night comparisons.',
   openGraph: {
-    title: 'Pulse Oximetry Analysis for CPAP Users | AirwayLab',
+    title: 'Pulse Oximetry Analysis for PAP Users | AirwayLab',
     description:
       'A 16-metric framework for SpO2 and heart rate analysis. ODI, desaturation time, HR surges, and coupled cardio-respiratory events.',
   },
   keywords: [
-    'pulse oximetry CPAP', 'ODI oxygen desaturation index',
-    'SpO2 overnight', 'heart rate CPAP', 'Viatom Checkme O2 Max',
+    'pulse oximetry PAP', 'ODI oxygen desaturation index',
+    'SpO2 overnight', 'heart rate PAP', 'Viatom Checkme O2 Max',
     'overnight oximetry analysis', 'sleep apnea oximetry',
-    'CPAP oximetry', 'nocturnal hypoxemia',
+    'PAP oximetry', 'nocturnal hypoxemia',
   ],
 };
 
@@ -172,7 +172,7 @@ export default function OximetryAnalysisPage() {
               <span className="mt-px shrink-0 font-mono text-xs text-rose-400/70">04</span>
               <span>
                 <strong className="text-foreground">Clinical integration</strong> &mdash;
-                Results are presented alongside CPAP flow analysis data, enabling
+                Results are presented alongside PAP flow analysis data, enabling
                 you to see how flow limitation events correlate with oxygen
                 desaturations and heart rate responses.
               </span>
@@ -226,7 +226,7 @@ export default function OximetryAnalysisPage() {
             second-by-second data.
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Oximetry data is entirely optional &mdash; all four CPAP analysis
+            Oximetry data is entirely optional &mdash; all four PAP analysis
             engines (Glasgow Index, WAT, NED) work with SD card data alone. The
             oximetry pipeline activates only when you provide oximetry CSVs
             alongside your SD card upload.

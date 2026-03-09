@@ -50,7 +50,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           Get notified when we add AI-powered therapy insights and multi-device support
         </p>
         <p className="mb-3 text-[11px] text-muted-foreground">
-          Join other CPAP users shaping the future of breathing data analysis. No spam, ever.
+          Join other PAP users shaping the future of breathing data analysis. No spam, ever.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input

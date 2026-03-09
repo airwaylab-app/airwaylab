@@ -2,7 +2,7 @@
 
 ## Context
 
-AirwayLab is live at airwaylab.app. Before launch posts on Reddit (r/SleepApnea, r/UARS, r/CPAP) and ApneaBoard, the product needs a clear mission that resonates with the CPAP community. This community is:
+AirwayLab is live at airwaylab.app. Before launch posts on Reddit (r/SleepApnea, r/UARS, r/CPAP) and ApneaBoard, the product needs a clear mission that resonates with the PAP community. This community is:
 - Skeptical of commercial products (ResMed locks down data, Philips had a recall scandal, SleepHQ monetised aggressively)
 - Passionate about open data and self-advocacy
 - Frustrated that clinicians often ignore everything beyond AHI
@@ -13,7 +13,7 @@ AirwayLab is live at airwaylab.app. Before launch posts on Reddit (r/SleepApnea,
 
 **AirwayLab exists because your breathing data belongs to you.**
 
-CPAP machines collect detailed breath-by-breath data — but most of it stays locked on an SD card, invisible to patients and ignored by clinicians who only check AHI. Millions of people are "treated" with AHI under 5 but still wake up exhausted because flow limitation, RERAs, and breathing pattern instability go undetected.
+PAP machines collect detailed breath-by-breath data — but most of it stays locked on an SD card, invisible to patients and ignored by clinicians who only check AHI. Millions of people are "treated" with AHI under 5 but still wake up exhausted because flow limitation, RERAs, and breathing pattern instability go undetected.
 
 AirwayLab makes that data visible, understandable, and actionable. We believe:
 
@@ -29,7 +29,7 @@ AirwayLab makes that data visible, understandable, and actionable. We believe:
 
 - Do NOT modify: `lib/parsers/`, `lib/analyzers/`, `workers/` logic
 - Keep the dark-only clinical aesthetic
-- Tone: warm but not saccharine. Direct, not corporate. Empathetic, not preachy. Think "fellow CPAP user who happens to build software" not "health tech startup."
+- Tone: warm but not saccharine. Direct, not corporate. Empathetic, not preachy. Think "fellow PAP user who happens to build software" not "health tech startup."
 - No marketing buzzwords: avoid "revolutionary", "game-changing", "cutting-edge", "empower"
 - DO use the language the community uses: "flow limitation", "RERAs", "AHI doesn't tell the whole story", "residual sleepiness", "therapy optimisation"
 - Medical disclaimer must remain wherever health claims are made
@@ -41,8 +41,8 @@ AirwayLab makes that data visible, understandable, and actionable. We believe:
 **File:** `app/page.tsx`
 
 ### Hero section changes:
-- Keep the current H1 ("Flow Limitation Analysis for ResMed CPAP Data" or similar — it's good for SEO)
-- Rewrite the subtitle/description paragraph to lead with the human problem, not the product features. Something like: "Your CPAP says your AHI is fine. But you still wake up exhausted. AirwayLab looks deeper — detecting flow limitation, RERAs, and breathing pattern instability that standard metrics miss. Free, open source, and 100% in your browser."
+- Keep the current H1 ("Flow Limitation Analysis for ResMed PAP Data" or similar — it's good for SEO)
+- Rewrite the subtitle/description paragraph to lead with the human problem, not the product features. Something like: "Your PAP device says your AHI is fine. But you still wake up exhausted. AirwayLab looks deeper — detecting flow limitation, RERAs, and breathing pattern instability that standard metrics miss. Free, open source, and 100% in your browser."
 - Keep the "Upload Your SD Card" and "See Demo" CTAs
 
 ### Add a Mission section between the trust bar and engine showcase:
@@ -139,7 +139,7 @@ Add a brief "Why" section near the top, after the feature list:
 ```
 ## Why AirwayLab exists
 
-Your CPAP machine collects detailed breath-by-breath data every night. Most of it goes unanalysed. Clinicians typically check AHI and move on, but AHI misses flow limitation, RERAs, and breathing pattern instability — the things that explain why you might still feel exhausted with an AHI under 5.
+Your PAP machine collects detailed breath-by-breath data every night. Most of it goes unanalysed. Clinicians typically check AHI and move on, but AHI misses flow limitation, RERAs, and breathing pattern instability — the things that explain why you might still feel exhausted with an AHI under 5.
 
 AirwayLab makes that data visible. It's free because we believe therapy insight should be accessible to everyone. It's open source because we believe you should be able to verify what happens with your medical data. It runs in your browser because your data is yours.
 ```
@@ -152,7 +152,7 @@ AirwayLab makes that data visible. It's free because we believe therapy insight 
 
 Update the OpenGraph and Twitter meta descriptions to reflect the mission:
 - Current: likely feature-focused
-- New: something like "Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device."
+- New: something like "Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device."
 
 Keep it under 200 characters for OG description.
 
@@ -174,7 +174,7 @@ The PDF report that users share with their doctors should include:
 **File:** `lib/forum-export.ts`
 
 The forum post export (for Reddit/ApneaBoard) should have updated attribution:
-- Current: likely "*Generated by [AirwayLab](https://airwaylab.app) — free, open-source CPAP analysis*"
+- Current: likely "*Generated by [AirwayLab](https://airwaylab.app) — free, open-source PAP analysis*"
 - Ensure it says something like: "*Generated by [AirwayLab](https://airwaylab.app) — free, open-source airway analysis. Your data never leaves your browser.*"
 
 This is viral marketing — every forum post is a recommendation. The privacy message is the trust hook.
@@ -197,7 +197,7 @@ Add a GitHub banner/callout in the community section (near the existing GitHub l
   - One line: "AirwayLab is GPL-3.0. Star the repo to follow development, report issues, or contribute."
   - A prominent "⭐ Star on GitHub" button linking to `https://github.com/airwaylab-app/airwaylab`
   - A secondary "View source code →" text link
-- Style: use the existing card/border styling. Make the star button a real styled button (primary or outline variant), not just a text link. The star emoji in the button text is fine — the CPAP community responds to direct, honest CTAs.
+- Style: use the existing card/border styling. Make the star button a real styled button (primary or outline variant), not just a text link. The star emoji in the button text is fine — the PAP community responds to direct, honest CTAs.
 
 **Also update the header:**
 - `components/layout/header.tsx` — Change the plain "GitHub" link to include a star icon or "⭐ Star" label on desktop (keep compact on mobile). Consider using a GitHub star count badge that auto-updates (see Task 12).
@@ -277,7 +277,7 @@ When a user finishes exploring demo mode and clicks "Upload Your Data" (or after
 
 Add a section that builds credibility through numbers and community signals. Place it between the engine showcase and the "How It Works" section:
 
-- "Built for the community" or "Trusted by CPAP users"
+- "Built for the community" or "Trusted by PAP users"
 - Show 3-4 metrics (use dynamic components where possible, static fallbacks for launch):
   - "⭐ {n} GitHub stars" (from the github-stars component, Task 12)
   - "🔬 4 research-grade engines"
@@ -293,7 +293,7 @@ Add a section that builds credibility through numbers and community signals. Pla
 **File:** `lib/forum-export.ts`
 
 The forum export already has attribution but make it stickier:
-- Current: `*Generated by [AirwayLab](https://airwaylab.app) — free, open-source CPAP analysis*`
+- Current: `*Generated by [AirwayLab](https://airwaylab.app) — free, open-source PAP analysis*`
 - Enhanced: `*Generated by [AirwayLab](https://airwaylab.app) — free, open-source airway analysis. Your data never leaves your browser. [⭐ Star on GitHub](https://github.com/airwaylab-app/airwaylab)*`
 
 The GitHub link in forum posts creates a second click path for discovery.
@@ -303,8 +303,8 @@ The GitHub link in forum posts creates a second click path for discovery.
 **File:** `components/common/email-opt-in.tsx`
 
 Strengthen the email opt-in by connecting it to the community mission:
-- Hero variant: "Join {n}+ CPAP users getting updates on new analysis features. We'll never spam you or share your email."
-  - For launch, use "Join other CPAP users" without a number. Add the count once you have subscribers.
+- Hero variant: "Join {n}+ PAP users getting updates on new analysis features. We'll never spam you or share your email."
+  - For launch, use "Join other PAP users" without a number. Add the count once you have subscribers.
 - Post-analysis variant: "We're building AI-powered therapy insights. Sign up for early access — and help us keep AirwayLab free."
 - Inline variant (controls bar): keep compact, just "Get updates" with email input
 

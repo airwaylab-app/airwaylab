@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Analyze — AirwayLab',
     description:
-      'Upload ResMed CPAP/BiPAP SD card data for research-grade flow limitation analysis. 100% client-side processing.',
+      'Upload ResMed PAP SD card data for research-grade flow limitation analysis. 100% client-side processing.',
   },
 };
 

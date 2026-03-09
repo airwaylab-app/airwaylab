@@ -8,13 +8,13 @@ import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 import CNSSensitization from '../posts/what-is-cns-sensitization';
 import UnderstandingFlowLimitation from '../posts/understanding-flow-limitation';
 import BeyondAHI from '../posts/beyond-ahi';
-import CPAPDataPrivacy from '../posts/cpap-data-privacy';
+import PAPDataPrivacy from '../posts/pap-data-privacy';
 
 const postComponents: Record<string, React.ComponentType> = {
   'what-is-cns-sensitization': CNSSensitization,
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
-  'cpap-data-privacy': CPAPDataPrivacy,
+  'pap-data-privacy': PAPDataPrivacy,
 };
 
 export function generateStaticParams() {

@@ -5,7 +5,7 @@ export default function UnderstandingFlowLimitationPost() {
   return (
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-        You check your CPAP machine every morning. AHI: 1.2. The app says &quot;Great night!&quot;
+        You check your PAP machine every morning. AHI: 1.2. The app says &quot;Great night!&quot;
         with a smiley face. But you still wake up exhausted, foggy, and reaching for your third
         coffee by 10 AM. Sound familiar? The culprit might be something your machine tracks but
         never tells you about: <strong className="text-foreground">flow limitation</strong>.
@@ -68,7 +68,7 @@ export default function UnderstandingFlowLimitationPost() {
             </strong>
             . They&apos;re breathing disturbances that cause brief awakenings — enough to fragment
             your sleep architecture — but don&apos;t show up in the AHI. Some sleep physicians use
-            the Respiratory Disturbance Index (RDI), which includes RERAs, but your CPAP machine
+            the Respiratory Disturbance Index (RDI), which includes RERAs, but your PAP machine
             doesn&apos;t report this.
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function UnderstandingFlowLimitationPost() {
               <p className="text-sm font-semibold text-foreground">RERA Detection</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 By combining flow shape analysis with patterns of breathing effort and arousal
-                signatures, it&apos;s possible to estimate RERA events from CPAP flow data alone.
+                signatures, it&apos;s possible to estimate RERA events from PAP flow data alone.
               </p>
             </div>
           </div>
@@ -128,11 +128,11 @@ export default function UnderstandingFlowLimitationPost() {
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <TrendingDown className="h-5 w-5 text-rose-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">What Causes Flow Limitation on CPAP?</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">What Causes Flow Limitation on PAP?</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            If flow limitation is happening despite CPAP therapy, it usually points to one of a few
+            If flow limitation is happening despite PAP therapy, it usually points to one of a few
             issues:
           </p>
           <ul className="ml-4 space-y-2">

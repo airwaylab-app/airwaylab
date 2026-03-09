@@ -14,7 +14,7 @@ export default function BeyondAHIPost() {
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
         If you&apos;ve been diagnosed with sleep apnea, you probably know your AHI number by heart.
-        Maybe your sleep physician told you anything under 5 is &quot;normal.&quot; Maybe your CPAP
+        Maybe your sleep physician told you anything under 5 is &quot;normal.&quot; Maybe your PAP
         app shows you a score of 2.3 and gives you a thumbs up. But here&apos;s the uncomfortable
         truth that sleep medicine is slowly coming to terms with: <strong className="text-foreground">
         AHI is a deeply flawed metric</strong>, and relying on it alone may be leaving your sleep
@@ -89,7 +89,7 @@ export default function BeyondAHIPost() {
             at predicting heart disease risk.
           </p>
           <p>
-            The SAVE trial — one of the largest randomized controlled trials of CPAP therapy —
+            The SAVE trial — one of the largest randomized controlled trials of PAP therapy —
             showed no reduction in cardiovascular events despite successful AHI reduction. Many
             researchers believe this is because AHI reduction alone doesn&apos;t address the full
             spectrum of breathing disturbances.
@@ -112,7 +112,7 @@ export default function BeyondAHIPost() {
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             Sleep medicine is gradually moving toward a more nuanced set of metrics. Here are the
-            most promising ones — several of which you can already derive from your CPAP SD card
+            most promising ones — several of which you can already derive from your PAP SD card
             data:
           </p>
           <div className="space-y-3">
@@ -136,7 +136,7 @@ export default function BeyondAHIPost() {
               <p className="mt-1 text-xs text-muted-foreground">
                 By analyzing patterns of progressive flow limitation followed by sudden flow
                 restoration (suggesting arousal), it&apos;s possible to estimate RERA events from
-                CPAP data. Combined with AHI, this approximates the more comprehensive RDI.
+                PAP data. Combined with AHI, this approximates the more comprehensive RDI.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
@@ -175,7 +175,7 @@ export default function BeyondAHIPost() {
           <p>
             If this is you, you&apos;re not imagining things and you&apos;re not alone. The sleep
             medicine community has a name for your situation: residual excessive daytime sleepiness
-            (REDS) on CPAP therapy. It&apos;s estimated to affect 15-30% of treated patients.
+            (REDS) on PAP therapy. It&apos;s estimated to affect 15-30% of treated patients.
           </p>
           <p>
             Common causes that AHI won&apos;t reveal:
@@ -222,7 +222,7 @@ export default function BeyondAHIPost() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            The gap between what your CPAP machine reports and what&apos;s actually happening during
+            The gap between what your PAP machine reports and what&apos;s actually happening during
             your sleep is significant. But you have more data than you think. Your ResMed SD card
             contains breath-by-breath flow waveforms from every night — far more detailed than the
             summary statistics shown in the myAir app.

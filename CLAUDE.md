@@ -1,6 +1,6 @@
 # AirwayLab
 
-Open-core sleep/airway analysis tool for CPAP/BiPAP users. Parses OSCAR data, provides AI-powered therapy insights.
+Open-core sleep/airway analysis tool for PAP users. Parses OSCAR data, provides AI-powered therapy insights.
 
 ## Stack
 

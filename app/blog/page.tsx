@@ -6,11 +6,11 @@ import { blogPosts } from '@/lib/blog-posts';
 export const metadata: Metadata = {
   title: 'Blog — AirwayLab',
   description:
-    'Evidence-based articles about CPAP therapy, flow limitation, sleep apnea metrics, and data privacy. Written for patients and researchers alike.',
+    'Evidence-based articles about PAP therapy, flow limitation, sleep apnea metrics, and data privacy. Written for patients and researchers alike.',
   openGraph: {
     title: 'Blog — AirwayLab',
     description:
-      'Evidence-based articles about CPAP therapy, flow limitation, sleep apnea metrics, and data privacy.',
+      'Evidence-based articles about PAP therapy, flow limitation, sleep apnea metrics, and data privacy.',
     type: 'website',
     url: 'https://airwaylab.app/blog',
   },
@@ -26,7 +26,7 @@ export default function BlogIndexPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Blog</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Evidence-based articles about CPAP therapy, flow limitation, and sleep data analysis.
+          Evidence-based articles about PAP therapy, flow limitation, and sleep data analysis.
           Written for patients who want to understand their therapy — and researchers pushing the
           field forward.
         </p>

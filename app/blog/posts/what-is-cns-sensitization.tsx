@@ -13,7 +13,7 @@ export default function CNSSensitizationPost() {
   return (
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-        You&apos;ve been on CPAP or BiPAP for months. Your AHI is under 5. Your doctor says
+        You&apos;ve been on PAP therapy for months. Your AHI is under 5. Your doctor says
         you&apos;re treated. But you&apos;re still exhausted, still waking up multiple times a
         night, still dragging through every day.
       </p>

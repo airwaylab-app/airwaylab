@@ -1,8 +1,8 @@
 # AirwayLab
 
-> Free, open-source CPAP flow limitation analysis that runs entirely in your browser.
+> Free, open-source PAP (Positive Airway Pressure) flow limitation analysis that runs entirely in your browser.
 
-AirwayLab is a privacy-first web application that analyzes ResMed CPAP/BiPAP sleep therapy data to detect flow limitation, RERAs, and breathing pattern instability — metrics that standard AHI reporting misses. All analysis runs client-side via Web Workers; no data ever leaves the user's device.
+AirwayLab is a privacy-first web application that analyzes ResMed PAP sleep therapy data to detect flow limitation, RERAs, and breathing pattern instability — metrics that standard AHI reporting misses. All analysis runs client-side via Web Workers; no data ever leaves the user's device.
 
 ## Key Facts
 
@@ -15,7 +15,7 @@ AirwayLab is a privacy-first web application that analyzes ResMed CPAP/BiPAP sle
 
 ## Analysis Engines
 
-AirwayLab runs four research-grade analysis engines on every night of CPAP data:
+AirwayLab runs four research-grade analysis engines on every night of PAP data:
 
 ### Glasgow Index
 Per-breath flow shape scoring based on 9 morphological components: skewness, spikiness, flat-top pattern, multi-peak pattern, no-pause pattern, variable amplitude, inspiratory time variability, peak flow variability, and tidal volume variability. Produces a composite score from 0 (normal) to 4 (severe flow limitation). Based on methodology from respiratory research at the University of Glasgow.

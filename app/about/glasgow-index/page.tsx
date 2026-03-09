@@ -9,18 +9,18 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Glasgow Index — CPAP Flow Limitation Scoring | AirwayLab',
+  title: 'Glasgow Index — PAP Flow Limitation Scoring | AirwayLab',
   description:
-    'How the Glasgow Index scores each CPAP breath for flow limitation across 9 shape descriptors. Understand the 0–8 scale and what your score means for therapy optimisation.',
+    'How the Glasgow Index scores each PAP breath for flow limitation across 9 shape descriptors. Understand the 0–8 scale and what your score means for therapy optimisation.',
   openGraph: {
-    title: 'Glasgow Index — CPAP Flow Limitation Scoring | AirwayLab',
+    title: 'Glasgow Index — PAP Flow Limitation Scoring | AirwayLab',
     description:
       'A 9-component scoring system that evaluates every breath for flow limitation. Learn how it works and what your score means.',
   },
   keywords: [
-    'Glasgow Index', 'CPAP flow limitation', 'flow limitation scoring',
-    'ResMed flow analysis', 'breath shape analysis', 'CPAP therapy optimisation',
-    'sleep apnea flow limitation', 'CPAP pressure adjustment',
+    'Glasgow Index', 'PAP flow limitation', 'flow limitation scoring',
+    'ResMed flow analysis', 'breath shape analysis', 'PAP therapy optimisation',
+    'sleep apnea flow limitation', 'PAP pressure adjustment',
   ],
 };
 
@@ -100,7 +100,7 @@ export default function GlasgowIndexPage() {
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           The Glasgow Index is a 9-component scoring system that evaluates every
           breath for flow limitation characteristics. Originally developed by
-          DaveSkvn as an open-source CPAP flow analyzer (GPL-3.0), it provides
+          DaveSkvn as an open-source PAP flow analyzer (GPL-3.0), it provides
           a single composite score (0&ndash;8) that summarises the severity of
           flow limitation across your entire therapy session.
         </p>

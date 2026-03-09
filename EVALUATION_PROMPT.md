@@ -66,7 +66,7 @@ Mentally walk through each user journey and verify the code handles it:
 4. Sees dashboard — Is demo mode clearly labeled? Can they explore all 5 tabs?
 5. Wants to try with real data — Is the "Upload Your Data" CTA visible?
 
-### Journey B: CPAP user with SD card
+### Journey B: PAP user with SD card
 1. Goes to `/analyze` — Is the upload instruction clear?
 2. Selects their DATALOG folder — Does file validation catch wrong folders?
 3. Waits during processing — Skeleton shimmer visible? Progress meaningful?
