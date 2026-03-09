@@ -17,6 +17,8 @@ import type {
   WorkerResult,
   WorkerError,
   NightResult,
+  RawNightFlowData,
+  RawFlowSession,
   EDFFile,
   MachineSettings,
 } from '../lib/types';
@@ -36,8 +38,8 @@ self.addEventListener('error', (e: ErrorEvent) => {
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     const { files, oximetryCSVs } = e.data;
-    const results = await processFiles(files, oximetryCSVs);
-    const response: WorkerResult = { type: 'RESULTS', nights: results };
+    const { nights: results, rawFlowData } = await processFiles(files, oximetryCSVs);
+    const response: WorkerResult = { type: 'RESULTS', nights: results, rawFlowData };
     self.postMessage(response);
   } catch (err) {
     const response: WorkerError = {
@@ -56,7 +58,7 @@ function postProgress(current: number, total: number, stage: string): void {
 async function processFiles(
   files: { buffer: ArrayBuffer; path: string }[],
   oximetryCSVs?: string[]
-): Promise<NightResult[]> {
+): Promise<{ nights: NightResult[]; rawFlowData: RawNightFlowData[] }> {
   // Step 1: Identify file types
   const fileList = files.map((f) => ({
     name: f.path.split('/').pop() || '',
@@ -133,6 +135,8 @@ async function processFiles(
 
   // Step 6: Run all engines per night
   const nights: NightResult[] = [];
+  const rawFlowData: RawNightFlowData[] = [];
+  const now = Date.now();
 
   for (let i = 0; i < nightGroups.length; i++) {
     const group = nightGroups[i];
@@ -196,10 +200,27 @@ async function processFiles(
       ned,
       oximetry,
     });
+
+    // Collect raw flow data for persistence
+    const rawSessions: RawFlowSession[] = group.sessions.map((s) => ({
+      filePath: s.filePath,
+      samplingRate: s.samplingRate,
+      durationSeconds: s.durationSeconds,
+      recordingDate: s.recordingDate.toISOString(),
+      flowData: new Float32Array(s.flowData),
+      pressureData: s.pressureData ? new Float32Array(s.pressureData) : null,
+    }));
+
+    rawFlowData.push({
+      dateStr: group.nightDate,
+      sessions: rawSessions,
+      savedAt: now,
+    });
   }
 
   // Sort by date (most recent first)
   nights.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+  rawFlowData.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
 
-  return nights;
+  return { nights, rawFlowData };
 }
