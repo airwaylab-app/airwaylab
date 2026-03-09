@@ -1,6 +1,6 @@
 # Contributing to AirwayLab
 
-Thanks for your interest in contributing! AirwayLab is an open-source project that helps CPAP users understand their therapy data better.
+Thanks for your interest in contributing! AirwayLab is an open-source project that helps PAP users understand their therapy data better.
 
 ## Getting Started
 

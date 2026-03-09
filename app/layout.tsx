@@ -27,18 +27,18 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://airwaylab.app'),
-  title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
+  title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
   description:
-    'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
+    'Free, open-source PAP (Positive Airway Pressure) analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
   keywords: [
-    'CPAP', 'BiPAP', 'ResMed', 'sleep apnea', 'flow limitation',
+    'PAP', 'CPAP', 'BiPAP', 'APAP', 'ResMed', 'sleep apnea', 'flow limitation',
     'Glasgow Index', 'OSCAR alternative', 'sleep analysis',
   ],
   authors: [{ name: 'AirwayLab' }],
   openGraph: {
-    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
+    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
     description:
-      'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
+      'Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
     type: 'website',
     url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
@@ -46,9 +46,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed CPAP/BiPAP Data',
+    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
     description:
-      'Free, open-source CPAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
+      'Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -62,7 +62,7 @@ const jsonLd = {
   '@type': 'SoftwareApplication',
   name: 'AirwayLab',
   description:
-    'Free, open-source browser-based CPAP data analysis for ResMed devices',
+    'Free, open-source browser-based PAP data analysis for ResMed devices',
   url: 'https://airwaylab.app',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Any (Web Browser)',

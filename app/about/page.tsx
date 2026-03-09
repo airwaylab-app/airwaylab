@@ -22,11 +22,11 @@ import { FAQItem } from '@/components/common/faq-item';
 export const metadata: Metadata = {
   title: 'About AirwayLab — Methodology & FAQ',
   description:
-    'Learn how AirwayLab analyses CPAP flow limitation using four research-grade engines: Glasgow Index, WAT, NED, and Oximetry. 100% browser-based, open-source, and free.',
+    'Learn how AirwayLab analyses PAP flow limitation using four research-grade engines: Glasgow Index, WAT, NED, and Oximetry. 100% browser-based, open-source, and free.',
   openGraph: {
     title: 'About AirwayLab — Methodology & FAQ',
     description:
-      'Learn how AirwayLab analyses CPAP flow limitation using four research-grade engines. Open-source, browser-based, free.',
+      'Learn how AirwayLab analyses PAP flow limitation using four research-grade engines. Open-source, browser-based, free.',
   },
 };
 
@@ -122,7 +122,7 @@ export default function AboutPage() {
           About AirwayLab
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          CPAP machines collect detailed breath-by-breath data every night — but most of it stays
+          PAP machines collect detailed breath-by-breath data every night — but most of it stays
           locked on an SD card, invisible to patients and ignored by clinicians who only check AHI.
           Millions of people are &ldquo;treated&rdquo; with AHI under 5 but still wake up exhausted because
           flow limitation, RERAs, and breathing pattern instability go undetected.
@@ -203,7 +203,7 @@ export default function AboutPage() {
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                CPAP machines collect rich breath-by-breath flow data every night, but most of it stays invisible —
+                PAP machines collect rich breath-by-breath flow data every night, but most of it stays invisible —
                 locked on an SD card, inaccessible to the people it belongs to. AirwayLab makes that data visible
                 and understandable. Four research-grade engines analyse flow limitation, RERAs, and breathing
                 patterns that standard AHI metrics miss. Everything runs in your browser, so your data stays yours.
@@ -343,7 +343,7 @@ export default function AboutPage() {
           Frequently Asked Questions
         </h2>
         <div className="rounded-xl border border-border/50 bg-card/30 px-5">
-          <FAQItem question="What CPAP machines are supported?">
+          <FAQItem question="What PAP devices are supported?">
             <p className="mb-3">
               AirwayLab currently supports <strong className="text-foreground">ResMed AirSense 10</strong> and{' '}
               <strong className="text-foreground">AirCurve 10</strong> series machines (CPAP, AutoSet,
@@ -525,7 +525,7 @@ export default function AboutPage() {
             only. The analysis results should not be used as a substitute for
             professional medical advice, diagnosis, or treatment. Always consult
             qualified healthcare providers regarding your sleep therapy and any
-            changes to CPAP/BiPAP settings.
+            changes to PAP settings.
           </p>
         </div>
       </section>

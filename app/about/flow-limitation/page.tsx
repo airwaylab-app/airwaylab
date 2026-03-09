@@ -11,20 +11,20 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'What Is CPAP Flow Limitation? Causes, Detection & Treatment | AirwayLab',
+  title: 'What Is PAP Flow Limitation? Causes, Detection & Treatment | AirwayLab',
   description:
-    'Understand flow limitation in CPAP therapy — what it is, why it matters, how to detect it from your ResMed SD card data, and what you can do about it.',
+    'Understand flow limitation in PAP therapy — what it is, why it matters, how to detect it from your ResMed SD card data, and what you can do about it.',
   openGraph: {
-    title: 'What Is CPAP Flow Limitation? | AirwayLab',
+    title: 'What Is PAP Flow Limitation? | AirwayLab',
     description:
-      'Flow limitation is partial airway obstruction during CPAP therapy that standard AHI may miss. Learn how to detect and address it.',
+      'Flow limitation is partial airway obstruction during PAP therapy that standard AHI may miss. Learn how to detect and address it.',
   },
   keywords: [
-    'CPAP flow limitation', 'what is flow limitation', 'flow limitation sleep apnea',
-    'CPAP partial obstruction', 'UARS', 'RERA', 'ResMed flow data',
-    'CPAP pressure too low', 'flow limitation treatment',
-    'OSCAR flow limitation', 'CPAP therapy optimisation',
-    'WAT analysis', 'NED analysis', 'RERA detection', 'flow limitation CPAP',
+    'PAP flow limitation', 'what is flow limitation', 'flow limitation sleep apnea',
+    'PAP partial obstruction', 'UARS', 'RERA', 'ResMed flow data',
+    'PAP pressure too low', 'flow limitation treatment',
+    'OSCAR flow limitation', 'PAP therapy optimisation',
+    'WAT analysis', 'NED analysis', 'RERA detection', 'flow limitation PAP',
   ],
 };
 
@@ -76,10 +76,10 @@ export default function FlowLimitationPage() {
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          What Is CPAP Flow Limitation?
+          What Is PAP Flow Limitation?
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Flow limitation occurs when your airway partially narrows during CPAP
+          Flow limitation occurs when your airway partially narrows during PAP
           therapy, restricting airflow even though it doesn&apos;t fully collapse.
           It&apos;s one of the most under-recognised issues in sleep therapy
           &mdash; your AHI can look perfect while significant flow limitation
@@ -95,7 +95,7 @@ export default function FlowLimitationPage() {
         <div className="rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
           <div className="flex flex-col gap-4 text-sm leading-relaxed text-muted-foreground">
             <p>
-              Most CPAP machines report the <strong className="text-foreground">Apnea-Hypopnea Index (AHI)</strong> as
+              Most PAP machines report the <strong className="text-foreground">Apnea-Hypopnea Index (AHI)</strong> as
               the primary measure of therapy effectiveness. AHI counts only
               complete airway closures (apneas) and significant reductions in
               airflow (hypopneas). But the airway can be substantially narrowed

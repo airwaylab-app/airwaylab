@@ -42,7 +42,7 @@ export function ProgressDisplay({ current, total, stage }: ProgressDisplayProps)
 
       {pct > 30 && (
         <p className="mt-3 text-center text-[11px] text-muted-foreground/50">
-          After analysis, you&apos;ll have the option to contribute your anonymised scores to help CPAP research.
+          After analysis, you&apos;ll have the option to contribute your anonymised scores to help PAP research.
         </p>
       )}
     </div>

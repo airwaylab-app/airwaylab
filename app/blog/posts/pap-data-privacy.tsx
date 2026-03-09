@@ -11,26 +11,26 @@ import {
   Smartphone,
 } from 'lucide-react';
 
-export default function CPAPDataPrivacyPost() {
+export default function PAPDataPrivacyPost() {
   return (
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-        Every night, your CPAP machine quietly records some of the most intimate health data
+        Every night, your PAP machine quietly records some of the most intimate health data
         imaginable: how you breathe, when you stop breathing, how your body responds to
         obstruction, and even patterns that correlate with sleep stages and body position. It&apos;s
         a remarkably detailed physiological diary. But have you ever stopped to ask:{' '}
         <strong className="text-foreground">where does all that data go?</strong>
       </p>
 
-      {/* The Connected CPAP Era */}
+      {/* The Connected PAP Era */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <Wifi className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">The Rise of the Connected CPAP</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">The Rise of the Connected PAP Device</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Modern CPAP machines from ResMed, Philips, and other manufacturers are increasingly
+            Modern PAP machines from ResMed, Philips, and other manufacturers are increasingly
             connected devices. ResMed&apos;s AirSense 10 and 11 models, for instance, come with
             built-in cellular modems that transmit your sleep data to ResMed&apos;s cloud servers
             every day — automatically, without any action from you.
@@ -188,7 +188,7 @@ export default function CPAPDataPrivacyPost() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Here&apos;s what many CPAP users don&apos;t know: your machine stores detailed data
+            Here&apos;s what many PAP users don&apos;t know: your machine stores detailed data
             locally on its SD card, independently of any cloud connection. This SD card data is
             actually <em>more</em> detailed than what gets transmitted — it includes full flow
             waveforms, not just summary statistics.
@@ -314,7 +314,7 @@ export default function CPAPDataPrivacyPost() {
 
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
-        <h3 className="text-lg font-bold">Analyze Your CPAP Data Privately</h3>
+        <h3 className="text-lg font-bold">Analyze Your PAP Data Privately</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           AirwayLab processes your ResMed SD card entirely in your browser. No accounts, no uploads,
           no cloud — just you and your data.

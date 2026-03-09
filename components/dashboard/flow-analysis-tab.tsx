@@ -61,7 +61,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             format="int"
             threshold={THRESHOLDS.watRegularity}
             previousValue={p?.wat.regularityScore}
-            tooltip="Measures breathing pattern consistency using Sample Entropy. Higher scores mean more repetitive patterns, which on CPAP may signal persistent flow limitation."
+            tooltip="Measures breathing pattern consistency using Sample Entropy. Higher scores mean more repetitive patterns, which on PAP may signal persistent flow limitation."
             onClick={clickable ? () => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity }) : undefined}
           />
           <MetricCard
@@ -82,7 +82,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
               tidal volume ratio — higher values indicate greater flow limitation.{' '}
               <strong className="text-foreground">Regularity</strong> uses Sample Entropy
               to quantify breathing pattern consistency — higher scores indicate more
-              repetitive patterns, which during CPAP therapy may signal persistent flow limitation.{' '}
+              repetitive patterns, which during PAP therapy may signal persistent flow limitation.{' '}
               <strong className="text-foreground">Periodicity</strong> uses FFT on minute
               ventilation to detect cyclic breathing patterns.
             </p>

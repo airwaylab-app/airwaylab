@@ -125,7 +125,7 @@ const trustItems = [
   {
     icon: Lock,
     title: '100% Client-Side',
-    desc: 'All analysis runs in your browser. No servers, no uploads, no tracking. Your CPAP data never leaves your device.',
+    desc: 'All analysis runs in your browser. No servers, no uploads, no tracking. Your PAP data never leaves your device.',
   },
   {
     icon: Github,
@@ -171,7 +171,7 @@ export default function Home() {
               </div>
 
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Your CPAP says your AHI is fine. But you still wake up exhausted.
+                Your PAP device says your AHI is fine. But you still wake up exhausted.
                 AirwayLab uses the Glasgow Index and three more research-grade engines
                 to detect flow limitation, RERAs, and breathing pattern instability
                 that standard metrics miss — automatically, in 60 seconds.
@@ -299,7 +299,7 @@ export default function Home() {
               <h3 className="text-sm font-semibold">AHI Doesn&apos;t Tell the Whole Story</h3>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Millions of CPAP users have an AHI under 5 but still feel terrible. Flow limitation, RERAs, and breathing pattern instability go undetected by the one number most clinicians check. AirwayLab makes that hidden data visible.
+              Millions of PAP users have an AHI under 5 but still feel terrible. Flow limitation, RERAs, and breathing pattern instability go undetected by the one number most clinicians check. AirwayLab makes that hidden data visible.
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
@@ -638,7 +638,7 @@ export default function Home() {
           <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
             <h3 className="text-sm font-semibold">Not on PAP therapy yet?</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              AirwayLab requires CPAP/BiPAP flow data from a ResMed SD card.
+              AirwayLab requires PAP flow data from a ResMed SD card.
               If you suspect sleep-disordered breathing but aren&apos;t yet diagnosed,
               talk to your doctor about a sleep study. Our blog has resources
               to help you understand what to ask for.

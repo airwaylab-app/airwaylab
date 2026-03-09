@@ -5,7 +5,7 @@
 [![Demo](https://img.shields.io/badge/Demo-airwaylab.app-brightgreen)](https://airwaylab.app)
 [![Privacy](https://img.shields.io/badge/Privacy-Data%20Never%20Leaves%20Your%20Device-blueviolet)]()
 
-Free, open-source flow limitation analysis for ResMed CPAP/BiPAP data.
+Free, open-source flow limitation analysis for ResMed PAP data.
 
 [Try the demo →](https://airwaylab.app/analyze?demo) · [Live site →](https://airwaylab.app)
 
@@ -33,7 +33,7 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 
 ## Why AirwayLab exists
 
-Your CPAP machine collects detailed breath-by-breath data every night. Most of it goes unanalysed. Clinicians typically check AHI and move on, but AHI misses flow limitation, RERAs, and breathing pattern instability — the things that explain why you might still feel exhausted with an AHI under 5.
+Your PAP machine collects detailed breath-by-breath data every night. Most of it goes unanalysed. Clinicians typically check AHI and move on, but AHI misses flow limitation, RERAs, and breathing pattern instability — the things that explain why you might still feel exhausted with an AHI under 5.
 
 AirwayLab makes that data visible. It's free because we believe therapy insight should be accessible to everyone. It's open source because we believe you should be able to verify what happens with your medical data. It runs in your browser because your data is yours.
 

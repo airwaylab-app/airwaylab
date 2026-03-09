@@ -2,7 +2,7 @@
 import { ImageResponse } from 'next/og';
 
 export const alt =
-  'AirwayLab — Flow Limitation Analysis for ResMed CPAP Data';
+  'AirwayLab — Flow Limitation Analysis for ResMed PAP Data';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -72,7 +72,7 @@ export default function OGImage() {
             maxWidth: 800,
           }}
         >
-          Flow Limitation Analysis for ResMed CPAP &amp; BiPAP Data.
+          Flow Limitation Analysis for ResMed PAP Data.
           <br />
           Four research-grade engines — 100% client-side.
         </p>

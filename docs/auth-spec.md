@@ -42,7 +42,7 @@ Add optional user accounts so users can persist their analysis history across se
 ### Privacy Considerations
 - Core promise: "all analysis is client-side, no health data sent to servers"
 - Account feature stores **summary results only** (same as current localStorage)
-- Raw CPAP data (EDF/CSV files) never leaves the browser
+- Raw PAP data (EDF/CSV files) never leaves the browser
 - Must clearly communicate what is and isn't stored
 - Consider making account feature opt-in with clear data policy
 

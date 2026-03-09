@@ -22,14 +22,14 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: 'understanding-flow-limitation',
-    title: 'Understanding Flow Limitation: What Your CPAP Machine Doesn\'t Tell You',
+    title: 'Understanding Flow Limitation: What Your PAP Machine Doesn\'t Tell You',
     description:
-      'Flow limitation is the subtle breathing restriction your AHI score completely ignores. Learn what it is, why it matters, and how to detect it in your own CPAP data.',
+      'Flow limitation is the subtle breathing restriction your AHI score completely ignores. Learn what it is, why it matters, and how to detect it in your own PAP data.',
     date: '2025-03-06',
     readTime: '8 min read',
-    tags: ['Flow Limitation', 'CPAP', 'Sleep Apnea'],
+    tags: ['Flow Limitation', 'PAP', 'Sleep Apnea'],
     ogDescription:
-      'Your AHI might be low, but flow limitation could still be disrupting your sleep. Learn what flow limitation is and why it matters for CPAP therapy.',
+      'Your AHI might be low, but flow limitation could still be disrupting your sleep. Learn what flow limitation is and why it matters for PAP therapy.',
   },
   {
     slug: 'beyond-ahi',
@@ -43,15 +43,15 @@ export const blogPosts: BlogPost[] = [
       'AHI is the most commonly used metric in sleep medicine, but research shows it misses important breathing patterns. Discover what metrics actually matter.',
   },
   {
-    slug: 'cpap-data-privacy',
-    title: 'Your CPAP Data Belongs to You: Privacy in Sleep Medicine',
+    slug: 'pap-data-privacy',
+    title: 'Your PAP Data Belongs to You: Privacy in Sleep Medicine',
     description:
-      'Every night, your CPAP machine collects intimate health data. Where does it go? Who can see it? And what are your rights? A look at privacy in the age of connected sleep devices.',
+      'Every night, your PAP machine collects intimate health data. Where does it go? Who can see it? And what are your rights? A look at privacy in the age of connected sleep devices.',
     date: '2025-02-05',
     readTime: '7 min read',
     tags: ['Privacy', 'Data Rights', 'ResMed'],
     ogDescription:
-      'Your CPAP collects detailed health data every night. Learn who has access to it, what your rights are, and how to take control of your sleep data.',
+      'Your PAP device collects detailed health data every night. Learn who has access to it, what your rights are, and how to take control of your sleep data.',
   },
 ];
 
