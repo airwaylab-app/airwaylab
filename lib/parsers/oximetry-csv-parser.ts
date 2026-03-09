@@ -95,7 +95,9 @@ export function parseOximetryCSV(csvText: string): ParsedOximetry {
   } else {
     nightDate = startTime;
   }
-  const dateStr = nightDate.toISOString().split('T')[0];
+  // Use local date components — toISOString() converts to UTC which causes
+  // off-by-one mismatches with DATALOG folder dates (stored in local time)
+  const dateStr = `${nightDate.getFullYear()}-${String(nightDate.getMonth() + 1).padStart(2, '0')}-${String(nightDate.getDate()).padStart(2, '0')}`;
 
   return {
     samples,

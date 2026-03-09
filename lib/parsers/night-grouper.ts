@@ -60,20 +60,25 @@ function determineSleepNight(edf: EDFFile): string {
       // Before noon → belongs to previous night
       const prev = new Date(edf.recordingDate);
       prev.setDate(prev.getDate() - 1);
-      return prev.toISOString().split('T')[0];
+      return localDateStr(prev);
     }
     return filenameDate;
   }
 
   // Final fallback: use recording date with time heuristic
   if (hour >= 18) {
-    return edf.recordingDate.toISOString().split('T')[0];
+    return localDateStr(edf.recordingDate);
   } else if (hour < 12) {
     const prev = new Date(edf.recordingDate);
     prev.setDate(prev.getDate() - 1);
-    return prev.toISOString().split('T')[0];
+    return localDateStr(prev);
   }
-  return edf.recordingDate.toISOString().split('T')[0];
+  return localDateStr(edf.recordingDate);
+}
+
+/** Format a Date as YYYY-MM-DD in local time (not UTC) */
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /**

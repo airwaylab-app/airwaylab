@@ -147,9 +147,21 @@ async function processFiles(
       try {
         const parsed = parseOximetryCSV(csv);
         oximetryByDate.set(parsed.dateStr, parsed);
-      } catch {
-        // Skip unparseable oximetry files
+      } catch (err) {
+        console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
       }
+    }
+  }
+
+  // Log oximetry matching diagnostics
+  if (oximetryCSVs && oximetryCSVs.length > 0) {
+    const oxDates = Array.from(oximetryByDate.keys());
+    const nightDates = nightGroups.map((g) => g.nightDate);
+    const matched = oxDates.filter((d) => nightDates.includes(d));
+    if (matched.length === 0) {
+      console.error(`[oximetry] No date matches. Oximetry dates: [${oxDates.join(', ')}], Night dates: [${nightDates.slice(0, 5).join(', ')}${nightDates.length > 5 ? '...' : ''}]`);
+    } else {
+      console.error(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
     }
   }
 

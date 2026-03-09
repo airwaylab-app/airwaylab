@@ -26,6 +26,7 @@ const initialState: AnalysisState = {
   nights: [],
   error: null,
   therapyChangeDate: null,
+  warning: null,
 };
 
 export class AnalysisOrchestrator {
@@ -157,6 +158,16 @@ export class AnalysisOrchestrator {
       const merged = mergeNights(cachedNights, newNights);
       const therapyChangeDate = detectTherapyChange(merged);
 
+      // ── Check if oximetry matched any nights ──
+      let warning: string | null = null;
+      if (hasNewOximetry) {
+        const nightsWithOx = merged.filter((n) => n.oximetry !== null);
+        if (nightsWithOx.length === 0) {
+          warning = 'Oximetry CSV was uploaded but could not be matched to any night. Check that the recording date in your CSV matches one of your SD card nights.';
+          console.error('[orchestrator] Oximetry warning:', warning);
+        }
+      }
+
       // ── Save manifest + results ──
       saveManifest(buildManifest(sdArr));
       persistResults(merged, therapyChangeDate);
@@ -165,6 +176,7 @@ export class AnalysisOrchestrator {
         status: 'complete',
         nights: merged,
         therapyChangeDate,
+        warning,
         progress: { current: 1, total: 1, stage: 'Complete' },
       });
 
