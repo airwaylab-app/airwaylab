@@ -92,6 +92,49 @@ export function validateSDFiles(files: File[]): ValidationResult {
 }
 
 /**
+ * Detect whether a CSV header line matches a supported oximetry format.
+ * Returns the format name or 'unknown'.
+ */
+export type OximetryFormat = 'viatom' | 'unknown';
+
+export function detectOximetryFormat(headerLine: string): OximetryFormat {
+  const lower = headerLine.toLowerCase();
+  // Viatom / Checkme O2 Max: "Time, Oxygen Level, Pulse Rate, Motion, ..."
+  if (lower.includes('oxygen level') && lower.includes('pulse rate')) {
+    return 'viatom';
+  }
+  return 'unknown';
+}
+
+/**
+ * Read the first 5 lines of each CSV file and check format support.
+ * Returns a list of unsupported files with their header samples.
+ */
+export async function checkOximetryFormats(
+  files: File[]
+): Promise<{ fileName: string; headerSample: string }[]> {
+  const unsupported: { fileName: string; headerSample: string }[] = [];
+  for (const file of files) {
+    if (!file.name.toLowerCase().endsWith('.csv')) continue;
+    try {
+      const slice = file.slice(0, 2048); // first ~2KB is enough for headers
+      const text = await slice.text();
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      const header = lines[0] || '';
+      if (detectOximetryFormat(header) === 'unknown') {
+        unsupported.push({
+          fileName: file.name,
+          headerSample: lines.slice(0, 5).join('\n'),
+        });
+      }
+    } catch {
+      // If we can't read the file, skip format check
+    }
+  }
+  return unsupported;
+}
+
+/**
  * Validate oximetry CSV files.
  */
 export function validateOximetryFiles(files: File[]): ValidationResult {

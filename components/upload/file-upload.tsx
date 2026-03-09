@@ -3,7 +3,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { validateSDFiles, validateOximetryFiles, type ValidationResult } from '@/lib/upload-validation';
+import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
+import { UnsupportedFormatDialog } from './unsupported-format-dialog';
 
 interface FileUploadProps {
   onFilesSelected: (sdFiles: File[], oximetryFiles: File[]) => void;
@@ -18,6 +19,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
   const [dragOver, setDragOver] = useState(false);
   const [sdValidation, setSdValidation] = useState<ValidationResult | null>(null);
   const [oxValidation, setOxValidation] = useState<ValidationResult | null>(null);
+  const [unsupportedFiles, setUnsupportedFiles] = useState<{ fileName: string; headerSample: string }[]>([]);
 
   const handleSDChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +46,10 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
         if (sdFiles.length > 0 && sdValidation?.valid) {
           onFilesSelected(sdFiles, files);
         }
+        // Check for unsupported oximetry formats
+        checkOximetryFormats(files).then((unsupported) => {
+          if (unsupported.length > 0) setUnsupportedFiles(unsupported);
+        });
       }
     },
     [onFilesSelected, sdFiles, sdValidation]
@@ -74,6 +80,10 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           const oxResult = validateOximetryFiles(csvFiles);
           setOxValidation(oxResult);
           setOxFiles(csvFiles);
+          // Check for unsupported oximetry formats
+          checkOximetryFormats(csvFiles).then((unsupported) => {
+            if (unsupported.length > 0) setUnsupportedFiles(unsupported);
+          });
         }
       }
     },
@@ -247,6 +257,13 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           disabled={disabled}
         />
       </div>
+      {/* Unsupported Oximetry Format Dialog */}
+      {unsupportedFiles.length > 0 && (
+        <UnsupportedFormatDialog
+          files={unsupportedFiles}
+          onClose={() => setUnsupportedFiles([])}
+        />
+      )}
     </div>
   );
 }
