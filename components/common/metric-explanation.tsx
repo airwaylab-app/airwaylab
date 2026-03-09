@@ -27,9 +27,13 @@ export function MetricExplanation({ text, defaultExpanded = false }: Props) {
         )}
       </button>
       {expanded && (
-        <p className="mt-1.5 rounded-lg bg-muted/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          {text}
-        </p>
+        <div className="mt-1.5 rounded-lg bg-muted/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {text.split('\n\n').map((paragraph, i) => (
+            <p key={i} className={i > 0 ? 'mt-2' : undefined}>
+              {paragraph}
+            </p>
+          ))}
+        </div>
       )}
     </div>
   );
