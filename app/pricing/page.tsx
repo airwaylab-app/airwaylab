@@ -72,7 +72,10 @@ export default function PricingPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const handleCheckout = async (priceId: string | undefined) => {
-    if (!priceId) return;
+    if (!priceId) {
+      setCheckoutError('This plan is not available yet. Please try again later.');
+      return;
+    }
 
     if (!user) {
       setAuthModalOpen(true);

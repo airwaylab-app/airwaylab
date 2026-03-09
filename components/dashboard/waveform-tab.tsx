@@ -24,12 +24,15 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles }: Props) {
     return waveformOrchestrator.subscribe(setState);
   }, []);
 
+  // Whether we're showing a synthetic approximation (demo or no SD files)
+  const isSynthetic = isDemo || sdFiles.length === 0;
+
   // Extract waveform when night changes
   useEffect(() => {
     const dateStr = selectedNight.dateStr;
 
-    if (isDemo) {
-      // Generate synthetic waveform for demo mode
+    if (isSynthetic) {
+      // Generate synthetic waveform for demo mode or when SD files aren't available
       const synthetic = generateSyntheticWaveform(
         selectedNight.durationHours,
         selectedNight.ned.breathCount,
@@ -46,11 +49,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles }: Props) {
       return;
     }
 
-    if (sdFiles.length === 0) {
-      // No files available (e.g., persisted session)
-      return;
-    }
-
     // Check if already cached
     if (waveformOrchestrator.hasCached(dateStr)) {
       waveformOrchestrator.extract(sdFiles, dateStr);
@@ -60,7 +58,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles }: Props) {
     // Extract on mount
     waveformOrchestrator.extract(sdFiles, dateStr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNight.dateStr, isDemo]);
+  }, [selectedNight.dateStr, isSynthetic]);
 
   const handleRetry = useCallback(() => {
     waveformOrchestrator.extract(sdFiles, selectedNight.dateStr);
@@ -96,24 +94,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles }: Props) {
     );
   }
 
-  // No files available (persisted session without SD card)
-  if (!isDemo && sdFiles.length === 0) {
-    return (
-      <Card className="border-border/50">
-        <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
-          <Waves className="h-6 w-6 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">
-            Waveform data requires your SD card files
-          </p>
-          <p className="text-[11px] text-muted-foreground/60">
-            Upload your ResMed SD card to view flow waveforms. Waveforms are not
-            stored between sessions to keep your data private.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // No waveform data yet
   if (!state.waveform) {
     return (
@@ -130,6 +110,14 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Synthetic data notice */}
+      {!isDemo && sdFiles.length === 0 && (
+        <div className="rounded-lg border border-border/50 bg-card/30 px-4 py-3 text-xs text-muted-foreground">
+          Showing an approximation based on your analysis results. Upload your SD card
+          again to view the actual recorded waveform.
+        </div>
+      )}
+
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
