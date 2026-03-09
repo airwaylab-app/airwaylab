@@ -11,6 +11,7 @@ interface Props {
   hasOximetry: boolean;
   nightCount: number;
   onUploadOximetry?: () => void;
+  onReUpload?: () => void;
 }
 
 interface Step {
@@ -20,7 +21,7 @@ interface Step {
   actionLabel?: string;
 }
 
-export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOximetry }: Props) {
+export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOximetry, onReUpload }: Props) {
   const THRESHOLDS = useThresholds();
   const steps: Step[] = [];
 
@@ -44,8 +45,8 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
   if (!hasOximetry) {
     steps.push({
       text: 'Add pulse oximetry data for deeper analysis — oxygen desaturations and heart rate patterns reveal what flow data alone can\'t.',
-      onClick: onUploadOximetry ?? (() => window.scrollTo({ top: 0, behavior: 'smooth' })),
-      actionLabel: onUploadOximetry ? 'Upload oximetry CSV' : 'Upload with oximetry data',
+      onClick: onUploadOximetry ?? onReUpload ?? (() => window.scrollTo({ top: 0, behavior: 'smooth' })),
+      actionLabel: onUploadOximetry ? 'Upload oximetry CSV' : 'Re-upload with oximetry',
     });
   }
 

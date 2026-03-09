@@ -15,9 +15,10 @@ interface Props {
   previousNight: NightResult | null;
   nights?: NightResult[];
   onUploadOximetry?: () => void;
+  onReUpload?: () => void;
 }
 
-export function OximetryTab({ selectedNight, previousNight, nights = [], onUploadOximetry }: Props) {
+export function OximetryTab({ selectedNight, previousNight, nights = [], onUploadOximetry, onReUpload }: Props) {
   const THRESHOLDS = useThresholds();
   const ox = selectedNight.oximetry;
   const pOx = previousNight?.oximetry;
@@ -57,6 +58,13 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/[0.04] px-4 py-2.5 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
             >
               Upload Oximetry CSV
+            </button>
+          ) : onReUpload ? (
+            <button
+              onClick={onReUpload}
+              className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/[0.04] px-4 py-2.5 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
+            >
+              Re-upload SD Card with Oximetry
             </button>
           ) : (
             <p className="mt-1 text-[11px] text-muted-foreground/60">
