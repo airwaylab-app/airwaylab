@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (
       typeof nightCount !== 'number' ||
       nightCount < 1 ||
-      nightCount > 365 ||
+      nightCount > 1095 ||
       typeof hasOximetry !== 'boolean' ||
       typeof isDemo !== 'boolean'
     ) {

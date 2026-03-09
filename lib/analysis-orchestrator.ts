@@ -178,15 +178,15 @@ export class AnalysisOrchestrator {
     oximetryCSVs?: string[]
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
-      // Safety timeout — 5 minutes is generous for even large SD cards
-      const WORKER_TIMEOUT_MS = 5 * 60 * 1000;
+      // Safety timeout — 10 minutes to handle multi-year SD cards (800+ files)
+      const WORKER_TIMEOUT_MS = 10 * 60 * 1000;
       let settled = false;
 
       const timeout = setTimeout(() => {
         if (!settled) {
           settled = true;
           this.terminate();
-          reject(new Error('Analysis timed out after 5 minutes. Your data may be too large or in an unsupported format.'));
+          reject(new Error('Analysis timed out after 10 minutes. Your data may be too large or in an unsupported format.'));
         }
       }, WORKER_TIMEOUT_MS);
 

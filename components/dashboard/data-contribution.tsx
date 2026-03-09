@@ -64,9 +64,9 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   const handleContribute = useCallback(async () => {
     setStatus('sending');
     try {
-      // Cap at 365 most recent nights to stay within server limits
-      const toSubmit = nights.length > 365
-        ? nights.slice(0, 365)
+      // Cap at 1095 most recent nights to stay within server limits
+      const toSubmit = nights.length > 1095
+        ? nights.slice(0, 1095)
         : nights;
       const res = await fetch('/api/contribute-data', {
         method: 'POST',
