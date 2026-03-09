@@ -284,7 +284,7 @@ function AnalyzePageInner() {
     clearManifest();
   }, [isDemo]);
 
-  const { status, progress, error } = state;
+  const { status, progress, error, warning } = state;
 
   // Memoize derived data to stabilize references across renders
   const nights = useMemo<NightResult[]>(() =>
@@ -491,6 +491,17 @@ function AnalyzePageInner() {
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Oximetry data added</span>
                 {' '}&mdash; SpO&#8322; and heart rate analysis is now included in your results. Check the Oximetry tab for details.
+              </p>
+            </div>
+          )}
+
+          {/* Oximetry warning (no nights matched) */}
+          {warning && !isDemo && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-3 animate-fade-in-up">
+              <AlertCircle className="h-4 w-4 shrink-0 text-yellow-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Warning</span>
+                {' '}&mdash; {warning}
               </p>
             </div>
           )}

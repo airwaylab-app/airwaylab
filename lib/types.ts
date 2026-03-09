@@ -171,6 +171,8 @@ export interface AnalysisState {
   nights: NightResult[];
   error: string | null;
   therapyChangeDate: string | null;
+  /** Non-fatal warning (e.g. oximetry CSV uploaded but no nights matched) */
+  warning: string | null;
 }
 
 export interface WorkerMessage {
