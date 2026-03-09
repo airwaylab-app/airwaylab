@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
+import { events } from '@/lib/analytics';
 import { getAIRemaining } from '@/lib/auth/feature-gate';
 
 interface Props {
@@ -21,6 +22,12 @@ interface Props {
 export function AIInsightsCTA({ isDemo = false }: Props) {
   const { tier, isPaid } = useAuth();
   const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!isPaid && !dismissed) {
+      events.aiUpsellShown();
+    }
+  }, [isPaid, dismissed]);
 
   // Don't show to paid users or if dismissed this session
   if (isPaid) return null;

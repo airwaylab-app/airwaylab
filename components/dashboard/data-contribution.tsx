@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Users, Loader2, X, Shield, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab-contribute-dismissed';
@@ -56,6 +57,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
+    events.contributionDismissed();
     try {
       sessionStorage.setItem(DISMISS_KEY, '1');
     } catch { /* noop */ }
@@ -76,6 +78,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
 
       if (res.ok) {
         setStatus('success');
+        events.contributionOptedIn();
         try {
           const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
           const dateSet = new Set(storedDates);

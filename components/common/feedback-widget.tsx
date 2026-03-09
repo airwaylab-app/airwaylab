@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { MessageSquarePlus, X, Loader2, CheckCircle, Lightbulb, Bug, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { events } from '@/lib/analytics';
 
 const TYPES = [
   { value: 'feature', label: 'Feature request', icon: Lightbulb },
@@ -41,6 +42,7 @@ export function FeedbackWidget() {
 
       if (res.ok) {
         setStatus('success');
+        events.feedbackSubmitted(type, typeof window !== 'undefined' ? window.location.pathname : '/');
         setMessage('');
         setEmail('');
       } else {

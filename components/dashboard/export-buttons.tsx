@@ -14,6 +14,7 @@ import { exportForumMultiNight, exportForumSingleNight } from '@/lib/forum-expor
 import { openPDFReport } from '@/lib/pdf-report';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess } from '@/lib/auth/feature-gate';
+import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 
 interface Props {
@@ -36,6 +37,7 @@ function CopyForumButton({ nights, selectedNight }: Props) {
         () => {
           setCopied(true);
           setCopyError(false);
+          events.export('forum');
           setTimeout(() => setCopied(false), 2000);
         },
         () => {
@@ -80,6 +82,7 @@ function safeExportCSV(nights: NightResult[]): void {
   try {
     const csv = exportCSV(nights);
     downloadFile(csv, 'airwaylab-results.csv', 'text/csv');
+    events.export('csv');
   } catch (err) {
     console.error('CSV export failed:', err);
   }
@@ -89,6 +92,7 @@ function safeExportJSON(nights: NightResult[]): void {
   try {
     const json = exportJSON(nights);
     downloadFile(json, 'airwaylab-results.json', 'application/json');
+    events.export('json');
   } catch (err) {
     console.error('JSON export failed:', err);
   }
@@ -97,6 +101,7 @@ function safeExportJSON(nights: NightResult[]): void {
 function safeOpenPDF(nights: NightResult[]): void {
   try {
     openPDFReport(nights);
+    events.export('pdf');
   } catch (err) {
     console.error('PDF report failed:', err);
   }

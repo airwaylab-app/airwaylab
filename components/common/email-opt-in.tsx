@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { events } from '@/lib/analytics';
 
 interface EmailOptInProps {
   variant: 'hero' | 'post-analysis' | 'footer' | 'inline';
@@ -26,7 +27,12 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, source }),
       });
-      setStatus(res.ok ? 'success' : 'error');
+      if (res.ok) {
+        setStatus('success');
+        events.emailSubscribe(source);
+      } else {
+        setStatus('error');
+      }
     } catch {
       setStatus('error');
     }

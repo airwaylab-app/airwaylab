@@ -30,6 +30,7 @@ import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
+import { events } from '@/lib/analytics';
 import { clearManifest } from '@/lib/file-manifest';
 import {
   RotateCcw,
@@ -118,6 +119,7 @@ function AnalyzePageInner() {
       setState(newState);
       // Persist results when analysis completes
       if (newState.status === 'complete' && newState.nights.length > 0) {
+        events.analysisComplete(newState.nights.length);
         persistResults(newState.nights, newState.therapyChangeDate);
         setPersistedData(null);
 
@@ -154,6 +156,7 @@ function AnalyzePageInner() {
 
         // Cloud storage: auto-upload raw files if consented
         if (storageConsentRef.current && sdFilesRef.current.length > 0) {
+          events.cloudSyncUsed();
           uploadOrchestrator.upload(sdFilesRef.current).catch(() => { /* handled by orchestrator */ });
         }
 
@@ -176,9 +179,12 @@ function AnalyzePageInner() {
     (sdFiles: File[], oxFiles: File[]) => {
       setIsDemo(false);
       sdFilesRef.current = sdFiles;
+      if (lifetimeNights > 0) {
+        events.returningUserUpload(lifetimeNights);
+      }
       orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined);
     },
-    []
+    [lifetimeNights]
   );
 
   const handleOximetryUpload = useCallback(() => {
@@ -237,6 +243,7 @@ function AnalyzePageInner() {
   const loadDemo = useCallback(() => {
     setIsDemo(true);
     setSelectedNight(0);
+    events.demoLoaded();
     // Bypass the orchestrator — inject sample data directly
     orchestrator.reset();
   }, []);
@@ -471,7 +478,10 @@ function AnalyzePageInner() {
               <NightSelector
                 dates={nightDates}
                 selectedIndex={selectedNight}
-                onChange={setSelectedNight}
+                onChange={(idx) => {
+                  setSelectedNight(idx);
+                  events.nightSwitched(nights.length);
+                }}
               />
               {therapyChangeDate && (
                 <span className="hidden text-xs text-amber-500 sm:inline">
@@ -492,7 +502,7 @@ function AnalyzePageInner() {
           </div>
 
           {/* Tabbed Views */}
-          <Tabs defaultValue="overview">
+          <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
             <TabsList className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-transparent sm:px-0 sm:backdrop-blur-none">
               <TabsTrigger value="overview" className="gap-1.5">
                 <BarChart3 className="h-3.5 w-3.5" />
