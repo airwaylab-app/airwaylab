@@ -38,7 +38,7 @@ const METRICS: MetricDef[] = [
     key: 'glasgow',
     label: 'Glasgow',
     get: (n) => n.glasgow.overall,
-    thresholds: [20, 40, 60],
+    thresholds: [1.0, 2.0, 3.0],
     unit: '',
   },
   {
@@ -87,7 +87,7 @@ const METRICS: MetricDef[] = [
     key: 'eai',
     label: 'Est. AI',
     get: (n) => n.ned.estimatedArousalIndex ?? 0,
-    thresholds: [10, 20, 30],
+    thresholds: [15, 30, 50],
     unit: '/hr',
   },
 ];
@@ -246,7 +246,7 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                   : 'border-border text-muted-foreground'
               }`}
             >
-              Trends
+              Sparklines
             </button>
           </div>
         </div>
@@ -267,11 +267,8 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
             >
               <thead>
                 <tr className="border-b border-border/50 text-muted-foreground">
-                  <th
-                    className="cursor-pointer pb-2 pr-3 text-left font-medium hover:text-foreground"
-                    onClick={() => handleSort('date')}
-                  >
-                    Metric{sortArrow('date')}
+                  <th className="pb-2 pr-3 text-left font-medium">
+                    Metric
                   </th>
                   {sortedNights.map((n) => (
                     <th
@@ -280,9 +277,27 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                         n.dateStr === therapyChangeDate ? 'text-amber-500' : ''
                       }`}
                     >
-                      {n.dateStr.slice(5)}
+                      {n.dateStr === therapyChangeDate ? (
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help underline decoration-amber-500/40 decoration-dotted underline-offset-2">
+                            {n.dateStr.slice(5)}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Therapy settings changed on this date
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        n.dateStr.slice(5)
+                      )}
                     </th>
                   ))}
+                  <th
+                    className="cursor-pointer pb-2 px-1 text-center font-medium hover:text-foreground"
+                    onClick={() => handleSort('date')}
+                    title="Sort by date"
+                  >
+                    {sortArrow('date')}
+                  </th>
                   {showSparklines && (
                     <th className="pb-2 px-2 text-center font-medium">Trend</th>
                   )}
@@ -318,6 +333,7 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                         </td>
                       );
                     })}
+                    <td className="px-1 py-1" />
                     {showSparklines && (
                       <td className="px-2 py-1 text-center">
                         <MiniSparkline values={sortedNights.map((n) => m.get(n))} />

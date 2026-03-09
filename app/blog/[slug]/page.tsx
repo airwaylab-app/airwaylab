@@ -5,11 +5,13 @@ import { ArrowLeft, Calendar, Clock, Tag } from 'lucide-react';
 import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 
 // Lazy-load post components
+import CNSSensitization from '../posts/what-is-cns-sensitization';
 import UnderstandingFlowLimitation from '../posts/understanding-flow-limitation';
 import BeyondAHI from '../posts/beyond-ahi';
 import CPAPDataPrivacy from '../posts/cpap-data-privacy';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'what-is-cns-sensitization': CNSSensitization,
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
   'cpap-data-privacy': CPAPDataPrivacy,

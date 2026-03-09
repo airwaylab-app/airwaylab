@@ -147,6 +147,18 @@ export function parseIdentification(text: string): string {
     const json = JSON.parse(text);
     if (json.ModelNumber) return json.ModelNumber;
     if (json.ProductName) return json.ProductName;
+    // Handle iVAPS nested IdentificationProfiles structure
+    if (json.IdentificationProfiles) {
+      const profiles = json.IdentificationProfiles;
+      if (Array.isArray(profiles) && profiles.length > 0) {
+        const first = profiles[0];
+        if (first?.ModelNumber) return first.ModelNumber;
+        if (first?.ProductName) return first.ProductName;
+      }
+      if (typeof profiles === 'object' && !Array.isArray(profiles) && profiles.ModelNumber) {
+        return profiles.ModelNumber;
+      }
+    }
   } catch {
     // Not JSON, try text parsing
   }

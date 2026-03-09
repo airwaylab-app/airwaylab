@@ -18,6 +18,8 @@ export interface Insight {
   body: string;
   /** Metric area this relates to */
   category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend';
+  /** Optional link for further reading */
+  link?: { text: string; href: string };
 }
 
 /* ------------------------------------------------------------------ */
@@ -144,6 +146,19 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
       title: 'Low estimated arousal burden',
       body: `EAI of ${fmt(eaiVal)}/hr indicates few respiratory arousal-like events — sleep continuity appears well-maintained.`,
       category: 'ned',
+    });
+  }
+
+  // Sensitization mismatch: low flow limitation but high arousals
+  const glasgowVal = n.glasgow.overall;
+  if (glasgowVal <= 2.0 && eaiVal >= 40) {
+    insights.push({
+      id: 'sensitization-mismatch',
+      type: 'info',
+      title: 'Unusual pattern: low flow limitation, high arousals',
+      body: `Your Glasgow Index of ${fmt(glasgowVal)} suggests mild flow limitation, but your EAI of ${fmt(eaiVal)}/hr indicates frequent arousals. This mismatch has been described in sleep medicine research as possible CNS sensitization — discuss with your clinician.`,
+      category: 'ned',
+      link: { text: 'Learn more about this pattern', href: '/blog/what-is-cns-sensitization' },
     });
   }
 

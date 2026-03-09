@@ -7,6 +7,8 @@ import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
+import { MetricExplanation } from '@/components/common/metric-explanation';
+import { getODIExplanation } from '@/lib/metric-explanations';
 
 interface Props {
   selectedNight: NightResult;
@@ -41,19 +43,25 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center gap-3 py-12">
-          <p className="text-sm text-muted-foreground">
-            No oximetry data for this night.
+          <p className="text-sm font-medium text-foreground">
+            No oximetry data for this night
           </p>
-          <p className="text-xs text-muted-foreground/60">
-            Upload Viatom / Checkme O2 Max CSV files alongside your SD card data.
+          <p className="max-w-sm text-center text-xs text-muted-foreground/80">
+            Adding pulse oximetry reveals oxygen desaturations, heart rate patterns,
+            and coupled events that flow data alone can&apos;t show.
+            Use a Viatom or Checkme O2 Max alongside your PAP therapy.
           </p>
-          {onUploadOximetry && (
+          {onUploadOximetry ? (
             <button
               onClick={onUploadOximetry}
               className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/[0.04] px-4 py-2.5 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
             >
               Upload Oximetry CSV
             </button>
+          ) : (
+            <p className="mt-1 text-[11px] text-muted-foreground/60">
+              To add oximetry, re-upload your SD card data together with your oximetry CSV.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -105,6 +113,9 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
             onClick={clickable ? () => openMetric('T < 94%', (x) => x.oximetry?.tBelow94, { unit: 'min', threshold: THRESHOLDS.tBelow94 }) : undefined}
           />
         </div>
+        <MetricExplanation
+          text={getODIExplanation(ox.odi3, THRESHOLDS.odi3)}
+        />
       </div>
 
       {/* HR Clinical Surges */}

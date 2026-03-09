@@ -9,11 +9,15 @@ import type { NightResult } from '@/lib/types';
 import { generateInsights, type Insight } from '@/lib/insights';
 import { fetchAIInsights } from '@/lib/ai-insights-client';
 import { Badge } from '@/components/ui/badge';
-import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { ProTease } from '@/components/common/pro-tease';
 import { AIKeyInput } from '@/components/common/ai-key-input';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
+import { NextSteps } from '@/components/dashboard/next-steps';
+import { MetricExplanation } from '@/components/common/metric-explanation';
+import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 
@@ -102,6 +106,15 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const hasAIAccess = !!AI_INSIGHTS_URL;
   const hasAIKey = !!aiKey;
 
+  // Track session count for new-user UX (expand explanations for first 5 sessions)
+  const [isNewUser, setIsNewUser] = useState(false);
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('airwaylab_session_count') || '0', 10);
+    const next = count + 1;
+    localStorage.setItem('airwaylab_session_count', String(next));
+    setIsNewUser(next <= 5);
+  }, []);
+
   // Metric detail modal state
   const [detailMetric, setDetailMetric] = useState<{
     label: string;
@@ -185,6 +198,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                       {insight.body}
                     </p>
+                    {insight.link && (
+                      <Link
+                        href={insight.link.href}
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        {insight.link.text} <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -192,6 +213,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           })}
         </div>
       )}
+
+      {/* Next Steps CTA */}
+      <NextSteps
+        selectedNight={n}
+        hasOximetry={!!n.oximetry}
+        nightCount={nights.length}
+      />
 
       {/* Night Info Bar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -252,6 +280,11 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClick={() => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex, description: 'Respiratory effort-related arousals per hour' })}
         />
       </div>
+
+      <MetricExplanation
+        text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall)}
+        defaultExpanded={isNewUser}
+      />
 
       {/* Glasgow Component Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">
@@ -346,6 +379,16 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           compact
           tooltip="Estimated arousals (brief awakenings) per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
           onClick={() => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <MetricExplanation
+          text={getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai)}
+          defaultExpanded={isNewUser}
+        />
+        <MetricExplanation
+          text={getNEDExplanation(n.ned.nedMean, n.ned.reraIndex, THRESHOLDS.nedMean)}
+          defaultExpanded={isNewUser}
         />
       </div>
 

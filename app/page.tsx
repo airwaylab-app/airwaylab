@@ -633,6 +633,23 @@ export default function Home() {
               for automated scoring and a different lens on your therapy data.
             </p>
           </div>
+
+          {/* Not on PAP yet? */}
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
+            <h3 className="text-sm font-semibold">Not on PAP therapy yet?</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              AirwayLab requires CPAP/BiPAP flow data from a ResMed SD card.
+              If you suspect sleep-disordered breathing but aren&apos;t yet diagnosed,
+              talk to your doctor about a sleep study. Our blog has resources
+              to help you understand what to ask for.
+            </p>
+            <Link
+              href="/blog"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              Read the blog <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
       </section>
 

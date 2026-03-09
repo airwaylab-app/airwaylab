@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ComparisonRow } from './comparison-row';
 import { useThresholds } from '@/components/common/thresholds-provider';
@@ -12,6 +12,42 @@ interface Props {
   nightAIndex: number;
 }
 
+function fmtPressure(n: NightResult): string {
+  const s = n.settings;
+  if (s.epap > 0 && s.ipap > 0) return `${s.epap}/${s.ipap} cmH₂O (PS ${s.pressureSupport})`;
+  if (s.epap > 0) return `${s.epap} cmH₂O`;
+  return '—';
+}
+
+function SettingsSummary({ nightA, nightB }: { nightA: NightResult; nightB: NightResult }) {
+  const sA = nightA.settings;
+  const sB = nightB.settings;
+  const settingsChanged = sA.epap !== sB.epap || sA.ipap !== sB.ipap || sA.papMode !== sB.papMode;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {[
+        { night: nightA, label: 'A' },
+        { night: nightB, label: 'B' },
+      ].map(({ night, label }) => (
+        <div key={label} className="rounded-lg border border-border/40 bg-card/50 px-3 py-2.5 text-xs">
+          <span className="font-medium text-foreground">{night.dateStr}</span>
+          <div className="mt-1.5 space-y-0.5 text-muted-foreground">
+            <div>{night.settings.deviceModel || 'Unknown device'} · {night.settings.papMode}</div>
+            <div>Pressure: {fmtPressure(night)}</div>
+            <div>Duration: {Math.floor(night.durationHours)}h {Math.round((night.durationHours % 1) * 60)}m</div>
+          </div>
+        </div>
+      ))}
+      {settingsChanged && (
+        <div className="sm:col-span-2 rounded-md bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-400">
+          Settings differ between these nights — delta values may reflect pressure changes.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ComparisonTab({ nights, nightA, nightAIndex }: Props) {
   const THRESHOLDS = useThresholds();
   const [compareIndex, setCompareIndex] = useState(() =>
@@ -19,6 +55,37 @@ export function ComparisonTab({ nights, nightA, nightAIndex }: Props) {
   );
 
   const nightB = compareIndex >= 0 ? nights[compareIndex] : null;
+
+  // Precompute quick-select indices (excluding nightA)
+  const quickSelects = useMemo(() => {
+    const others = nights
+      .map((n, i) => ({ n, i }))
+      .filter(({ i }) => i !== nightAIndex);
+    if (others.length === 0) return [];
+
+    const sorted = [...others].sort((a, b) => a.n.dateStr.localeCompare(b.n.dateStr));
+
+    // Previous night (chronologically before nightA, closest)
+    const before = sorted.filter((x) => x.n.dateStr < nightA.dateStr);
+    const prev = before.length > 0 ? before[before.length - 1] : null;
+
+    // Best Glasgow (lowest overall)
+    const best = others.reduce((min, cur) =>
+      cur.n.glasgow.overall < min.n.glasgow.overall ? cur : min
+    );
+
+    // Worst Glasgow (highest overall)
+    const worst = others.reduce((max, cur) =>
+      cur.n.glasgow.overall > max.n.glasgow.overall ? cur : max
+    );
+
+    const presets: { label: string; index: number }[] = [];
+    if (prev) presets.push({ label: 'Previous', index: prev.i });
+    presets.push({ label: 'Best', index: best.i });
+    if (worst.i !== best.i) presets.push({ label: 'Worst', index: worst.i });
+
+    return presets;
+  }, [nights, nightAIndex, nightA.dateStr]);
 
   if (nights.length < 2) {
     return (
@@ -54,10 +121,30 @@ export function ComparisonTab({ nights, nightA, nightAIndex }: Props) {
             )
           ))}
         </select>
+        {quickSelects.length > 0 && (
+          <div className="flex gap-1.5">
+            {quickSelects.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => setCompareIndex(p.index)}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                  compareIndex === p.index
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {nightB && (
         <>
+          {/* Settings Summary */}
+          <SettingsSummary nightA={nightA} nightB={nightB} />
+
           {/* Column Headers */}
           <div className="flex items-center gap-2 border-b border-border/50 pb-2 text-[10px] font-medium text-muted-foreground">
             <span className="min-w-[110px]">Metric</span>

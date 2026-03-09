@@ -51,7 +51,7 @@ function CopyForumButton({ nights, selectedNight }: Props) {
       <TooltipTrigger
         onClick={handleCopy}
         aria-label="Copy forum-formatted summary to clipboard"
-        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/[0.04] px-3 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
       >
         {copyError ? (
           <AlertCircle className="h-3 w-3 text-red-500" />

@@ -492,8 +492,8 @@ function AnalyzePageInner() {
               </TabsTrigger>
               <TabsTrigger value="trends" className="gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Trnd</span>
-                <span className="hidden sm:inline">Trends</span>
+                <span className="sm:hidden text-[11px]">Trends</span>
+                <span className="hidden sm:inline">Trends &amp; Graphs</span>
               </TabsTrigger>
               <TabsTrigger value="compare" className="gap-1.5">
                 <ArrowLeftRight className="h-3.5 w-3.5" />

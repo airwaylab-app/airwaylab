@@ -28,7 +28,9 @@ export function AIKeyInput({ onActivate }: AIKeyInputProps) {
         </span>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Enter your beta API key to get personalised therapy recommendations powered by AI.
+        AirwayLab can generate personalised therapy suggestions using AI. This feature
+        is in early beta — if you received a key from us, enter it below. Your key is
+        stored locally and never sent to our servers.
       </p>
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input

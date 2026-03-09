@@ -10,6 +10,17 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'what-is-cns-sensitization',
+    title: 'Why Your Brain Might Matter More Than Your Airway: Understanding CNS Sensitization in Sleep-Disordered Breathing',
+    description:
+      'Your flow limitation is mild, but your arousals are through the roof. A growing body of research points to central nervous system sensitization — and your AirwayLab data might already be showing it.',
+    date: '2026-03-09',
+    readTime: '8 min read',
+    tags: ['UARS', 'Sensitization', 'Flow Limitation', 'Arousals', 'Research'],
+    ogDescription:
+      'Mild flow limitation but sky-high arousals? Research points to CNS sensitization. Learn what this pattern means and how AirwayLab detects it.',
+  },
+  {
     slug: 'understanding-flow-limitation',
     title: 'Understanding Flow Limitation: What Your CPAP Machine Doesn\'t Tell You',
     description:
