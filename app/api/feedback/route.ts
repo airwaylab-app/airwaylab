@@ -119,6 +119,17 @@ export async function POST(request: NextRequest) {
       console.info(`[feedback] ${cleanType}: ${message.slice(0, 100)} (Supabase not configured)`);
     }
 
+    // Alert via Sentry so new submissions show up on our radar
+    Sentry.captureMessage(`New ${cleanType} submission`, {
+      level: cleanType === 'bug' ? 'warning' : 'info',
+      tags: { route: 'feedback', feedback_type: cleanType },
+      extra: {
+        message: message.trim().slice(0, 500),
+        email: typeof email === 'string' ? email.trim() || null : null,
+        page: cleanPage,
+      },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'feedback' } });
