@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricCard } from '@/components/common/metric-card';
 import { NightHeatmap } from '@/components/charts/night-heatmap';
@@ -11,8 +11,9 @@ import { fetchAIInsights } from '@/lib/ai-insights-client';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight } from 'lucide-react';
-import { ProTease } from '@/components/common/pro-tease';
-import { AIKeyInput } from '@/components/common/ai-key-input';
+import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { useAuth } from '@/lib/auth/auth-context';
+import { canAccess, incrementAIUsage } from '@/lib/auth/feature-gate';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
@@ -20,8 +21,6 @@ import { MetricExplanation } from '@/components/common/metric-explanation';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
-
-const AI_INSIGHTS_URL = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
 
 const GLASGOW_COMPONENTS: { key: keyof GlasgowComponents; label: string; short: string }[] = [
   { key: 'skew', label: 'Skew', short: 'Waveform asymmetry' },
@@ -63,48 +62,54 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const p = previousNight;
   const insights = generateInsights(nights, n, p, therapyChangeDate);
 
+  const { user, tier, isPaid } = useAuth();
+
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiKey, setAiKey] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Check for stored AI key on mount
+  // Check if user can use AI insights (signed in + has quota or is paid)
+  const hasAIAccess = !!user && canAccess('ai_insights', tier);
+
+  // H4: Cancel in-flight AI requests when night changes + L3: prevent stale responses
   useEffect(() => {
-    if (AI_INSIGHTS_URL) {
-      const stored = localStorage.getItem('airwaylab_ai_key');
-      if (stored) setAiKey(stored);
-    }
-  }, []);
+    if (!hasAIAccess) return;
 
-  // Fetch AI insights when key is available and night changes
-  const fetchAI = useCallback(async () => {
-    if (!AI_INSIGHTS_URL || !aiKey) return;
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setAiLoading(true);
-    try {
-      const selectedIdx = nights.indexOf(selectedNight);
-      const result = await fetchAIInsights(
-        nights,
-        selectedIdx >= 0 ? selectedIdx : 0,
-        therapyChangeDate,
-        aiKey
-      );
-      setAiInsights(result);
-    } catch {
-      setAiInsights(null);
-    } finally {
-      setAiLoading(false);
-    }
-  }, [aiKey, nights, selectedNight, therapyChangeDate]);
+    const selectedIdx = nights.indexOf(selectedNight);
 
-  useEffect(() => {
-    fetchAI();
-  }, [fetchAI]);
+    fetchAIInsights(
+      nights,
+      selectedIdx >= 0 ? selectedIdx : 0,
+      therapyChangeDate,
+      controller.signal
+    )
+      .then((result) => {
+        // L3: Don't update state if this request was aborted (stale)
+        if (controller.signal.aborted) return;
+        if (result) {
+          incrementAIUsage();
+        }
+        setAiInsights(result);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setAiInsights(null);
+      })
+      .finally(() => {
+        if (controller.signal.aborted) return;
+        setAiLoading(false);
+      });
 
-  const handleAIKeyActivate = (key: string) => {
-    setAiKey(key);
-  };
-
-  const hasAIAccess = !!AI_INSIGHTS_URL;
-  const hasAIKey = !!aiKey;
+    return () => {
+      controller.abort();
+    };
+  }, [hasAIAccess, nights, selectedNight, therapyChangeDate]);
 
   // Track session count for new-user UX (expand explanations for first 5 sessions)
   const [isNewUser, setIsNewUser] = useState(false);
@@ -489,16 +494,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
 
-      {/* AI Key Input or Pro Tease */}
-      {hasAIAccess && !hasAIKey ? (
-        <AIKeyInput onActivate={handleAIKeyActivate} />
-      ) : (
-        !hasAIAccess && (
-          <ProTease
-            feature="AI-powered therapy recommendations personalised to your breathing patterns."
-            source="overview-tab"
-          />
-        )
+      {/* Upgrade prompt for community users */}
+      {!isPaid && (
+        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." />
       )}
 
       {/* Metric Detail Modal */}

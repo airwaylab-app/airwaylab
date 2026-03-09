@@ -15,6 +15,14 @@ export const env = {
   /** URL for the AI Insights API route */
   NEXT_PUBLIC_AI_INSIGHTS_URL:
     process.env.NEXT_PUBLIC_AI_INSIGHTS_URL ?? undefined,
+
+  /** Supabase project URL (needed for auth) */
+  NEXT_PUBLIC_SUPABASE_URL:
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? undefined,
+
+  /** Supabase anon key (public, safe for client) */
+  NEXT_PUBLIC_SUPABASE_ANON_KEY:
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? undefined,
 } as const;
 
 // ─── Server-only (never bundled to the client) ──────────────────────
@@ -31,6 +39,12 @@ export const serverEnv = {
 
   /** Gating key that clients must send to use AI Insights */
   AI_INSIGHTS_API_KEY: process.env.AI_INSIGHTS_API_KEY ?? undefined,
+
+  /** Stripe secret key */
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? undefined,
+
+  /** Stripe webhook signing secret */
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? undefined,
 } as const;
 
 /**
@@ -55,6 +69,12 @@ export function validateServerEnv() {
   if (serverEnv.SUPABASE_SERVICE_ROLE_KEY && !serverEnv.SUPABASE_URL) {
     warnings.push(
       'SUPABASE_SERVICE_ROLE_KEY is set but SUPABASE_URL is missing — waitlist capture will fail.'
+    );
+  }
+
+  if (serverEnv.STRIPE_SECRET_KEY && !serverEnv.STRIPE_WEBHOOK_SECRET) {
+    warnings.push(
+      'STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing — Stripe webhooks will fail.'
     );
   }
 

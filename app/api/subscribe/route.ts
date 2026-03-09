@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const { email, source } = body as { email: unknown; source: unknown };
 
     if (!isValidEmail(email)) {
-      console.warn('[subscribe] 400 invalid email');
+      console.warn(`[subscribe] 400 invalid email`);
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 

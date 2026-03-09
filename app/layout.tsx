@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { FeedbackWidget } from '@/components/common/feedback-widget';
 import { VersionChecker } from '@/components/common/version-checker';
+import { AuthProvider } from '@/lib/auth/auth-context';
 
 const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
@@ -104,13 +105,15 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main id="main-content" className="flex-1 overflow-x-hidden">{children}</main>
-          <Footer />
-          <FeedbackWidget />
-          <VersionChecker />
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main id="main-content" className="flex-1 overflow-x-hidden">{children}</main>
+            <Footer />
+            <FeedbackWidget />
+            <VersionChecker />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
