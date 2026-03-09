@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Users, Loader2, X, Shield, Heart } from 'lucide-react';
+import { Users, Loader2, X, Shield, Heart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { NightResult } from '@/lib/types';
+import { getAnonymousToken } from '@/lib/anonymous-token';
 
 const DISMISS_KEY = 'airwaylab-contribute-dismissed';
 const CONTRIBUTED_NIGHTS_KEY = 'airwaylab-contributed-nights';
@@ -11,6 +12,7 @@ const CONTRIBUTED_NIGHTS_KEY = 'airwaylab-contributed-nights';
 interface Props {
   nights: NightResult[];
   isDemo?: boolean;
+  therapyChangeDate?: string | null;
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * Tracks how many nights were previously contributed so users
  * can contribute again when they upload new data.
  */
-export function DataContribution({ nights, isDemo = false }: Props) {
+export function DataContribution({ nights, isDemo = false, therapyChangeDate = null }: Props) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -43,6 +45,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [expanded, setExpanded] = useState(false);
   const [contributionCount, setContributionCount] = useState<number | null>(null);
+  const [sleepQuality, setSleepQuality] = useState<number | null>(null);
 
   // Fetch community contribution count for social proof
   useEffect(() => {
@@ -68,10 +71,34 @@ export function DataContribution({ nights, isDemo = false }: Props) {
       const toSubmit = nights.length > 365
         ? nights.slice(0, 365)
         : nights;
+
+      // Build therapy change metadata if a therapy change date was set
+      let therapyChange = null;
+      if (therapyChangeDate) {
+        const changeIdx = toSubmit.findIndex((n) => n.dateStr === therapyChangeDate);
+        if (changeIdx >= 0 && changeIdx < toSubmit.length - 1) {
+          const nightBefore = toSubmit[changeIdx + 1]; // nights are most-recent-first
+          therapyChange = {
+            changeNightIndex: changeIdx,
+            settingsBefore: nightBefore ? {
+              epap: nightBefore.settings.epap,
+              ipap: nightBefore.settings.ipap,
+              pressureSupport: nightBefore.settings.pressureSupport,
+              papMode: nightBefore.settings.papMode,
+            } : undefined,
+          };
+        }
+      }
+
       const res = await fetch('/api/contribute-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nights: toSubmit }),
+        body: JSON.stringify({
+          nights: toSubmit,
+          sleepQuality,
+          therapyChange,
+          anonymousToken: getAnonymousToken(),
+        }),
       });
 
       if (res.ok) {
@@ -90,7 +117,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
     } catch {
       setStatus('error');
     }
-  }, [nights]);
+  }, [nights, sleepQuality, therapyChangeDate]);
 
   // Check if user has new data beyond what they already contributed (date-based)
   const contributedSet = new Set(contributedDates);
@@ -191,6 +218,37 @@ export function DataContribution({ nights, isDemo = false }: Props) {
             </p>
           </div>
 
+          {/* Sleep quality rating */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">How did you sleep?</span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((val) => (
+                <button
+                  key={val}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSleepQuality(sleepQuality === val ? null : val);
+                  }}
+                  className="rounded p-0.5 transition-colors hover:bg-primary/10"
+                  aria-label={`Rate sleep quality ${val} out of 5`}
+                >
+                  <Star
+                    className={`h-4 w-4 transition-colors ${
+                      sleepQuality !== null && val <= sleepQuality
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-muted-foreground/30'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            {sleepQuality !== null && (
+              <span className="text-[10px] text-muted-foreground/60">
+                {sleepQuality}/5
+              </span>
+            )}
+          </div>
+
           {/* What gets shared (expandable) */}
           {!isReturning && (
             <button
@@ -209,7 +267,9 @@ export function DataContribution({ nights, isDemo = false }: Props) {
                 <li>Analysis scores (Glasgow, Flow Limitation, NED, RERA)</li>
                 <li>Machine settings (mode, pressures — no serial numbers)</li>
                 <li>Oximetry summary metrics (if uploaded)</li>
-                <li>Duration and session count</li>
+                <li>Duration, session count, and time gaps between nights</li>
+                <li>Your sleep quality rating (if provided)</li>
+                <li>Therapy change context (if a settings change was marked)</li>
               </ul>
               <p className="mt-1.5 font-medium text-foreground/80">Never shared:</p>
               <ul className="list-disc pl-4 space-y-0.5">
