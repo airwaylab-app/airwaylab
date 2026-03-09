@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, Heart, Crown, Sparkles, Loader2 } from 'lucide-react';
+import { Check, Heart, Crown, Sparkles, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthModal } from '@/components/auth/auth-modal';
 
@@ -43,6 +43,25 @@ const CHAMPION_FEATURES = [
   'Champion badge on forum posts',
   'Name on supporters page',
   'Priority feature requests',
+];
+
+const FAQ_ITEMS = [
+  {
+    q: 'Can I really use AirwayLab for free?',
+    a: 'Yes. All four analysis engines, 3 nights per upload, and 3 AI insights per month are free forever. No credit card required.',
+  },
+  {
+    q: 'What happens to my data?',
+    a: 'Your sleep data is processed entirely in your browser and never sent to our servers. AI insights use anonymized metrics only. We cannot see your waveforms or personal health data.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Cancel with one click from your account settings. You keep access until the end of your billing period — no questions asked.',
+  },
+  {
+    q: 'Is this medical advice?',
+    a: 'No. AirwayLab is an analysis tool, not a medical device. Always discuss therapy changes with your clinician.',
+  },
 ];
 
 export default function PricingPage() {
@@ -107,39 +126,41 @@ export default function PricingPage() {
         {/* Header */}
         <div className="mb-12 text-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Support AirwayLab
+            Understand your sleep therapy better
           </h1>
-          <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-            AirwayLab is free and open-source. Supporter contributions fund continued
-            development and keep the tool available to everyone.
+          <p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
+            Free analysis for everyone. Upgrade for unlimited AI insights,
+            90-night trends, and clinician-ready reports.
           </p>
         </div>
 
         {/* Billing toggle */}
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <button
-            onClick={() => setBilling('monthly')}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              billing === 'monthly'
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBilling('yearly')}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              billing === 'yearly'
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Yearly
-            <span className="ml-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
-              Save 27%
-            </span>
-          </button>
+        <div className="mb-8 flex items-center justify-center">
+          <div className="inline-flex rounded-lg border border-border/50 bg-card/30 p-1">
+            <button
+              onClick={() => setBilling('monthly')}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                billing === 'monthly'
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBilling('yearly')}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                billing === 'yearly'
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Yearly
+              <span className="ml-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+                Save 27%
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Checkout error */}
@@ -200,14 +221,20 @@ export default function PricingPage() {
               </p>
             </div>
             <div className="mb-6">
-              <span className="text-3xl font-bold">
-                ${billing === 'monthly' ? '9' : '79'}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                /{billing === 'monthly' ? 'month' : 'year'}
-              </span>
-              {billing === 'yearly' && (
-                <span className="ml-2 text-xs text-muted-foreground line-through">$108</span>
+              {billing === 'monthly' ? (
+                <>
+                  <span className="text-3xl font-bold">$9</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl font-bold">$6.58</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    <span className="text-emerald-500 font-medium">$79/year</span>
+                    {' '}<span className="line-through">$108</span>
+                  </div>
+                </>
               )}
             </div>
             {tier === 'supporter' || tier === 'champion' ? (
@@ -228,7 +255,7 @@ export default function PricingPage() {
                 ) : (
                   <Heart className="h-4 w-4" />
                 )}
-                {user ? 'Support AirwayLab' : 'Sign in to support'}
+                {user ? 'Get Supporter' : 'Sign in to get started'}
               </button>
             )}
             <ul className="flex flex-col gap-2.5">
@@ -257,14 +284,20 @@ export default function PricingPage() {
               </p>
             </div>
             <div className="mb-6">
-              <span className="text-3xl font-bold">
-                ${billing === 'monthly' ? '25' : '199'}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                /{billing === 'monthly' ? 'month' : 'year'}
-              </span>
-              {billing === 'yearly' && (
-                <span className="ml-2 text-xs text-muted-foreground line-through">$300</span>
+              {billing === 'monthly' ? (
+                <>
+                  <span className="text-3xl font-bold">$25</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl font-bold">$16.58</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    <span className="text-amber-400 font-medium">$199/year</span>
+                    {' '}<span className="line-through">$300</span>
+                  </div>
+                </>
               )}
             </div>
             {tier === 'champion' ? (
@@ -285,7 +318,7 @@ export default function PricingPage() {
                 ) : (
                   <Crown className="h-4 w-4" />
                 )}
-                {user ? 'Become a Champion' : 'Sign in to become a Champion'}
+                {user ? 'Become a Champion' : 'Sign in to get started'}
               </button>
             )}
             <ul className="flex flex-col gap-2.5">
@@ -303,12 +336,35 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* Trust signals */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5 text-emerald-500" />
+            Cancel anytime
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5 text-emerald-500" />
+            Secure payment via Stripe
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5 text-emerald-500" />
+            Your data never leaves your browser
+          </span>
+        </div>
+
         {/* FAQ */}
-        <div className="mt-16 text-center">
-          <h2 className="text-xl font-semibold">Questions?</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            All core analysis features remain free forever. Supporter contributions fund
-            AI API costs, infrastructure, and continued development.{' '}
+        <div className="mt-16">
+          <h2 className="mb-6 text-center text-xl font-semibold">Frequently asked questions</h2>
+          <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
+            {FAQ_ITEMS.map((item) => (
+              <div key={item.q} className="rounded-lg border border-border/50 bg-card/30 p-4">
+                <h3 className="text-sm font-medium text-foreground">{item.q}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            More questions?{' '}
             <Link href="/about" className="text-primary hover:underline">
               Learn more about AirwayLab
             </Link>
