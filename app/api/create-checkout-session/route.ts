@@ -68,12 +68,18 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    // Check for existing Stripe customer
-    const { data: profile } = await supabase
+    // Check for existing Stripe customer — use maybeSingle() to avoid throwing on 0 rows
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('[create-checkout-session] Profile lookup failed:', profileError.message);
+      Sentry.captureException(profileError, { tags: { route: 'create-checkout-session', step: 'profile-lookup' } });
+      return NextResponse.json({ error: 'Could not load your account. Please try again.' }, { status: 500 });
+    }
 
     let customerId = profile?.stripe_customer_id;
 
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest) {
         .from('profiles')
         .select('stripe_customer_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (freshProfile?.stripe_customer_id) {
         customerId = freshProfile.stripe_customer_id;
@@ -131,7 +137,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'create-checkout-session' } });
-    console.error('[create-checkout-session] Error:', err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('[create-checkout-session] Error:', errMsg, err);
+
+    // Surface Stripe-specific errors so users know what went wrong
+    if (err instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        { error: `Payment error: ${err.message}` },
+        { status: err.statusCode ?? 500 },
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
   }
 }
