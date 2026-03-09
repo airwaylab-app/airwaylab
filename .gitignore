@@ -44,3 +44,6 @@ next-env.d.ts
 # sentry
 .sentryclirc
 CLAUDE.local.md
+
+# agency agents (local-only, not committed)
+.agency-agents/
