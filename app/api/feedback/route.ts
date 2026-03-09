@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     // Validate email if provided
     if (email !== undefined && email !== null && email !== '') {
-      if (typeof email !== 'string' || !email.includes('@') || email.length > 254) {
+      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
         return NextResponse.json(
           { error: 'Invalid email address.' },
           { status: 400 }

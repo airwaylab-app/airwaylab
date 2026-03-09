@@ -71,12 +71,13 @@ describe('generateInsights', () => {
       expect(reraWarning!.category).toBe('ned');
     });
 
-    it('does not generate regularity-bad for warn-level regularity', () => {
-      // night3 has regularity 52% → warn (threshold: green=70, amber=50, higherIsBetter)
-      // 52 ≥ 50 (amber) → 'warn', not 'bad', so regularity-bad insight should NOT fire
+    it('generates regularity-bad for night3 (regularity 52 > amber threshold 50, lowerIsBetter)', () => {
+      // night3 has regularity 52 → bad (threshold: green=30, amber=50, lowerIsBetter)
+      // 52 > 50 (amber) → 'bad', so regularity-bad insight fires
       const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2], SAMPLE_NIGHTS[3], null);
       const regWarning = result.find((i) => i.id === 'regularity-bad');
-      expect(regWarning).toBeUndefined();
+      expect(regWarning).toBeDefined();
+      expect(regWarning!.type).toBe('warning');
     });
 
     it('detects night-over-night Glasgow change', () => {
@@ -97,7 +98,13 @@ describe('generateInsights', () => {
 
     it('detects H1/H2 NED split when difference is >5', () => {
       // night3: h1=24.2, h2=32.8 → diff=8.6 → insight expected
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2], SAMPLE_NIGHTS[3], null);
+      // Pass only 2 nights to avoid trend insights filling the 6-insight cap
+      const result = generateInsights(
+        [SAMPLE_NIGHTS[2], SAMPLE_NIGHTS[3]],
+        SAMPLE_NIGHTS[2],
+        SAMPLE_NIGHTS[3],
+        null
+      );
       const h1h2 = result.find((i) => i.id === 'ned-h1h2');
       expect(h1h2).toBeDefined();
     });
