@@ -83,6 +83,21 @@ export async function POST(request: NextRequest) {
 
     let customerId = profile?.stripe_customer_id;
 
+    // Verify the stored customer still exists in Stripe (may have been deleted or be from a different mode)
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (stripeErr) {
+        console.error(`[create-checkout-session] Stale Stripe customer ${customerId}, will recreate:`, stripeErr);
+        Sentry.captureMessage(`Stale Stripe customer ID: ${customerId}`, {
+          level: 'warning',
+          tags: { route: 'create-checkout-session' },
+          extra: { userId: user.id },
+        });
+        customerId = undefined;
+      }
+    }
+
     // H5: Create Stripe customer if needed — use service role for atomic update
     if (!customerId) {
       const adminClient = getSupabaseServiceRole();
