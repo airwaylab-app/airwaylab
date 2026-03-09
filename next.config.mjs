@@ -22,6 +22,10 @@ const nextConfig = {
     NEXT_PUBLIC_GIT_SHA: gitSha,
   },
 
+  // Enable source maps so Sentry can upload them (they are deleted after upload
+  // via the deleteSourcemapsAfterUpload option in the Sentry config below)
+  productionBrowserSourceMaps: true,
+
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
