@@ -8,9 +8,11 @@
 import type {
   AnalysisState,
   NightResult,
+  RawNightFlowData,
   WorkerResponse,
 } from './types';
 import { loadPersistedResults, persistResults } from './persistence';
+import { saveRawFlow, pruneExpiredFlow } from './flow-store';
 import {
   diffAgainstManifest,
   buildManifest,
@@ -148,7 +150,7 @@ export class AnalysisOrchestrator {
         },
       });
 
-      const newNights = await this.runWorker(files, oximetryCSVs);
+      const { nights: newNights, rawFlowData } = await this.runWorker(files, oximetryCSVs);
 
       // ── Merge cached + new ──
       const merged = mergeNights(cachedNights, newNights);
@@ -157,6 +159,13 @@ export class AnalysisOrchestrator {
       // ── Save manifest + results ──
       saveManifest(buildManifest(sdArr));
       persistResults(merged, therapyChangeDate);
+
+      // ── Persist raw flow data to IndexedDB (non-blocking) ──
+      if (rawFlowData.length > 0) {
+        saveRawFlow(rawFlowData)
+          .then(() => pruneExpiredFlow())
+          .catch((err) => console.warn('[flow-store] Save failed:', err));
+      }
 
       this.setState({
         status: 'complete',
@@ -176,7 +185,7 @@ export class AnalysisOrchestrator {
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
     oximetryCSVs?: string[]
-  ): Promise<NightResult[]> {
+  ): Promise<{ nights: NightResult[]; rawFlowData: RawNightFlowData[] }> {
     return new Promise((resolve, reject) => {
       // Safety timeout — 5 minutes is generous for even large SD cards
       const WORKER_TIMEOUT_MS = 5 * 60 * 1000;
@@ -214,7 +223,7 @@ export class AnalysisOrchestrator {
           case 'RESULTS':
             settle();
             this.terminate();
-            resolve(msg.nights);
+            resolve({ nights: msg.nights, rawFlowData: msg.rawFlowData });
             break;
           case 'ERROR':
             settle();

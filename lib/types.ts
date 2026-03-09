@@ -165,6 +165,25 @@ export interface NightResult {
   oximetry: OximetryResults | null;
 }
 
+// ── Raw flow data for persistence ─────────────────────────────
+// Stored separately from NightResult so metrics stay lean while
+// raw waveforms are available for reprocessing and live scrolling.
+
+export interface RawFlowSession {
+  filePath: string;
+  samplingRate: number;
+  durationSeconds: number;
+  recordingDate: string;          // ISO string for serialisation
+  flowData: Float32Array;         // L/min samples
+  pressureData: Float32Array | null;
+}
+
+export interface RawNightFlowData {
+  dateStr: string;                // Night date key (matches NightResult.dateStr)
+  sessions: RawFlowSession[];
+  savedAt: number;                // Epoch ms for TTL
+}
+
 export interface AnalysisState {
   status: 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
   progress: { current: number; total: number; stage: string };
@@ -189,6 +208,7 @@ export interface WorkerProgress {
 export interface WorkerResult {
   type: 'RESULTS';
   nights: NightResult[];
+  rawFlowData: RawNightFlowData[];
 }
 
 export interface WorkerError {
