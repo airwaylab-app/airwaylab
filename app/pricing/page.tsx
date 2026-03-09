@@ -242,12 +242,14 @@ export default function PricingPage() {
                 </>
               ) : (
                 <>
-                  <span className="text-3xl font-bold">$6.58</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    <span className="text-emerald-500 font-medium">$79/year</span>
-                    {' '}<span className="line-through">$108</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold">$79</span>
+                    <span className="text-sm text-muted-foreground">/year</span>
+                    <span className="text-sm text-muted-foreground line-through ml-1">$108</span>
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    That&apos;s just <span className="text-emerald-500 font-medium">$6.58/mo</span>
+                  </p>
                 </>
               )}
             </div>
@@ -305,12 +307,14 @@ export default function PricingPage() {
                 </>
               ) : (
                 <>
-                  <span className="text-3xl font-bold">$16.58</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    <span className="text-amber-400 font-medium">$199/year</span>
-                    {' '}<span className="line-through">$300</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold">$199</span>
+                    <span className="text-sm text-muted-foreground">/year</span>
+                    <span className="text-sm text-muted-foreground line-through ml-1">$300</span>
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    That&apos;s just <span className="text-amber-400 font-medium">$16.58/mo</span>
+                  </p>
                 </>
               )}
             </div>
