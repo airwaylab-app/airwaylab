@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
+      console.warn(`[submit-error-data] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },
         { status: 429 }
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
 
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      console.warn(`[submit-error-data] 413 payload too large: ${contentLength} bytes`);
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
 
@@ -51,10 +53,12 @@ export async function POST(request: Request) {
     };
 
     if (!Array.isArray(fileNames) || fileNames.length === 0) {
+      console.warn('[submit-error-data] 400 no file names provided');
       return NextResponse.json({ error: 'No file names provided.' }, { status: 400 });
     }
 
     if (typeof errorMessage !== 'string' || errorMessage.length < 3) {
+      console.warn('[submit-error-data] 400 missing error message');
       return NextResponse.json({ error: 'Error message required.' }, { status: 400 });
     }
 

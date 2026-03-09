@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    console.warn('[ai-insights] 400 invalid request body (JSON parse failed)');
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -108,11 +109,12 @@ export async function POST(request: NextRequest) {
     !body.nights ||
     !Array.isArray(body.nights) ||
     body.nights.length === 0 ||
-    body.nights.length > 90 ||
+    body.nights.length > 365 ||
     typeof body.selectedNightIndex !== 'number' ||
     body.selectedNightIndex < 0 ||
     body.selectedNightIndex >= body.nights.length
   ) {
+    console.warn(`[ai-insights] 400 invalid request data: nights=${Array.isArray(body.nights) ? body.nights.length : 'not array'}, index=${body.selectedNightIndex}`);
     return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
   }
 

@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
+      console.warn(`[feedback] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },
         { status: 429 }
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     // Size guard
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      console.warn(`[feedback] 413 payload too large: ${contentLength} bytes`);
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
 
     // Validate message
     if (!message || typeof message !== 'string' || message.trim().length < 5) {
+      console.warn('[feedback] 400 message too short');
       return NextResponse.json(
         { error: 'Message must be at least 5 characters.' },
         { status: 400 }
@@ -64,6 +67,7 @@ export async function POST(request: Request) {
     }
 
     if (message.length > 2000) {
+      console.warn('[feedback] 400 message too long');
       return NextResponse.json(
         { error: 'Message too long (max 2000 characters).' },
         { status: 400 }
@@ -73,6 +77,7 @@ export async function POST(request: Request) {
     // Validate email if provided
     if (email !== undefined && email !== null && email !== '') {
       if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+        console.warn('[feedback] 400 invalid email');
         return NextResponse.json(
           { error: 'Invalid email address.' },
           { status: 400 }

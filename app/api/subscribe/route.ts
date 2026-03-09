@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
+      console.warn(`[subscribe] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     const { email, source } = body as { email: unknown; source: unknown };
 
     if (!isValidEmail(email)) {
+      console.warn('[subscribe] 400 invalid email');
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 
