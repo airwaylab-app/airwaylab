@@ -173,7 +173,7 @@ export async function POST(request: Request) {
     }
 
     if (!nights.every(isValidNight)) {
-      console.warn('[contribute-data] 400 invalid night data format');
+      console.warn(`[contribute-data] 400 invalid night data format (${nights.length} nights)`);
       return NextResponse.json(
         { error: 'Invalid night data format.' },
         { status: 400 }

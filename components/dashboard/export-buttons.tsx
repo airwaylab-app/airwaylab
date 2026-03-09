@@ -7,10 +7,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Download, MessageSquare, Check, FileText, AlertCircle } from 'lucide-react';
+import { Download, MessageSquare, Check, FileText, AlertCircle, Lock } from 'lucide-react';
+import Link from 'next/link';
 import { exportCSV, exportJSON, downloadFile } from '@/lib/export';
 import { exportForumMultiNight, exportForumSingleNight } from '@/lib/forum-export';
 import { openPDFReport } from '@/lib/pdf-report';
+import { useAuth } from '@/lib/auth/auth-context';
+import { canAccess } from '@/lib/auth/feature-gate';
 import type { NightResult } from '@/lib/types';
 
 interface Props {
@@ -19,6 +22,7 @@ interface Props {
 }
 
 function CopyForumButton({ nights, selectedNight }: Props) {
+  const { tier } = useAuth();
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
@@ -26,8 +30,8 @@ function CopyForumButton({ nights, selectedNight }: Props) {
     try {
       const text =
         nights.length === 1 || selectedNight
-          ? exportForumSingleNight(selectedNight ?? nights[0])
-          : exportForumMultiNight(nights);
+          ? exportForumSingleNight(selectedNight ?? nights[0], tier)
+          : exportForumMultiNight(nights, tier);
       navigator.clipboard.writeText(text).then(
         () => {
           setCopied(true);
@@ -44,7 +48,7 @@ function CopyForumButton({ nights, selectedNight }: Props) {
       setCopyError(true);
       setTimeout(() => setCopyError(false), 3000);
     }
-  }, [nights, selectedNight]);
+  }, [nights, selectedNight, tier]);
 
   return (
     <Tooltip>
@@ -99,6 +103,9 @@ function safeOpenPDF(nights: NightResult[]): void {
 }
 
 export const ExportButtons = memo(function ExportButtons({ nights, selectedNight }: Props) {
+  const { tier } = useAuth();
+  const pdfAllowed = canAccess('pdf_report', tier);
+
   return (
     <TooltipProvider>
       <div className="flex gap-2">
@@ -130,19 +137,35 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger
-            onClick={() => safeOpenPDF(nights)}
-            aria-label={`Open printable PDF report for ${nights.length} night${nights.length !== 1 ? 's' : ''}`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <FileText className="h-3 w-3" />
-            <span className="hidden sm:inline">Report </span>PDF
-          </TooltipTrigger>
-          <TooltipContent>
-            Open print-ready report — save as PDF from print dialog
-          </TooltipContent>
-        </Tooltip>
+        {pdfAllowed ? (
+          <Tooltip>
+            <TooltipTrigger
+              onClick={() => safeOpenPDF(nights)}
+              aria-label={`Open printable PDF report for ${nights.length} night${nights.length !== 1 ? 's' : ''}`}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <FileText className="h-3 w-3" />
+              <span className="hidden sm:inline">Report </span>PDF
+            </TooltipTrigger>
+            <TooltipContent>
+              Open print-ready report — save as PDF from print dialog
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger
+              render={<Link href="/pricing" />}
+              aria-label="PDF reports available for supporters"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input/50 bg-background px-3 text-xs font-medium text-muted-foreground/60 transition-colors hover:border-input hover:text-muted-foreground"
+            >
+              <Lock className="h-3 w-3" />
+              <span className="hidden sm:inline">Report </span>PDF
+            </TooltipTrigger>
+            <TooltipContent>
+              PDF reports are available to supporters — help fund AirwayLab
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         <CopyForumButton nights={nights} selectedNight={selectedNight} />
       </div>

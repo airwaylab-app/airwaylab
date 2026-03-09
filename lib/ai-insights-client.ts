@@ -3,27 +3,27 @@ import type { NightResult } from './types';
 
 /**
  * Fetches AI-powered insights from the API route.
+ * Auth is session-based (cookies) — no API key needed.
  * Returns null on any failure — the UI falls back to rule-based insights.
  */
 export async function fetchAIInsights(
   nights: NightResult[],
   selectedNightIndex: number,
   therapyChangeDate: string | null,
-  apiKey: string
+  signal?: AbortSignal
 ): Promise<Insight[] | null> {
-  const url = process.env.NEXT_PUBLIC_AI_INSIGHTS_URL;
-  if (!url) return null;
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
+  // Wire external signal to internal controller
+  const onExternalAbort = () => controller.abort();
+  signal?.addEventListener('abort', onExternalAbort);
+
   try {
-    const res = await fetch(url, {
+    const res = await fetch('/api/ai-insights', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({
         nights,
         selectedNightIndex,
@@ -42,5 +42,6 @@ export async function fetchAIInsights(
     return null;
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener('abort', onExternalAbort);
   }
 }
