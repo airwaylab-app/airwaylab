@@ -73,7 +73,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   // H4: Cancel in-flight AI requests when night changes + L3: prevent stale responses
   useEffect(() => {
-    if (!hasAIAccess) return;
+    if (!hasAIAccess || isDemo) return;
 
     // Cancel any in-flight request
     abortRef.current?.abort();
@@ -109,7 +109,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
     return () => {
       controller.abort();
     };
-  }, [hasAIAccess, nights, selectedNight, therapyChangeDate]);
+  }, [hasAIAccess, isDemo, nights, selectedNight, therapyChangeDate]);
 
   // Track session count for new-user UX (expand explanations for first 5 sessions)
   const [isNewUser, setIsNewUser] = useState(false);
@@ -224,6 +224,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         selectedNight={n}
         hasOximetry={!!n.oximetry}
         nightCount={nights.length}
+        onUploadOximetry={onUploadOximetry}
       />
 
       {/* Night Info Bar */}
@@ -386,16 +387,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClick={() => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <MetricExplanation
-          text={getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai)}
-          defaultExpanded={isNewUser}
-        />
-        <MetricExplanation
-          text={getNEDExplanation(n.ned.nedMean, n.ned.reraIndex, THRESHOLDS.nedMean)}
-          defaultExpanded={isNewUser}
-        />
-      </div>
+      <MetricExplanation
+        text={[
+          getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai),
+          getNEDExplanation(n.ned.nedMean, n.ned.reraIndex, THRESHOLDS.nedMean),
+        ].filter(Boolean).join('\n\n')}
+        defaultExpanded={isNewUser}
+      />
 
       {/* Oximetry Quick View */}
       {n.oximetry && (

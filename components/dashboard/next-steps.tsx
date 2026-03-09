@@ -10,14 +10,17 @@ interface Props {
   selectedNight: NightResult;
   hasOximetry: boolean;
   nightCount: number;
+  onUploadOximetry?: () => void;
 }
 
 interface Step {
   text: string;
   link?: { href: string; label: string };
+  onClick?: () => void;
+  actionLabel?: string;
 }
 
-export function NextSteps({ selectedNight, hasOximetry, nightCount }: Props) {
+export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOximetry }: Props) {
   const THRESHOLDS = useThresholds();
   const steps: Step[] = [];
 
@@ -41,6 +44,8 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount }: Props) {
   if (!hasOximetry) {
     steps.push({
       text: 'Add pulse oximetry data for deeper analysis — oxygen desaturations and heart rate patterns reveal what flow data alone can\'t.',
+      onClick: onUploadOximetry,
+      actionLabel: 'Upload oximetry CSV',
     });
   }
 
@@ -83,6 +88,15 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount }: Props) {
                 >
                   {step.link.label} <ArrowRight className="h-2.5 w-2.5" />
                 </Link>
+              )}
+              {step.onClick && (
+                <button
+                  type="button"
+                  onClick={step.onClick}
+                  className="ml-1 inline-flex items-center gap-0.5 font-medium text-primary hover:underline"
+                >
+                  {step.actionLabel ?? 'Do this'} <ArrowRight className="h-2.5 w-2.5" />
+                </button>
               )}
             </span>
           </li>
