@@ -20,6 +20,7 @@ import { FlowAnalysisTab } from '@/components/dashboard/flow-analysis-tab';
 import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
 import { ComparisonTab } from '@/components/dashboard/comparison-tab';
+import { WaveformTab } from '@/components/dashboard/waveform-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
@@ -489,6 +490,11 @@ function AnalyzePageInner() {
                 <span className="sm:hidden text-[11px]">Flow</span>
                 <span className="hidden sm:inline">Flow Analysis</span>
               </TabsTrigger>
+              <TabsTrigger value="waveform" className="gap-1.5">
+                <Waves className="h-3.5 w-3.5" />
+                <span className="sm:hidden text-[11px]">Wave</span>
+                <span className="hidden sm:inline">Waveforms</span>
+              </TabsTrigger>
               <TabsTrigger value="oximetry" className="gap-1.5">
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">O₂</span>
@@ -540,6 +546,16 @@ function AnalyzePageInner() {
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   nights={nights}
+                />
+              </ErrorBoundary>
+            </TabsContent>
+
+            <TabsContent value="waveform" className="mt-6">
+              <ErrorBoundary context="Waveforms">
+                <WaveformTab
+                  selectedNight={currentNight}
+                  isDemo={isDemo}
+                  sdFiles={sdFilesRef.current}
                 />
               </ErrorBoundary>
             </TabsContent>
