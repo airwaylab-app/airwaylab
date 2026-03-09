@@ -5,6 +5,39 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-09
+
+### Added
+
+- **Auth + Stripe subscription system** — full authentication flow with Supabase Auth (magic links), Stripe checkout for Supporter ($9/mo) and Champion ($25/mo) tiers, customer portal, and webhook-driven tier sync
+- **Cloud storage system** — raw SD card file upload with consent, deduplication, and waveform loading from cloud when local files unavailable
+- **Flow waveform browser** — interactive waveform viewer with scroll-zoom, drag-pan, keyboard navigation, pressure overlay, and event markers
+- **Changelog page** — user-facing `/changelog` route parsed from this file
+- **Feedback widget** — floating feedback form (feature requests, bug reports, questions) stored in Supabase
+- **Data contribution opt-in** — anonymised breathing scores contributed to research dataset with explicit consent
+- **20 Plausible analytics events** — conversion funnel (upload → analysis → pricing → checkout), engagement (tabs, exports, thresholds, feedback), and retention signals (returning users, cloud sync, AI upsell)
+- **Build-time version check** — `scripts/check-version.mjs` fails the build if `package.json` version has no matching CHANGELOG entry
+
+### Changed
+
+- **Generalised CPAP → PAP** — all user-facing references updated to cover BiPAP/ASV users
+- **Pricing page CRO improvements** — yearly monthly-equivalent pricing, value-oriented copy, FAQ section
+- **Demo AI insights** — static pre-generated insights for demo mode with support CTA
+
+### Fixed
+
+- **Browser freeze on large SD cards** — raised night cap to 3 years, added chunked processing
+- **Synthetic waveforms** — show synthetic waveform when SD files unavailable instead of dead end; don't show for real data
+- **Checkout error handling** — graceful fallback when Stripe price IDs are missing
+- **Combined metric explanations** — render as separate paragraphs instead of merged text
+- **GitHub stars rate limiting** — proxied through server API to avoid client-side 403s
+
+### Security
+
+- **Auth hardening** — account deletion, health check endpoint, deployment safeguards
+- **RLS enforcement** — enabled on `data_contributions` and `waitlist` tables
+- **API logging** — `console.warn` on all 4xx rejections for audit trail
+
 ## [0.5.0] - 2026-03-08
 
 ### Added
