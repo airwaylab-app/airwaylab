@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
-// ── Rate limiter (per-IP, 3 submissions per hour) ──────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 3_600_000;
-const RATE_LIMIT_MAX = 3;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
-}
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
 
 const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
 
@@ -34,9 +21,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
-    if (isRateLimited(ip)) {
+    const ip = getRateLimitKey(request);
+    if (limiter.isLimited(ip)) {
       console.warn(`[submit-error-data] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },

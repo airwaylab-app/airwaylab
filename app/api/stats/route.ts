@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
 const statsRateLimiter = new RateLimiter({ windowMs: 60_000, max: 30 });

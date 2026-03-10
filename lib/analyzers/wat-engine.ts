@@ -110,13 +110,13 @@ function calculateMinuteVent(flowData: Float32Array, samplingRate: number): numb
 
   for (let i = 0; i <= flowData.length - windowSize; i += stepSize) {
     let tidalVolume = 0;
-    let breathCount = 0;
+    let _breathCount = 0;
     let inInhalation = false;
 
     for (let j = 1; j < windowSize; j++) {
       const idx = i + j;
       if (flowData[idx] > 0 && flowData[idx - 1] <= 0) {
-        breathCount++;
+        _breathCount++;
         inInhalation = true;
       }
       if (inInhalation && flowData[idx] > 0) {

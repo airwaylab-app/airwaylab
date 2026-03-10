@@ -16,7 +16,7 @@ interface FileGroup {
  * Looks for DATALOG/YYYYMMDD/ pattern.
  */
 function extractFolderDate(filePath: string): string | null {
-  const match = filePath.match(/(\d{8})\//);
+  const match = filePath.match(/DATALOG\/(\d{8})\//);
   if (match) {
     const d = match[1];
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
