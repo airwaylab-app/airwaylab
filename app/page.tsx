@@ -178,16 +178,34 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href="/analyze">
-                  <Button size="lg" className="w-full gap-2 shadow-glow sm:w-auto">
-                    <Upload className="h-4 w-4" /> Upload Your SD Card
-                  </Button>
-                </Link>
-                <Link href="/analyze?demo">
-                  <Button variant="outline" size="lg" className="w-full gap-2 sm:w-auto">
+                {/* Mobile: Demo primary, Upload secondary */}
+                <Link href="/analyze?demo" className="sm:hidden">
+                  <Button size="lg" className="w-full gap-2 shadow-glow">
                     <Play className="h-4 w-4" /> See Demo
                   </Button>
                 </Link>
+                <Link href="/analyze" className="sm:hidden">
+                  <Button variant="outline" size="lg" className="w-full gap-2">
+                    <Upload className="h-4 w-4" /> Upload Your SD Card
+                  </Button>
+                </Link>
+                {/* Desktop: Upload primary, Demo secondary */}
+                <Link href="/analyze" className="hidden sm:block">
+                  <Button size="lg" className="gap-2 shadow-glow">
+                    <Upload className="h-4 w-4" /> Upload Your SD Card
+                  </Button>
+                </Link>
+                <Link href="/analyze?demo" className="hidden sm:block">
+                  <Button variant="outline" size="lg" className="gap-2">
+                    <Play className="h-4 w-4" /> See Demo
+                  </Button>
+                </Link>
+                <p className="text-[11px] text-muted-foreground/60 sm:hidden">
+                  Uploading requires a desktop computer with an SD card reader.
+                </p>
+                <div className="sm:hidden">
+                  <EmailOptIn variant="inline" source="landing-mobile-reminder" />
+                </div>
               </div>
               <Link
                 href="/about"
@@ -324,7 +342,7 @@ export default function Home() {
               <h3 className="text-sm font-semibold">Accessible to Everyone</h3>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Not just patients with technical skills. Not just those who can afford specialist clinics. Everyone on PAP therapy deserves to know if their treatment is actually working beyond a single number.
+              Not just people with technical skills. Not just those who can afford specialist clinics. Everyone on PAP therapy deserves to know if their treatment is actually working beyond a single number.
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
@@ -729,7 +747,7 @@ export default function Home() {
           </p>
           <Link href="/analyze">
             <Button size="lg" className="gap-2 shadow-glow">
-              Get Started <ArrowRight className="h-4 w-4" />
+              <Upload className="h-4 w-4" /> Upload Your SD Card
             </Button>
           </Link>
           <div className="mt-2">

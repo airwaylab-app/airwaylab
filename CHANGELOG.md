@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **AI credits tracking & messaging**: AI credit counter now syncs from server-side usage data instead of localStorage-only, so remaining credits are accurate across devices and sessions. Updated community funding messaging to explain that AI analysis is funded out of pocket (ai-credits-tracking-and-messaging)
 - **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)
+- **Mobile-first hero CTAs**: Demo is now primary on mobile (since upload requires desktop), upload is primary on desktop (onboarding-quick-wins)
+- **New user guidance**: "Start with Glasgow Index" callout shown for first 5 sessions above the metrics grid (onboarding-quick-wins)
+- **Export download feedback**: CSV and JSON export buttons show "Downloaded!" confirmation for 2 seconds (onboarding-quick-wins)
+- **Community sharing copy**: Share prompts now mention ApneaBoard, Reddit, CPAPtalk, and other communities inclusively (onboarding-quick-wins)
+- **Upload page layout**: Demo CTA moved above storage/contribution opt-ins for better discoverability (onboarding-quick-wins)
+- **Landing page copy**: Bottom CTA uses "Upload Your SD Card" instead of "Get Started"; "patients" → "people" in mission section (onboarding-quick-wins)
 
 ### Fixed
 

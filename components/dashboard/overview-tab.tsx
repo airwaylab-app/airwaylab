@@ -69,6 +69,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [serverRemainingCredits, setServerRemainingCredits] = useState<number | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
 
   // Check if user can use AI insights (signed in + has quota or is paid)
@@ -97,8 +98,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         if (controller.signal.aborted) return;
         if (result) {
           incrementAIUsage();
+          setAiInsights(result.insights);
+          if (result.remainingCredits !== undefined) {
+            setServerRemainingCredits(result.remainingCredits);
+          }
+        } else {
+          setAiInsights(null);
         }
-        setAiInsights(result);
       })
       .catch(() => {
         if (controller.signal.aborted) return;
@@ -194,7 +200,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* AI Insights CTA (demo or community tier) */}
       {aiInsights && aiInsights.length > 0 && (
-        <AIInsightsCTA isDemo={isDemo} />
+        <AIInsightsCTA isDemo={isDemo} remainingCredits={serverRemainingCredits} />
       )}
 
       {/* Rule-based Insights Panel */}
@@ -260,6 +266,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           <Badge variant="outline">PS {n.settings.pressureSupport}</Badge>
         )}
       </div>
+
+      {/* Start-here guidance for new users */}
+      {isNewUser && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern on a 0–8 scale.
+            Green means normal, amber means worth monitoring, red means discuss with your clinician.
+            Click any metric for a detailed trend view.
+          </p>
+        </div>
+      )}
 
       {/* Key Metrics Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
@@ -514,7 +532,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* Upgrade prompt for community users */}
       {!isPaid && (
-        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." />
+        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." remainingCredits={serverRemainingCredits} />
       )}
 
       {/* Metric Detail Modal */}
