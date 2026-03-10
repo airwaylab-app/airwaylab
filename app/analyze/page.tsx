@@ -412,17 +412,7 @@ function AnalyzePageInner() {
         <div className="mx-auto max-w-lg">
           <FileUpload onFilesSelected={handleFiles} />
 
-          {/* Cloud storage consent — shown for eligible users */}
-          <div className="mt-4">
-            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
-          </div>
-
-          {/* Data contribution opt-in — shown during upload for higher conversion */}
-          <div className="mt-4">
-            <ContributionOptIn onChange={(v) => { contributeOptInRef.current = v; }} />
-          </div>
-
-          {/* Demo CTA */}
+          {/* Demo CTA — shown immediately after upload for discoverability */}
           <div className="mt-6 flex flex-col items-center gap-2">
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
               <div className="h-px flex-1 bg-border/50" />
@@ -441,6 +431,16 @@ function AnalyzePageInner() {
             <p className="text-[11px] text-muted-foreground/50">
               See what AirwayLab looks like with 5 nights of example data
             </p>
+          </div>
+
+          {/* Cloud storage consent — shown for eligible users */}
+          <div className="mt-4">
+            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
+          </div>
+
+          {/* Data contribution opt-in — shown during upload for higher conversion */}
+          <div className="mt-4">
+            <ContributionOptIn onChange={(v) => { contributeOptInRef.current = v; }} />
           </div>
         </div>
       )}

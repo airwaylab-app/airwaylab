@@ -68,7 +68,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const { user, tier, isPaid } = useAuth();
 
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
-  const [aiRemainingCredits, setAiRemainingCredits] = useState<number | undefined>(undefined);
+  const [serverRemainingCredits, setAiRemainingCredits] = useState<number | undefined>(undefined);
   const [aiLoading, setAiLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -196,7 +196,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* AI Insights CTA (demo or community tier) */}
       {aiInsights && aiInsights.length > 0 && (
-        <AIInsightsCTA isDemo={isDemo} remainingCredits={aiRemainingCredits} />
+        <AIInsightsCTA isDemo={isDemo} remainingCredits={serverRemainingCredits} />
       )}
 
       {/* Rule-based Insights Panel */}
@@ -262,6 +262,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           <Badge variant="outline">PS {n.settings.pressureSupport}</Badge>
         )}
       </div>
+
+      {/* Start-here guidance for new users */}
+      {isNewUser && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern on a 0–8 scale.
+            Green means normal, amber means worth monitoring, red means discuss with your clinician.
+            Click any metric for a detailed trend view.
+          </p>
+        </div>
+      )}
 
       {/* Key Metrics Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
@@ -516,7 +528,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* Upgrade prompt for community users */}
       {!isPaid && (
-        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." remainingCredits={aiRemainingCredits} />
+        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." remainingCredits={serverRemainingCredits} />
       )}
 
       {/* Metric Detail Modal */}

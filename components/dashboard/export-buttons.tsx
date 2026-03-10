@@ -110,18 +110,35 @@ function safeOpenPDF(nights: NightResult[]): void {
 export const ExportButtons = memo(function ExportButtons({ nights, selectedNight }: Props) {
   const { tier } = useAuth();
   const pdfAllowed = canAccess('pdf_report', tier);
+  const [downloaded, setDownloaded] = useState<string | null>(null);
+
+  const handleCSV = useCallback(() => {
+    safeExportCSV(nights);
+    setDownloaded('csv');
+    setTimeout(() => setDownloaded(null), 2000);
+  }, [nights]);
+
+  const handleJSON = useCallback(() => {
+    safeExportJSON(nights);
+    setDownloaded('json');
+    setTimeout(() => setDownloaded(null), 2000);
+  }, [nights]);
 
   return (
     <TooltipProvider>
       <div className="flex gap-2">
         <Tooltip>
           <TooltipTrigger
-            onClick={() => safeExportCSV(nights)}
+            onClick={handleCSV}
             aria-label={`Export ${nights.length} night${nights.length !== 1 ? 's' : ''} as CSV spreadsheet`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <Download className="h-3 w-3" />
-            <span className="hidden sm:inline">Spreadsheet </span>CSV
+            {downloaded === 'csv' ? (
+              <Check className="h-3 w-3 text-emerald-500" />
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            <span className="hidden sm:inline">Spreadsheet </span>{downloaded === 'csv' ? 'Downloaded!' : 'CSV'}
           </TooltipTrigger>
           <TooltipContent>
             All metrics for {nights.length} night{nights.length !== 1 ? 's' : ''} — opens in Excel, Google Sheets
@@ -130,12 +147,16 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
 
         <Tooltip>
           <TooltipTrigger
-            onClick={() => safeExportJSON(nights)}
+            onClick={handleJSON}
             aria-label={`Export ${nights.length} night${nights.length !== 1 ? 's' : ''} as JSON data`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <Download className="h-3 w-3" />
-            <span className="hidden sm:inline">Raw Data </span>JSON
+            {downloaded === 'json' ? (
+              <Check className="h-3 w-3 text-emerald-500" />
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            <span className="hidden sm:inline">Raw Data </span>{downloaded === 'json' ? 'Downloaded!' : 'JSON'}
           </TooltipTrigger>
           <TooltipContent>
             Full structured data for programmatic use
