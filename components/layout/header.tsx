@@ -31,19 +31,19 @@ export function Header() {
             </Link>
             <Link
               href="/pricing"
-              className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-3 sm:py-2 sm:text-sm"
+              className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
             >
               Pricing
             </Link>
             <Link
               href="/blog"
-              className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-3 sm:py-2 sm:text-sm"
+              className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
             >
               Blog
             </Link>
             <Link
               href="/about"
-              className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-3 sm:py-2 sm:text-sm"
+              className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
             >
               About
             </Link>
