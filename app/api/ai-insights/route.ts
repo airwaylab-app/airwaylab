@@ -234,39 +234,14 @@ export async function POST(request: NextRequest) {
         validCategories.has(i.category)
     );
 
-    // Increment server-side AI usage counter (C2)
+    // Increment server-side AI usage counter atomically via RPC
     const adminClient = getSupabaseServiceRole();
     if (adminClient) {
       const month = getCurrentMonth();
-      const { error: upsertError } = await adminClient
-        .from('ai_usage')
-        .upsert(
-          { user_id: user.id, month, count: 1 },
-          { onConflict: 'user_id,month' }
-        );
-
-      if (upsertError) {
-        // Upsert doesn't increment — use raw increment via RPC or update
-        // Fallback: fetch + update
-        const { data: existing } = await adminClient
-          .from('ai_usage')
-          .select('count')
-          .eq('user_id', user.id)
-          .eq('month', month)
-          .maybeSingle();
-
-        if (existing) {
-          await adminClient
-            .from('ai_usage')
-            .update({ count: existing.count + 1 })
-            .eq('user_id', user.id)
-            .eq('month', month);
-        } else {
-          await adminClient
-            .from('ai_usage')
-            .insert({ user_id: user.id, month, count: 1 });
-        }
-      }
+      await adminClient.rpc('increment_ai_usage', {
+        p_user_id: user.id,
+        p_month: month,
+      });
     }
 
     return NextResponse.json({ insights, source: 'ai' });

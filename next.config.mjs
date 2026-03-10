@@ -108,6 +108,6 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
     // Disable automatic instrumentation (we control what gets tracked)
     autoInstrumentServerFunctions: false,
     autoInstrumentMiddleware: false,
-    autoInstrumentAppDirectory: false,
+    autoInstrumentAppDirectory: true,
   },
 });
