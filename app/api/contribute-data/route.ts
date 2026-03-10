@@ -5,11 +5,11 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import type { NightResult } from '@/lib/types';
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 // ── Validation ───────────────────────────────────────────────
-const MAX_NIGHTS = 1095; // ~3 years of nightly data
-const MAX_PAYLOAD_BYTES = 6_144_000; // 6 MB (supports ~3 years of nightly data)
+const MAX_NIGHTS_PER_CHUNK = 1000; // max nights per request (client chunks larger datasets)
+const MAX_PAYLOAD_BYTES = 3_145_728; // 3 MB (supports ~1000 anonymised nights with headroom)
 
 function isValidNight(n: unknown): n is NightResult {
   if (!n || typeof n !== 'object') return false;
@@ -152,13 +152,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nights } = body as { nights: unknown[] };
+    const { nights, contributionId: clientContributionId } = body as {
+      nights: unknown[];
+      contributionId?: string;
+    };
 
     // Validate
-    if (!Array.isArray(nights) || nights.length === 0 || nights.length > MAX_NIGHTS) {
+    if (!Array.isArray(nights) || nights.length === 0 || nights.length > MAX_NIGHTS_PER_CHUNK) {
       console.warn(`[contribute-data] 400 invalid night count: ${Array.isArray(nights) ? nights.length : 'not array'}`);
       return NextResponse.json(
-        { error: `Expected 1–${MAX_NIGHTS} nights.` },
+        { error: `Expected 1–${MAX_NIGHTS_PER_CHUNK} nights per request.` },
         { status: 400 }
       );
     }
@@ -174,8 +177,11 @@ export async function POST(request: NextRequest) {
     // Anonymise
     const anonymised = nights.map((n, i) => anonymiseNight(n as NightResult, i));
 
-    // Generate a random contribution ID (not linked to user identity)
-    const contributionId = crypto.randomUUID();
+    // Use client-provided contributionId for chunked submissions, or generate one
+    const contributionId =
+      typeof clientContributionId === 'string' && clientContributionId.length > 0
+        ? clientContributionId
+        : crypto.randomUUID();
 
     const supabase = getSupabaseAdmin();
 
