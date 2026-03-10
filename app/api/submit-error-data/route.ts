@@ -85,6 +85,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Alert so unsupported format submissions are visible in Sentry
+    Sentry.captureMessage('Unsupported data submission', {
+      level: 'warning',
+      tags: { route: 'submit-error-data', error_type: 'unsupported_data' },
+      extra: {
+        fileNames: sanitizedFiles.slice(0, 10),
+        errorMessage: errorMessage.slice(0, 500),
+        userAgent: userAgent?.slice(0, 200) || null,
+      },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'submit-error-data' } });

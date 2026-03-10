@@ -105,13 +105,17 @@ export async function POST(request: NextRequest) {
       console.info(`[feedback] ${cleanType}: ${message.slice(0, 100)} (Supabase not configured)`);
     }
 
+    // Distinguish unsupported oximetry format requests from general feedback
+    const isFormatRequest = typeof message === 'string' && message.startsWith('Oximetry format request');
+    const alertType = isFormatRequest ? 'unsupported_format' : cleanType;
+    const alertLevel = isFormatRequest || cleanType === 'bug' ? 'warning' : 'info';
+
     // Alert via Sentry so new submissions show up on our radar
-    Sentry.captureMessage(`New ${cleanType} submission`, {
-      level: cleanType === 'bug' ? 'warning' : 'info',
-      tags: { route: 'feedback', feedback_type: cleanType },
+    Sentry.captureMessage(`New ${alertType} submission`, {
+      level: alertLevel,
+      tags: { route: 'feedback', feedback_type: alertType },
       extra: {
         message: message.trim().slice(0, 500),
-        email: typeof email === 'string' ? email.trim() || null : null,
         page: cleanPage,
       },
     });

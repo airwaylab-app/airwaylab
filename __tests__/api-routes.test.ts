@@ -319,6 +319,117 @@ describe('POST /api/feedback', () => {
       })
     );
   });
+
+  it('tags oximetry format requests as unsupported_format with warning level', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    await callRoute({
+      message: 'Oximetry format request (device: Wellue O2 Ring)\n\n1 unsupported file uploaded.',
+      type: 'feature',
+      page: '/analyze',
+    });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'New unsupported_format submission',
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ feedback_type: 'unsupported_format' }),
+      })
+    );
+  });
+
+  it('does not tag non-oximetry feature requests as unsupported_format', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    await callRoute({ message: 'Please add PDF export filters', type: 'feature' });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'New feature submission',
+      expect.objectContaining({
+        tags: expect.objectContaining({ feedback_type: 'feature' }),
+      })
+    );
+  });
+
+  it('does not include email in Sentry extra', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    await callRoute({ message: 'Hello there test!', email: 'user@example.com', type: 'feedback' });
+    const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(captureCall[1].extra).not.toHaveProperty('email');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUBMIT ERROR DATA
+// ═══════════════════════════════════════════════════════════════
+
+describe('POST /api/submit-error-data', () => {
+  async function callRoute(body: Record<string, unknown>) {
+    vi.resetModules();
+    const { POST } = await import('@/app/api/submit-error-data/route');
+    return POST(makeRequest(body));
+  }
+
+  it('accepts valid error submission', async () => {
+    const res = await callRoute({
+      fileNames: ['BRP.edf', 'STR.edf'],
+      errorMessage: 'No valid BRP.edf files could be parsed',
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).ok).toBe(true);
+  });
+
+  it('fires Sentry warning with unsupported_data tag', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    await callRoute({
+      fileNames: ['BRP.edf'],
+      errorMessage: 'No valid BRP.edf files could be parsed',
+      userAgent: 'Mozilla/5.0',
+    });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'Unsupported data submission',
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({
+          route: 'submit-error-data',
+          error_type: 'unsupported_data',
+        }),
+        extra: expect.objectContaining({
+          fileNames: ['BRP.edf'],
+          errorMessage: expect.any(String),
+          userAgent: 'Mozilla/5.0',
+        }),
+      })
+    );
+  });
+
+  it('does not include email in Sentry extra', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    await callRoute({
+      fileNames: ['test.edf'],
+      errorMessage: 'Parse failed',
+      email: 'user@example.com',
+    });
+    const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(captureCall[1].extra).not.toHaveProperty('email');
+  });
+
+  it('does not fire Sentry alert when rate limited', async () => {
+    mockIsLimited.mockReturnValueOnce(true);
+    const Sentry = await import('@sentry/nextjs');
+    const res = await callRoute({
+      fileNames: ['test.edf'],
+      errorMessage: 'Parse failed',
+    });
+    expect(res.status).toBe(429);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing file names', async () => {
+    const res = await callRoute({ errorMessage: 'Something broke' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects missing error message', async () => {
+    const res = await callRoute({ fileNames: ['test.edf'] });
+    expect(res.status).toBe(400);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
