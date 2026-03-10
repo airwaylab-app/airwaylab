@@ -6,6 +6,7 @@ import { X, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ export function AuthModal({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const focusTrapRef = useFocusTrap(open);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -75,6 +77,7 @@ export function AuthModal({ open, onClose }: Props) {
       aria-label="Sign in"
     >
       <div
+        ref={focusTrapRef}
         className="relative mx-4 w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

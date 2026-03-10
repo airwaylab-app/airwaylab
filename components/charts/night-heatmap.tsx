@@ -294,6 +294,9 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                   <th
                     className="cursor-pointer pb-2 px-1 text-center font-medium hover:text-foreground"
                     onClick={() => handleSort('date')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('date'); } }}
+                    role="button"
+                    tabIndex={0}
                     title="Sort by date"
                   >
                     {sortArrow('date')}
@@ -309,6 +312,9 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                     <td
                       className="cursor-pointer py-1.5 pr-3 text-muted-foreground hover:text-foreground"
                       onClick={() => handleSort('metric', m.key)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('metric', m.key); } }}
+                      role="button"
+                      tabIndex={0}
                       title={`Sort by ${m.label}`}
                     >
                       {m.label}

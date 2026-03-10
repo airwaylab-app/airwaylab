@@ -129,7 +129,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   // Success state
   if (status === 'success') {
     return (
-      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+      <div aria-live="polite" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
         <div className="flex items-center gap-2.5">
           <Heart className="h-4 w-4 text-emerald-500" />
           <div>
@@ -244,7 +244,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
               )}
             </Button>
             {status === 'error' && (
-              <span className="text-[10px] text-red-400">
+              <span aria-live="polite" className="text-[10px] text-red-400">
                 Something went wrong — please try again.
               </span>
             )}

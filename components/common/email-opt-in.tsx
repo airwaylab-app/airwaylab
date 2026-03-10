@@ -40,7 +40,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
 
   if (status === 'success') {
     return (
-      <div className={`flex items-center gap-2 text-sm text-emerald-400 ${
+      <div aria-live="polite" className={`flex items-center gap-2 text-sm text-emerald-400 ${
         variant === 'footer' ? '' : 'py-2'
       }`}>
         <CheckCircle2 className="h-4 w-4" />
@@ -77,7 +77,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           </Button>
         </form>
         {status === 'error' && (
-          <p className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
+          <p aria-live="polite" className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
         )}
       </div>
     );
@@ -109,7 +109,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           </Button>
         </form>
         {status === 'error' && (
-          <p className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
+          <p aria-live="polite" className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
         )}
       </div>
     );
@@ -131,7 +131,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Notify'}
         </Button>
         {status === 'error' && (
-          <span className="text-[10px] text-red-400">Error</span>
+          <span aria-live="polite" className="text-[10px] text-red-400">Error</span>
         )}
       </form>
     );

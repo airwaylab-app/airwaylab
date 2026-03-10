@@ -29,6 +29,7 @@ export function Disclaimer() {
             localStorage.setItem('airwaylab-disclaimer-dismissed', 'true');
           }}
           className="shrink-0 rounded-md p-1 text-amber-500/70 transition-colors hover:bg-amber-500/10 hover:text-amber-400"
+          aria-label="Dismiss disclaimer"
         >
           <X className="h-4 w-4" />
         </button>

@@ -32,15 +32,30 @@ export function UserMenu() {
     }
   }, [open]);
 
-  // Close on Escape
+  // Keyboard navigation (Escape + arrow keys)
   useEffect(() => {
-    function handleEsc(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+      e.preventDefault();
+      const menu = menuRef.current?.querySelector('[role="menu"]');
+      if (!menu) return;
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'));
+      if (items.length === 0) return;
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      let next: number;
+      if (e.key === 'ArrowDown') next = current < items.length - 1 ? current + 1 : 0;
+      else if (e.key === 'ArrowUp') next = current > 0 ? current - 1 : items.length - 1;
+      else if (e.key === 'Home') next = 0;
+      else next = items.length - 1;
+      items[next]?.focus();
     }
-    if (open) {
-      document.addEventListener('keydown', handleEsc);
-      return () => document.removeEventListener('keydown', handleEsc);
-    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open]);
 
   const handleSignOut = useCallback(async () => {
@@ -98,6 +113,7 @@ export function UserMenu() {
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:text-sm"
         aria-label="User menu"
         aria-expanded={open}
+        aria-haspopup="true"
       >
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
           <TierIcon className={`h-3 w-3 ${tierCfg.color}`} />
@@ -106,7 +122,7 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-border bg-background py-1 shadow-xl">
+        <div role="menu" className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-border bg-background py-1 shadow-xl">
           {/* User info */}
           <div className="border-b border-border/50 px-3 py-2.5">
             <p className="truncate text-sm font-medium">{displayName}</p>
@@ -122,6 +138,7 @@ export function UserMenu() {
             {tier === 'community' && (
               <Link
                 href="/pricing"
+                role="menuitem"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
@@ -134,6 +151,7 @@ export function UserMenu() {
               <>
                 <button
                   onClick={handlePortal}
+                  role="menuitem"
                   disabled={portalLoading}
                   className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
                 >
@@ -193,6 +211,7 @@ export function UserMenu() {
             ) : (
               <button
                 onClick={() => setDeleteState('confirm')}
+                role="menuitem"
                 disabled={deleteState === 'loading'}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-red-400 disabled:opacity-50"
               >
@@ -207,6 +226,7 @@ export function UserMenu() {
 
             <button
               onClick={handleSignOut}
+              role="menuitem"
               className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <LogOut className="h-3.5 w-3.5" />
