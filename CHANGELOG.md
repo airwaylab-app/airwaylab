@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — Platform Audit (2026-03-10)
 
+### Added
+
+- **Unlimited data contribution**: Removed 1095-night cap on data contributions — all nights are submitted automatically, chunked into batches of 1000 with shared `contributionId` for grouping (unlimited-first-contribution)
+
 ### Improved
 
 - **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)
