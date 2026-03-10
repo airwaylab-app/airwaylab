@@ -236,15 +236,31 @@ export async function POST(request: NextRequest) {
 
     // Increment server-side AI usage counter atomically via RPC
     const adminClient = getSupabaseServiceRole();
+    let remainingCredits: number | undefined;
     if (adminClient) {
       const month = getCurrentMonth();
       await adminClient.rpc('increment_ai_usage', {
         p_user_id: user.id,
         p_month: month,
       });
+
+      // Read back the updated count to return accurate remaining credits
+      if (userTier === 'community') {
+        const { data: updatedUsage } = await adminClient
+          .from('ai_usage')
+          .select('count')
+          .eq('user_id', user.id)
+          .eq('month', month)
+          .maybeSingle();
+        remainingCredits = Math.max(0, AI_MONTHLY_LIMIT - (updatedUsage?.count ?? 0));
+      }
     }
 
-    return NextResponse.json({ insights, source: 'ai' });
+    return NextResponse.json({
+      insights,
+      source: 'ai',
+      ...(remainingCredits !== undefined && { remainingCredits }),
+    });
   } catch (err) {
     // Distinguish rate limit errors from other failures
     if (err instanceof Anthropic.RateLimitError) {

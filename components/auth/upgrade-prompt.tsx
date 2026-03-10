@@ -11,13 +11,15 @@ interface Props {
   feature: string;
   /** Compact inline variant vs full card */
   variant?: 'card' | 'inline';
+  /** Server-synced remaining credits. Falls back to localStorage if undefined. */
+  remainingCredits?: number;
 }
 
 /**
  * Community-framing upgrade prompt.
  * NOT transactional SaaS language — uses "support", "fund development".
  */
-export function UpgradePrompt({ feature, variant = 'card' }: Props) {
+export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: Props) {
   const { tier, user } = useAuth();
   const [dismissed, setDismissed] = useState(false);
 
@@ -25,7 +27,8 @@ export function UpgradePrompt({ feature, variant = 'card' }: Props) {
   if (tier !== 'community') return null;
   if (dismissed) return null;
 
-  const aiRemaining = getAIRemaining(tier);
+  // Use server value when available, fall back to localStorage
+  const aiRemaining = remainingCredits ?? getAIRemaining(tier);
 
   if (variant === 'inline') {
     return (

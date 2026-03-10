@@ -1,6 +1,12 @@
 import type { Insight } from './insights';
 import type { NightResult } from './types';
 
+export interface AIInsightsResult {
+  insights: Insight[];
+  /** Server-side remaining credits for community tier. Undefined if not available. */
+  remainingCredits?: number;
+}
+
 /**
  * Fetches AI-powered insights from the API route.
  * Auth is session-based (cookies) — no API key needed.
@@ -11,7 +17,7 @@ export async function fetchAIInsights(
   selectedNightIndex: number,
   therapyChangeDate: string | null,
   signal?: AbortSignal
-): Promise<Insight[] | null> {
+): Promise<AIInsightsResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -47,7 +53,12 @@ export async function fetchAIInsights(
         typeof (i as Record<string, unknown>).title === 'string'
     );
 
-    return validInsights.length > 0 ? validInsights : null;
+    if (validInsights.length === 0) return null;
+
+    return {
+      insights: validInsights,
+      remainingCredits: typeof data.remainingCredits === 'number' ? data.remainingCredits : undefined,
+    };
   } catch {
     return null;
   } finally {
