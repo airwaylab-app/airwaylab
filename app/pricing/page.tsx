@@ -170,7 +170,7 @@ export default function PricingPage() {
               }`}
             >
               Yearly
-              <span className="ml-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+              <span className="ml-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
                 Save 27%
               </span>
             </button>

@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Heart, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 /**
  * Modal shown after analysis completes when the user has NOT opted in to
@@ -17,9 +19,19 @@ export function ContributionNudgeDialog({
   onContribute: () => void;
   onDismiss: () => void;
 }) {
+  const focusTrapRef = useFocusTrap(true);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onDismiss();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onDismiss]);
+
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-background/70 backdrop-blur-sm">
-      <div className="relative mx-4 flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-primary/20 bg-card p-8 text-center shadow-2xl">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-background/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="contribution-nudge-title">
+      <div ref={focusTrapRef} className="relative mx-4 flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-primary/20 bg-card p-8 text-center shadow-2xl">
         <button
           onClick={onDismiss}
           className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
@@ -33,7 +45,7 @@ export function ContributionNudgeDialog({
         </div>
 
         <div>
-          <h2 className="text-lg font-bold">
+          <h2 id="contribution-nudge-title" className="text-lg font-bold">
             Your {nightCount} {nightCount === 1 ? 'night' : 'nights'} could help thousands
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">

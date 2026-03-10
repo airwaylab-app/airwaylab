@@ -17,7 +17,9 @@ vi.mock('@/lib/rate-limit', () => {
     stripeRateLimiter: mockLimiter,
     aiRateLimiter: mockLimiter,
     getRateLimitKey: vi.fn(() => '127.0.0.1'),
-    RateLimiter: vi.fn(() => mockLimiter),
+    RateLimiter: class {
+      isLimited(...args: Parameters<typeof mockIsLimited>) { return mockIsLimited(...args); }
+    },
   };
 });
 
@@ -39,9 +41,6 @@ vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServiceRole: vi.fn(() => ({
     from: (...args: unknown[]) => mockFrom(...args),
   })),
-}));
-
-vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: vi.fn(() => ({
     from: (...args: unknown[]) => mockFrom(...args),
   })),

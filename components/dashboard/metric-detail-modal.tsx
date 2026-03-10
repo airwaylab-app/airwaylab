@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -14,6 +14,7 @@ import {
 import { X } from 'lucide-react';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface MetricDetailModalProps {
   label: string;
@@ -36,7 +37,7 @@ export function MetricDetailModal({
   description,
   onClose,
 }: MetricDetailModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const focusTrapRef = useFocusTrap(true);
 
   // Close on Escape
   useEffect(() => {
@@ -50,7 +51,7 @@ export function MetricDetailModal({
   // Close on overlay click
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.target === overlayRef.current) onClose();
+      if (e.target === focusTrapRef.current) onClose();
     },
     [onClose]
   );
@@ -95,7 +96,7 @@ export function MetricDetailModal({
 
   return (
     <div
-      ref={overlayRef}
+      ref={focusTrapRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in-up"
       onClick={handleOverlayClick}
       role="dialog"

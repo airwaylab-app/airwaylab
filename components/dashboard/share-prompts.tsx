@@ -5,9 +5,11 @@ import { MessageSquare, FileText, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportForumSingleNight } from '@/lib/forum-export';
 import { openPDFReport } from '@/lib/pdf-report';
+import { useAuth } from '@/lib/auth/auth-context';
+import { canAccess } from '@/lib/auth/feature-gate';
 import type { NightResult } from '@/lib/types';
 
-const DISMISS_KEY = 'airwaylab-share-dismissed';
+const DISMISS_KEY = 'airwaylab_share_dismissed';
 
 interface Props {
   nights: NightResult[];
@@ -23,6 +25,8 @@ interface Props {
  * Only shown for real data (not demo). Dismissable via sessionStorage.
  */
 export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
+  const { tier } = useAuth();
+  const pdfAllowed = canAccess('pdf_report', tier);
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -110,14 +114,20 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
                 Taking these results to your sleep doctor? Export a PDF report they can review.
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 w-fit gap-1.5 text-xs"
-              onClick={handlePDF}
-            >
-              <FileText className="h-3 w-3" /> Download PDF Report
-            </Button>
+            {pdfAllowed ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-fit gap-1.5 text-xs"
+                onClick={handlePDF}
+              >
+                <FileText className="h-3 w-3" /> Download PDF Report
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground/70">
+                PDF reports are available on the Supporter plan.
+              </p>
+            )}
             <p className="text-[10px] text-muted-foreground/50">
               The report includes key metrics, traffic-light indicators, and a medical disclaimer.
             </p>

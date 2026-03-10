@@ -4,7 +4,7 @@
 // nights and only analyze new/modified data.
 // ============================================================
 
-const MANIFEST_KEY = 'airwaylab-file-manifest';
+const MANIFEST_KEY = 'airwaylab_file_manifest';
 
 export interface FileFingerprint {
   path: string;

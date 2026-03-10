@@ -387,11 +387,12 @@ export function computeOximetry(rawSamples: OximetrySample[]): OximetryResults {
   const h2HrClin10 = computeHRClinical(h2, 10);
   const h2TBelow94 = computeDesatTime(h2, 94);
 
+  const r2 = (v: number) => Math.round(v * 100) / 100;
   return {
-    odi3: odi3Result.index,
-    odi4: odi4Result.index,
-    tBelow90,
-    tBelow94,
+    odi3: r2(odi3Result.index),
+    odi4: r2(odi4Result.index),
+    tBelow90: r2(tBelow90),
+    tBelow94: r2(tBelow94),
     hrClin8,
     hrClin10,
     hrClin12,
@@ -400,10 +401,10 @@ export function computeOximetry(rawSamples: OximetrySample[]): OximetryResults {
     hrMean15,
     coupled3_6,
     coupled3_10,
-    coupledHRRatio,
+    coupledHRRatio: r2(coupledHRRatio),
     ...summary,
-    h1: { hrClin10: h1HrClin10, odi3: h1Odi3, tBelow94: h1TBelow94 },
-    h2: { hrClin10: h2HrClin10, odi3: h2Odi3, tBelow94: h2TBelow94 },
+    h1: { hrClin10: h1HrClin10, odi3: r2(h1Odi3), tBelow94: r2(h1TBelow94) },
+    h2: { hrClin10: h2HrClin10, odi3: r2(h2Odi3), tBelow94: r2(h2TBelow94) },
     totalSamples,
     retainedSamples,
     doubleTrackingCorrected,

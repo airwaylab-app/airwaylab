@@ -5,6 +5,26 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Platform Audit (2026-03-10)
+
+### Fixed
+
+- **Phase 1 — Critical engine bugs**: Fixed Glasgow Index weighted averaging, NED H1/H2 split boundary, WAT FFT zero-padding, oximetry buffer-zone trimming, and night-grouper date extraction
+- **Phase 2 — Security hardening**: Added CSRF origin validation, rate limiting on all API routes, Stripe webhook signature verification, Zod validation on all external inputs, Content-Security-Policy headers
+- **Phase 3 — Accessibility**: Added skip-to-content link, ARIA labels on all interactive elements, keyboard navigation for charts, semantic heading hierarchy, screen reader announcements for analysis progress
+- **Phase 4 — UX quick wins**: Added loading skeletons, error boundaries with retry, empty states, toast notifications, improved upload validation messages
+
+### Changed
+
+- **Consolidated Supabase clients** — merged `lib/supabase.ts` into `lib/supabase/server.ts`; all routes now import from single module
+- **Shared rate limiter** — replaced 5 inline rate-limiter implementations with shared `RateLimiter` class from `lib/rate-limit.ts`
+- **Tightened night-grouper regex** — `DATALOG/(\d{8})/` instead of bare `(\d{8})/` to prevent false matches on non-ResMed paths
+- **Removed stale Tailwind content path** — dropped `pages/**` entry (App Router only, no Pages Router)
+
+### Removed
+
+- **~85 macOS duplicate files** — removed Finder-created copies with " 2", " 3" etc. suffixes across entire codebase
+
 ## [0.6.0] - 2026-03-09
 
 ### Added

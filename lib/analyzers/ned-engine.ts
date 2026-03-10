@@ -63,7 +63,7 @@ function detectBreaths(flowData: Float32Array, samplingRate: number): Breath[] {
     if (expEnd >= len - 1) break;
 
     // Extract inspiratory flow segment
-    const inspFlow = flowData.slice(inspStart, inspEnd);
+    const inspFlow = flowData.subarray(inspStart, inspEnd);
 
     // Find peak flow
     let qPeak = 0;
@@ -91,7 +91,7 @@ function detectBreaths(flowData: Float32Array, samplingRate: number): Breath[] {
       inspEnd,
       expStart,
       expEnd,
-      inspFlow: new Float32Array(inspFlow),
+      inspFlow,
       qPeak,
       qMid,
       ti,

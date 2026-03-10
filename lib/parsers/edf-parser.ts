@@ -122,6 +122,15 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   const totalPressureSamples =
     pressIdx >= 0 ? header.numDataRecords * signals[pressIdx].numSamples : 0;
 
+  // --- Validate buffer size ---
+  const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);
+  const expectedBytes = header.headerBytes + header.numDataRecords * samplesPerRecord * 2;
+  if (buffer.byteLength < expectedBytes) {
+    throw new Error(
+      `Truncated EDF file: expected ${expectedBytes} bytes but got ${buffer.byteLength}`
+    );
+  }
+
   // --- Read data records ---
   const flowData = new Float32Array(totalFlowSamples);
   const pressureData: Float32Array | null = pressIdx >= 0 ? new Float32Array(totalPressureSamples) : null;
@@ -131,9 +140,9 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   let pressWriteIdx = 0;
 
   // Precompute scaling factors
-  const flowScale =
-    (flowSignal.physicalMax - flowSignal.physicalMin) /
-    (flowSignal.digitalMax - flowSignal.digitalMin);
+  const digitalRange = flowSignal.digitalMax - flowSignal.digitalMin;
+  const flowScale = digitalRange === 0 ? 0 :
+    (flowSignal.physicalMax - flowSignal.physicalMin) / digitalRange;
   const flowOffset_ = flowSignal.physicalMin;
   const flowDigMin = flowSignal.digitalMin;
 
@@ -142,7 +151,8 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   let pressDigMin = 0;
   if (pressIdx >= 0) {
     const ps = signals[pressIdx];
-    pressScale = (ps.physicalMax - ps.physicalMin) / (ps.digitalMax - ps.digitalMin);
+    const pressDigRange = ps.digitalMax - ps.digitalMin;
+    pressScale = pressDigRange === 0 ? 0 : (ps.physicalMax - ps.physicalMin) / pressDigRange;
     pressOffset_ = ps.physicalMin;
     pressDigMin = ps.digitalMin;
   }

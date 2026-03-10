@@ -53,3 +53,19 @@ export function getSupabaseServiceRole() {
     auth: { persistSession: false },
   });
 }
+
+/**
+ * Lightweight admin client for anonymous API routes (stats, tracking, etc.).
+ * Uses SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
+ * Returns null if env vars are not configured.
+ */
+export function getSupabaseAdmin() {
+  const url = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) return null;
+
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false },
+  });
+}

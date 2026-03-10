@@ -23,7 +23,7 @@ export function Header() {
             </div>
             <span className="text-sm font-bold tracking-tight sm:text-base">AirwayLab</span>
           </Link>
-          <nav className="flex items-center gap-0.5 sm:gap-1">
+          <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
             <Link
               href="/analyze"
               className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-3 sm:py-2 sm:text-sm"

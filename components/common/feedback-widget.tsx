@@ -66,7 +66,7 @@ export function FeedbackWidget() {
   // Success state in panel
   if (open && status === 'success') {
     return (
-      <div className="fixed bottom-4 right-4 z-50 w-80 rounded-xl border border-border bg-card p-5 shadow-lg animate-fade-in-up">
+      <div aria-live="polite" className="fixed bottom-4 right-4 z-50 w-80 rounded-xl border border-border bg-card p-5 shadow-lg animate-fade-in-up">
         <div className="flex flex-col items-center gap-3 text-center">
           <CheckCircle className="h-8 w-8 text-emerald-500" />
           <div>
@@ -172,7 +172,7 @@ export function FeedbackWidget() {
           </Button>
 
           {status === 'error' && (
-            <p className="text-center text-[10px] text-red-400">
+            <p aria-live="polite" className="text-center text-[10px] text-red-400">
               Something went wrong — please try again.
             </p>
           )}

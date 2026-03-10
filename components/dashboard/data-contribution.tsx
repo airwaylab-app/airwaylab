@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 
-const DISMISS_KEY = 'airwaylab-contribute-dismissed';
-const CONTRIBUTED_NIGHTS_KEY = 'airwaylab-contributed-nights';
+const DISMISS_KEY = 'airwaylab_contribute_dismissed';
+const CONTRIBUTED_NIGHTS_KEY = 'airwaylab_contributed_nights';
 
 interface Props {
   nights: NightResult[];
@@ -34,7 +34,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   const [contributedDates] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      return JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
+      return JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
     } catch {
       return [];
     }
@@ -80,11 +80,11 @@ export function DataContribution({ nights, isDemo = false }: Props) {
         setStatus('success');
         events.contributionOptedIn();
         try {
-          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
           const dateSet = new Set(storedDates);
           for (const n of nights) dateSet.add(n.dateStr);
           const updated = Array.from(dateSet);
-          localStorage.setItem('airwaylab-contributed-dates', JSON.stringify(updated));
+          localStorage.setItem('airwaylab_contributed_dates', JSON.stringify(updated));
           localStorage.setItem(CONTRIBUTED_NIGHTS_KEY, String(updated.length));
         } catch { /* noop */ }
       } else {
@@ -129,7 +129,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   // Success state
   if (status === 'success') {
     return (
-      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+      <div aria-live="polite" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
         <div className="flex items-center gap-2.5">
           <Heart className="h-4 w-4 text-emerald-500" />
           <div>
@@ -244,7 +244,7 @@ export function DataContribution({ nights, isDemo = false }: Props) {
               )}
             </Button>
             {status === 'error' && (
-              <span className="text-[10px] text-red-400">
+              <span aria-live="polite" className="text-[10px] text-red-400">
                 Something went wrong — please try again.
               </span>
             )}

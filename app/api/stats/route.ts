@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const statsRateLimiter = new RateLimiter({ windowMs: 60_000, max: 30 });
 
 /**
  * GET /api/stats
@@ -8,7 +11,12 @@ import { getSupabaseAdmin } from '@/lib/supabase';
  * Cached for 5 minutes via Cache-Control header.
  * No authentication required — data is fully anonymous.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const ip = getRateLimitKey(request);
+  if (statsRateLimiter.isLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = getSupabaseAdmin();
 
   if (!supabase) {

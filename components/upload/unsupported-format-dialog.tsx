@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AlertTriangle, Send, X } from 'lucide-react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface Props {
   files: { fileName: string; headerSample: string }[];
@@ -12,6 +13,15 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
   const [deviceName, setDeviceName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const focusTrapRef = useFocusTrap(true);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -49,8 +59,8 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
   }, [files, deviceName, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="relative w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="unsupported-format-title">
+      <div ref={focusTrapRef} className="relative w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -64,7 +74,7 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
             <AlertTriangle className="h-5 w-5 text-amber-500" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-semibold">
+            <h3 id="unsupported-format-title" className="text-sm font-semibold">
               Oximetry format not recognised
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">

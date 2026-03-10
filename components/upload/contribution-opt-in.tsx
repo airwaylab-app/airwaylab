@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Heart, Shield } from 'lucide-react';
 
-const OPTED_IN_KEY = 'airwaylab-contribute-optin';
+const OPTED_IN_KEY = 'airwaylab_contribute_optin';
+const LEGACY_KEY = 'airwaylab-contribute-optin';
 
 /**
  * Contribution opt-in checkbox shown during the upload flow.
@@ -17,6 +18,12 @@ export function ContributionOptIn({
   const [checked, setChecked] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
+      // Migrate legacy key → new key
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy !== null) {
+        localStorage.setItem(OPTED_IN_KEY, legacy);
+        localStorage.removeItem(LEGACY_KEY);
+      }
       const stored = localStorage.getItem(OPTED_IN_KEY);
       // Default to false (opt-out) if never set
       return stored === '1';

@@ -40,7 +40,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
 
   if (status === 'success') {
     return (
-      <div className={`flex items-center gap-2 text-sm text-emerald-400 ${
+      <div aria-live="polite" className={`flex items-center gap-2 text-sm text-emerald-400 ${
         variant === 'footer' ? '' : 'py-2'
       }`}>
         <CheckCircle2 className="h-4 w-4" />
@@ -77,7 +77,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           </Button>
         </form>
         {status === 'error' && (
-          <p className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
+          <p aria-live="polite" className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
         )}
       </div>
     );
@@ -109,7 +109,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           </Button>
         </form>
         {status === 'error' && (
-          <p className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
+          <p aria-live="polite" className="mt-2 text-xs text-red-400">Something went wrong. Please try again.</p>
         )}
       </div>
     );
@@ -131,7 +131,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
           {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Notify'}
         </Button>
         {status === 'error' && (
-          <span className="text-[10px] text-red-400">Error</span>
+          <span aria-live="polite" className="text-[10px] text-red-400">Error</span>
         )}
       </form>
     );
@@ -139,19 +139,24 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
 
   // footer variant
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      <input
-        type="email"
-        autoComplete="off"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="your@email.com"
-        aria-label="Email address"
-        className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
-      />
-      <Button type="submit" variant="ghost" size="sm" className="h-8 text-xs" disabled={status === 'loading'}>
-        Subscribe
-      </Button>
-    </form>
+    <div>
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <input
+          type="email"
+          autoComplete="off"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com"
+          aria-label="Email address"
+          className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <Button type="submit" variant="ghost" size="sm" className="h-8 text-xs" disabled={status === 'loading'}>
+          Subscribe
+        </Button>
+      </form>
+      {status === 'error' && (
+        <p aria-live="polite" className="mt-1 text-[10px] text-red-400">Something went wrong. Please try again.</p>
+      )}
+    </div>
   );
 }

@@ -82,7 +82,7 @@ export const NightSummaryCard = memo(function NightSummaryCard({ night }: Props)
             <Badge variant="outline">{settings.papMode}</Badge>
             {settings.epap > 0 && (
               <Badge variant="outline">
-                {settings.epap}/{settings.ipap} cmH2O
+                {settings.epap}/{settings.ipap} cmH₂O
               </Badge>
             )}
           </div>

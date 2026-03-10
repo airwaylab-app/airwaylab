@@ -27,6 +27,7 @@ export interface Insight {
 /* ------------------------------------------------------------------ */
 
 function mean(vals: number[]): number {
+  if (vals.length === 0) return 0;
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
@@ -259,7 +260,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
         id: 'tbelow90-high',
         type: 'warning',
         title: 'Extended time below SpO₂ 90%',
-        body: `${fmt(ox.tBelow90)} minutes spent below 90% SpO₂. This warrants clinical attention.`,
+        body: `${fmt(ox.tBelow90)}% of the night spent below 90% SpO₂. This warrants clinical attention.`,
         category: 'oximetry',
       });
     }

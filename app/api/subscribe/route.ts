@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
-// ── In-memory rate limiter (per-IP, resets on cold start) ──────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 5; // max requests per window
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
-}
+const limiter = new RateLimiter({ windowMs: 60_000, max: 5 });
 
 // ── Email validation ───────────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -41,10 +28,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Rate limiting by IP
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
-    if (isRateLimited(ip)) {
+    const ip = getRateLimitKey(request);
+    if (limiter.isLimited(ip)) {
       console.warn(`[subscribe] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

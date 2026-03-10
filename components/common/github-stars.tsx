@@ -65,6 +65,7 @@ export function GitHubStars({ className }: { className?: string }) {
       target="_blank"
       rel="noopener noreferrer"
       className={className}
+      aria-label={stars !== null && stars > 0 ? `Star AirwayLab on GitHub (${stars} stars)` : 'Star AirwayLab on GitHub'}
     >
       <Star className="h-3.5 w-3.5" />
       {stars !== null && stars > 0 ? (

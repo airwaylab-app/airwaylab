@@ -109,7 +109,7 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     // Calculate date string from offset
     const daysDiff = dateNum - firstDateNum;
     const d = new Date(startDateTime.getTime() + daysDiff * 86400000);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     const ipap = ipapValues[i];
     const epap = epapValues[i];

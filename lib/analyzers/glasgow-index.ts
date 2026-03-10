@@ -439,8 +439,8 @@ function prepIndices(inspirations: Inspiration[]): GlasgowComponents {
       multiPeakCount++;
     }
 
-    // No Pause: preRest < 10 samples
-    if (insp.preRest < 10) {
+    // No Pause: preRest < 10 samples (only count linked breaths)
+    if (insp.preRest !== 0 && insp.preRest < 10) {
       noPauseCount++;
     }
 
