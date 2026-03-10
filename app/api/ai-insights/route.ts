@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ apiKey: anthropicKey });
+    const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 3 });
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -246,6 +246,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ insights, source: 'ai' });
   } catch (err) {
+    // Distinguish rate limit errors from other failures
+    if (err instanceof Anthropic.RateLimitError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'rate_limit' },
+        level: 'warning',
+      });
+      console.error('[ai-insights] Rate limit exceeded after retries');
+      return NextResponse.json(
+        { error: 'AI service is temporarily busy. Please try again in a few minutes.' },
+        { status: 429 }
+      );
+    }
+
     Sentry.captureException(err, { tags: { route: 'ai-insights' } });
     console.error('[ai-insights] Error:', err);
     return NextResponse.json(
