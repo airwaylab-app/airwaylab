@@ -122,7 +122,7 @@ export const MetricCard = memo(function MetricCard({
         )}
         {trend && (
           <span
-            className={trendIsPositive ? 'text-emerald-500' : trend === 'flat' ? 'text-muted-foreground' : 'text-red-400'}
+            className={trendIsPositive ? 'text-data-good' : trend === 'flat' ? 'text-muted-foreground' : 'text-data-attention'}
             role="img"
             aria-label={`Trend: ${trend === 'up' ? 'increasing' : trend === 'down' ? 'decreasing' : 'stable'}${trendIsPositive ? ' (improving)' : trend === 'flat' ? '' : ' (worsening)'}`}
           >

@@ -16,5 +16,5 @@ export default function AnalyzeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <div className="dashboard-theme bg-background text-foreground">{children}</div>;
 }

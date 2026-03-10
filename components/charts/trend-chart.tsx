@@ -23,10 +23,10 @@ interface Props {
 type MetricKey = 'glasgow' | 'flScore' | 'nedMean' | 'reraIndex';
 
 const METRICS: { key: MetricKey; label: string; color: string; threshold: number; thresholdLabel: string }[] = [
-  { key: 'glasgow', label: 'Glasgow', color: 'hsl(213 94% 56%)', threshold: 2.0, thresholdLabel: 'Glasgow = 2.0' },
-  { key: 'flScore', label: 'FL Score', color: 'hsl(142 71% 45%)', threshold: 30, thresholdLabel: 'FL = 30%' },
-  { key: 'nedMean', label: 'NED Mean', color: 'hsl(38 92% 50%)', threshold: 15, thresholdLabel: 'NED = 15%' },
-  { key: 'reraIndex', label: 'RERA/hr', color: 'hsl(0 84% 60%)', threshold: 5, thresholdLabel: 'RERA = 5/hr' },
+  { key: 'glasgow', label: 'Glasgow', color: '#1B7A6E', threshold: 2.0, thresholdLabel: 'Glasgow = 2.0' },
+  { key: 'flScore', label: 'FL Score', color: '#34A853', threshold: 30, thresholdLabel: 'FL = 30%' },
+  { key: 'nedMean', label: 'NED Mean', color: '#E8913A', threshold: 15, thresholdLabel: 'NED = 15%' },
+  { key: 'reraIndex', label: 'RERA/hr', color: '#E07A5F', threshold: 5, thresholdLabel: 'RERA = 5/hr' },
 ];
 
 export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }: Props) {

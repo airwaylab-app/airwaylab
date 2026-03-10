@@ -2,7 +2,7 @@
 import { ImageResponse } from 'next/og';
 
 export const alt =
-  'AirwayLab — Flow Limitation Analysis for ResMed PAP Data';
+  'AirwayLab — See If Your Sleep Therapy Is Actually Working';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -11,125 +11,56 @@ export default function OGImage() {
     (
       <div
         style={{
+          background: '#FBF7F0',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
+          alignItems: 'center',
           justifyContent: 'center',
-          padding: '60px 80px',
-          background: 'linear-gradient(145deg, #0a0a0f 0%, #0f172a 50%, #0a0a0f 100%)',
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {/* Top accent line */}
+        {/* Teal accent line at top */}
         <div
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            height: 4,
-            background: 'linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #f43f5e)',
+            height: 6,
+            background: '#1B7A6E',
           }}
         />
 
-        {/* Logo + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
-          {/* Moon icon circle */}
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 14,
-              background: 'rgba(99, 102, 241, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 28,
-            }}
-          >
-            🌙
-          </div>
-          <span
-            style={{
-              fontSize: 48,
-              fontWeight: 800,
-              color: '#f1f5f9',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            AirwayLab
-          </span>
+        {/* Wordmark */}
+        <div style={{ display: 'flex', fontSize: 64 }}>
+          <span style={{ fontWeight: 700, color: '#1A2B3D' }}>Airway</span>
+          <span style={{ fontWeight: 400, color: '#1B7A6E' }}>Lab</span>
         </div>
 
         {/* Tagline */}
-        <p
-          style={{
-            fontSize: 26,
-            color: '#94a3b8',
-            lineHeight: 1.5,
-            marginBottom: 40,
-            maxWidth: 800,
-          }}
-        >
-          Flow Limitation Analysis for ResMed PAP Data.
-          <br />
-          Four research-grade engines — 100% client-side.
-        </p>
-
-        {/* Engine badges */}
-        <div style={{ display: 'flex', gap: 16 }}>
-          {[
-            { label: 'Glasgow Index', color: '#3b82f6' },
-            { label: 'WAT', color: '#10b981' },
-            { label: 'NED', color: '#f59e0b' },
-            { label: 'Oximetry', color: '#f43f5e' },
-          ].map((engine) => (
-            <div
-              key={engine.label}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 18px',
-                borderRadius: 9999,
-                background: `${engine.color}18`,
-                border: `1px solid ${engine.color}40`,
-              }}
-            >
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  background: engine.color,
-                }}
-              />
-              <span style={{ fontSize: 16, fontWeight: 600, color: engine.color }}>
-                {engine.label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom: privacy + open source */}
         <div
           style={{
-            position: 'absolute',
-            bottom: 40,
-            left: 80,
-            right: 80,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            fontSize: 28,
+            color: '#6B6560',
+            marginTop: 24,
+            maxWidth: 700,
+            textAlign: 'center',
           }}
         >
-          <span style={{ fontSize: 16, color: '#64748b' }}>
-            Free &amp; Open Source · GPL-3.0
-          </span>
-          <span style={{ fontSize: 16, color: '#10b981' }}>
-            🔒 Your data never leaves your device
-          </span>
+          See If Your Sleep Therapy Is Actually Working
+        </div>
+
+        {/* Privacy note */}
+        <div
+          style={{
+            fontSize: 16,
+            color: '#1B7A6E',
+            marginTop: 32,
+          }}
+        >
+          Free &amp; open source — 100% in-browser analysis
         </div>
       </div>
     ),

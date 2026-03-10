@@ -25,9 +25,9 @@ interface Props {
 }
 
 const EVENT_COLORS: Record<string, { fill: string; stroke: string }> = {
-  'rera': { fill: 'hsl(0 84% 60% / 0.15)', stroke: 'hsl(0 84% 60% / 0.4)' },
-  'flow-limitation': { fill: 'hsl(38 92% 50% / 0.12)', stroke: 'hsl(38 92% 50% / 0.35)' },
-  'm-shape': { fill: 'hsl(213 94% 56% / 0.12)', stroke: 'hsl(213 94% 56% / 0.35)' },
+  'rera': { fill: '#E07A5F26', stroke: '#E07A5F66' },
+  'flow-limitation': { fill: '#E8913A1F', stroke: '#E8913A59' },
+  'm-shape': { fill: '#1B7A6E1F', stroke: '#1B7A6E59' },
 };
 
 const ZOOM_PRESETS = [

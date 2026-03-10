@@ -9,8 +9,57 @@
 }
 
 @layer base {
-  /* Dark-only clinical theme */
+  /* ─── Light theme (default) — marketing pages ─── */
   :root {
+    --background: 39 33% 98%;
+    --foreground: 24 5% 16%;
+    --card: 0 0% 100%;
+    --card-elevated: 30 18% 97%;
+    --card-foreground: 24 5% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 5% 16%;
+    --primary: 172 65% 29%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 18% 95%;
+    --secondary-foreground: 24 5% 16%;
+    --muted: 30 18% 95%;
+    --muted-foreground: 18 4% 40%;
+    --accent: 30 18% 93%;
+    --accent-foreground: 24 5% 16%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 18% 84%;
+    --input: 30 18% 88%;
+    --ring: 172 65% 29%;
+    --radius: 0.75rem;
+
+    /* Chart palette */
+    --chart-1: 172 65% 29%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 33 80% 57%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 11 63% 63%;
+
+    /* Traffic light system */
+    --status-good: 142 71% 45%;
+    --status-warn: 33 80% 57%;
+    --status-bad: 11 63% 63%;
+
+    /* Brand custom properties */
+    --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --color-brand-teal: #1B7A6E;
+    --color-brand-amber: #E8913A;
+    --color-brand-sand: #FBF7F0;
+    --color-brand-navy: #1A2B3D;
+    --color-warm-charcoal: #2D2A26;
+    --color-warm-border: #E0D9CF;
+
+    color-scheme: light;
+  }
+
+  /* ─── Dark theme — analysis dashboard ─── */
+  .dashboard-theme {
     --background: 222 47% 4%;
     --foreground: 210 40% 93%;
     --card: 217 33% 7%;
@@ -18,7 +67,7 @@
     --card-foreground: 210 40% 93%;
     --popover: 217 33% 8%;
     --popover-foreground: 210 40% 93%;
-    --primary: 213 94% 56%;
+    --primary: 172 65% 29%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 12%;
     --secondary-foreground: 210 40% 93%;
@@ -30,13 +79,12 @@
     --destructive-foreground: 0 0% 100%;
     --border: 217 33% 13%;
     --input: 217 33% 15%;
-    --ring: 213 94% 56%;
-    --radius: 0.5rem;
+    --ring: 172 65% 29%;
 
-    /* Chart palette */
-    --chart-1: 213 94% 56%;
+    /* Chart palette (dark-optimized) */
+    --chart-1: 172 65% 35%;
     --chart-2: 142 71% 45%;
-    --chart-3: 38 92% 50%;
+    --chart-3: 33 92% 50%;
     --chart-4: 262 83% 58%;
     --chart-5: 0 84% 60%;
 
@@ -44,6 +92,8 @@
     --status-good: 142 71% 45%;
     --status-warn: 38 92% 50%;
     --status-bad: 0 84% 60%;
+
+    color-scheme: dark;
   }
 
   * {
@@ -72,26 +122,34 @@
   }
 }
 
-/* Subtle grid texture on background */
+/* Subtle grid texture (adapts to theme) */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(hsl(217 33% 12% / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(217 33% 12% / 0.03) 1px, transparent 1px);
+    linear-gradient(hsl(var(--border) / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.15) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
 }
 
-/* Skeleton shimmer animation */
+/* Dashboard dark theme gets stronger grid */
+.dashboard-theme body::before,
+.dashboard-theme::before {
+  background-image:
+    linear-gradient(hsl(217 33% 12% / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(217 33% 12% / 0.03) 1px, transparent 1px);
+}
+
+/* Skeleton shimmer animation (adapts to theme via CSS vars) */
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    hsl(var(--card)) 0%,
-    hsl(var(--card-elevated)) 40%,
-    hsl(var(--card)) 80%
+    hsl(var(--muted)) 0%,
+    hsl(var(--border)) 40%,
+    hsl(var(--muted)) 80%
   );
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
@@ -102,7 +160,7 @@ body::before {
   100% { background-position: -200% 0; }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar (adapts to theme) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

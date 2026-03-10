@@ -132,7 +132,7 @@ function MiniSparkline({ values }: { values: number[] }) {
       <polyline
         points={points.join(' ')}
         fill="none"
-        stroke="hsl(213 94% 56%)"
+        stroke="#1B7A6E"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

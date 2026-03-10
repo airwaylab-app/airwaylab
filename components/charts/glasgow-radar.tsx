@@ -11,6 +11,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { chartColors, chartTheme } from '@/lib/chart-theme';
 import type { GlasgowComponents } from '@/lib/types';
 
 interface Props {
@@ -78,10 +79,10 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
           </span>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
-              <PolarGrid stroke="hsl(217 33% 15% / 0.5)" />
+              <PolarGrid stroke="hsl(var(--border) / 0.5)" />
               <PolarAngleAxis
                 dataKey="component"
-                tick={{ fill: 'hsl(215 20% 55%)', fontSize: 10 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
               />
               <PolarRadiusAxis
                 angle={90}
@@ -93,8 +94,8 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
               <Radar
                 name="Normal Range"
                 dataKey="ref"
-                stroke="hsl(142 71% 45% / 0.3)"
-                fill="hsl(142 71% 45%)"
+                stroke={`${chartColors.quinary}4D`}
+                fill={chartColors.quinary}
                 fillOpacity={0.05}
                 strokeWidth={1}
                 strokeDasharray="4 4"
@@ -103,18 +104,18 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
               <Radar
                 name="Score"
                 dataKey="value"
-                stroke="hsl(213 94% 56%)"
-                fill="hsl(213 94% 56%)"
-                fillOpacity={0.2}
+                stroke={chartColors.primary}
+                fill={chartColors.primary}
+                fillOpacity={0.15}
                 strokeWidth={2}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'hsl(217 33% 8%)',
-                  border: '1px solid hsl(217 33% 15%)',
-                  borderRadius: '0.5rem',
+                  backgroundColor: chartTheme.tooltip.background,
+                  border: `1px solid ${chartTheme.tooltip.border}`,
+                  borderRadius: chartTheme.tooltip.borderRadius,
                   fontSize: 12,
-                  color: 'hsl(210 40% 93%)',
+                  color: '#2D2A26',
                 }}
                 formatter={(value, name) => {
                   if (name === 'Normal Range') return [Number(value).toFixed(2), 'Normal Limit'];
@@ -126,11 +127,11 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
         </div>
         <div className="mt-2 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-4 rounded-sm bg-blue-500/30" />
+            <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: `${chartColors.primary}30` }} />
             Patient Score
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-4 rounded-sm border border-dashed border-emerald-500/40 bg-emerald-500/10" />
+            <div className="h-2 w-4 rounded-sm border border-dashed" style={{ borderColor: `${chartColors.quinary}66`, backgroundColor: `${chartColors.quinary}1A` }} />
             Normal Range
           </div>
         </div>

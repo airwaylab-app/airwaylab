@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/header';
@@ -11,7 +11,7 @@ import { AuthProvider } from '@/lib/auth/auth-context';
 
 const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
-const plexSans = IBM_Plex_Sans({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-sans',
@@ -27,29 +27,27 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://airwaylab.app'),
-  title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
+  title: 'AirwayLab — See If Your Sleep Therapy Is Actually Working',
   description:
-    'Free, open-source PAP (Positive Airway Pressure) analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
+    'Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
   keywords: [
     'PAP', 'CPAP', 'BiPAP', 'APAP', 'ResMed', 'sleep apnea', 'flow limitation',
     'Glasgow Index', 'OSCAR alternative', 'sleep analysis',
   ],
   authors: [{ name: 'AirwayLab' }],
   openGraph: {
-    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
+    title: 'AirwayLab — See If Your Sleep Therapy Is Actually Working',
     description:
       'Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
     type: 'website',
     url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
-    images: [{ url: '/og-image.png' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
+    title: 'AirwayLab — See If Your Sleep Therapy Is Actually Working',
     description:
       'Free, open-source PAP analysis that goes beyond AHI. Detect flow limitation, RERAs, and breathing patterns your machine misses. 100% in-browser — your data never leaves your device.',
-    images: ['/og-image.png'],
   },
   robots: {
     index: true,
@@ -83,7 +81,7 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
-          plexSans.variable,
+          plusJakarta.variable,
           jetbrainsMono.variable
         )}
       >

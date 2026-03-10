@@ -43,10 +43,10 @@ function fmtHrs(h: number): string {
 }
 
 const insightStyles: Record<Insight['type'], { icon: typeof CheckCircle; border: string; bg: string; iconColor: string }> = {
-  positive: { icon: CheckCircle, border: 'border-emerald-500/20', bg: 'bg-emerald-500/5', iconColor: 'text-emerald-500' },
-  warning: { icon: AlertCircle, border: 'border-amber-500/20', bg: 'bg-amber-500/5', iconColor: 'text-amber-500' },
-  actionable: { icon: TrendingDown, border: 'border-red-500/20', bg: 'bg-red-500/5', iconColor: 'text-red-500' },
-  info: { icon: Info, border: 'border-blue-500/20', bg: 'bg-blue-500/5', iconColor: 'text-blue-400' },
+  positive: { icon: CheckCircle, border: 'border-l-4 border-l-data-good border border-border', bg: 'bg-card', iconColor: 'text-data-good' },
+  warning: { icon: AlertCircle, border: 'border-l-4 border-l-brand-amber border border-border', bg: 'bg-card', iconColor: 'text-brand-amber' },
+  actionable: { icon: TrendingDown, border: 'border-l-4 border-l-data-attention border border-border', bg: 'bg-card', iconColor: 'text-data-attention' },
+  info: { icon: Info, border: 'border-l-4 border-l-brand-teal border border-border', bg: 'bg-card', iconColor: 'text-brand-teal' },
 };
 
 interface Props {
