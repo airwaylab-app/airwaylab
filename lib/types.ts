@@ -175,11 +175,18 @@ export interface AnalysisState {
   warning: string | null;
 }
 
-export interface WorkerMessage {
+export interface WorkerAnalyzeMessage {
   type: 'ANALYZE';
   files: { buffer: ArrayBuffer; path: string }[];
   oximetryCSVs?: string[];
 }
+
+export interface WorkerOximetryOnlyMessage {
+  type: 'ANALYZE_OXIMETRY';
+  oximetryCSVs: string[];
+}
+
+export type WorkerMessage = WorkerAnalyzeMessage | WorkerOximetryOnlyMessage;
 
 export interface WorkerProgress {
   type: 'PROGRESS';
@@ -193,9 +200,14 @@ export interface WorkerResult {
   nights: NightResult[];
 }
 
+export interface WorkerOximetryResult {
+  type: 'OXIMETRY_RESULTS';
+  oximetryByDate: Record<string, OximetryResults>;
+}
+
 export interface WorkerError {
   type: 'ERROR';
   error: string;
 }
 
-export type WorkerResponse = WorkerProgress | WorkerResult | WorkerError;
+export type WorkerResponse = WorkerProgress | WorkerResult | WorkerOximetryResult | WorkerError;

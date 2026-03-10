@@ -63,7 +63,7 @@ export function MetricsTable({ nights }: Props) {
       setSortAsc(!sortAsc);
     } else {
       setSortKey(key);
-      setSortAsc(key === 'date');
+      setSortAsc(false);
     }
   };
 

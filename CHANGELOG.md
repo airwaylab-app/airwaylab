@@ -7,12 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — Platform Audit (2026-03-10)
 
+### Improved
+
+- **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)
+
+### Fixed
+
+- **Oximetry-only upload**: Uploading oximetry CSV no longer re-processes the entire SD card — oximetry is matched to cached nights instantly (oximetry-only-reanalysis)
+- **Oximetry upload from cached sessions**: Oximetry upload button now works after page refresh when previous analysis is restored from cache
+
 ### Fixed
 
 - **Phase 1 — Critical engine bugs**: Fixed Glasgow Index weighted averaging, NED H1/H2 split boundary, WAT FFT zero-padding, oximetry buffer-zone trimming, and night-grouper date extraction
 - **Phase 2 — Security hardening**: Added CSRF origin validation, rate limiting on all API routes, Stripe webhook signature verification, Zod validation on all external inputs, Content-Security-Policy headers
 - **Phase 3 — Accessibility**: Added skip-to-content link, ARIA labels on all interactive elements, keyboard navigation for charts, semantic heading hierarchy, screen reader announcements for analysis progress
 - **Phase 4 — UX quick wins**: Added loading skeletons, error boundaries with retry, empty states, toast notifications, improved upload validation messages
+- **Heatmap date sort**: Fixed default sort to newest-first, added visible "Date" sort button replacing hidden arrow column, date sort now defaults to descending when re-selected
+- **Metrics table date sort**: Fixed re-selecting Date column after sorting by another metric to default to newest-first
 
 ### Changed
 
