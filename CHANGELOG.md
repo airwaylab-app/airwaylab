@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Glasgow radar chart scaling**: Changed axis domain from `[0, 100]` to `[0, 1]` so low component scores (0–0.5) are visually readable instead of invisible (`glasgow-radar-scaling`)
 - **Phase 1 — Critical engine bugs**: Fixed Glasgow Index weighted averaging, NED H1/H2 split boundary, WAT FFT zero-padding, oximetry buffer-zone trimming, and night-grouper date extraction
 - **Phase 2 — Security hardening**: Added CSRF origin validation, rate limiting on all API routes, Stripe webhook signature verification, Zod validation on all external inputs, Content-Security-Policy headers
 - **Phase 3 — Accessibility**: Added skip-to-content link, ARIA labels on all interactive elements, keyboard navigation for charts, semantic heading hierarchy, screen reader announcements for analysis progress

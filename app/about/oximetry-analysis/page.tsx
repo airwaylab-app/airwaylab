@@ -8,13 +8,13 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Pulse Oximetry Analysis for PAP Users — 16 Metrics | AirwayLab',
+  title: 'Pulse Oximetry Analysis for PAP Users — 17 Metrics | AirwayLab',
   description:
-    'AirwayLab\'s oximetry engine computes 16 metrics from Viatom/Checkme O2 Max data: ODI, desaturation indices, heart rate surges, coupled events, and half-night comparisons.',
+    'AirwayLab\'s oximetry engine computes 17 metrics from Viatom/Checkme O2 Max data: ODI, desaturation indices, heart rate surges, coupled events, and half-night comparisons.',
   openGraph: {
     title: 'Pulse Oximetry Analysis for PAP Users | AirwayLab',
     description:
-      'A 16-metric framework for SpO2 and heart rate analysis. ODI, desaturation time, HR surges, and coupled cardio-respiratory events.',
+      'A 17-metric framework for SpO2 and heart rate analysis. ODI, desaturation time, HR surges, and coupled cardio-respiratory events.',
   },
   keywords: [
     'pulse oximetry PAP', 'ODI oxygen desaturation index',
@@ -58,12 +58,20 @@ const metrics = [
         description: 'Heart rate increases >10 bpm above 30-second baseline — a stricter threshold identifying more significant autonomic activations.',
       },
       {
-        name: 'Rolling Mean HR Surges (6 bpm)',
-        description: 'Heart rate increases >6 bpm above a 5-minute rolling mean. This longer baseline captures surges relative to the prevailing heart rate trend.',
+        name: 'Clinical HR Surges (12 bpm)',
+        description: 'Heart rate increases >12 bpm above 30-second baseline — captures only larger autonomic responses, reducing false positives from normal HR variability.',
       },
       {
-        name: 'Rolling Mean HR Surges (8 bpm)',
-        description: 'Heart rate increases >8 bpm above 5-minute rolling mean — the stricter version of the rolling mean surge metric.',
+        name: 'Clinical HR Surges (15 bpm)',
+        description: 'Heart rate increases >15 bpm above 30-second baseline — the strictest clinical threshold, identifying the most pronounced arousal-related heart rate spikes.',
+      },
+      {
+        name: 'Rolling Mean HR Surges (10 bpm)',
+        description: 'Heart rate increases >10 bpm above a 5-minute rolling mean. This longer baseline captures surges relative to the prevailing heart rate trend.',
+      },
+      {
+        name: 'Rolling Mean HR Surges (15 bpm)',
+        description: 'Heart rate increases >15 bpm above 5-minute rolling mean — the stricter version of the rolling mean surge metric, identifying only the most significant deviations.',
       },
     ],
   },
@@ -80,12 +88,12 @@ const metrics = [
     category: 'Summary Statistics',
     items: [
       {
-        name: 'Mean, Median, Min SpO\u2082',
-        description: 'Central tendency and extremes of oxygen saturation across the recording.',
+        name: 'Mean & Min SpO\u2082',
+        description: 'Mean and minimum oxygen saturation across the recording. Minimum SpO\u2082 captures the deepest desaturation event.',
       },
       {
-        name: 'Mean, Median HR',
-        description: 'Central tendency of heart rate. Elevated mean HR may indicate poor sleep quality or increased sympathetic tone.',
+        name: 'Mean HR & HR Variability',
+        description: 'Mean heart rate and standard deviation. Elevated mean HR may indicate poor sleep quality or increased sympathetic tone. HR variability reflects autonomic regulation.',
       },
     ],
   },
@@ -122,13 +130,13 @@ export default function OximetryAnalysisPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Oximetry Analysis
             </h1>
-            <p className="text-sm text-rose-400">16-Metric SpO&#8322; &amp; Heart Rate Framework</p>
+            <p className="text-sm text-rose-400">17-Metric SpO&#8322; &amp; Heart Rate Framework</p>
           </div>
         </div>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           AirwayLab&apos;s oximetry pipeline provides a comprehensive analysis
           of overnight pulse oximetry data from Viatom/Checkme O2 Max wrist
-          oximeters. Sixteen metrics across five categories give you a detailed
+          oximeters. Seventeen metrics across five categories give you a detailed
           picture of oxygenation, cardiac response, and their interaction
           throughout the night.
         </p>
@@ -163,7 +171,7 @@ export default function OximetryAnalysisPage() {
               <span className="mt-px shrink-0 font-mono text-xs text-rose-400/70">03</span>
               <span>
                 <strong className="text-foreground">Multi-metric analysis</strong> &mdash;
-                Sixteen metrics are computed across five categories: oxygen
+                Seventeen metrics are computed across five categories: oxygen
                 desaturation, heart rate surges, coupled events, summary
                 statistics, and half-night comparisons.
               </span>
@@ -181,10 +189,10 @@ export default function OximetryAnalysisPage() {
         </div>
       </section>
 
-      {/* The 16 Metrics */}
+      {/* The 17 Metrics */}
       <section className="mb-12">
         <h2 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
-          The 16 metrics
+          The 17 metrics
         </h2>
         <div className="flex flex-col gap-6">
           {metrics.map((group) => (
@@ -226,8 +234,8 @@ export default function OximetryAnalysisPage() {
             second-by-second data.
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Oximetry data is entirely optional &mdash; all four PAP analysis
-            engines (Glasgow Index, WAT, NED) work with SD card data alone. The
+            Oximetry data is entirely optional &mdash; all three PAP flow
+            analysis engines (Glasgow Index, WAT, NED) work with SD card data alone. The
             oximetry pipeline activates only when you provide oximetry CSVs
             alongside your SD card upload.
           </p>

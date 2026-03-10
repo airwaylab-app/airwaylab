@@ -15,10 +15,12 @@ import type {
   WorkerMessage,
   WorkerProgress,
   WorkerResult,
+  WorkerOximetryResult,
   WorkerError,
   NightResult,
   EDFFile,
   MachineSettings,
+  OximetryResults,
 } from '../lib/types';
 
 // Global error handler — catches uncaught errors and sends them as
@@ -35,10 +37,16 @@ self.addEventListener('error', (e: ErrorEvent) => {
 // Worker message handler
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
-    const { files, oximetryCSVs } = e.data;
-    const results = await processFiles(files, oximetryCSVs);
-    const response: WorkerResult = { type: 'RESULTS', nights: results };
-    self.postMessage(response);
+    if (e.data.type === 'ANALYZE_OXIMETRY') {
+      const results = processOximetryOnly(e.data.oximetryCSVs);
+      const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: results };
+      self.postMessage(response);
+    } else {
+      const { files, oximetryCSVs } = e.data;
+      const results = await processFiles(files, oximetryCSVs);
+      const response: WorkerResult = { type: 'RESULTS', nights: results };
+      self.postMessage(response);
+    }
   } catch (err) {
     const response: WorkerError = {
       type: 'ERROR',
@@ -241,4 +249,24 @@ async function processFiles(
   nights.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
 
   return nights;
+}
+
+/**
+ * Process oximetry CSVs only — no EDF parsing, no engine computation.
+ * Returns computed OximetryResults keyed by date string.
+ */
+function processOximetryOnly(oximetryCSVs: string[]): Record<string, OximetryResults> {
+  const results: Record<string, OximetryResults> = {};
+
+  for (const csv of oximetryCSVs) {
+    try {
+      const parsed = parseOximetryCSV(csv);
+      const oximetry = computeOximetry(parsed.samples);
+      results[parsed.dateStr] = oximetry;
+    } catch (err) {
+      console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  return results;
 }

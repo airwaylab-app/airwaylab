@@ -65,7 +65,7 @@ airwaylab/
 │   │   ├── glasgow-index.ts → 9-component breath shape scoring (0–8 scale)
 │   │   ├── wat-engine.ts    → FL Score, Regularity (SampEn), Periodicity (FFT)
 │   │   ├── ned-engine.ts    → NED, FI, M-shape, RERA detection, EAI
-│   │   └── oximetry-engine.ts → 16-metric SpO2/HR framework
+│   │   └── oximetry-engine.ts → 17-metric SpO2/HR framework
 │   ├── parsers/            → ⚠️ PROTECTED — File parsers
 │   │   ├── edf-parser.ts   → EDF (European Data Format) binary parser
 │   │   ├── night-grouper.ts → Groups EDF sessions into clinical nights
@@ -107,7 +107,7 @@ Three metrics: FL Score (inspiratory flatness, 0–100, higher = worse), Regular
 Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mean/peak, Tpeak/Ti ratio, M-shape detection (valley < 80% Qpeak in middle 50% of inspiration). RERA detection: runs of 3–15 breaths with progressive FL features evaluated by NED slope, recovery breath, and sigh detection. Estimated Arousal Index (EAI): respiratory rate + tidal volume spikes vs 120s rolling baseline. Night summary includes H1/H2 split and combined FL percentage.
 
 ### Oximetry Pipeline (`lib/analyzers/oximetry-engine.ts`)
-16-metric framework from Viatom/Checkme O2 Max CSV data. Cleaning pipeline: buffer zone trimming (15min start, 5min end), motion filter, invalid sample removal, SpO2 range validation (50–100), HR double-tracking correction. Metrics: ODI-3/ODI-4 (2min rolling baseline), HR Clinical surges (30s baseline, 8/10/12/15 bpm thresholds), HR Rolling Mean surges (5min baseline, 5s sustain), coupled events (ODI + HR within ±30s), desaturation time, summary stats, H1/H2 splits.
+17-metric framework from Viatom/Checkme O2 Max CSV data. Cleaning pipeline: buffer zone trimming (15min start, 5min end), motion filter, invalid sample removal, SpO2 range validation (50–100), HR double-tracking correction. Metrics: ODI-3/ODI-4 (2min rolling baseline), HR Clinical surges (30s baseline, 8/10/12/15 bpm thresholds), HR Rolling Mean surges (5min baseline, 5s sustain), coupled events (ODI + HR within ±30s), desaturation time, summary stats, H1/H2 splits.
 
 ## Component Patterns
 
@@ -171,6 +171,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - **Never send health data without consent.** No analytics on waveform data, no silent uploads, no background syncing. If data leaves the browser, the user must have opted in.
 - **Never exceed the 4MB localStorage cap.** Strip bulk data (per-breath arrays, raw waveforms) before persisting. Pre-flight size check in `persistence.ts`.
 - **Never modify engine logic without clinical understanding.** The engines implement published respiratory analysis methodologies. A "refactoring" that changes threshold values or algorithm steps can produce clinically incorrect results.
+- **Never modify, rescale, or transform Glasgow scores.** The Glasgow component scores (0–1 per component, 0–8 overall) are clinically validated metrics from the Glasgow Index methodology. Visualisation code must adapt the chart scale to fit the data — never change the data to fit the chart. This applies to all presentation layers (charts, tooltips, exports, reports).
 - **Never create API routes without auth middleware.** Every `app/api/` route must validate authentication.
 - **Never use `console.log` in production.** Use `console.error` with structured context for debugging; these flow to Vercel logs + Sentry.
 - **Never hardcode secrets.** Use `process.env` with Zod validation. Add new vars to `.env.example`.
