@@ -4,10 +4,10 @@ import { useState, useCallback, useEffect } from 'react';
 import { Users, Loader2, X, Shield, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
+import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab_contribute_dismissed';
-const CONTRIBUTED_NIGHTS_KEY = 'airwaylab_contributed_nights';
 
 interface Props {
   nights: NightResult[];
@@ -66,30 +66,10 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   const handleContribute = useCallback(async () => {
     setStatus('sending');
     try {
-      // Cap at 1095 most recent nights to stay within server limits
-      const toSubmit = nights.length > 1095
-        ? nights.slice(0, 1095)
-        : nights;
-      const res = await fetch('/api/contribute-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nights: toSubmit }),
-      });
-
-      if (res.ok) {
-        setStatus('success');
-        events.contributionOptedIn();
-        try {
-          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
-          const dateSet = new Set(storedDates);
-          for (const n of nights) dateSet.add(n.dateStr);
-          const updated = Array.from(dateSet);
-          localStorage.setItem('airwaylab_contributed_dates', JSON.stringify(updated));
-          localStorage.setItem(CONTRIBUTED_NIGHTS_KEY, String(updated.length));
-        } catch { /* noop */ }
-      } else {
-        setStatus('error');
-      }
+      await contributeNights(nights);
+      setStatus('success');
+      events.contributionOptedIn();
+      trackContributedDates(nights);
     } catch {
       setStatus('error');
     }
