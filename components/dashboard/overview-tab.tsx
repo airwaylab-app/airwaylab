@@ -68,6 +68,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const { user, tier, isPaid } = useAuth();
 
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
+  const [aiRemainingCredits, setAiRemainingCredits] = useState<number | undefined>(undefined);
   const [aiLoading, setAiLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -97,8 +98,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         if (controller.signal.aborted) return;
         if (result) {
           incrementAIUsage();
+          setAiRemainingCredits(result.remainingCredits);
         }
-        setAiInsights(result);
+        setAiInsights(result?.insights ?? null);
       })
       .catch(() => {
         if (controller.signal.aborted) return;
@@ -194,7 +196,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* AI Insights CTA (demo or community tier) */}
       {aiInsights && aiInsights.length > 0 && (
-        <AIInsightsCTA isDemo={isDemo} />
+        <AIInsightsCTA isDemo={isDemo} remainingCredits={aiRemainingCredits} />
       )}
 
       {/* Rule-based Insights Panel */}
@@ -514,7 +516,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* Upgrade prompt for community users */}
       {!isPaid && (
-        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." />
+        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." remainingCredits={aiRemainingCredits} />
       )}
 
       {/* Metric Detail Modal */}

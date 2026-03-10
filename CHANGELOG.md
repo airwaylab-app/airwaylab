@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — Platform Audit (2026-03-10)
 
+### Added
+
+- **AI credits synced from server**: Community tier AI credit count now reflects actual server-side usage instead of unreliable localStorage counter — clearing browser data no longer resets the display (`ai-credits-tracking-and-messaging`)
+- **Community funding messaging**: AI insights CTA explains that analyses are funded out of pocket, with warm invitation to support the project
+
 ### Improved
 
 - **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)

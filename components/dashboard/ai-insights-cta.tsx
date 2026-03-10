@@ -9,17 +9,20 @@ import { getAIRemaining } from '@/lib/auth/feature-gate';
 
 interface Props {
   isDemo?: boolean;
+  /** Server-synced remaining credits. Falls back to localStorage if undefined. */
+  remainingCredits?: number;
 }
 
 /**
  * Contextual CTA below AI insights explaining costs and encouraging support.
  *
- * Three states:
+ * Four states:
  * - Demo mode: explain AI is funded out of pocket, nudge to upload own data
- * - Community tier: show remaining analyses, nudge to support
+ * - Community tier (credits remaining): show remaining, explain community funding
+ * - Community tier (credits exhausted): warm message, nudge to support
  * - Paid users: hidden
  */
-export function AIInsightsCTA({ isDemo = false }: Props) {
+export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
   const { tier, isPaid } = useAuth();
   const [dismissed, setDismissed] = useState(false);
 
@@ -33,7 +36,8 @@ export function AIInsightsCTA({ isDemo = false }: Props) {
   if (isPaid) return null;
   if (dismissed) return null;
 
-  const aiRemaining = getAIRemaining(tier);
+  // Use server value when available, fall back to localStorage
+  const aiRemaining = remainingCredits ?? getAIRemaining(tier);
 
   return (
     <div className="relative flex items-start gap-2 rounded-md border border-primary/10 bg-primary/[0.03] px-3 py-2">
@@ -42,30 +46,39 @@ export function AIInsightsCTA({ isDemo = false }: Props) {
       <div className="min-w-0 flex-1 text-[11px] leading-relaxed text-muted-foreground/70">
         {isDemo ? (
           <p>
-            These AI insights are powered by Claude and funded out of pocket.{' '}
+            These AI insights are powered by Claude and funded out of pocket to keep AirwayLab free for everyone.{' '}
             <Link
               href="/analyze"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
             >
               Upload your own data
             </Link>{' '}
-            to get personalized AI analysis of your therapy.
+            to get personalised analysis of your therapy.
           </p>
-        ) : (
+        ) : aiRemaining > 0 ? (
           <p>
-            Each AI analysis costs real money to run.
-            {aiRemaining > 0 && (
-              <span className="font-medium text-foreground/60">
-                {' '}{aiRemaining} free {aiRemaining === 1 ? 'analysis' : 'analyses'} left this month.
-              </span>
-            )}{' '}
+            Each AI analysis is funded out of pocket to keep AirwayLab free.
+            <span className="font-medium text-foreground/60">
+              {' '}{aiRemaining} free {aiRemaining === 1 ? 'analysis' : 'analyses'} left this month.
+            </span>{' '}
             <Link
               href="/pricing"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
             >
-              Support AirwayLab
+              Support the project
             </Link>{' '}
-            to fund continued development.
+            to help keep it running.
+          </p>
+        ) : (
+          <p>
+            You&apos;ve used your 3 free AI analyses this month. They reset next month.{' '}
+            <Link
+              href="/pricing"
+              className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
+            >
+              Become a supporter
+            </Link>{' '}
+            for unlimited AI analysis — and help fund AirwayLab for the whole community.
           </p>
         )}
       </div>
