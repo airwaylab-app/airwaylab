@@ -31,6 +31,7 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
+import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { clearManifest } from '@/lib/file-manifest';
 import {
   RotateCcw,
@@ -260,26 +261,9 @@ function AnalyzePageInner() {
   );
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
-    // Cap at 1095 most recent nights to stay within server limits
-    const toSubmit = nightsToSubmit.length > 1095
-      ? nightsToSubmit.slice(0, 1095)
-      : nightsToSubmit;
-    fetch('/api/contribute-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nights: toSubmit }),
-    }).then((res) => {
-      if (res.ok) {
-        try {
-          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
-          const dateSet = new Set(storedDates);
-          for (const n of nightsToSubmit) dateSet.add(n.dateStr);
-          const updated = Array.from(dateSet);
-          localStorage.setItem('airwaylab_contributed_dates', JSON.stringify(updated));
-          localStorage.setItem('airwaylab_contributed_nights', String(updated.length));
-        } catch { /* noop */ }
-      }
-    }).catch(() => { /* non-critical */ });
+    contributeNights(nightsToSubmit)
+      .then(() => trackContributedDates(nightsToSubmit))
+      .catch(() => { /* non-critical */ });
   }, []);
 
   const handleNudgeContribute = useCallback(() => {
