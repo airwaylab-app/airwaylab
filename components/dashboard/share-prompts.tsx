@@ -77,7 +77,7 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
             <div>
               <p className="text-sm font-medium">Share with the community</p>
               <p className="text-xs text-muted-foreground">
-                Posting your results on ApneaBoard or Reddit helps others understand their data too.
+                Posting your results on ApneaBoard, Reddit, CPAPtalk, or your favourite sleep community helps others understand their data too.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
                     <Check className="h-3 w-3 text-emerald-500" /> Copied!
                   </>
                 ) : (
-                  'Copy for Reddit / ApneaBoard'
+                  'Copy for Forum Post'
                 )}
               </Button>
             </div>

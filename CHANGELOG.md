@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 
 - **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)
+- **Mobile-first landing CTAs**: Demo is now the primary CTA on mobile, with a note that uploading requires a desktop computer (`onboarding-quick-wins`)
+- **"Start here" guidance**: New users see a brief callout above metrics explaining Glasgow Index and traffic light colours (`onboarding-quick-wins`)
+- **Export download feedback**: CSV and JSON export buttons show "Downloaded!" confirmation for 2 seconds (`onboarding-quick-wins`)
+- **Inclusive community sharing**: Share prompts now name ApneaBoard, Reddit, CPAPtalk, and "your favourite sleep community" (`onboarding-quick-wins`)
+- **Upload page reorder**: Demo CTA moved above consent sections for discoverability (`onboarding-quick-wins`)
 
 ### Fixed
 
