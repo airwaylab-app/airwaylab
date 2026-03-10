@@ -47,6 +47,7 @@ import {
   Star,
   Moon,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -93,6 +94,27 @@ function AnalyzePageInner() {
   const [showDemoStar, setShowDemoStar] = useState(false);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lifetimeNights, setLifetimeNights] = useState(0);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Handle auth error from callback redirect
+  useEffect(() => {
+    const error = searchParams.get('auth_error');
+    if (!error) return;
+
+    if (error === 'pkce_expired') {
+      setAuthError('Your sign-in link opened in a different browser or app. Please try signing in again from this browser.');
+    } else {
+      setAuthError('Sign-in failed. Please try again.');
+    }
+
+    // Clean up URL param
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('auth_error');
+    const cleanUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+  }, [searchParams]);
 
   // Load lifetime night count from localStorage
   useEffect(() => {
@@ -329,6 +351,21 @@ function AnalyzePageInner() {
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
+      {/* Auth error banner */}
+      {authError && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <span className="flex-1">{authError}</span>
+          <button
+            onClick={() => setAuthError(null)}
+            className="shrink-0 rounded p-0.5 text-amber-400 hover:text-amber-200"
+            aria-label="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

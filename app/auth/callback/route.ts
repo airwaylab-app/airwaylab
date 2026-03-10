@@ -62,6 +62,24 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    // PKCE verifier missing is expected on iOS (cross-context cookie partitioning)
+    // and when users open magic links in a different browser/device.
+    // Downgrade to warning instead of alerting as an exception.
+    const isPKCEError = error.name === 'AuthPKCECodeVerifierMissingError'
+      || error.message?.includes('PKCE code verifier');
+
+    if (isPKCEError) {
+      console.error('[auth/callback] PKCE verifier missing — user likely opened magic link in a different context');
+      Sentry.captureMessage('PKCE code verifier missing during auth callback', {
+        level: 'warning',
+        tags: { route: 'auth-callback' },
+        extra: {
+          userAgent: request.headers.get('user-agent') ?? 'unknown',
+        },
+      });
+      return NextResponse.redirect(`${origin}/analyze?auth_error=pkce_expired`);
+    }
+
     console.error('[auth/callback] Code exchange failed:', error.message);
     Sentry.captureException(error, {
       tags: { route: 'auth-callback' },
