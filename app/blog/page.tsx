@@ -34,6 +34,11 @@ export default function BlogIndexPage() {
 
       {/* Post Cards */}
       <div className="flex flex-col gap-6">
+        {blogPosts.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-16 text-center">
+            <p className="text-sm text-muted-foreground">No articles published yet. Check back soon.</p>
+          </div>
+        )}
         {blogPosts.map((post) => (
           <Link
             key={post.slug}

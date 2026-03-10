@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -49,29 +49,25 @@ export function VersionChecker() {
   if (!updateAvailable) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="mx-4 flex max-w-md flex-col items-center gap-4 rounded-2xl border border-primary/30 bg-card p-8 text-center shadow-2xl">
-        <div className="rounded-full bg-primary/10 p-3">
-          <RefreshCw className="h-6 w-6 text-primary" />
+    <div className="fixed bottom-4 left-4 z-[100] animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-card px-4 py-3 shadow-xl">
+        <div className="rounded-full bg-primary/10 p-1.5">
+          <RefreshCw className="h-4 w-4 text-primary" />
         </div>
-        <div>
-          <h2 className="text-lg font-bold">New Version Available</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A new version of AirwayLab has been deployed.
-            Please refresh to get the latest features and fixes.
-          </p>
+        <div className="flex flex-col">
+          <p className="text-sm font-medium">New version available</p>
+          <p className="text-[11px] text-muted-foreground">Your data is saved locally.</p>
         </div>
-        <Button
-          size="lg"
-          className="w-full gap-2 shadow-glow"
-          onClick={() => window.location.reload()}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh Now
+        <Button size="sm" className="ml-2 gap-1.5" onClick={() => window.location.reload()}>
+          <RefreshCw className="h-3 w-3" /> Refresh
         </Button>
-        <p className="text-[10px] text-muted-foreground/50">
-          Your analysis data is saved locally and will be restored after refresh.
-        </p>
+        <button
+          onClick={() => setUpdateAvailable(false)}
+          className="ml-1 rounded p-1 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+          aria-label="Dismiss update notification"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

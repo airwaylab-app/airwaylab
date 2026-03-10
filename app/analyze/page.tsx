@@ -51,7 +51,18 @@ import {
 
 export default function AnalyzePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={
+      <div className="container mx-auto max-w-7xl px-4 py-8">
+        <div className="flex flex-col gap-6 animate-pulse">
+          <div className="h-10 w-48 rounded-lg bg-muted/30" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-[88px] rounded-xl border border-border/30 bg-muted/10" />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
       <AnalyzePageInner />
     </Suspense>
   );
@@ -70,7 +81,7 @@ function AnalyzePageInner() {
   const oxFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
   const contributeOptInRef = useRef(
-    typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab-contribute-optin') === '1'; } catch { return false; } })()
+    typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_contribute_optin') === '1'; } catch { return false; } })()
   );
   const storageConsentRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_storage_consent') === '1'; } catch { return false; } })()
@@ -86,7 +97,7 @@ function AnalyzePageInner() {
   // Load lifetime night count from localStorage
   useEffect(() => {
     try {
-      const stored = parseInt(localStorage.getItem('airwaylab-nights-analyzed') || '0', 10);
+      const stored = parseInt(localStorage.getItem('airwaylab_nights_analyzed') || '0', 10);
       if (stored > 0) setLifetimeNights(stored);
     } catch { /* noop */ }
   }, []);
@@ -95,11 +106,11 @@ function AnalyzePageInner() {
   useEffect(() => {
     if (isDemo && !showDemoStar) {
       try {
-        if (sessionStorage.getItem('airwaylab-demo-star-shown') === '1') return;
+        if (sessionStorage.getItem('airwaylab_demo_star_shown') === '1') return;
       } catch { /* noop */ }
       demoTimerRef.current = setTimeout(() => {
         setShowDemoStar(true);
-        try { sessionStorage.setItem('airwaylab-demo-star-shown', '1'); } catch { /* noop */ }
+        try { sessionStorage.setItem('airwaylab_demo_star_shown', '1'); } catch { /* noop */ }
       }, 30000);
       return () => {
         if (demoTimerRef.current) clearTimeout(demoTimerRef.current);
@@ -153,7 +164,7 @@ function AnalyzePageInner() {
 
         // Contribute data: auto if opted in, show nudge if first time
         const contributedDates: string[] = JSON.parse(
-          localStorage.getItem('airwaylab-contributed-dates') || '[]'
+          localStorage.getItem('airwaylab_contributed_dates') || '[]'
         );
         const contributedSet = new Set(contributedDates);
         const hasNewData = newState.nights.some((n) => !contributedSet.has(n.dateStr));
@@ -177,12 +188,12 @@ function AnalyzePageInner() {
 
         // Update local lifetime night count (deduplicate by date)
         try {
-          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-analyzed-dates') || '[]');
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab_analyzed_dates') || '[]');
           const dateSet = new Set(storedDates);
           for (const n of newState.nights) dateSet.add(n.dateStr);
           const updated = Array.from(dateSet);
-          localStorage.setItem('airwaylab-analyzed-dates', JSON.stringify(updated));
-          localStorage.setItem('airwaylab-nights-analyzed', String(updated.length));
+          localStorage.setItem('airwaylab_analyzed_dates', JSON.stringify(updated));
+          localStorage.setItem('airwaylab_nights_analyzed', String(updated.length));
           setLifetimeNights(updated.length);
         } catch { /* noop */ }
       }
@@ -232,12 +243,12 @@ function AnalyzePageInner() {
     }).then((res) => {
       if (res.ok) {
         try {
-          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab-contributed-dates') || '[]');
+          const storedDates: string[] = JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
           const dateSet = new Set(storedDates);
           for (const n of nightsToSubmit) dateSet.add(n.dateStr);
           const updated = Array.from(dateSet);
-          localStorage.setItem('airwaylab-contributed-dates', JSON.stringify(updated));
-          localStorage.setItem('airwaylab-contributed-nights', String(updated.length));
+          localStorage.setItem('airwaylab_contributed_dates', JSON.stringify(updated));
+          localStorage.setItem('airwaylab_contributed_nights', String(updated.length));
         } catch { /* noop */ }
       }
     }).catch(() => { /* non-critical */ });
@@ -246,7 +257,7 @@ function AnalyzePageInner() {
   const handleNudgeContribute = useCallback(() => {
     // Store opt-in so future analyses auto-contribute without re-prompting
     contributeOptInRef.current = true;
-    try { localStorage.setItem('airwaylab-contribute-optin', '1'); } catch { /* noop */ }
+    try { localStorage.setItem('airwaylab_contribute_optin', '1'); } catch { /* noop */ }
     submitContribution(pendingNightsRef.current);
     setShowContributeNudge(false);
     pendingNightsRef.current = [];
@@ -270,9 +281,9 @@ function AnalyzePageInner() {
     // Show demo star prompt when exiting demo (if not already shown)
     if (isDemo) {
       try {
-        if (sessionStorage.getItem('airwaylab-demo-star-shown') !== '1') {
+        if (sessionStorage.getItem('airwaylab_demo_star_shown') !== '1') {
           setShowDemoStar(true);
-          sessionStorage.setItem('airwaylab-demo-star-shown', '1');
+          sessionStorage.setItem('airwaylab_demo_star_shown', '1');
         }
       } catch { /* noop */ }
     }
@@ -435,9 +446,15 @@ function AnalyzePageInner() {
       {status === 'error' && !isDemo && (
         <div className="mx-auto max-w-lg flex flex-col gap-4">
           <div className="flex flex-col gap-3 rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2.5">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+              <p className="pl-[26px] text-xs text-muted-foreground">
+                Make sure you selected the DATALOG folder from your ResMed SD card. Need help?{' '}
+                <a href="/about#getting-started" className="text-primary hover:underline">See the guide</a>.
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleReset} className="self-start sm:self-auto">
               <RotateCcw className="mr-2 h-3 w-3" /> Try Again

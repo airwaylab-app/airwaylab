@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess } from '@/lib/auth/feature-gate';
 import type { NightResult } from '@/lib/types';
 
-const DISMISS_KEY = 'airwaylab-share-dismissed';
+const DISMISS_KEY = 'airwaylab_share_dismissed';
 
 interface Props {
   nights: NightResult[];

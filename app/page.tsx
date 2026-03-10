@@ -32,12 +32,12 @@ import {
 
 /* ─── Mocked dashboard metrics for hero visualization ─── */
 const heroMetrics = [
-  { label: 'Glasgow', value: '1.4', status: 'good' as const },
-  { label: 'FL Score', value: '28%', status: 'good' as const },
-  { label: 'NED Mean', value: '22%', status: 'warn' as const },
-  { label: 'RERA', value: '6.2/hr', status: 'warn' as const },
-  { label: 'ODI-3', value: '4.1/hr', status: 'good' as const },
-  { label: 'SpO₂ Mean', value: '95.8%', status: 'good' as const },
+  { label: 'Glasgow', value: '1.4', status: 'good' as const, desc: 'Flow shape score (0–8)' },
+  { label: 'FL Score', value: '28%', status: 'good' as const, desc: 'Flow limitation severity' },
+  { label: 'NED Mean', value: '22%', status: 'warn' as const, desc: 'Negative effort dependence' },
+  { label: 'RERA', value: '6.2/hr', status: 'warn' as const, desc: 'Respiratory effort arousals' },
+  { label: 'ODI-3', value: '4.1/hr', status: 'good' as const, desc: 'Oxygen desaturation index' },
+  { label: 'SpO₂ Mean', value: '95.8%', status: 'good' as const, desc: 'Mean blood oxygen' },
 ];
 
 const statusColors = {
@@ -221,6 +221,7 @@ export default function Home() {
                       <span className="font-mono text-lg font-semibold tabular-nums">
                         {m.value}
                       </span>
+                      <span className="mt-0.5 text-[9px] text-muted-foreground/50">{m.desc}</span>
                     </div>
                   ))}
                 </div>

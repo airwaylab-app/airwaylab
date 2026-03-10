@@ -23,17 +23,17 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       <body className="bg-background text-foreground">
         <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
           <h1 className="text-xl font-bold">Something went wrong</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             An unexpected error occurred. Please try refreshing the page.
           </p>
           {error.digest && (
-            <p className="mt-1 font-mono text-xs text-gray-400">
+            <p className="mt-1 font-mono text-xs text-muted-foreground/60">
               Error ID: {error.digest}
             </p>
           )}
           <button
             onClick={reset}
-            className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
           >
             Try Again
           </button>
