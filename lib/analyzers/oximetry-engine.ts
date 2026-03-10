@@ -1,6 +1,6 @@
 // ============================================================
 // AirwayLab — Oximetry Engine
-// 16-metric framework: ODI, desaturation time, HR surges,
+// 17-metric framework: ODI, desaturation time, HR surges,
 // coupled events, H1/H2 splits, double-tracking correction
 // ============================================================
 

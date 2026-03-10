@@ -18,7 +18,7 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 | **Glasgow Index** | 9-component breath shape scoring (skew, flat top, spike, etc.) on a 0–8 scale |
 | **WAT (Wobble Analysis Tool)** | FL Score, Regularity (Sample Entropy), Periodicity (FFT spectral analysis) |
 | **NED Analysis** | Peak-to-mid inspiratory flow ratio with automated RERA detection |
-| **Oximetry Pipeline** | 16-metric SpO2 and heart rate framework from Viatom/Checkme O2 Max CSV |
+| **Oximetry Pipeline** | 17-metric SpO2 and heart rate framework from Viatom/Checkme O2 Max CSV |
 
 ## Features
 
@@ -28,7 +28,7 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 - Rule-based clinical insights with traffic light thresholds
 - Export to CSV, JSON, PDF, and forum-ready text
 - Built-in demo mode with realistic synthetic data
-- localStorage persistence (7-day history)
+- localStorage persistence (30-day history)
 - Therapy change date marker for before/after comparison
 
 ## Why AirwayLab exists
@@ -39,9 +39,9 @@ AirwayLab makes that data visible. It's free because we believe therapy insight 
 
 ## Privacy first
 
-- **All processing happens in your browser** — your sleep data never leaves your device
+- **All core analysis happens in your browser** — your sleep data never leaves your device by default
 - No cookies, no fingerprinting, no tracking pixels
-- No data is uploaded to any server
+- Optional server features (AI insights, cloud storage, data contribution) require explicit opt-in consent
 - Fully auditable open-source code (GPL-3.0)
 
 ## Supported devices
