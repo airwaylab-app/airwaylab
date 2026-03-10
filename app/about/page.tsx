@@ -91,7 +91,7 @@ const engines = [
   {
     icon: HeartPulse,
     name: 'Oximetry Pipeline',
-    subtitle: '16-Metric SpO\u2082 & Heart Rate Framework',
+    subtitle: '17-Metric SpO\u2082 & Heart Rate Framework',
     color: 'text-rose-400',
     borderColor: 'border-rose-500/20',
     bgColor: 'bg-rose-500/5',
@@ -100,7 +100,7 @@ const engines = [
     methodology: [
       'ODI-3% and ODI-4%: Oxygen Desaturation Index at 3% and 4% thresholds, computed as events per hour of recording.',
       'Time below threshold: Percentage of recording time with SpO\u2082 < 90% and < 94%.',
-      'HR surge detection: Clinical surges (>8 and >10 bpm above 30-second baseline) and rolling mean surges (>6 and >8 bpm above 5-minute rolling mean).',
+      'HR surge detection: Clinical surges (>8, >10, >12, and >15 bpm above 30-second baseline) and rolling mean surges (>10 and >15 bpm above 5-minute rolling mean).',
       'Coupled events: Simultaneous SpO\u2082 desaturation + HR surge within a time window, suggesting respiratory arousal.',
       'First-half vs second-half night comparison to detect positional or REM-related patterns.',
     ],
@@ -379,11 +379,14 @@ export default function AboutPage() {
           </FAQItem>
 
           <FAQItem question="Is my data safe?">
-            Yes. AirwayLab processes everything in your browser using Web
-            Workers. No data is uploaded to any server and no cookies are used.
-            We use Plausible for privacy-first, cookie-free page-view analytics
-            that collect zero personal data. Your sleep data never leaves your
-            device. The source code is open for inspection.
+            Yes. All core analysis runs entirely in your browser using Web
+            Workers &mdash; your sleep data never leaves your device by default.
+            No cookies are used. We use Plausible for privacy-first, cookie-free
+            page-view analytics that collect zero personal data. Optional
+            features like AI-powered insights or cloud storage require your
+            explicit consent before any data is sent to a server, and raw
+            waveform data is never transmitted. The source code is open for
+            inspection.
           </FAQItem>
 
           <FAQItem question="What pulse oximeters are supported?">
@@ -481,14 +484,14 @@ export default function AboutPage() {
           <div className="mb-3 flex items-center gap-2.5">
             <Shield className="h-5 w-5 text-emerald-500" />
             <h3 className="text-sm font-semibold text-foreground">
-              Zero data collection
+              Privacy by default
             </h3>
           </div>
           <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
-              All analysis runs in your browser via Web Workers &mdash; nothing
-              is uploaded to any server.
+              All core analysis runs in your browser via Web Workers &mdash;
+              your sleep data never leaves your device by default.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
@@ -498,8 +501,9 @@ export default function AboutPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
-              No server-side processing. The page loads once and all
-              computation happens locally in your browser.
+              Optional server features (AI insights, cloud storage, data
+              contribution) require your explicit consent. Raw waveform data
+              is never transmitted &mdash; only aggregate metrics.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />

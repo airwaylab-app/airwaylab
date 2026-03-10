@@ -90,7 +90,7 @@ const engines = [
   {
     icon: HeartPulse,
     title: 'Oximetry',
-    desc: '16-metric SpO₂ and HR surge framework',
+    desc: '17-metric SpO₂ and HR surge framework',
     metrics: ['ODI-3/4', 'T<90%', 'HR Surges', 'Coupled Events'],
     example: '4.1',
     unit: 'ODI-3/hr',
@@ -135,7 +135,7 @@ const trustItems = [
   {
     icon: Scale,
     title: 'Research-Grade',
-    desc: 'Algorithms ported from peer-reviewed sleep science. Glasgow Index, WAT, NED, and 16-metric oximetry framework.',
+    desc: 'Algorithms ported from peer-reviewed sleep science. Glasgow Index, WAT, NED, and 17-metric oximetry framework.',
   },
 ];
 

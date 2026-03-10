@@ -17,17 +17,18 @@ interface Props {
   glasgow: GlasgowComponents;
 }
 
-// "Normal" reference range — scores below these are considered good
+// Visual reference range on the 0–1 scale (proportion of breaths).
+// These are visual guides only — they do not affect the Glasgow overall score.
 const REFERENCE_VALUES: Record<string, number> = {
-  Skew: 15,
-  Spike: 10,
-  'Flat Top': 10,
-  'Top Heavy': 15,
-  'Multi-Peak': 10,
-  'No Pause': 15,
-  'Insp. Rate': 10,
-  'Multi-Breath': 10,
-  'Var. Amp': 15,
+  Skew: 0.30,
+  Spike: 0.20,
+  'Flat Top': 0.25,
+  'Top Heavy': 0.30,
+  'Multi-Peak': 0.15,
+  'No Pause': 0.30,
+  'Insp. Rate': 0.20,
+  'Multi-Breath': 0.15,
+  'Var. Amp': 0.25,
 };
 
 export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
@@ -70,7 +71,7 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
         <div
           className="relative h-[300px] w-full sm:h-[380px]"
           role="img"
-          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 8. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(0)}`).join(', ')}.`}
+          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 8. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`}
         >
           <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
             airwaylab.app
@@ -84,8 +85,8 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
               />
               <PolarRadiusAxis
                 angle={90}
-                domain={[0, 100]}
-                tick={{ fill: 'hsl(215 20% 55%)', fontSize: 10 }}
+                domain={[0, 1]}
+                tick={false}
                 axisLine={false}
               />
               {/* Reference "normal" range — subtle green fill behind data */}
@@ -116,8 +117,8 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
                   color: 'hsl(210 40% 93%)',
                 }}
                 formatter={(value, name) => {
-                  if (name === 'Normal Range') return [Number(value).toFixed(0), 'Normal Limit'];
-                  return [Number(value).toFixed(1), 'Score'];
+                  if (name === 'Normal Range') return [Number(value).toFixed(2), 'Normal Limit'];
+                  return [Number(value).toFixed(2), 'Score'];
                 }}
               />
             </RadarChart>

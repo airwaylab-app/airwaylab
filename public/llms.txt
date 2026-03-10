@@ -27,7 +27,7 @@ Evaluates ventilation regularity and periodic breathing patterns. Metrics includ
 Detects negative effort dependence — where increased respiratory effort paradoxically reduces airflow. Identifies RERA-like events (Respiratory Effort-Related Arousals) using breath-by-breath NED scoring, flatness index, and M-shape pattern detection. Reports estimated RERA index (events/hour).
 
 ### Oximetry Analysis
-Optional 16-metric SpO₂ and heart rate analysis framework. Requires a separate pulse oximetry CSV (Viatom/Checkme O2 Max). Metrics include ODI-3, ODI-4, time below 90% SpO₂, HR surge detection, and coupled desaturation-arousal events.
+Optional 17-metric SpO₂ and heart rate analysis framework. Requires a separate pulse oximetry CSV (Viatom/Checkme O2 Max). Metrics include ODI-3, ODI-4, time below 90% SpO₂, HR surge detection, and coupled desaturation-arousal events.
 
 ## Pages
 
