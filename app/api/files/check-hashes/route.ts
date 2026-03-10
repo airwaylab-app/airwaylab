@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Query all user's file hashes in one go
-    const hashValues = hashes.map(h => h.fileHash);
+    const hashValues = hashes.map((h: { filePath: string; fileHash: string }) => h.fileHash);
     const { data: existingFiles, error } = await serviceRole
       .from('user_files')
       .select('file_hash, file_path')
@@ -66,13 +66,13 @@ export async function POST(request: NextRequest) {
 
     // Build a set of existing hash+path combos
     const existingSet = new Set(
-      (existingFiles ?? []).map(f => `${f.file_hash}|${f.file_path}`)
+      (existingFiles ?? []).map((f: { file_hash: string; file_path: string }) => `${f.file_hash}|${f.file_path}`)
     );
 
     // Return which input hashes already exist
     const existing = hashes
-      .filter(h => existingSet.has(`${h.fileHash}|${h.filePath}`))
-      .map(h => h.fileHash);
+      .filter((h: { filePath: string; fileHash: string }) => existingSet.has(`${h.fileHash}|${h.filePath}`))
+      .map((h: { filePath: string; fileHash: string }) => h.fileHash);
 
     return NextResponse.json({ existing });
   } catch (err) {
