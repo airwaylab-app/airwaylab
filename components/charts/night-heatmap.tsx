@@ -149,7 +149,7 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
   );
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     column: 'date',
-    direction: 'asc',
+    direction: 'desc',
   });
   const [showSparklines, setShowSparklines] = useState(false);
 
@@ -173,7 +173,8 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
       if (prev.column === column && prev.metricKey === metricKey) {
         return { ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
       }
-      return { column, metricKey, direction: 'asc' };
+      const defaultDir = column === 'date' ? 'desc' : 'asc';
+      return { column, metricKey, direction: defaultDir };
     });
   }, []);
 
@@ -267,8 +268,15 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
             >
               <thead>
                 <tr className="border-b border-border/50 text-muted-foreground">
-                  <th className="pb-2 pr-3 text-left font-medium">
-                    Metric
+                  <th
+                    className="cursor-pointer pb-2 pr-3 text-left font-medium hover:text-foreground"
+                    onClick={() => handleSort('date')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('date'); } }}
+                    role="button"
+                    tabIndex={0}
+                    title="Sort by date"
+                  >
+                    Date {sortArrow('date')}
                   </th>
                   {sortedNights.map((n) => (
                     <th
@@ -291,16 +299,6 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                       )}
                     </th>
                   ))}
-                  <th
-                    className="cursor-pointer pb-2 px-1 text-center font-medium hover:text-foreground"
-                    onClick={() => handleSort('date')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('date'); } }}
-                    role="button"
-                    tabIndex={0}
-                    title="Sort by date"
-                  >
-                    {sortArrow('date')}
-                  </th>
                   {showSparklines && (
                     <th className="pb-2 px-2 text-center font-medium">Trend</th>
                   )}
@@ -339,7 +337,6 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                         </td>
                       );
                     })}
-                    <td className="px-1 py-1" />
                     {showSparklines && (
                       <td className="px-2 py-1 text-center">
                         <MiniSparkline values={sortedNights.map((n) => m.get(n))} />
