@@ -49,3 +49,4 @@ CLAUDE.local.md
 CLAUDE.md
 .claude/commands/
 specs/
+cache/
