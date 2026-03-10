@@ -19,6 +19,11 @@ Sentry.init({
   // in development and sample at a lower rate in production
   replaysSessionSampleRate: 0,
 
+  // Only capture events from the production domain and Vercel previews.
+  // Filters out errors from locally saved pages opened via file:// protocol,
+  // which produce spurious promise rejections from failed chunk loads.
+  allowUrls: [/https?:\/\/(.*\.)?airwaylab\.app/, /https?:\/\/.*\.vercel\.app/],
+
   // You can remove this option if you're not planning to use the Sentry Session Replay feature
   integrations: [
     Sentry.replayIntegration({
@@ -27,4 +32,14 @@ Sentry.init({
       blockAllMedia: true,
     }),
   ],
+
+  beforeSend(event) {
+    // Belt-and-suspenders: also drop file:// events in case allowUrls
+    // doesn't cover all code paths (e.g. missing request URL).
+    const url = event.request?.url ?? '';
+    if (url.startsWith('file:')) {
+      return null;
+    }
+    return event;
+  },
 });
