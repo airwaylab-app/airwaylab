@@ -220,11 +220,17 @@ function AnalyzePageInner() {
   const handleOximetryChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
-      if (files.length > 0 && sdFilesRef.current.length > 0) {
-        oxFilesRef.current = files;
-        hadOximetryRef.current = false;
-        orchestrator.analyze(sdFilesRef.current, files);
+      if (files.length === 0) {
+        if (oxInputRef.current) oxInputRef.current.value = '';
+        return;
       }
+
+      oxFilesRef.current = files;
+      hadOximetryRef.current = false;
+
+      // Use oximetry-only path: merges into cached nights without re-processing SD card
+      orchestrator.analyzeOximetryOnly(files);
+
       // Reset input so same file can be re-selected
       if (oxInputRef.current) oxInputRef.current.value = '';
     },
@@ -607,13 +613,8 @@ function AnalyzePageInner() {
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
                   onUploadOximetry={
-                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length > 0
+                    !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
-                      : undefined
-                  }
-                  onReUpload={
-                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length === 0
-                      ? handleReset
                       : undefined
                   }
                 />
@@ -659,13 +660,8 @@ function AnalyzePageInner() {
                   previousNight={previousNight}
                   nights={nights}
                   onUploadOximetry={
-                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length > 0
+                    !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
-                      : undefined
-                  }
-                  onReUpload={
-                    !isDemo && !currentNight.oximetry && sdFilesRef.current.length === 0
-                      ? handleReset
                       : undefined
                   }
                 />

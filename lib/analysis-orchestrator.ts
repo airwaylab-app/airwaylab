@@ -8,6 +8,7 @@
 import type {
   AnalysisState,
   NightResult,
+  OximetryResults,
   WorkerResponse,
 } from './types';
 import { loadPersistedResults, persistResults } from './persistence';
@@ -73,14 +74,13 @@ export class AnalysisOrchestrator {
       let cachedNights: NightResult[] = [];
       let skippedCount = 0;
 
-      // Skip cache fast-path when oximetry files are provided — they must always be processed
       const hasNewOximetry = oximetryFiles && oximetryFiles.length > 0;
 
-      if (manifest && cached && cached.nights.length > 0 && !hasNewOximetry) {
+      if (manifest && cached && cached.nights.length > 0) {
         const diff = diffAgainstManifest(sdArr, manifest);
         skippedCount = diff.unchanged.length;
 
-        if (diff.changedFiles.length === 0 && skippedCount > 0) {
+        if (diff.changedFiles.length === 0 && skippedCount > 0 && !hasNewOximetry) {
           // ALL nights unchanged — instant restore
           const therapyChangeDate = detectTherapyChange(cached.nights);
           this.setState({
@@ -257,6 +257,132 @@ export class AnalysisOrchestrator {
         { type: 'ANALYZE', files, oximetryCSVs },
         transferable
       );
+    });
+  }
+
+  /**
+   * Process oximetry CSVs only and merge into cached nights.
+   * Does not re-read or re-process SD card files.
+   */
+  async analyzeOximetryOnly(
+    oximetryFiles: FileList | File[]
+  ): Promise<NightResult[]> {
+    this.terminate();
+
+    const cached = loadPersistedResults();
+    if (!cached || cached.nights.length === 0) {
+      const error = 'Upload your SD card first, then add oximetry data.';
+      this.setState({ status: 'error', error });
+      throw new Error(error);
+    }
+
+    this.setState({
+      ...initialState,
+      status: 'processing',
+      progress: { current: 0, total: 1, stage: 'Processing oximetry data...' },
+    });
+
+    try {
+      const oxArr = Array.from(oximetryFiles);
+      const oximetryCSVs = await readCSVFiles(oxArr);
+
+      this.setState({
+        progress: { current: 0, total: 1, stage: 'Matching oximetry to night recordings...' },
+      });
+
+      const oximetryByDate = await this.runOximetryWorker(oximetryCSVs);
+
+      // Merge oximetry into cached nights
+      const merged = cached.nights.map((night) => {
+        const ox = oximetryByDate[night.dateStr];
+        if (ox) {
+          return { ...night, oximetry: ox };
+        }
+        return night;
+      });
+
+      // Check if any oximetry matched
+      let warning: string | null = null;
+      const matchedCount = Object.keys(oximetryByDate).filter(
+        (d) => cached.nights.some((n) => n.dateStr === d)
+      ).length;
+      if (matchedCount === 0) {
+        warning = 'Oximetry CSV was uploaded but could not be matched to any night. Check that the recording date in your CSV matches one of your SD card nights.';
+        console.error('[orchestrator] Oximetry warning:', warning);
+      }
+
+      const therapyChangeDate = detectTherapyChange(merged);
+      persistResults(merged, therapyChangeDate);
+
+      this.setState({
+        status: 'complete',
+        nights: merged,
+        therapyChangeDate,
+        warning,
+        progress: { current: 1, total: 1, stage: 'Complete' },
+      });
+
+      return merged;
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      this.setState({ status: 'error', error });
+      throw err;
+    }
+  }
+
+  private runOximetryWorker(
+    oximetryCSVs: string[]
+  ): Promise<Record<string, OximetryResults>> {
+    return new Promise((resolve, reject) => {
+      const WORKER_TIMEOUT_MS = 60 * 1000;
+      let settled = false;
+
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          this.terminate();
+          reject(new Error('Oximetry processing timed out. Try again or check your CSV file.'));
+        }
+      }, WORKER_TIMEOUT_MS);
+
+      const settle = () => {
+        settled = true;
+        clearTimeout(timeout);
+      };
+
+      this.worker = new Worker(
+        new URL('../workers/analysis-worker.ts', import.meta.url)
+      );
+
+      this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+        const msg = e.data;
+        switch (msg.type) {
+          case 'OXIMETRY_RESULTS':
+            settle();
+            this.terminate();
+            resolve(msg.oximetryByDate);
+            break;
+          case 'ERROR':
+            settle();
+            this.terminate();
+            reject(new Error(msg.error));
+            break;
+        }
+      };
+
+      this.worker.onerror = (err) => {
+        settle();
+        this.terminate();
+        const detail = [
+          err.message,
+          err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
+        ].filter(Boolean).join(' ');
+        reject(new Error(
+          detail || 'Oximetry worker failed to load. Try refreshing the page.'
+        ));
+      };
+
+      this.worker.postMessage({ type: 'ANALYZE_OXIMETRY', oximetryCSVs });
     });
   }
 
