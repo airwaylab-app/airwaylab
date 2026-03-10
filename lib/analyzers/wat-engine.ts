@@ -127,7 +127,7 @@ function calculateMinuteVent(flowData: Float32Array, samplingRate: number): numb
       }
     }
 
-    const mv = (tidalVolume * breathCount) / 60;
+    const mv = tidalVolume / 60;
     minuteVent.push(mv);
   }
 
