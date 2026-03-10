@@ -187,7 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Glasgow Index engine** — 9-component breath-by-breath flow limitation scoring
 - **WAT engine** — FL Score (median Vt ratio), Regularity Score (Sample Entropy), Periodicity Index (FFT)
 - **NED engine** — breath segmentation, NED calculation, flatness index, M-shape detection, RERA sequence detection
-- **Oximetry engine** — 16-metric framework: ODI3/4, T<90/T<94, HR clinical surges, coupled events, H1/H2 splits
+- **Oximetry engine** — 17-metric framework: ODI3/4, T<90/T<94, HR clinical surges, coupled events, H1/H2 splits
 - **EDF parser** — binary EDF reader for ResMed SD card files (flow, pressure, SpO2)
 - **Settings extractor** — STR.edf parser for daily machine settings with AirCurve/AirSense detection
 - **Night grouper** — date-based file grouping with session merging

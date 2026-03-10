@@ -23,7 +23,7 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 ## Features
 
 - Interactive dashboard with per-night drill-down
-- Multi-night trend analysis with linear regression
+- Multi-night trend analysis with per-metric drill-down
 - Night heatmap for visual pattern recognition
 - Rule-based clinical insights with traffic light thresholds
 - Export to CSV, JSON, PDF, and forum-ready text

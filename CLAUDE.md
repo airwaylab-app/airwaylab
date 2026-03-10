@@ -46,11 +46,14 @@ airwaylab/
 │   └── api/                → API routes (all require auth middleware)
 │       ├── ai-insights/    → Claude Haiku analysis endpoint
 │       ├── contribute-data/→ Anonymised data contribution
-│       ├── checkout/       → Stripe checkout session
-│       ├── stripe-webhook/ → Stripe webhook handler
+│       ├── create-checkout-session/ → Stripe checkout session
+│       ├── customer-portal/→ Stripe customer portal
+│       ├── webhooks/stripe/ → Stripe webhook handler
+│       ├── feedback/       → User feedback submission
 │       ├── files/          → File management endpoints
 │       ├── github-stars/   → GitHub star count proxy (cached)
 │       ├── health/         → Health check
+│       ├── submit-error-data/ → Parse failure data submission
 │       └── stats/          → Aggregate statistics
 ├── components/
 │   ├── auth/               → Auth modal, user menu, upgrade prompt, storage
