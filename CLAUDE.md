@@ -165,7 +165,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`
 - Branch per feature (`feat/`, `fix/`, `chore/`), never commit directly to main
 - `airwaylab_` prefix for all localStorage keys
-- IBM Plex Sans (body) + JetBrains Mono (code/data)
+- Plus Jakarta Sans (body) + JetBrains Mono (code/data)
 - Error messages: never expose raw errors to users; map to user-friendly text
 - Medical compliance: all AI-generated insights must include "discuss with your clinician" language
 
