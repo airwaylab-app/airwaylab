@@ -73,10 +73,10 @@ test.describe('Upload and Analyze', () => {
     // Navigate to Graphs tab
     await clickTab(page, /graphs/i);
 
-    // Wait for either chart content or a loading/error state
-    const chartOrMessage = page.locator(
-      '.recharts-wrapper, text=/No flow data|Extracting flow|Loading waveform|No waveform|upload/i'
-    );
+    // Wait for either chart content or a loading/error/empty state
+    const chartContainer = page.locator('.recharts-wrapper');
+    const statusMessage = page.getByText(/No flow data|Extracting flow|Loading waveform|No waveform|upload your SD/i);
+    const chartOrMessage = chartContainer.or(statusMessage);
     await expect(chartOrMessage.first()).toBeVisible({ timeout: 30_000 });
 
     expect(pageCrashed).toBe(false);
