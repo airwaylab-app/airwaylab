@@ -392,7 +392,7 @@ function AnalyzePageInner() {
       )}
 
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-4 sm:mb-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
@@ -540,7 +540,7 @@ function AnalyzePageInner() {
       {/* Results Dashboard */}
       {isComplete && nights.length > 0 && currentNight && (
         <ThresholdsProvider>
-        <div className="flex flex-col gap-6 animate-fade-in-up">
+        <div className="flex flex-col gap-4 animate-fade-in-up">
           {/* Demo Banner */}
           {isDemo && (
             <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -698,7 +698,7 @@ function AnalyzePageInner() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="mt-6">
+            <TabsContent value="overview" className="mt-4">
               <ErrorBoundary context="Overview">
                 <OverviewTab
                   nights={nights}

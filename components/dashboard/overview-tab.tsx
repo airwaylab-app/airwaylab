@@ -138,7 +138,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Night Summary Hero — single glanceable takeaway */}
       <NightSummaryHero night={n} />
 
@@ -154,16 +154,17 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </div>
       )}
 
-      {/* Device Settings & Session Info */}
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Settings2 className="h-4 w-4" />
-            Device Settings
-            <span className="ml-auto text-xs font-normal tabular-nums">{fmtHrs(n.durationHours)} · {n.sessionCount} session{n.sessionCount !== 1 ? 's' : ''}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Device Settings & Session Info (collapsed by default) */}
+      <details className="group rounded-xl border border-border/50 bg-card/30">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+          <Settings2 className="h-4 w-4" />
+          Device Settings
+          <span className="ml-auto text-xs font-normal tabular-nums">
+            {fmtHrs(n.durationHours)} · {n.sessionCount} session{n.sessionCount !== 1 ? 's' : ''}
+          </span>
+        </summary>
+        <div className="border-t border-border/30 px-4 pb-4 pt-3">
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
             {n.settings.deviceModel && (
               <div className="col-span-2 sm:col-span-4">
@@ -204,8 +205,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
               <p className="text-xs font-medium">{n.settings.easyBreathe ? 'On' : 'Off'}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </details>
 
       {/* Key Metrics Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">

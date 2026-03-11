@@ -5,6 +5,13 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Dashboard Density (2026-03-11)
+
+### Changed
+
+- **Tighter dashboard spacing**: Reduced vertical gaps between sections (`gap-6` → `gap-4`, header margin reduced) so key metrics appear above the fold on typical laptop viewports (`dashboard-density-above-fold`)
+- **Device Settings collapsed by default**: Converted from always-visible card to a collapsible `<details>` element, saving ~120px of vertical space on load. All fields still accessible with one click (`dashboard-density-above-fold`)
+
 ## [Unreleased] — Chart UX Discoverability (2026-03-11)
 
 ### Changed
