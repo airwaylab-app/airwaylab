@@ -17,6 +17,7 @@ import type { OximetryTraceData } from '@/lib/types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE } from '@/lib/chart-theme';
+import { downsampleForChart } from '@/lib/chart-downsample';
 
 interface Props {
   trace: OximetryTraceData;
@@ -82,11 +83,11 @@ export const SpO2Trace = memo(function SpO2Trace({
   }, [points, viewport.clampedStart, viewport.clampedEnd, viewport.bucketSeconds]);
 
   const data = useMemo(() =>
-    points.slice(localStart, localEnd).map((p) => ({
+    downsampleForChart(points.slice(localStart, localEnd).map((p) => ({
       t: p.t,
       spo2: p.spo2,
       hr: p.hr > 0 ? p.hr : undefined,
-    })),
+    }))),
     [points, localStart, localEnd]
   );
 

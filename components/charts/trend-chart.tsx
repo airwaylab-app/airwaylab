@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NightResult } from '@/lib/types';
+import { sanitizeNumber } from '@/lib/chart-downsample';
 
 interface Props {
   nights: NightResult[];
@@ -42,10 +43,10 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
     .map((n) => ({
       date: n.dateStr.slice(5),
       fullDate: n.dateStr,
-      glasgow: +n.glasgow.overall.toFixed(1),
-      flScore: +n.wat.flScore.toFixed(1),
-      nedMean: +n.ned.nedMean.toFixed(1),
-      reraIndex: +n.ned.reraIndex.toFixed(1),
+      glasgow: +sanitizeNumber(n.glasgow.overall).toFixed(1),
+      flScore: +sanitizeNumber(n.wat.flScore).toFixed(1),
+      nedMean: +sanitizeNumber(n.ned.nedMean).toFixed(1),
+      reraIndex: +sanitizeNumber(n.ned.reraIndex).toFixed(1),
     })), [nights]);
 
   // O(1) lookup for tooltip label formatting instead of linear search

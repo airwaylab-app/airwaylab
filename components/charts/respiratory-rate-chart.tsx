@@ -14,6 +14,7 @@ import type { RespiratoryRatePoint } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
+import { downsampleForChart } from '@/lib/chart-downsample';
 
 interface Props {
   respiratoryRate: RespiratoryRatePoint[];
@@ -41,7 +42,7 @@ export const RespiratoryRateChart = memo(function RespiratoryRateChart({ respira
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
   const data = useMemo(() =>
-    respiratoryRate.slice(viewport.clampedStart, viewport.clampedEnd),
+    downsampleForChart(respiratoryRate.slice(viewport.clampedStart, viewport.clampedEnd)),
     [respiratoryRate, viewport.clampedStart, viewport.clampedEnd]
   );
 

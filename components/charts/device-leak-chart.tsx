@@ -14,6 +14,7 @@ import {
 import type { LeakPoint } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { downsampleForChart } from '@/lib/chart-downsample';
 
 /** ResMed published threshold for clinically significant total leak */
 const LEAK_THRESHOLD_LMIN = 24;
@@ -48,7 +49,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
   const bucketSeconds = leak.length > 1 ? leak[1].t - leak[0].t : 2;
 
   const data = useMemo(() => {
-    const sliced = leak.slice(viewport.clampedStart, viewport.clampedEnd);
+    const sliced = downsampleForChart(leak.slice(viewport.clampedStart, viewport.clampedEnd));
     return sliced.map((l) => ({
       t: l.t,
       avg: Math.min(l.avg, Y_AXIS_MAX),
