@@ -5,6 +5,15 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — E2E Testing with Real EDF Fixtures (2026-03-11)
+
+### Added
+
+- **Real EDF test fixtures**: 3 representative nights from a real BiPAP SD card (~9.3MB) committed as test fixtures for integration and E2E testing (`e2e-testing-real-edf-fixtures`)
+- **Integration tests (40 tests)**: Real EDF parsing, all analysis engines on real data, waveform orchestrator filtering/cache/errors, chart downsampling with real volumes, consent state persistence (`e2e-testing-real-edf-fixtures`)
+- **Playwright E2E tests**: Full browser upload→analyse→render pipeline, Graphs tab crash prevention, demo mode chart rendering (`e2e-testing-real-edf-fixtures`)
+- **CI E2E job**: Playwright runs in a separate CI job after build, with artifact upload on failure (`e2e-testing-real-edf-fixtures`)
+
 ## [Unreleased] — Generic Upload Copy (2026-03-11)
 
 ### Changed
