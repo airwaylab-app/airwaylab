@@ -10,7 +10,7 @@ import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageConsent } from '@/components/upload/storage-consent';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
-import { DataContribution } from '@/components/dashboard/data-contribution';
+import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
 import { EmailOptIn } from '@/components/common/email-opt-in';
@@ -91,6 +91,8 @@ function AnalyzePageInner() {
   const [oximetryJustAdded, setOximetryJustAdded] = useState(false);
   const hadOximetryRef = useRef(false);
   const [showContributeNudge, setShowContributeNudge] = useState(false);
+  const [autoSubmitStatus, setAutoSubmitStatus] = useState<AutoSubmitStatus>('idle');
+  const [autoSubmitCount, setAutoSubmitCount] = useState(0);
   const pendingNightsRef = useRef<NightResult[]>([]);
   const [showDemoStar, setShowDemoStar] = useState(false);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -190,17 +192,16 @@ function AnalyzePageInner() {
           localStorage.getItem('airwaylab_contributed_dates') || '[]'
         );
         const contributedSet = new Set(contributedDates);
-        const hasNewData = newState.nights.some((n) => !contributedSet.has(n.dateStr));
+        const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
 
-        if (contributeOptInRef.current && hasNewData) {
-          submitContribution(newState.nights);
+        if (contributeOptInRef.current && newNights.length > 0) {
+          setAutoSubmitCount(newNights.length);
+          submitContribution(newNights);
         } else if (!contributeOptInRef.current && contributedDates.length === 0) {
           // Only show nudge if user has never contributed before
           pendingNightsRef.current = newState.nights;
           setShowContributeNudge(true);
         }
-        // If user already opted in and no new data, or already contributed,
-        // the DataContribution banner handles re-contribution offers
 
         // Cloud storage: auto-upload raw files if consented
         if (storageConsentRef.current && sdFilesRef.current.length > 0) {
@@ -261,9 +262,15 @@ function AnalyzePageInner() {
   );
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
+    setAutoSubmitStatus('sending');
     contributeNights(nightsToSubmit)
-      .then(() => trackContributedDates(nightsToSubmit))
-      .catch(() => { /* non-critical */ });
+      .then(() => {
+        trackContributedDates(nightsToSubmit);
+        setAutoSubmitStatus('success');
+      })
+      .catch(() => {
+        setAutoSubmitStatus('error');
+      });
   }, []);
 
   const handleNudgeContribute = useCallback(() => {
@@ -554,7 +561,12 @@ function AnalyzePageInner() {
           <StorageProgressBanner />
 
           {/* Data Contribution — prominent placement at top of dashboard */}
-          <DataContribution nights={nights} isDemo={isDemo} />
+          <DataContribution
+            nights={nights}
+            isDemo={isDemo}
+            autoSubmitStatus={autoSubmitStatus}
+            autoSubmitCount={autoSubmitCount}
+          />
 
           {/* Controls Bar */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">

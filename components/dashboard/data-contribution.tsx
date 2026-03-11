@@ -1,26 +1,40 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Users, Loader2, X, Shield, Heart } from 'lucide-react';
+import { Users, Loader2, X, Shield, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab_contribute_dismissed';
 
+export type AutoSubmitStatus = 'idle' | 'sending' | 'success' | 'error';
+
 interface Props {
   nights: NightResult[];
   isDemo?: boolean;
+  /** Status of auto-contribution triggered by analyze/page.tsx for opted-in users */
+  autoSubmitStatus?: AutoSubmitStatus;
+  /** Number of new nights sent by auto-submit (for display) */
+  autoSubmitCount?: number;
 }
 
 /**
  * Opt-in anonymous data contribution banner.
  * Shown after analysis completes. Dismissible, remembers choice.
- * Tracks how many nights were previously contributed so users
- * can contribute again when they upload new data.
+ *
+ * For opted-in users (airwaylab_contribute_optin === '1'), the banner
+ * shows auto-contribution status instead of a manual submit button.
+ * The manual UI is only shown for users who haven't opted in.
  */
-export function DataContribution({ nights, isDemo = false }: Props) {
+export function DataContribution({
+  nights,
+  isDemo = false,
+  autoSubmitStatus = 'idle',
+  autoSubmitCount = 0,
+}: Props) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -28,6 +42,12 @@ export function DataContribution({ nights, isDemo = false }: Props) {
     } catch {
       return false;
     }
+  });
+
+  // Check persistent consent state
+  const [isOptedIn] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return getConsentState();
   });
 
   // Track which nights were previously contributed (date-based dedup)
@@ -80,7 +100,10 @@ export function DataContribution({ nights, isDemo = false }: Props) {
   const hasNewData = nights.some((n) => !contributedSet.has(n.dateStr));
 
   // Don't show if dismissed this session, or if no new data to contribute (for real uploads)
-  if (dismissed || (!isDemo && !hasNewData && contributedNightCount > 0)) return null;
+  if (dismissed || (!isDemo && !hasNewData && contributedNightCount > 0)) {
+    // Exception: opted-in users still see the auto-contribution status if in-flight or just succeeded
+    if (!isOptedIn || autoSubmitStatus === 'idle') return null;
+  }
 
   // Demo mode — show teaser encouraging real upload
   if (isDemo) {
@@ -106,7 +129,75 @@ export function DataContribution({ nights, isDemo = false }: Props) {
     );
   }
 
-  // Success state
+  // ── Opted-in path: show auto-contribution status ──────────
+  if (isOptedIn) {
+    // Auto-submit in flight
+    if (autoSubmitStatus === 'sending') {
+      return (
+        <div aria-live="polite" className="rounded-lg border border-primary/10 bg-primary/[0.02] px-4 py-3 animate-fade-in-up">
+          <div className="flex items-center gap-2.5">
+            <Loader2 className="h-4 w-4 animate-spin text-primary/60" />
+            <p className="text-sm text-muted-foreground">
+              Contributing new data...
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Auto-submit succeeded
+    if (autoSubmitStatus === 'success') {
+      return (
+        <div aria-live="polite" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <p className="text-sm text-muted-foreground">
+              {autoSubmitCount === 1
+                ? '1 new night contributed automatically'
+                : `${autoSubmitCount} new nights contributed automatically`}
+              {' '}&mdash; thank you
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Auto-submit failed — fall back to manual retry
+    if (autoSubmitStatus === 'error') {
+      return (
+        <div aria-live="polite" className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 animate-fade-in-up">
+          <div className="flex items-center gap-2.5">
+            <Heart className="h-4 w-4 text-red-400" />
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                Auto-contribution failed.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={handleContribute}
+                disabled={status === 'sending'}
+              >
+                {status === 'sending' ? (
+                  <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Retrying...</>
+                ) : (
+                  'Tap to retry'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Auto-submit idle + no new data → don't show anything
+    return null;
+  }
+
+  // ── Not opted-in path: manual contribution UI ─────────────
+
+  // Success state (from manual contribution)
   if (status === 'success') {
     return (
       <div aria-live="polite" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
