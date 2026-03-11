@@ -1,6 +1,6 @@
-# Test Fixtures — Real EDF Data
+# Test Fixtures — Real Device Data
 
-These EDF files are from a real BiPAP SD card, contributed by the project maintainer for testing purposes.
+These files are from real BiPAP and pulse oximetry devices, contributed by the project maintainer for testing purposes.
 
 ## What's included
 
@@ -11,6 +11,9 @@ These EDF files are from a real BiPAP SD card, contributed by the project mainta
 | `sd-card/DATALOG/20260207/` | Tiny BRP file (<50KB, tests size filter) | 1 BRP (1.3KB) + EVE |
 | `sd-card/STR.edf` | Machine settings (all dates) | — |
 | `sd-card/Identification.tgt` | Device model identification | — |
+| `oximetry/checkme-o2-max-20260310.csv` | Full-night Checkme O2 Max recording (~13.5K samples) | — |
+| `oximetry/checkme-o2-max-20260309.csv` | Recording matching SD card date 20260309 (~11K samples) | — |
+| `oximetry/checkme-o2-max-20260220-short.csv` | Short recording edge case (~2.5K samples) | — |
 
 ## Privacy
 
@@ -19,6 +22,8 @@ These EDF files are from a real BiPAP SD card, contributed by the project mainta
 - EVE files contain event markers — no patient identification
 - STR.edf contains machine settings (mode, pressures, trigger/cycle sensitivity)
 - Identification.tgt contains the device model string
+
+- Oximetry CSV files contain SpO2, heart rate, and motion values with timestamps — no patient identification
 
 No names, dates of birth, or personally identifiable information are present in any of these files.
 
@@ -32,3 +37,4 @@ No names, dates of birth, or personally identifiable information are present in 
 | `*_EVE.edf` | Event markers |
 | `STR.edf` | Machine settings timeline |
 | `Identification.tgt` | Device model identification |
+| `*.csv` (oximetry) | SpO2, HR, motion at 2s intervals (Checkme O2 Max) |
