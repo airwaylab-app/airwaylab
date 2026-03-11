@@ -73,6 +73,14 @@ export function validateSDFiles(files: File[]): ValidationResult {
     );
   }
 
+  // Check for SA2 oximetry data (integrated/paired pulse oximeter)
+  const hasSA2 = edfFiles.some((f) => /sa2\.edf$/i.test(f.name));
+  if (hasSA2) {
+    warnings.push(
+      'Pulse oximetry data detected on your SD card (SpO2 + heart rate will be included in your analysis).'
+    );
+  }
+
   // Check for Identification file (device info — lives in parent folder)
   const hasIdentification = files.some(
     (f) => f.name.toUpperCase().startsWith('IDENTIFICATION')
