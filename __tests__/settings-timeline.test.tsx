@@ -38,6 +38,7 @@ function makeNight(dateStr: string, settings?: Partial<MachineSettings>): NightR
       h1NedMean: 18, h2NedMean: 22, combinedFLPct: 25, estimatedArousalIndex: 8,
     },
     oximetry: null,
+    oximetryTrace: null,
   };
 }
 
