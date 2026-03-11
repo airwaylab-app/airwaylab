@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Share prompts modal**: Share prompts now display as a centered modal overlay instead of inline cards at the bottom of the overview tab (`share-prompts-centered-modal`)
 - **Landing page reorder**: "How It Works" section now appears directly after the Trust Bar, before narrative sections (Mission, Vision), reducing scroll-to-conversion distance (`onboarding-audit-v2`)
 - **Overview tab hierarchy**: NextSteps CTA moved below the primary metrics grid and Glasgow breakdown — users see data before advice (`onboarding-audit-v2`)
 - **Dashboard density for new users**: SharePrompts and NightHeatmap hidden for first 5 sessions to reduce information overload (`onboarding-audit-v2`)
