@@ -165,10 +165,25 @@ export function ThresholdSettingsModal() {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
-          <p className="text-[11px] text-muted-foreground/60 mb-3">
-            Customise the green/amber thresholds for traffic light indicators.
-            Values beyond amber are shown as red.
-          </p>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <p className="text-[11px] text-muted-foreground/60">
+              Customise the green/amber thresholds for traffic light indicators.
+              Values beyond amber are shown as red.
+            </p>
+            <button
+              onClick={hasAnyCustom ? resetAll : undefined}
+              disabled={!hasAnyCustom}
+              className={`shrink-0 text-[11px] whitespace-nowrap transition-colors ${
+                hasAnyCustom
+                  ? 'text-muted-foreground hover:text-foreground cursor-pointer'
+                  : 'text-muted-foreground/30 cursor-default'
+              }`}
+              title={hasAnyCustom ? 'Reset all thresholds to their default values' : undefined}
+              aria-label="Reset to defaults"
+            >
+              Reset to defaults
+            </button>
+          </div>
 
           {GROUPS.map((group) => (
             <div key={group.title} className="mb-4">
@@ -191,15 +206,7 @@ export function ThresholdSettingsModal() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border px-4 py-3">
-          {hasAnyCustom ? (
-            <Button variant="ghost" size="sm" onClick={resetAll} className="gap-1.5 text-xs">
-              <RotateCcw className="h-3 w-3" />
-              Reset All to Defaults
-            </Button>
-          ) : (
-            <span className="text-[11px] text-muted-foreground/50">All defaults</span>
-          )}
+        <div className="flex justify-end border-t border-border px-4 py-3">
           <Button size="sm" onClick={close}>
             Done
           </Button>

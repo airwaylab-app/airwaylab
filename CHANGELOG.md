@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Mobile upload warning**: `/analyze` page now shows a mobile-only banner suggesting the demo when SD card upload isn't practical (`onboarding-audit-v2`)
+- **Threshold reset discoverability**: "Reset to defaults" button is now always visible in the Threshold Settings modal description area (disabled when no customisations exist), replacing the conditional footer button (`threshold-reset-to-defaults`)
 - **Community links in NextSteps**: "Share your results" step now includes clickable links to r/SleepApnea and ApneaBoard (`onboarding-audit-v2`)
 
 ### Fixed
