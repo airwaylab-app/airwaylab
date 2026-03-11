@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Contribution nudge social proof**: Post-upload contribution dialog now shows a live counter of how many people have already contributed and total nights, fetched from `/api/stats` (`contribution-nudge-social-proof`)
 - **AI credits synced from server**: Community tier AI credit count now reflects actual server-side usage instead of unreliable localStorage counter — clearing browser data no longer resets the display (`ai-credits-tracking-and-messaging`)
 - **Community funding messaging**: AI insights CTA explains that analyses are funded out of pocket, with warm invitation to support the project
 - **Unsupported data alerts**: Sentry warnings for unsupported oximetry formats and failed SD card parses, enabling prioritised format support (`unsupported-data-alerts`)

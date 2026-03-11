@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Heart, Shield, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Heart, HeartHandshake, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+
+interface ContributionStats {
+  totalContributions: number;
+  totalContributedNights: number;
+}
 
 /**
  * Modal shown after analysis completes when the user has NOT opted in to
@@ -20,6 +25,7 @@ export function ContributionNudgeDialog({
   onDismiss: () => void;
 }) {
   const focusTrapRef = useFocusTrap(true);
+  const [stats, setStats] = useState<ContributionStats | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -28,6 +34,20 @@ export function ContributionNudgeDialog({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onDismiss]);
+
+  useEffect(() => {
+    fetch('/api/stats', { signal: AbortSignal.timeout(3000) })
+      .then((r) => { if (!r.ok) throw new Error('fetch failed'); return r.json(); })
+      .then((data) => {
+        if (data.totalContributions > 0) {
+          setStats({
+            totalContributions: data.totalContributions,
+            totalContributedNights: data.totalContributedNights ?? 0,
+          });
+        }
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-background/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="contribution-nudge-title">
@@ -54,6 +74,22 @@ export function ContributionNudgeDialog({
             raw data leaves your device, ever.
           </p>
         </div>
+
+        {stats && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground animate-fade-in-up">
+            <HeartHandshake className="h-4 w-4 shrink-0 text-primary/70" />
+            <span>
+              <strong className="font-semibold text-foreground">
+                {stats.totalContributions.toLocaleString()}
+              </strong>{' '}
+              {stats.totalContributions === 1 ? 'person has' : 'people have'} contributed{' '}
+              <strong className="font-semibold text-foreground">
+                {stats.totalContributedNights.toLocaleString()}
+              </strong>{' '}
+              {stats.totalContributedNights === 1 ? 'night' : 'nights'} so far
+            </span>
+          </div>
+        )}
 
         <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:justify-center">
           <Button
