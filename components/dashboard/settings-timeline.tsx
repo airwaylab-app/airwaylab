@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import type { NightResult, MachineSettings } from '@/lib/types';
@@ -52,6 +52,16 @@ function settingsChanged(a: MachineSettings, b: MachineSettings): string[] {
   return changes;
 }
 
+function getChangeLabel(hasChanges: boolean, changes: string[]): string {
+  if (hasChanges) return `Changed: ${changes.join(', ')}`;
+  return 'Therapy change reference';
+}
+
+function getChangeTitle(hasChanges: boolean, changes: string[]): string {
+  if (hasChanges) return `Settings changed: ${changes.join(', ')}`;
+  return 'Therapy change reference date';
+}
+
 export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapyChangeDate }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false); // newest first by default
@@ -89,10 +99,19 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
     return map;
   }, [nights]);
 
+  const hasAnyChanges = changeMap.size > 0 || nights.some((n) => n.dateStr === therapyChangeDate);
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium">Machine Settings Timeline</CardTitle>
+        {nights.length > 1 && (
+          <p className="text-xs text-muted-foreground">
+            {hasAnyChanges
+              ? 'Amber rows indicate nights where your machine settings changed from the previous night.'
+              : 'Your machine settings were consistent across all nights.'}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         {/* Desktop table */}
@@ -139,10 +158,14 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
                       <span className="flex items-center gap-1.5">
                         {n.dateStr}
                         {(hasChanges || isChange) && (
-                          <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+                          <span data-testid="change-icon" title={getChangeTitle(hasChanges, changes)}>
+                            <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+                          </span>
                         )}
                         {(hasChanges || isChange) && (
-                          <span className="sr-only">Settings changed</span>
+                          <span className="text-[10px] text-amber-400">
+                            {getChangeLabel(hasChanges, changes)}
+                          </span>
                         )}
                       </span>
                     </td>
@@ -198,10 +221,9 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
                   <span className="flex items-center gap-1.5 font-mono text-xs font-medium tabular-nums">
                     {n.dateStr}
                     {(hasChanges || isChange) && (
-                      <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
-                    )}
-                    {(hasChanges || isChange) && (
-                      <span className="sr-only">Settings changed</span>
+                      <span data-testid="change-icon" title={getChangeTitle(hasChanges, changes)}>
+                        <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+                      </span>
                     )}
                   </span>
                   <span className="text-[10px] font-medium text-muted-foreground">{s.papMode}</span>
@@ -240,10 +262,10 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
                     </span>
                   </div>
                 </div>
-                {hasChanges && (
+                {(hasChanges || isChange) && (
                   <div className="mt-2 border-t border-amber-500/20 pt-1.5">
                     <span className="text-[10px] text-amber-400">
-                      Changed: {changes.join(', ')}
+                      {getChangeLabel(hasChanges, changes)}
                     </span>
                   </div>
                 )}
