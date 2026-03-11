@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { GlasgowComponents } from '@/lib/types';
+import { CHART_COLORS, TOOLTIP_STYLE, withAlpha } from '@/lib/chart-theme';
 
 interface Props {
   glasgow: GlasgowComponents;
@@ -93,8 +94,8 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
               <Radar
                 name="Normal Range"
                 dataKey="ref"
-                stroke="hsl(142 71% 45% / 0.3)"
-                fill="hsl(142 71% 45%)"
+                stroke={withAlpha(CHART_COLORS[1], 0.3)}
+                fill={CHART_COLORS[1]}
                 fillOpacity={0.05}
                 strokeWidth={1}
                 strokeDasharray="4 4"
@@ -103,19 +104,13 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
               <Radar
                 name="Score"
                 dataKey="value"
-                stroke="hsl(213 94% 56%)"
-                fill="hsl(213 94% 56%)"
+                stroke={CHART_COLORS[0]}
+                fill={CHART_COLORS[0]}
                 fillOpacity={0.2}
                 strokeWidth={2}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(217 33% 8%)',
-                  border: '1px solid hsl(217 33% 15%)',
-                  borderRadius: '0.5rem',
-                  fontSize: 12,
-                  color: 'hsl(210 40% 93%)',
-                }}
+                contentStyle={TOOLTIP_STYLE}
                 formatter={(value, name) => {
                   if (name === 'Normal Range') return [Number(value).toFixed(2), 'Normal Limit'];
                   return [Number(value).toFixed(2), 'Score'];

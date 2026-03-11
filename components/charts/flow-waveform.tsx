@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import type { WaveformData } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { ZoomIn, ZoomOut, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 
 interface Props {
   waveform: WaveformData;
@@ -25,9 +26,9 @@ interface Props {
 }
 
 const EVENT_COLORS: Record<string, { fill: string; stroke: string }> = {
-  'rera': { fill: 'hsl(0 84% 60% / 0.15)', stroke: 'hsl(0 84% 60% / 0.4)' },
-  'flow-limitation': { fill: 'hsl(38 92% 50% / 0.12)', stroke: 'hsl(38 92% 50% / 0.35)' },
-  'm-shape': { fill: 'hsl(213 94% 56% / 0.12)', stroke: 'hsl(213 94% 56% / 0.35)' },
+  'rera': { fill: withAlpha(CHART_COLORS[4], 0.15), stroke: withAlpha(CHART_COLORS[4], 0.4) },
+  'flow-limitation': { fill: withAlpha(CHART_COLORS[2], 0.12), stroke: withAlpha(CHART_COLORS[2], 0.35) },
+  'm-shape': { fill: withAlpha(CHART_COLORS[0], 0.12), stroke: withAlpha(CHART_COLORS[0], 0.35) },
 };
 
 const ZOOM_PRESETS = [
@@ -394,7 +395,7 @@ export const FlowWaveform = memo(function FlowWaveform({
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="hsl(217 33% 15% / 0.3)"
+                stroke={GRID_STROKE}
                 vertical={false}
               />
               <XAxis
@@ -402,13 +403,13 @@ export const FlowWaveform = memo(function FlowWaveform({
                 type="number"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={tickFormatter}
-                tick={{ fill: 'hsl(215 20% 55%)', fontSize: 10 }}
-                axisLine={{ stroke: 'hsl(217 33% 15%)' }}
+                tick={{ fill: AXIS_TICK_FILL, fontSize: 10 }}
+                axisLine={{ stroke: AXIS_LINE_STROKE }}
                 tickLine={false}
               />
               <YAxis
                 yAxisId="flow"
-                tick={{ fill: 'hsl(215 20% 55%)', fontSize: 10 }}
+                tick={{ fill: AXIS_TICK_FILL, fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -423,7 +424,7 @@ export const FlowWaveform = memo(function FlowWaveform({
                 <YAxis
                   yAxisId="pressure"
                   orientation="right"
-                  tick={{ fill: 'hsl(142 71% 45%)', fontSize: 10 }}
+                  tick={{ fill: CHART_COLORS[1], fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                   width={40}
@@ -431,7 +432,7 @@ export const FlowWaveform = memo(function FlowWaveform({
                     value: 'cmH₂O',
                     angle: 90,
                     position: 'insideRight',
-                    style: { fill: 'hsl(142 71% 45%)', fontSize: 9 },
+                    style: { fill: CHART_COLORS[1], fontSize: 9 },
                   }}
                 />
               )}
@@ -475,8 +476,8 @@ export const FlowWaveform = memo(function FlowWaveform({
                 yAxisId="flow"
                 type="monotone"
                 dataKey="flowMax"
-                stroke="hsl(213 94% 56% / 0.6)"
-                fill="hsl(213 94% 56% / 0.15)"
+                stroke={withAlpha(CHART_COLORS[0], 0.6)}
+                fill={withAlpha(CHART_COLORS[0], 0.15)}
                 strokeWidth={0.5}
                 dot={false}
                 isAnimationActive={false}
@@ -486,7 +487,7 @@ export const FlowWaveform = memo(function FlowWaveform({
                 yAxisId="flow"
                 type="monotone"
                 dataKey="flowMin"
-                stroke="hsl(213 94% 56% / 0.4)"
+                stroke={withAlpha(CHART_COLORS[0], 0.4)}
                 fill="hsl(217 33% 8%)"
                 strokeWidth={0.5}
                 dot={false}
@@ -499,8 +500,8 @@ export const FlowWaveform = memo(function FlowWaveform({
                   yAxisId="pressure"
                   type="monotone"
                   dataKey="pressure"
-                  stroke="hsl(142 71% 45%)"
-                  fill="hsl(142 71% 45% / 0.05)"
+                  stroke={CHART_COLORS[1]}
+                  fill={withAlpha(CHART_COLORS[1], 0.05)}
                   strokeWidth={1.5}
                   dot={false}
                   isAnimationActive={false}
@@ -542,15 +543,15 @@ export const FlowWaveform = memo(function FlowWaveform({
           {showEvents && waveform.events.length > 0 && (
             <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-3 rounded-sm" style={{ backgroundColor: 'hsl(0 84% 60% / 0.3)' }} />
+                <span className="inline-block h-2 w-3 rounded-sm bg-chart-5/30" />
                 RERA
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-3 rounded-sm" style={{ backgroundColor: 'hsl(38 92% 50% / 0.25)' }} />
+                <span className="inline-block h-2 w-3 rounded-sm bg-chart-3/25" />
                 Flow Limitation
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-3 rounded-sm" style={{ backgroundColor: 'hsl(213 94% 56% / 0.25)' }} />
+                <span className="inline-block h-2 w-3 rounded-sm bg-chart-1/25" />
                 M-Shape
               </span>
             </div>

@@ -140,11 +140,11 @@ export default function PricingPage() {
         {/* Header */}
         <div className="mb-12 text-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Understand your sleep therapy better
+            Keep AirwayLab Independent
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Free analysis for everyone. Upgrade for unlimited AI insights,
-            90-night trends, and clinician-ready reports.
+            AirwayLab&apos;s core analysis is free and always will be. Paid tiers
+            fund development and keep the project independent.
           </p>
         </div>
 

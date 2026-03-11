@@ -41,7 +41,7 @@ export default function OGImage() {
               width: 56,
               height: 56,
               borderRadius: 14,
-              background: 'rgba(99, 102, 241, 0.15)',
+              background: 'rgba(45, 184, 154, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -50,16 +50,28 @@ export default function OGImage() {
           >
             🌙
           </div>
-          <span
-            style={{
-              fontSize: 48,
-              fontWeight: 800,
-              color: '#f1f5f9',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            AirwayLab
-          </span>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <span
+              style={{
+                fontSize: 48,
+                fontWeight: 800,
+                color: '#f1f5f9',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Airway
+            </span>
+            <span
+              style={{
+                fontSize: 48,
+                fontWeight: 400,
+                color: '#2DB89A',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Lab
+            </span>
+          </div>
         </div>
 
         {/* Tagline */}
@@ -72,9 +84,7 @@ export default function OGImage() {
             maxWidth: 800,
           }}
         >
-          Flow Limitation Analysis for ResMed PAP Data.
-          <br />
-          Four research-grade engines — 100% client-side.
+          See If Your PAP Therapy Is Actually Working
         </p>
 
         {/* Engine badges */}

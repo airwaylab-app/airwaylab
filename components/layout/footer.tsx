@@ -12,10 +12,13 @@ export function Footer() {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
                 <Moon className="h-3.5 w-3.5 text-primary" />
               </div>
-              <span className="text-sm font-bold tracking-tight">AirwayLab</span>
+              <span className="text-sm font-bold tracking-tight">
+                <span className="text-white">Airway</span>
+                <span className="font-normal text-brand-teal">Lab</span>
+              </span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Free, open-source airway analysis. Because your breathing data belongs to you.
+              Built by a PAP user who got tired of staring at AHI. Open source under GPL-3.0.
             </p>
           </div>
 

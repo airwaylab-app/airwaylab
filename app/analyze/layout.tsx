@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Analyze — AirwayLab',
   description:
-    'Upload your ResMed SD card data for detailed flow limitation analysis. Glasgow Index, WAT, NED, and Oximetry — all processed in your browser.',
+    'Upload your ResMed SD card data for flow limitation analysis, Glasgow Index scoring, and oximetry insights.',
   openGraph: {
     title: 'Analyze — AirwayLab',
     description:
