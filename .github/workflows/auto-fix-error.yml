@@ -1,0 +1,80 @@
+name: Auto-fix Sentry Error
+
+on:
+  issues:
+    types: [opened, labeled]
+
+concurrency:
+  group: auto-fix
+  cancel-in-progress: false
+
+jobs:
+  auto-fix:
+    # Only run for sentry-labelled issues, not opened by this workflow
+    if: |
+      contains(github.event.issue.labels.*.name, 'sentry') &&
+      github.event.issue.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for existing fix branch
+        id: check-branch
+        run: |
+          BRANCH="fix/sentry-${{ github.event.issue.number }}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if fix already in progress
+        if: steps.check-branch.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'A fix branch already exists for this issue (`fix/sentry-${{ github.event.issue.number }}`). Skipping auto-fix.'
+            });
+
+      - name: Check daily run count
+        if: steps.check-branch.outputs.exists == 'false'
+        id: rate-limit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'auto-fix-error.yml',
+              created: `>=${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`,
+              status: 'completed',
+            });
+            const count = runs.data.total_count;
+            core.setOutput('exceeded', count >= 5 ? 'true' : 'false');
+            if (count >= 5) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: 'Daily auto-fix limit reached (5/day). This issue will need manual review.'
+              });
+            }
+
+      - name: Run Claude Code
+        if: |
+          steps.check-branch.outputs.exists == 'false' &&
+          steps.rate-limit.outputs.exceeded == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-6
+          prompt_file: .github/prompts/fix-sentry-error.md
+          issue_number: ${{ github.event.issue.number }}
