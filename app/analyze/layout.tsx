@@ -3,11 +3,11 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Analyze — AirwayLab',
   description:
-    'Upload your ResMed SD card data for flow limitation analysis, Glasgow Index scoring, and oximetry insights.',
+    'Upload your PAP SD card data for flow limitation analysis, Glasgow Index scoring, and oximetry insights.',
   openGraph: {
     title: 'Analyze — AirwayLab',
     description:
-      'Upload ResMed PAP SD card data for research-grade flow limitation analysis. 100% client-side processing.',
+      'Upload PAP SD card data for research-grade flow limitation analysis. 100% client-side processing.',
   },
 };
 

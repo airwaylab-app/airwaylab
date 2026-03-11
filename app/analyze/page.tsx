@@ -401,7 +401,7 @@ function AnalyzePageInner() {
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               {isDemo
                 ? 'Exploring sample data — upload your own SD card to see your results'
-                : 'Upload your ResMed SD card folder to begin analysis'}
+                : 'Upload your SD card folder to begin analysis'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -525,7 +525,7 @@ function AnalyzePageInner() {
                 <p className="text-sm text-red-400">{error}</p>
               </div>
               <p className="pl-[26px] text-xs text-muted-foreground">
-                Make sure you selected the DATALOG folder from your ResMed SD card. Need help?{' '}
+                Make sure you selected the DATALOG folder from your SD card. Need help?{' '}
                 <a href="/about#getting-started" className="text-primary hover:underline">See the guide</a>.
               </p>
             </div>

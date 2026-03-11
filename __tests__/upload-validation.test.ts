@@ -98,6 +98,24 @@ describe('validateSDFiles', () => {
     expect(result.warnings.some((w) => w.includes('DATALOG folder'))).toBe(true);
   });
 
+  it('does not mention "ResMed" in no-EDF error message', () => {
+    const files = [mockFile('readme.txt'), mockFile('data.csv')];
+    const result = validateSDFiles(files);
+    expect(result.errors[0]).not.toContain('ResMed');
+  });
+
+  it('does not mention "ResMed" in folder structure warning', () => {
+    const files = [
+      mockFile('BRP.edf'),
+      mockFile('FLW.edf'),
+      mockFile('STR.edf'),
+    ];
+    const result = validateSDFiles(files);
+    const folderWarning = result.warnings.find((w) => w.includes('DATALOG'));
+    expect(folderWarning).toBeDefined();
+    expect(folderWarning).not.toContain('ResMed');
+  });
+
   it('handles case-insensitive EDF extension', () => {
     const files = [
       mockFile('BRP_20250110.EDF', 5000, 'SD/DATALOG/20250110/BRP_20250110.EDF'),
