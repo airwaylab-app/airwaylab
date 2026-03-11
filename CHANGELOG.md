@@ -5,6 +5,21 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Share Link MVP & Providers Page (2026-03-11)
+
+### Added
+
+- **Share link MVP**: Users can generate 30-day share links for their analysis results. Supports single-night or all-nights sharing with explicit consent flow and "remember my choice" option (`share-link-mvp`)
+- **For Providers page**: Marketing page targeting sleep consultants and clinicians at `/providers` with 7 sections, demo CTA, and contact form (`providers-page`)
+- **Provider interest API**: Supabase-backed form for provider/clinician contact requests with rate limiting and Sentry alerts (`provider-interest`)
+- **Share analytics**: Supabase SQL view for tracking share adoption metrics (creation rate, view rate, scope split) plus Plausible events (`share-analytics`)
+
+### Changed
+
+- **Privacy copy updated**: Landing page and hero now clarify "unless you choose to share it" alongside the privacy-first messaging
+- **Navigation expanded**: Added "For Providers" link to header nav (desktop and mobile menu)
+- **Internal cross-links**: Added provider references on landing page (How It Works section) and pricing page (after FAQ)
+
 ## [Unreleased] — Brand Polish v1 (2026-03-11)
 
 ### Added
