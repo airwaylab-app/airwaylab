@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Moon, HeartHandshake } from 'lucide-react';
+import { Moon, HeartHandshake, Upload } from 'lucide-react';
 
-const CACHE_KEY = 'airwaylab_community-stats-v2';
+const CACHE_KEY = 'airwaylab_community-stats-v3';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (matches API cache)
 const REFRESH_INTERVAL = 60 * 1000; // 60 seconds auto-refresh
 
@@ -12,6 +12,11 @@ interface Stats {
   totalUploads: number;
   totalContributedNights: number;
   totalContributions: number;
+  uniqueRawUploaders: number;
+  totalRawFiles: number;
+  totalWaveformContributions: number;
+  uniqueWaveformContributors: number;
+  totalRegisteredUsers: number;
 }
 
 interface CachedStats extends Stats {
@@ -80,6 +85,11 @@ function useStats() {
               totalUploads: cached.totalUploads,
               totalContributedNights: cached.totalContributedNights,
               totalContributions: cached.totalContributions ?? 0,
+              uniqueRawUploaders: cached.uniqueRawUploaders ?? 0,
+              totalRawFiles: cached.totalRawFiles ?? 0,
+              totalWaveformContributions: cached.totalWaveformContributions ?? 0,
+              uniqueWaveformContributors: cached.uniqueWaveformContributors ?? 0,
+              totalRegisteredUsers: cached.totalRegisteredUsers ?? 0,
             });
             return;
           }
@@ -98,6 +108,11 @@ function useStats() {
         totalUploads: data.totalUploads ?? 0,
         totalContributedNights: data.totalContributedNights ?? 0,
         totalContributions: data.totalContributions ?? 0,
+        uniqueRawUploaders: data.uniqueRawUploaders ?? 0,
+        totalRawFiles: data.totalRawFiles ?? 0,
+        totalWaveformContributions: data.totalWaveformContributions ?? 0,
+        uniqueWaveformContributors: data.uniqueWaveformContributors ?? 0,
+        totalRegisteredUsers: data.totalRegisteredUsers ?? 0,
       };
       setStats(result);
       try {
@@ -135,12 +150,29 @@ export function CommunityCounter({
   variant = 'default',
 }: {
   className?: string;
-  variant?: 'default' | 'research';
+  variant?: 'default' | 'research' | 'raw-uploads';
 }) {
   const stats = useStats();
 
   // Don't show if no data
   if (!stats) return null;
+
+  if (variant === 'raw-uploads') {
+    // Hide if nobody has uploaded raw data yet
+    if (stats.uniqueRawUploaders === 0) return null;
+
+    return (
+      <div className={className}>
+        <Upload className="h-4 w-4 shrink-0" />
+        <span>
+          <strong className="font-semibold">
+            <AnimatedNumber value={stats.uniqueRawUploaders} />
+          </strong>{' '}
+          {stats.uniqueRawUploaders === 1 ? 'person' : 'people'} uploaded raw data
+        </span>
+      </div>
+    );
+  }
 
   if (variant === 'research') {
     // Hide if nobody has contributed yet
