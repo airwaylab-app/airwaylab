@@ -22,7 +22,11 @@ export async function GET(request: Request) {
   if (!supabase) {
     // Return fallback zeros when Supabase isn't configured
     return NextResponse.json(
-      { totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0 },
+      {
+        totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0,
+        uniqueRawUploaders: 0, totalRawFiles: 0, totalWaveformContributions: 0,
+        uniqueWaveformContributors: 0, totalRegisteredUsers: 0,
+      },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -77,12 +81,35 @@ export async function GET(request: Request) {
       (sum, row) => sum + (row.night_count || 0), 0
     ) ?? 0;
 
+    // Fetch extended stats via RPC (raw uploads, waveform contributions, registered users)
+    let extendedStats = {
+      uniqueRawUploaders: 0,
+      totalRawFiles: 0,
+      totalWaveformContributions: 0,
+      uniqueWaveformContributors: 0,
+      totalRegisteredUsers: 0,
+    };
+
+    const { data: extData, error: extError } = await supabase.rpc('get_extended_stats');
+    if (extError) {
+      console.info('[stats] extended stats RPC skipped:', extError.message);
+    } else if (extData) {
+      extendedStats = {
+        uniqueRawUploaders: extData.unique_raw_uploaders ?? 0,
+        totalRawFiles: extData.total_raw_files ?? 0,
+        totalWaveformContributions: extData.total_waveform_contributions ?? 0,
+        uniqueWaveformContributors: extData.unique_waveform_contributors ?? 0,
+        totalRegisteredUsers: extData.total_registered_users ?? 0,
+      };
+    }
+
     return NextResponse.json(
       {
         totalUploads: totalUploads ?? 0,
         totalNights: totalNights,
         totalContributions: totalContributions ?? 0,
         totalContributedNights,
+        ...extendedStats,
       },
       {
         headers: {
@@ -92,7 +119,11 @@ export async function GET(request: Request) {
     );
   } catch {
     return NextResponse.json(
-      { totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0 },
+      {
+        totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0,
+        uniqueRawUploaders: 0, totalRawFiles: 0, totalWaveformContributions: 0,
+        uniqueWaveformContributors: 0, totalRegisteredUsers: 0,
+      },
       { status: 500 }
     );
   }
