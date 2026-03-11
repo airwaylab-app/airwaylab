@@ -5,6 +5,13 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Generic Upload Copy (2026-03-11)
+
+### Changed
+
+- **Device-agnostic upload flow**: Removed ResMed-specific language from upload heading, instructions, validation messages, and meta descriptions. ResMed is now only mentioned in a compatibility note below the upload steps. (`generic-upload-copy`)
+- **Other-device encouragement**: Added CTA inviting non-ResMed users to upload their data and enable sharing so we can analyse the structure and add support (`generic-upload-copy`)
+
 ## [Unreleased] — Waveform Data Contribution (2026-03-11)
 
 ### Added

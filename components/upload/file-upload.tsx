@@ -98,7 +98,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
       <div
         role="button"
         tabIndex={0}
-        aria-label={sdFiles.length > 0 ? `${sdFiles.length} SD card files selected. Click to change selection.` : 'Upload ResMed SD card root folder. Click or drag and drop.'}
+        aria-label={sdFiles.length > 0 ? `${sdFiles.length} SD card files selected. Click to change selection.` : 'Upload PAP SD card root folder. Click or drag and drop.'}
         className={`group relative cursor-pointer rounded-xl border-2 border-dashed transition-all ${
           dragOver
             ? 'border-primary bg-primary/5'
@@ -135,7 +135,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                 ? sdValidation
                   ? `${sdValidation.edfCount} EDF files found`
                   : `${sdFiles.length} files selected`
-                : 'Upload ResMed SD Card'}
+                : 'Upload SD Card'}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {sdFiles.length > 0
@@ -163,7 +163,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           {sdFiles.length === 0 && (
             <div className="mt-2 flex flex-col gap-1.5 text-left">
               {[
-                'Remove the SD card from your ResMed machine',
+                'Remove the SD card from your PAP machine',
                 'Insert it into your computer (use an adapter if needed)',
                 'Click here and select the SD card root folder',
               ].map((step, i) => (
@@ -176,6 +176,14 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   </span>
                 </div>
               ))}
+              <div className="mt-2 space-y-0.5">
+                <p className="text-[10px] text-muted-foreground/70">
+                  Currently supports ResMed AirSense 10/11 and AirCurve 10.
+                </p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Using another device? Upload your data and enable data sharing so we can analyse the structure and add support.
+                </p>
+              </div>
             </div>
           )}
         </div>

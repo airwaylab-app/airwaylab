@@ -13,7 +13,7 @@ export interface ValidationResult {
 /**
  * Validate selected SD card files before analysis.
  * Checks for presence of EDF files, expected folder structure,
- * and common mistakes (wrong folder, non-ResMed data).
+ * and common mistakes (wrong folder, unsupported data).
  */
 export function validateSDFiles(files: File[]): ValidationResult {
   const warnings: string[] = [];
@@ -50,14 +50,14 @@ export function validateSDFiles(files: File[]): ValidationResult {
   // Check for common mistakes
   if (edfFiles.length === 0) {
     errors.push(
-      'No EDF files found. Make sure you selected the DATALOG folder from your ResMed SD card.'
+      'No EDF files found. Make sure you selected the root folder or DATALOG folder from your PAP machine\'s SD card.'
     );
     return { valid: false, edfCount: 0, warnings, errors };
   }
 
   if (!hasDatalog && edfFiles.length < 5) {
     warnings.push(
-      'Folder structure doesn\'t look like a ResMed SD card. Expected a DATALOG folder with dated subfolders.'
+      'Folder structure doesn\'t match a recognised PAP SD card layout. Expected a DATALOG folder with dated subfolders.'
     );
   }
 
