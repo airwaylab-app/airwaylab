@@ -99,6 +99,19 @@ function AnalyzePageInner() {
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lifetimeNights, setLifetimeNights] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
+
+  // Track session count for new-user UX (beginner vs returning user)
+  useEffect(() => {
+    try {
+      const count = parseInt(localStorage.getItem('airwaylab_session_count') || '0', 10);
+      const next = count + 1;
+      localStorage.setItem('airwaylab_session_count', String(next));
+      setIsNewUser(next <= 5);
+    } catch {
+      setIsNewUser(true); // Default to beginner if localStorage unavailable
+    }
+  }, []);
 
   // Handle auth error from callback redirect
   useEffect(() => {
@@ -609,12 +622,15 @@ function AnalyzePageInner() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden sm:block">
-                <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
-              </div>
+              {/* Full controls for returning users; simplified for new users */}
+              {!isNewUser && (
+                <div className="hidden sm:block">
+                  <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
+                </div>
+              )}
               {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} />}
-              {!isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]} />}
-              <ThresholdSettingsModal />
+              {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]} />}
+              {!isNewUser && <ThresholdSettingsModal />}
               <Button variant="ghost" size="sm" onClick={handleReset}>
                 <RotateCcw className="mr-2 h-3 w-3" /> {isDemo ? 'Exit Demo' : 'New'}
               </Button>
@@ -628,17 +644,28 @@ function AnalyzePageInner() {
 
           {/* Tabbed Views */}
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
-            <TabsList className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-transparent sm:px-0 sm:backdrop-blur-none">
+            <TabsList
+              variant="line"
+              className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card/50 px-4 backdrop-blur-sm sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1 sm:backdrop-blur-none"
+            >
+              {/* Primary tabs — full words on mobile */}
               <TabsTrigger value="overview" className="gap-1.5">
                 <BarChart3 className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Ovw</span>
-                <span className="hidden sm:inline">Overview</span>
+                Overview
               </TabsTrigger>
               <TabsTrigger value="graphs" className="gap-1.5">
                 <BarChart className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Grph</span>
-                <span className="hidden sm:inline">Graphs</span>
+                Graphs
               </TabsTrigger>
+              <TabsTrigger value="trends" className="gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Trends
+              </TabsTrigger>
+
+              {/* Separator between primary and secondary tabs */}
+              <div className="mx-1 h-4 w-px shrink-0 bg-border/50 sm:mx-2" aria-hidden="true" />
+
+              {/* Secondary tabs — abbreviated on mobile */}
               <TabsTrigger value="glasgow" className="gap-1.5">
                 <Activity className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">Gla</span>
@@ -653,11 +680,6 @@ function AnalyzePageInner() {
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">O₂</span>
                 <span className="hidden sm:inline">Oximetry</span>
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="gap-1.5">
-                <TrendingUp className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Trends</span>
-                <span className="hidden sm:inline">Trends</span>
               </TabsTrigger>
               <TabsTrigger value="compare" className="gap-1.5">
                 <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -674,6 +696,7 @@ function AnalyzePageInner() {
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
+                  isNewUser={isNewUser}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload

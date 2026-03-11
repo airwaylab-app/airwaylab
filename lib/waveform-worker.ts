@@ -6,7 +6,13 @@
 
 import { parseEDF } from './parsers/edf-parser';
 import { groupByNight, filterBRPFiles } from './parsers/night-grouper';
-import { downsampleFlow, downsamplePressure, computeFlowStats } from './waveform-utils';
+import {
+  downsampleFlow,
+  downsamplePressure,
+  computeFlowStats,
+  computeTidalVolume,
+  computeRespiratoryRate,
+} from './waveform-utils';
 import type {
   WaveformWorkerMessage,
   WaveformWorkerResult,
@@ -105,7 +111,11 @@ function extractWaveform(
     ? downsamplePressure(combinedPressure, avgSamplingRate, bucketSeconds)
     : [];
 
-  // Detect events from flow patterns (simplified event detection)
+  // Compute tidal volume and respiratory rate
+  const tidalVolume = computeTidalVolume(combinedFlow, avgSamplingRate, bucketSeconds);
+  const respiratoryRate = computeRespiratoryRate(combinedFlow, avgSamplingRate, bucketSeconds);
+
+  // Detect events from flow patterns (flatness-based detection)
   const events = detectEventsFromFlow(combinedFlow, avgSamplingRate);
 
   // Leak data placeholder — real leak extraction requires parsing separate EDF channels
@@ -121,13 +131,16 @@ function extractWaveform(
     pressure,
     leak,
     events,
+    tidalVolume,
+    respiratoryRate,
     stats,
   };
 }
 
 /**
- * Simple event detection from raw flow data.
- * Detects periods of reduced flow amplitude that may indicate flow limitation.
+ * Improved event detection from raw flow data.
+ * Uses flatness-based flow limitation detection instead of simple amplitude reduction.
+ * Detects FL runs, M-shape patterns, and arousal candidates.
  * This is a lightweight detector — the main analysis engines provide the authoritative results.
  */
 function detectEventsFromFlow(
@@ -135,60 +148,201 @@ function detectEventsFromFlow(
   sampleRate: number
 ): WaveformEvent[] {
   const events: WaveformEvent[] = [];
-  const windowSamples = Math.round(sampleRate * 30); // 30-second windows
-  const stepSamples = Math.round(sampleRate * 10); // 10-second step
+  if (flow.length < sampleRate * 10) return events;
 
-  if (flow.length < windowSamples * 2) return events;
+  // Extract per-breath features using zero-crossing detection
+  const breaths = extractBreaths(flow, sampleRate);
+  if (breaths.length < 5) return events;
 
   // Compute baseline amplitude from first pass
-  let baselineSum = 0;
-  let baselineCount = 0;
-  for (let i = 0; i < flow.length; i += stepSamples) {
-    const end = Math.min(i + windowSamples, flow.length);
-    let wMax = -Infinity;
-    let wMin = Infinity;
-    for (let j = i; j < end; j++) {
-      if (flow[j] > wMax) wMax = flow[j];
-      if (flow[j] < wMin) wMin = flow[j];
-    }
-    const amplitude = wMax - wMin;
-    baselineSum += amplitude;
-    baselineCount++;
+  let baselineAmp = 0;
+  for (const breath of breaths) {
+    baselineAmp += breath.amplitude;
   }
-  const baselineAmplitude = baselineSum / baselineCount;
+  baselineAmp /= breaths.length;
 
-  // Second pass: find windows with significantly reduced amplitude
-  let inEvent = false;
-  let eventStart = 0;
+  // Detect FL runs: consecutive breaths with high flatness
+  let flRunStart = -1;
+  let flRunCount = 0;
 
-  for (let i = 0; i < flow.length - windowSamples; i += stepSamples) {
-    const end = i + windowSamples;
-    let wMax = -Infinity;
-    let wMin = Infinity;
-    for (let j = i; j < end; j++) {
-      if (flow[j] > wMax) wMax = flow[j];
-      if (flow[j] < wMin) wMin = flow[j];
-    }
-    const amplitude = wMax - wMin;
-    const isReduced = amplitude < baselineAmplitude * 0.5;
+  for (let i = 0; i < breaths.length; i++) {
+    const b = breaths[i];
+    const isFlat = b.flatness > 0.7 && b.amplitude > baselineAmp * 0.3;
 
-    if (isReduced && !inEvent) {
-      inEvent = true;
-      eventStart = i / sampleRate;
-    } else if (!isReduced && inEvent) {
-      inEvent = false;
-      const eventEnd = i / sampleRate;
-      const duration = eventEnd - eventStart;
-      if (duration >= 10 && duration <= 120) {
-        events.push({
-          startSec: +eventStart.toFixed(0),
-          endSec: +eventEnd.toFixed(0),
-          type: 'flow-limitation',
-          label: `Flow Limitation (${Math.round(duration)}s)`,
-        });
+    if (isFlat) {
+      if (flRunStart === -1) flRunStart = i;
+      flRunCount++;
+    } else {
+      if (flRunCount >= 3) {
+        const startSec = breaths[flRunStart].startSample / sampleRate;
+        const endSec = breaths[i - 1].endSample / sampleRate;
+        const duration = endSec - startSec;
+        if (duration >= 10 && duration <= 180) {
+          events.push({
+            startSec: +startSec.toFixed(0),
+            endSec: +endSec.toFixed(0),
+            type: 'flow-limitation',
+            label: `Flow Limitation (${Math.round(duration)}s)`,
+          });
+        }
       }
+      flRunStart = -1;
+      flRunCount = 0;
     }
   }
+  // Close any open FL run
+  if (flRunCount >= 3) {
+    const startSec = breaths[flRunStart].startSample / sampleRate;
+    const endSec = breaths[breaths.length - 1].endSample / sampleRate;
+    const duration = endSec - startSec;
+    if (duration >= 10 && duration <= 180) {
+      events.push({
+        startSec: +startSec.toFixed(0),
+        endSec: +endSec.toFixed(0),
+        type: 'flow-limitation',
+        label: `Flow Limitation (${Math.round(duration)}s)`,
+      });
+    }
+  }
+
+  // Detect M-shape patterns
+  for (const b of breaths) {
+    if (b.hasMShape) {
+      const startSec = b.startSample / sampleRate;
+      const endSec = b.endSample / sampleRate;
+      events.push({
+        startSec: +startSec.toFixed(0),
+        endSec: +endSec.toFixed(0),
+        type: 'm-shape',
+        label: 'M-Shape',
+      });
+    }
+  }
+
+  // Detect arousal candidates: sudden amplitude increase after reduced breathing
+  const windowSize = 15; // ~15 breaths = ~60s baseline
+  for (let i = windowSize; i < breaths.length; i++) {
+    const baselineWindow = breaths.slice(i - windowSize, i);
+    const baselineWindowAmp = baselineWindow.reduce(
+      (sum: number, bw: BreathFeatures) => sum + bw.amplitude, 0
+    ) / windowSize;
+
+    if (breaths[i].amplitude > baselineWindowAmp * 1.5 && baselineWindowAmp < baselineAmp * 0.7) {
+      const startSec = breaths[i].startSample / sampleRate;
+      const endSec = breaths[i].endSample / sampleRate;
+      events.push({
+        startSec: +startSec.toFixed(0),
+        endSec: +endSec.toFixed(0),
+        type: 'rera',
+        label: 'RERA',
+      });
+    }
+  }
+
+  // Sort by start time
+  events.sort((a, b) => a.startSec - b.startSec);
 
   return events;
+}
+
+interface BreathFeatures {
+  startSample: number;
+  endSample: number;
+  amplitude: number;
+  flatness: number;
+  hasMShape: boolean;
+}
+
+/**
+ * Extract individual breaths by detecting zero-crossings in flow data.
+ */
+function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[] {
+  const breaths: BreathFeatures[] = [];
+  const minBreathSamples = Math.round(sampleRate * 1.5); // Min ~1.5s breath
+  const maxBreathSamples = Math.round(sampleRate * 15);  // Max ~15s breath
+
+  // Find positive→negative zero-crossings (start of expiration)
+  let breathStart = 0;
+  let prevPositive = flow[0] >= 0;
+
+  for (let i = 1; i < flow.length; i++) {
+    const positive = flow[i] >= 0;
+
+    // Detect negative→positive crossing (start of inspiration = start of new breath)
+    if (!prevPositive && positive) {
+      const breathLen = i - breathStart;
+      if (breathLen >= minBreathSamples && breathLen <= maxBreathSamples) {
+        const features = computeBreathFeatures(flow, breathStart, i, sampleRate);
+        if (features) breaths.push(features);
+      }
+      breathStart = i;
+    }
+    prevPositive = positive;
+  }
+
+  return breaths;
+}
+
+/**
+ * Compute features for a single breath.
+ */
+function computeBreathFeatures(
+  flow: Float32Array,
+  start: number,
+  end: number,
+  _sampleRate: number
+): BreathFeatures | null {
+  // Find the inspiratory portion (positive flow from start)
+  let inspEnd = start;
+  for (let i = start; i < end; i++) {
+    if (flow[i] < 0) {
+      inspEnd = i;
+      break;
+    }
+    if (i === end - 1) inspEnd = end;
+  }
+
+  if (inspEnd <= start + 3) return null;
+
+  // Compute peak and mean of inspiratory flow
+  let peak = 0;
+  let sum = 0;
+  let count = 0;
+  for (let i = start; i < inspEnd; i++) {
+    if (flow[i] > peak) peak = flow[i];
+    sum += flow[i];
+    count++;
+  }
+
+  if (peak <= 0 || count === 0) return null;
+  const mean = sum / count;
+  const flatness = mean / peak; // 1.0 = perfectly flat, closer to 0 = peaky
+
+  // Amplitude (peak-to-trough)
+  let trough = 0;
+  for (let i = inspEnd; i < end; i++) {
+    if (flow[i] < trough) trough = flow[i];
+  }
+  const amplitude = peak - trough;
+
+  // M-shape detection: look for a valley in the middle 50% of inspiration
+  let hasMShape = false;
+  const inspLen = inspEnd - start;
+  const midStart = start + Math.round(inspLen * 0.25);
+  const midEnd = start + Math.round(inspLen * 0.75);
+  if (midEnd > midStart + 2) {
+    let midMin = peak;
+    for (let i = midStart; i < midEnd; i++) {
+      if (flow[i] < midMin) midMin = flow[i];
+    }
+    hasMShape = midMin < peak * 0.85;
+  }
+
+  return {
+    startSample: start,
+    endSample: end,
+    amplitude,
+    flatness,
+    hasMShape,
+  };
 }

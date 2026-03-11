@@ -3,7 +3,15 @@
 // Downsampling, synthetic generation, and formatting helpers
 // ============================================================
 
-import type { WaveformPoint, PressurePoint, LeakPoint, WaveformData, WaveformEvent } from './waveform-types';
+import type {
+  WaveformPoint,
+  PressurePoint,
+  LeakPoint,
+  WaveformData,
+  WaveformEvent,
+  TidalVolumePoint,
+  RespiratoryRatePoint,
+} from './waveform-types';
 
 /**
  * Downsample a Float32Array using min/max/avg bucketing.
@@ -157,6 +165,88 @@ export function computeFlowStats(
 }
 
 /**
+ * Compute estimated tidal volume from raw flow data.
+ * Integrates positive flow (inspiration) per breath cycle.
+ */
+export function computeTidalVolume(
+  data: Float32Array,
+  sampleRate: number,
+  bucketSeconds = 2
+): TidalVolumePoint[] {
+  if (data.length === 0 || sampleRate <= 0) return [];
+
+  const samplesPerBucket = Math.max(1, Math.round(sampleRate * bucketSeconds));
+  const totalBuckets = Math.ceil(data.length / samplesPerBucket);
+  const points: TidalVolumePoint[] = [];
+
+  for (let b = 0; b < totalBuckets; b++) {
+    const start = b * samplesPerBucket;
+    const end = Math.min(start + samplesPerBucket, data.length);
+
+    // Integrate positive flow as inspiratory volume (L/min → mL)
+    let positiveSum = 0;
+    for (let i = start; i < end; i++) {
+      if (data[i] > 0) {
+        positiveSum += data[i];
+      }
+    }
+
+    // Convert: flow (L/min) * time (1/sampleRate s) * (1 min / 60 s) * 1000 mL/L
+    const volumeML = (positiveSum / sampleRate) * (1000 / 60);
+
+    points.push({
+      t: +(start / sampleRate).toFixed(1),
+      avg: +volumeML.toFixed(0),
+    });
+  }
+
+  return points;
+}
+
+/**
+ * Compute estimated respiratory rate from raw flow data.
+ * Counts zero-crossings (positive→negative transitions) in a sliding window.
+ */
+export function computeRespiratoryRate(
+  data: Float32Array,
+  sampleRate: number,
+  bucketSeconds = 2
+): RespiratoryRatePoint[] {
+  if (data.length === 0 || sampleRate <= 0) return [];
+
+  const samplesPerBucket = Math.max(1, Math.round(sampleRate * bucketSeconds));
+  const totalBuckets = Math.ceil(data.length / samplesPerBucket);
+  // Use a 30-second window for counting breaths
+  const windowSamples = Math.round(sampleRate * 30);
+  const points: RespiratoryRatePoint[] = [];
+
+  for (let b = 0; b < totalBuckets; b++) {
+    const center = b * samplesPerBucket + Math.round(samplesPerBucket / 2);
+    const wStart = Math.max(0, center - Math.round(windowSamples / 2));
+    const wEnd = Math.min(data.length, center + Math.round(windowSamples / 2));
+
+    // Count positive→negative zero-crossings (start of expiration = 1 breath)
+    let crossings = 0;
+    let prevPositive = data[wStart] >= 0;
+    for (let i = wStart + 1; i < wEnd; i++) {
+      const positive = data[i] >= 0;
+      if (prevPositive && !positive) crossings++;
+      prevPositive = positive;
+    }
+
+    const windowDurationSec = (wEnd - wStart) / sampleRate;
+    const breathsPerMin = windowDurationSec > 0 ? (crossings / windowDurationSec) * 60 : 0;
+
+    points.push({
+      t: +(b * bucketSeconds).toFixed(1),
+      avg: +breathsPerMin.toFixed(1),
+    });
+  }
+
+  return points;
+}
+
+/**
  * Generate a synthetic flow waveform for demo mode.
  * Simulates realistic PAP breathing patterns with occasional flow limitation.
  */
@@ -180,6 +270,8 @@ export function generateSyntheticWaveform(
   const pressure: PressurePoint[] = [];
   const leak: LeakPoint[] = [];
   const events: WaveformEvent[] = [];
+  const tidalVolume: TidalVolumePoint[] = [];
+  const respiratoryRate: RespiratoryRatePoint[] = [];
 
   const breathDuration = durationSeconds / breathCount;
 
@@ -246,6 +338,20 @@ export function generateSyntheticWaveform(
       avg: +leakValue.toFixed(1),
       max: +(leakValue + Math.abs(Math.sin(t * 1.1)) * 3).toFixed(1),
     });
+
+    // Synthetic tidal volume: ~400-600 mL normal, lower for FL
+    const tvBase = isFL ? 280 + Math.sin(t * 0.01) * 40 : 450 + Math.sin(t * 0.01) * 80;
+    tidalVolume.push({
+      t: +(t).toFixed(1),
+      avg: +tvBase.toFixed(0),
+    });
+
+    // Synthetic respiratory rate: ~14-18 br/min
+    const rrBase = 15 + Math.sin(t * 0.005) * 2;
+    respiratoryRate.push({
+      t: +(t).toFixed(1),
+      avg: +rrBase.toFixed(1),
+    });
   }
 
   // Generate RERA events at semi-random intervals
@@ -288,6 +394,8 @@ export function generateSyntheticWaveform(
     pressure,
     leak,
     events,
+    tidalVolume,
+    respiratoryRate,
     stats,
   };
 }

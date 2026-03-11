@@ -5,6 +5,40 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Provider-Grade Chart Browser (2026-03-11)
+
+### Added
+
+- **Synced stacked chart view**: All waveform charts (Flow, Tidal Volume, Respiratory Rate, Pressure, Leak, SpO2) now share a single viewport — zoom/pan in one chart moves them all (`provider-grade-chart-browser`)
+- **Shared chart toolbar**: Single toolbar with zoom presets (5m/15m/30m/1h/2h), +/- zoom, pan arrows, reset button, and minimap overview bar (`provider-grade-chart-browser`)
+- **Tidal Volume chart**: New chart showing estimated tidal volume (mL) computed from inspiratory flow integration (`provider-grade-chart-browser`)
+- **Respiratory Rate chart**: New chart showing breaths/min computed via zero-crossing counting in a 30-second sliding window (`provider-grade-chart-browser`)
+- **Touch gesture support**: Pinch-to-zoom and swipe-to-pan on all charts for mobile/tablet devices (`provider-grade-chart-browser`)
+- **M-shape event detection**: Waveform event detector now identifies M-shape (double-peaked) inspiratory patterns (`provider-grade-chart-browser`)
+
+### Changed
+
+- **Improved event detection**: Replaced amplitude-based detector with flatness-based flow limitation detection — detects FL runs (3+ consecutive breaths with flatness >0.7), M-shape patterns, and arousal candidates (`provider-grade-chart-browser`)
+- **SpO2 always visible**: Removed collapsible sections — SpO2 trace or upload CTA is always shown to encourage oximetry data capture (`provider-grade-chart-browser`)
+- **Compact chart heights**: All sub-charts reduced in height (140-200px) to fit more data on screen without scrolling (`provider-grade-chart-browser`)
+- **Charts use synced viewport context**: Flow, Pressure, Leak, and SpO2 charts no longer have independent viewports — all consume shared SyncedViewportProvider (`provider-grade-chart-browser`)
+
+## [Unreleased] — Dashboard UX: Beginner-Friendly Redesign (2026-03-11)
+
+### Added
+
+- **Night Summary Hero card**: Single glanceable card above metrics showing traffic-light therapy status (green/amber/red) with one-sentence summary (`dashboard-ux-beginner-friendly`)
+- **Collapsible Insights Panel**: AI + rule-based insights wrapped in a `<details>` element — collapsed by default for new users (sessions <= 5), expanded for returning users (`dashboard-ux-beginner-friendly`)
+- **Tab group separator**: Visual divider between primary tabs (Overview, Graphs, Trends) and secondary tabs (Glasgow, Flow, Oximetry, Compare) (`dashboard-ux-beginner-friendly`)
+
+### Changed
+
+- **Tab bar visibility**: Switched from `default` to `line` variant with `bg-card/50` background — active tab now has a visible underline indicator (`dashboard-ux-beginner-friendly`)
+- **Primary tabs show full words on mobile**: Overview, Graphs, Trends are always readable; only secondary tabs use abbreviations (`dashboard-ux-beginner-friendly`)
+- **Simplified controls for beginners**: Email opt-in, Export, and Threshold Settings hidden for first 5 sessions to reduce clutter (`dashboard-ux-beginner-friendly`)
+- **New-user guidance repositioned**: "Start with Glasgow Index" hint moved directly below the hero card for maximum visibility (`dashboard-ux-beginner-friendly`)
+- **Session count tracking lifted**: `isNewUser` state moved from OverviewTab to AnalyzePage for shared access across controls and tabs (`dashboard-ux-beginner-friendly`)
+
 ## [Unreleased] — Onboarding Audit v2 (2026-03-11)
 
 ### Changed
