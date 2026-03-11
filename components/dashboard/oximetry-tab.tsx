@@ -8,6 +8,7 @@ import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { MetricExplanation } from '@/components/common/metric-explanation';
+import { SpO2Trace } from '@/components/charts/spo2-trace';
 import { getODIExplanation } from '@/lib/metric-explanations';
 
 interface Props {
@@ -76,8 +77,19 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
     );
   }
 
+  const trace = selectedNight.oximetryTrace;
+
   return (
     <div className="flex flex-col gap-6">
+      {/* SpO2 / HR Trace Chart */}
+      {trace && (
+        <SpO2Trace
+          trace={trace}
+          showHR={true}
+          showODIEvents={true}
+        />
+      )}
+
       {/* SpO2 Metrics */}
       <div>
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">

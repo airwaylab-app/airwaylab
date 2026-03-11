@@ -140,6 +140,7 @@ describe('oximetry-only reanalysis', () => {
         oximetryByDate: {
           '2025-01-15': makeOximetryResults(),
         },
+        oximetryTraceByDate: {},
       };
       expect(response.type).toBe('OXIMETRY_RESULTS');
     });

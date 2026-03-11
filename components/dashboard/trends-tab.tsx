@@ -1,6 +1,5 @@
 'use client';
 
-import { TrendChart } from '@/components/charts/trend-chart';
 import { SettingsTimeline } from '@/components/dashboard/settings-timeline';
 import { MetricsTable } from '@/components/dashboard/metrics-table';
 import { ProTease } from '@/components/common/pro-tease';
@@ -24,7 +23,6 @@ export function TrendsTab({ nights, therapyChangeDate }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <TrendChart nights={nights} therapyChangeDate={therapyChangeDate} />
       <MetricsTable nights={nights} />
       <SettingsTimeline nights={nights} therapyChangeDate={therapyChangeDate} />
       <ProTease

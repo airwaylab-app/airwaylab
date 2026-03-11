@@ -10,9 +10,8 @@ import { generateInsights, type Insight } from '@/lib/insights';
 import { fetchAIInsights } from '@/lib/ai-insights-client';
 import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
 import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight, Settings2 } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess, incrementAIUsage } from '@/lib/auth/feature-gate';
@@ -244,24 +243,58 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         onReUpload={onReUpload}
       />
 
-      {/* Night Info Bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary" className="font-mono">
-          {fmtHrs(n.durationHours)}
-        </Badge>
-        <Badge variant="secondary">
-          {n.sessionCount} session{n.sessionCount !== 1 ? 's' : ''}
-        </Badge>
-        <Badge variant="outline">{n.settings.papMode}</Badge>
-        {n.settings.epap > 0 && (
-          <Badge variant="outline">
-            {n.settings.epap}/{n.settings.ipap} cmH₂O
-          </Badge>
-        )}
-        {n.settings.pressureSupport > 0 && (
-          <Badge variant="outline">PS {n.settings.pressureSupport}</Badge>
-        )}
-      </div>
+      {/* Device Settings & Session Info */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Settings2 className="h-4 w-4" />
+            Device Settings
+            <span className="ml-auto text-xs font-normal tabular-nums">{fmtHrs(n.durationHours)} · {n.sessionCount} session{n.sessionCount !== 1 ? 's' : ''}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+            {n.settings.deviceModel && (
+              <div className="col-span-2 sm:col-span-4">
+                <span className="text-[10px] text-muted-foreground">Device</span>
+                <p className="text-xs font-medium">{n.settings.deviceModel}</p>
+              </div>
+            )}
+            <div>
+              <span className="text-[10px] text-muted-foreground">Mode</span>
+              <p className="text-xs font-medium">{n.settings.papMode}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">EPAP</span>
+              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">IPAP</span>
+              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">PS</span>
+              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">Rise Time</span>
+              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.riseTime !== null ? n.settings.riseTime : '—'}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">Trigger</span>
+              <p className="text-xs font-medium">{n.settings.trigger}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">Cycle</span>
+              <p className="text-xs font-medium">{n.settings.cycle}</p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">EasyBreathe</span>
+              <p className="text-xs font-medium">{n.settings.easyBreathe ? 'On' : 'Off'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Start-here guidance for new users */}
       {isNewUser && (

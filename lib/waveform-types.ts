@@ -23,6 +23,16 @@ export interface PressurePoint {
   avg: number;
 }
 
+/** A single data point in the downsampled leak trace */
+export interface LeakPoint {
+  /** Elapsed seconds from session start */
+  t: number;
+  /** Mean leak rate in this time bucket (L/min) */
+  avg: number;
+  /** Maximum leak rate in this time bucket (L/min) */
+  max: number;
+}
+
 /** A detected event rendered on the waveform */
 export interface WaveformEvent {
   /** Start time in elapsed seconds */
@@ -47,6 +57,8 @@ export interface WaveformData {
   flow: WaveformPoint[];
   /** Downsampled pressure trace (if available) */
   pressure: PressurePoint[];
+  /** Downsampled leak rate trace (if available) */
+  leak: LeakPoint[];
   /** Detected events mapped to timeline */
   events: WaveformEvent[];
   /** Summary stats */
@@ -57,6 +69,9 @@ export interface WaveformData {
     flowMean: number;
     pressureMin: number | null;
     pressureMax: number | null;
+    leakMean: number | null;
+    leakMax: number | null;
+    leakP95: number | null;
   };
 }
 

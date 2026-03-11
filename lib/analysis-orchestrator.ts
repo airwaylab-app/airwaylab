@@ -277,8 +277,9 @@ export class AnalysisOrchestrator {
     }
 
     this.setState({
-      ...initialState,
       status: 'processing',
+      error: null,
+      warning: null,
       progress: { current: 0, total: 1, stage: 'Processing oximetry data...' },
     });
 

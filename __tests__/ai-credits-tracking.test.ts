@@ -104,6 +104,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       wat: { flScore: 30 },
       ned: { nedMean: 20 },
       oximetry: null,
+      oximetryTrace: null,
     }] as never[];
 
     const result = await fetchAIInsights(nights, 0, null);
@@ -136,6 +137,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       wat: { flScore: 30 },
       ned: { nedMean: 20 },
       oximetry: null,
+      oximetryTrace: null,
     }] as never[];
 
     const result = await fetchAIInsights(nights, 0, null);
@@ -164,6 +166,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       wat: { flScore: 30 },
       ned: { nedMean: 20 },
       oximetry: null,
+      oximetryTrace: null,
     }] as never[];
 
     const result = await fetchAIInsights(nights, 0, null);

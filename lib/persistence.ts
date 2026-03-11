@@ -28,6 +28,7 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
       ...n.ned,
       breaths: [], // per-breath array can be huge — not needed for persistence
     },
+    oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
   }));
 }
 

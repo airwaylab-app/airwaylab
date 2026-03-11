@@ -30,7 +30,7 @@ export const events = {
   demoLoaded: () => trackEvent('Demo Loaded'),
 
   /** User exported data */
-  export: (format: 'csv' | 'json' | 'forum' | 'pdf') =>
+  export: (format: 'csv' | 'json' | 'forum' | 'pdf' | 'chart_image') =>
     trackEvent('Export', { format }),
 
   /** User subscribed to email list */

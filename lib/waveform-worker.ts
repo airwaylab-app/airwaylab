@@ -108,7 +108,10 @@ function extractWaveform(
   // Detect events from flow patterns (simplified event detection)
   const events = detectEventsFromFlow(combinedFlow, avgSamplingRate);
 
-  const stats = computeFlowStats(flow, pressure);
+  // Leak data placeholder — real leak extraction requires parsing separate EDF channels
+  const leak: import('./waveform-types').LeakPoint[] = [];
+
+  const stats = computeFlowStats(flow, pressure, leak);
 
   return {
     dateStr: targetDate,
@@ -116,6 +119,7 @@ function extractWaveform(
     originalSampleRate: avgSamplingRate,
     flow,
     pressure,
+    leak,
     events,
     stats,
   };

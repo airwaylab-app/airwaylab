@@ -75,6 +75,7 @@ function makeNight(dateStr: string): NightResult {
       estimatedArousalIndex: 12,
     },
     oximetry: null,
+    oximetryTrace: null,
   } as unknown as NightResult;
 }
 
