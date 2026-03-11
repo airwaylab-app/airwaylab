@@ -91,12 +91,19 @@ export const SpO2Trace = memo(function SpO2Trace({
     [points, localStart, localEnd]
   );
 
-  // Filter ODI events to visible range
-  const visibleODI3 = useMemo(() => {
-    if (!showODIEvents || data.length === 0) return [];
+  // Filter ODI events to visible range, capped to prevent SVG OOM
+  const MAX_VISIBLE_ODI = 100;
+  const { visibleODI3, odiCapped } = useMemo(() => {
+    if (!showODIEvents || data.length === 0) return { visibleODI3: [] as number[], odiCapped: false };
     const startT = data[0].t;
     const endT = data[data.length - 1].t;
-    return trace.odi3Events.filter((t) => t >= startT && t <= endT);
+    const filtered = trace.odi3Events.filter((t) => t >= startT && t <= endT);
+    if (filtered.length <= MAX_VISIBLE_ODI) {
+      return { visibleODI3: filtered, odiCapped: false };
+    }
+    const step = filtered.length / MAX_VISIBLE_ODI;
+    const sampled = Array.from({ length: MAX_VISIBLE_ODI }, (_, i) => filtered[Math.round(i * step)]);
+    return { visibleODI3: sampled, odiCapped: true };
   }, [trace.odi3Events, showODIEvents, data]);
 
   // Determine SpO2 Y-axis domain
@@ -226,6 +233,9 @@ export const SpO2Trace = memo(function SpO2Trace({
           <span className="inline-block h-2 w-3 rounded-sm" style={{ backgroundColor: 'hsl(0 84% 60% / 0.2)' }} />
           ODI-3
         </span>
+        {odiCapped && (
+          <span className="text-amber-500/80">Zoom in to see all events</span>
+        )}
       </div>
     </div>
   );

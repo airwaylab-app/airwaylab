@@ -82,14 +82,22 @@ export const FlowWaveform = memo(function FlowWaveform({
     [allData, viewport.clampedStart, viewport.clampedEnd]
   );
 
-  // Filter events to visible range
-  const visibleEvents = useMemo(() => {
-    if (!showEvents || data.length === 0) return [];
+  // Filter events to visible range, capped to prevent SVG OOM
+  const MAX_VISIBLE_EVENTS = 100;
+  const { visibleEvents, eventsCapped } = useMemo(() => {
+    if (!showEvents || data.length === 0) return { visibleEvents: [] as typeof waveform.events, eventsCapped: false };
     const startT = data[0].t;
     const endT = data[data.length - 1].t;
-    return waveform.events.filter(
+    const filtered = waveform.events.filter(
       (e) => e.endSec >= startT && e.startSec <= endT
     );
+    if (filtered.length <= MAX_VISIBLE_EVENTS) {
+      return { visibleEvents: filtered, eventsCapped: false };
+    }
+    // Evenly sample to keep spatial distribution
+    const step = filtered.length / MAX_VISIBLE_EVENTS;
+    const sampled = Array.from({ length: MAX_VISIBLE_EVENTS }, (_, i) => filtered[Math.round(i * step)]);
+    return { visibleEvents: sampled, eventsCapped: true };
   }, [waveform.events, showEvents, data]);
 
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
@@ -112,6 +120,9 @@ export const FlowWaveform = memo(function FlowWaveform({
               <span className="inline-block h-2 w-3 rounded-sm bg-chart-1/25" />
               M
             </span>
+            {eventsCapped && (
+              <span className="text-amber-500/80">Zoom in to see all events</span>
+            )}
           </div>
         )}
       </div>
