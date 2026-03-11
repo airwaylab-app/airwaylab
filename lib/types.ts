@@ -153,6 +153,19 @@ export interface OximetryResults {
   doubleTrackingCorrected: number;
 }
 
+export interface OximetryTracePoint {
+  t: number;
+  spo2: number;
+  hr: number;
+}
+
+export interface OximetryTraceData {
+  trace: OximetryTracePoint[];
+  durationSeconds: number;
+  odi3Events: number[];
+  odi4Events: number[];
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -163,6 +176,7 @@ export interface NightResult {
   wat: WATResults;
   ned: NEDResults;
   oximetry: OximetryResults | null;
+  oximetryTrace: OximetryTraceData | null;
 }
 
 export interface AnalysisState {
@@ -203,6 +217,7 @@ export interface WorkerResult {
 export interface WorkerOximetryResult {
   type: 'OXIMETRY_RESULTS';
   oximetryByDate: Record<string, OximetryResults>;
+  oximetryTraceByDate: Record<string, OximetryTraceData>;
 }
 
 export interface WorkerError {

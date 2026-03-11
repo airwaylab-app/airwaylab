@@ -24,6 +24,7 @@ import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
 import { ComparisonTab } from '@/components/dashboard/comparison-tab';
 import { WaveformTab } from '@/components/dashboard/waveform-tab';
+import { DeviceTab } from '@/components/dashboard/device-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
@@ -49,6 +50,7 @@ import {
   Moon,
   CheckCircle2,
   X,
+  Gauge,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -620,6 +622,11 @@ function AnalyzePageInner() {
                 <span className="sm:hidden text-[11px]">Wave</span>
                 <span className="hidden sm:inline">Waveforms</span>
               </TabsTrigger>
+              <TabsTrigger value="device" className="gap-1.5">
+                <Gauge className="h-3.5 w-3.5" />
+                <span className="sm:hidden text-[11px]">Dev</span>
+                <span className="hidden sm:inline">Device</span>
+              </TabsTrigger>
               <TabsTrigger value="oximetry" className="gap-1.5">
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">O₂</span>
@@ -678,6 +685,17 @@ function AnalyzePageInner() {
             <TabsContent value="waveform" className="mt-6">
               <ErrorBoundary context="Waveforms">
                 <WaveformTab
+                  selectedNight={currentNight}
+                  isDemo={isDemo}
+                  sdFiles={sdFilesRef.current}
+                  onReUpload={handleReset}
+                />
+              </ErrorBoundary>
+            </TabsContent>
+
+            <TabsContent value="device" className="mt-6">
+              <ErrorBoundary context="Device">
+                <DeviceTab
                   selectedNight={currentNight}
                   isDemo={isDemo}
                   sdFiles={sdFilesRef.current}

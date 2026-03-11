@@ -39,7 +39,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     if (e.data.type === 'ANALYZE_OXIMETRY') {
       const results = processOximetryOnly(e.data.oximetryCSVs);
-      const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: results };
+      const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: results, oximetryTraceByDate: {} };
       self.postMessage(response);
     } else {
       const { files, oximetryCSVs } = e.data;
@@ -242,6 +242,7 @@ async function processFiles(
       wat,
       ned,
       oximetry,
+      oximetryTrace: null,
     });
   }
 

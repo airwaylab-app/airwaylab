@@ -33,6 +33,7 @@ function makeNight(dateStr: string, glasgowOverall: number): NightResult {
       h1NedMean: 16, h2NedMean: 20, combinedFLPct: 35, estimatedArousalIndex: 12,
     },
     oximetry: null,
+    oximetryTrace: null,
   };
 }
 

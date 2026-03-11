@@ -53,7 +53,7 @@ export function MetricDetailModal({
     (e: React.MouseEvent) => {
       if (e.target === focusTrapRef.current) onClose();
     },
-    [onClose]
+    [onClose, focusTrapRef]
   );
 
   // Build chart data (chronological order)

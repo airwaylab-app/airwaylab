@@ -3,7 +3,7 @@
 // Downsampling, synthetic generation, and formatting helpers
 // ============================================================
 
-import type { WaveformPoint, PressurePoint, WaveformData, WaveformEvent } from './waveform-types';
+import type { WaveformPoint, PressurePoint, LeakPoint, WaveformData, WaveformEvent } from './waveform-types';
 
 /**
  * Downsample a Float32Array using min/max/avg bucketing.
@@ -89,10 +89,11 @@ export function downsamplePressure(
  */
 export function computeFlowStats(
   flow: WaveformPoint[],
-  pressure: PressurePoint[]
+  pressure: PressurePoint[],
+  leak: LeakPoint[] = []
 ): WaveformData['stats'] {
   if (flow.length === 0) {
-    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null };
+    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, leakMean: null, leakMax: null, leakP95: null };
   }
 
   let fMin = Infinity;
@@ -125,6 +126,23 @@ export function computeFlowStats(
     }
   }
 
+  let leakMean: number | null = null;
+  let leakMax: number | null = null;
+  let leakP95: number | null = null;
+  if (leak.length > 0) {
+    let lSum = 0;
+    let lMax = 0;
+    for (const l of leak) {
+      lSum += l.avg;
+      if (l.max > lMax) lMax = l.max;
+    }
+    leakMean = +(lSum / leak.length).toFixed(1);
+    leakMax = +lMax.toFixed(1);
+    // P95 from sorted avg values
+    const sorted = leak.map((l) => l.avg).sort((a, b) => a - b);
+    leakP95 = +sorted[Math.floor(sorted.length * 0.95)].toFixed(1);
+  }
+
   return {
     breathCount,
     flowMin: +fMin.toFixed(2),
@@ -132,6 +150,9 @@ export function computeFlowStats(
     flowMean: +(fSum / flow.length).toFixed(2),
     pressureMin: pMin !== null ? +pMin.toFixed(1) : null,
     pressureMax: pMax !== null ? +pMax.toFixed(1) : null,
+    leakMean,
+    leakMax,
+    leakP95,
   };
 }
 
@@ -157,6 +178,7 @@ export function generateSyntheticWaveform(
 
   const flow: WaveformPoint[] = [];
   const pressure: PressurePoint[] = [];
+  const leak: LeakPoint[] = [];
   const events: WaveformEvent[] = [];
 
   const breathDuration = durationSeconds / breathCount;
@@ -214,6 +236,16 @@ export function generateSyntheticWaveform(
       t: +(t).toFixed(1),
       avg: +pressureValue.toFixed(2),
     });
+
+    // Synthetic leak: baseline 4-8 L/min with occasional spikes
+    const leakBase = 6 + Math.sin(t * 0.001) * 2;
+    const leakSpike = (breathIndex % 40 === 0 && breathPhase < 0.2) ? 15 + Math.sin(t * 0.7) * 5 : 0;
+    const leakValue = Math.max(0, leakBase + leakSpike + Math.sin(t * 0.3) * 1.5);
+    leak.push({
+      t: +(t).toFixed(1),
+      avg: +leakValue.toFixed(1),
+      max: +(leakValue + Math.abs(Math.sin(t * 1.1)) * 3).toFixed(1),
+    });
   }
 
   // Generate RERA events at semi-random intervals
@@ -244,7 +276,7 @@ export function generateSyntheticWaveform(
   // Sort events by start time
   events.sort((a, b) => a.startSec - b.startSec);
 
-  const stats = computeFlowStats(flow, pressure);
+  const stats = computeFlowStats(flow, pressure, leak);
   // Override breath count with the actual input
   stats.breathCount = breathCount;
 
@@ -254,6 +286,7 @@ export function generateSyntheticWaveform(
     originalSampleRate: 25,
     flow,
     pressure,
+    leak,
     events,
     stats,
   };
