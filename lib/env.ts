@@ -45,6 +45,9 @@ export const serverEnv = {
 
   /** Stripe webhook signing secret */
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? undefined,
+
+  /** Resend API key for transactional email */
+  RESEND_API_KEY: process.env.RESEND_API_KEY ?? undefined,
 } as const;
 
 /**
