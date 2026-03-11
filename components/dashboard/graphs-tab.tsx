@@ -13,6 +13,7 @@ import { RespiratoryRateChart } from '@/components/charts/respiratory-rate-chart
 import { SharedChartToolbar } from '@/components/charts/shared-chart-toolbar';
 import { SyncedViewportProvider } from '@/hooks/use-synced-viewport';
 import { useWaveform } from '@/hooks/use-waveform';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { formatElapsedTimeShort } from '@/lib/waveform-utils';
 import type { NightResult } from '@/lib/types';
 import {
@@ -171,18 +172,22 @@ export function GraphsTab({
               </Button>
             </div>
 
-            {/* Stacked charts */}
+            {/* Stacked charts — each wrapped in its own ErrorBoundary */}
             <div className="flex flex-col gap-4 rounded-lg border border-border/50 bg-card/20 p-3">
               {/* Flow Waveform */}
-              <FlowWaveform
-                waveform={waveform}
-                showPressure={showFlowPressure}
-                showEvents={showEvents}
-              />
+              <ErrorBoundary context="Flow Waveform">
+                <FlowWaveform
+                  waveform={waveform}
+                  showPressure={showFlowPressure}
+                  showEvents={showEvents}
+                />
+              </ErrorBoundary>
 
               {/* Tidal Volume */}
               {hasTidalVolume ? (
-                <TidalVolumeChart tidalVolume={waveform.tidalVolume!} />
+                <ErrorBoundary context="Tidal Volume">
+                  <TidalVolumeChart tidalVolume={waveform.tidalVolume!} />
+                </ErrorBoundary>
               ) : (
                 <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
                   Requires flow data — upload your SD card.
@@ -191,7 +196,9 @@ export function GraphsTab({
 
               {/* Respiratory Rate */}
               {hasRespRate ? (
-                <RespiratoryRateChart respiratoryRate={waveform.respiratoryRate!} />
+                <ErrorBoundary context="Respiratory Rate">
+                  <RespiratoryRateChart respiratoryRate={waveform.respiratoryRate!} />
+                </ErrorBoundary>
               ) : (
                 <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
                   Requires flow data — upload your SD card.
@@ -200,10 +207,12 @@ export function GraphsTab({
 
               {/* Pressure */}
               {hasPressure ? (
-                <DevicePressureChart
-                  pressure={waveform.pressure}
-                  settings={selectedNight.settings}
-                />
+                <ErrorBoundary context="Pressure">
+                  <DevicePressureChart
+                    pressure={waveform.pressure}
+                    settings={selectedNight.settings}
+                  />
+                </ErrorBoundary>
               ) : (
                 <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
                   No pressure data in this recording.
@@ -212,7 +221,9 @@ export function GraphsTab({
 
               {/* Leak */}
               {hasLeak ? (
-                <DeviceLeakChart leak={waveform.leak} />
+                <ErrorBoundary context="Leak">
+                  <DeviceLeakChart leak={waveform.leak} />
+                </ErrorBoundary>
               ) : (
                 <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
                   No leak data in this recording.
@@ -221,7 +232,9 @@ export function GraphsTab({
 
               {/* SpO2 — always visible */}
               {oxTrace ? (
-                <SpO2Trace trace={oxTrace} />
+                <ErrorBoundary context="SpO₂ Trace">
+                  <SpO2Trace trace={oxTrace} />
+                </ErrorBoundary>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 py-6">
                   <HeartPulse className="h-5 w-5 text-muted-foreground/40" />
@@ -243,10 +256,10 @@ export function GraphsTab({
 
             {/* Stats bar */}
             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-xs text-muted-foreground sm:gap-5">
-              <span>Duration: <strong className="text-foreground">{formatElapsedTimeShort(waveform.durationSeconds)}</strong></span>
-              <span>Breaths: <strong className="text-foreground">{waveform.stats.breathCount.toLocaleString()}</strong></span>
-              <span>Flow range: <strong className="text-foreground">{waveform.stats.flowMin.toFixed(0)} – {waveform.stats.flowMax.toFixed(0)} L/min</strong></span>
-              {waveform.stats.pressureMin !== null && waveform.stats.pressureMax !== null && (
+              <span>Duration: <strong className="text-foreground">{formatElapsedTimeShort(waveform.durationSeconds ?? 0)}</strong></span>
+              <span>Breaths: <strong className="text-foreground">{(waveform.stats?.breathCount ?? 0).toLocaleString()}</strong></span>
+              <span>Flow range: <strong className="text-foreground">{(waveform.stats?.flowMin ?? 0).toFixed(0)} – {(waveform.stats?.flowMax ?? 0).toFixed(0)} L/min</strong></span>
+              {waveform.stats?.pressureMin != null && waveform.stats?.pressureMax != null && (
                 <span>Pressure: <strong className="text-foreground">{waveform.stats.pressureMin.toFixed(1)} – {waveform.stats.pressureMax.toFixed(1)} cmH₂O</strong></span>
               )}
               <span>Events: <strong className="text-foreground">{waveform.events.length}</strong></span>
