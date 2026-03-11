@@ -5,6 +5,24 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Provider-Grade Chart Browser (2026-03-11)
+
+### Added
+
+- **Synced stacked chart view**: All waveform charts (Flow, Tidal Volume, Respiratory Rate, Pressure, Leak, SpO2) now share a single viewport — zoom/pan in one chart moves them all (`provider-grade-chart-browser`)
+- **Shared chart toolbar**: Single toolbar with zoom presets (5m/15m/30m/1h/2h), +/- zoom, pan arrows, reset button, and minimap overview bar (`provider-grade-chart-browser`)
+- **Tidal Volume chart**: New chart showing estimated tidal volume (mL) computed from inspiratory flow integration (`provider-grade-chart-browser`)
+- **Respiratory Rate chart**: New chart showing breaths/min computed via zero-crossing counting in a 30-second sliding window (`provider-grade-chart-browser`)
+- **Touch gesture support**: Pinch-to-zoom and swipe-to-pan on all charts for mobile/tablet devices (`provider-grade-chart-browser`)
+- **M-shape event detection**: Waveform event detector now identifies M-shape (double-peaked) inspiratory patterns (`provider-grade-chart-browser`)
+
+### Changed
+
+- **Improved event detection**: Replaced amplitude-based detector with flatness-based flow limitation detection — detects FL runs (3+ consecutive breaths with flatness >0.7), M-shape patterns, and arousal candidates (`provider-grade-chart-browser`)
+- **SpO2 always visible**: Removed collapsible sections — SpO2 trace or upload CTA is always shown to encourage oximetry data capture (`provider-grade-chart-browser`)
+- **Compact chart heights**: All sub-charts reduced in height (140-200px) to fit more data on screen without scrolling (`provider-grade-chart-browser`)
+- **Charts use synced viewport context**: Flow, Pressure, Leak, and SpO2 charts no longer have independent viewports — all consume shared SyncedViewportProvider (`provider-grade-chart-browser`)
+
 ## [Unreleased] — Dashboard UX: Beginner-Friendly Redesign (2026-03-11)
 
 ### Added

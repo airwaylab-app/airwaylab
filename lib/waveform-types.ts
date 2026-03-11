@@ -33,6 +33,22 @@ export interface LeakPoint {
   max: number;
 }
 
+/** A single tidal volume data point */
+export interface TidalVolumePoint {
+  /** Elapsed seconds from session start */
+  t: number;
+  /** Estimated tidal volume (mL) */
+  avg: number;
+}
+
+/** A single respiratory rate data point */
+export interface RespiratoryRatePoint {
+  /** Elapsed seconds from session start */
+  t: number;
+  /** Breaths per minute */
+  avg: number;
+}
+
 /** A detected event rendered on the waveform */
 export interface WaveformEvent {
   /** Start time in elapsed seconds */
@@ -61,6 +77,10 @@ export interface WaveformData {
   leak: LeakPoint[];
   /** Detected events mapped to timeline */
   events: WaveformEvent[];
+  /** Estimated tidal volume per bucket (if available) */
+  tidalVolume?: TidalVolumePoint[];
+  /** Estimated respiratory rate per bucket (if available) */
+  respiratoryRate?: RespiratoryRatePoint[];
   /** Summary stats */
   stats: {
     breathCount: number;

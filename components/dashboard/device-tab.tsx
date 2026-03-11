@@ -126,7 +126,6 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
         <DevicePressureChart
           pressure={waveform.pressure}
           settings={settings}
-          durationSeconds={waveform.durationSeconds}
         />
       )}
 
@@ -134,7 +133,6 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
       {showLeak && hasLeak && (
         <DeviceLeakChart
           leak={waveform.leak}
-          durationSeconds={waveform.durationSeconds}
         />
       )}
 

@@ -42,6 +42,7 @@ interface ChartViewportReturn {
   setViewEnd: React.Dispatch<React.SetStateAction<number>>;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   chartRef: (el: HTMLElement | null) => void;
+  bucketSeconds: number;
 }
 
 // ── Hook ───────────────────────────────────────────────────────
@@ -57,6 +58,13 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartView = useRef({ start: 0, end: 0 });
+
+  // Refs for touch gestures
+  const isTouchPanning = useRef(false);
+  const isPinching = useRef(false);
+  const touchStartX = useRef(0);
+  const pinchStartDist = useRef(0);
+  const touchStartView = useRef({ start: 0, end: 0 });
 
   // Ref for the chart container element + version counter to trigger effect
   const elementRef = useRef<HTMLElement | null>(null);
@@ -185,6 +193,9 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
   zoomInRef.current = zoomIn;
   zoomOutRef.current = zoomOut;
 
+  const panByRef = useRef(panBy);
+  panByRef.current = panBy;
+
   const dataLengthRef = useRef(dataLength);
   dataLengthRef.current = dataLength;
 
@@ -194,7 +205,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     setElementVersion((v) => v + 1);
   }, []);
 
-  // ── Attach wheel + drag listeners to chart element ──────────
+  // ── Attach wheel + drag + touch listeners to chart element ──
 
   useEffect(() => {
     const el = elementRef.current;
@@ -249,16 +260,93 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       }
     };
 
+    // Touch gesture handlers
+    const getTouchDistance = (t1: Touch, t2: Touch) =>
+      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Pinch start
+        isPinching.current = true;
+        isTouchPanning.current = false;
+        pinchStartDist.current = getTouchDistance(e.touches[0], e.touches[1]);
+        touchStartView.current = {
+          start: clampedRef.current.start,
+          end: clampedRef.current.end,
+        };
+        e.preventDefault();
+      } else if (e.touches.length === 1) {
+        // Single-finger pan start
+        isTouchPanning.current = true;
+        isPinching.current = false;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartView.current = {
+          start: clampedRef.current.start,
+          end: clampedRef.current.end,
+        };
+        e.preventDefault();
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isPinching.current && e.touches.length === 2) {
+        e.preventDefault();
+        const dist = getTouchDistance(e.touches[0], e.touches[1]);
+        const ratio = dist / pinchStartDist.current;
+        if (ratio > 1.05) {
+          zoomInRef.current(0.5);
+          pinchStartDist.current = dist;
+        } else if (ratio < 0.95) {
+          zoomOutRef.current(0.5);
+          pinchStartDist.current = dist;
+        }
+      } else if (isTouchPanning.current && e.touches.length === 1) {
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const dx = e.touches[0].clientX - touchStartX.current;
+        const visibleCount = touchStartView.current.end - touchStartView.current.start;
+        const indexDelta = Math.round((-dx / rect.width) * visibleCount);
+        const newStart = Math.max(0, Math.min(
+          touchStartView.current.start + indexDelta,
+          dataLengthRef.current - visibleCount
+        ));
+        setViewStart(newStart);
+        setViewEnd(newStart + visibleCount);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        isTouchPanning.current = false;
+        isPinching.current = false;
+      } else if (e.touches.length === 1 && isPinching.current) {
+        // Transitioned from pinch to single finger
+        isPinching.current = false;
+        isTouchPanning.current = true;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartView.current = {
+          start: clampedRef.current.start,
+          end: clampedRef.current.end,
+        };
+      }
+    };
+
     el.addEventListener('wheel', handleWheel, { passive: false });
     el.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       el.removeEventListener('wheel', handleWheel);
       el.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
     };
   }, [elementVersion]);
 
@@ -279,5 +367,6 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     setViewEnd,
     handleKeyDown,
     chartRef,
+    bucketSeconds,
   };
 }
