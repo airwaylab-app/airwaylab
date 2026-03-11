@@ -79,8 +79,21 @@ class WaveformOrchestrator {
         return null;
       }
 
-      // Read only BRP files into ArrayBuffers
-      const fileBuffers = await readFiles(brpFiles);
+      // Further filter to only BRP files matching the target date's DATALOG folder.
+      // A night like "2026-03-10" has files in DATALOG/20260310/.
+      // This avoids reading ALL BRP files into memory (60+ files for large SD cards).
+      const dateCompact = targetDate.replace(/-/g, ''); // "20260310"
+      const dateFiltered = brpFiles.filter((f) => {
+        const path =
+          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        return path.includes(`DATALOG/${dateCompact}/`) || path.includes(`/${dateCompact}_`);
+      });
+
+      // Fall back to all BRP files if no path-based match (non-standard folder structure)
+      const filesToRead = dateFiltered.length > 0 ? dateFiltered : brpFiles;
+
+      // Read only matching BRP files into ArrayBuffers
+      const fileBuffers = await readFiles(filesToRead);
 
       // Run worker
       const waveform = await this.runWorker(fileBuffers, targetDate);
