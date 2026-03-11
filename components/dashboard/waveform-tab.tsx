@@ -270,8 +270,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
       {/* Disclaimer */}
       <p className="text-[10px] leading-relaxed text-muted-foreground/50">
         Flow waveforms are downsampled for display. Event detection on this view is approximate —
-        refer to the Flow Analysis tab for authoritative engine results. Use the brush control
-        below the chart to zoom into specific time ranges.
+        refer to the Flow Analysis tab for authoritative engine results.
       </p>
     </div>
   );
