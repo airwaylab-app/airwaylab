@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+
+const PAGE_SIZE = 20;
 import { getTrafficLight, getTrafficColor, type ThresholdDef } from '@/lib/thresholds';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
@@ -57,6 +60,7 @@ export function MetricsTable({ nights }: Props) {
   const THRESHOLDS = useThresholds();
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -86,12 +90,19 @@ export function MetricsTable({ nights }: Props) {
     return sortAsc ? av - bv : bv - av;
   }), [nights, sortKey, sortAsc]);
 
+  const visible = sorted.slice(0, visibleCount);
+  const remaining = sorted.length - visibleCount;
   const metricKeys: SortKey[] = ['glasgow', 'fl', 'regularity', 'periodicity', 'ned', 'rera'];
 
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium">All Nights</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">All Nights</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Desktop table */}
@@ -121,7 +132,7 @@ export function MetricsTable({ nights }: Props) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((n) => (
+              {visible.map((n) => (
                 <tr key={n.dateStr} className="border-b border-border/30 transition-colors hover:bg-card/50">
                   <td className="py-2 pr-4 font-mono tabular-nums">{n.dateStr}</td>
                   <td className="py-2 pr-4 font-mono tabular-nums">{fmtDuration(n.durationHours)}</td>
@@ -176,6 +187,25 @@ export function MetricsTable({ nights }: Props) {
             </div>
           ))}
         </div>
+
+        {remaining > 0 && (
+          <div className="mt-3 flex items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            >
+              Load more ({Math.min(remaining, PAGE_SIZE)} nights)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVisibleCount(sorted.length)}
+            >
+              Load all ({remaining} remaining)
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

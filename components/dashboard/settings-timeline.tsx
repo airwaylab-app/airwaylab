@@ -2,7 +2,10 @@
 
 import React, { memo, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
+
+const PAGE_SIZE = 20;
 import type { NightResult, MachineSettings } from '@/lib/types';
 
 interface Props {
@@ -65,6 +68,7 @@ function getChangeTitle(hasChanges: boolean, changes: string[]): string {
 export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapyChangeDate }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false); // newest first by default
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -100,11 +104,18 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
   }, [nights]);
 
   const hasAnyChanges = changeMap.size > 0 || nights.some((n) => n.dateStr === therapyChangeDate);
+  const visible = sorted.slice(0, visibleCount);
+  const remaining = sorted.length - visibleCount;
 
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium">Machine Settings Timeline</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Machine Settings Timeline</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}
+          </span>
+        </div>
         {nights.length > 1 && (
           <p className="text-xs text-muted-foreground">
             {hasAnyChanges
@@ -139,7 +150,7 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
               </tr>
             </thead>
             <tbody>
-              {sorted.map((n) => {
+              {visible.map((n) => {
                 const s = n.settings;
                 const isChange = n.dateStr === therapyChangeDate;
                 const changes = changeMap.get(n.dateStr) || [];
@@ -273,6 +284,25 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
             );
           })}
         </div>
+
+        {remaining > 0 && (
+          <div className="mt-3 flex items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            >
+              Load more ({Math.min(remaining, PAGE_SIZE)} nights)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVisibleCount(sorted.length)}
+            >
+              Load all ({remaining} remaining)
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

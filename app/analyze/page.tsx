@@ -23,8 +23,7 @@ import { FlowAnalysisTab } from '@/components/dashboard/flow-analysis-tab';
 import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
 import { ComparisonTab } from '@/components/dashboard/comparison-tab';
-import { WaveformTab } from '@/components/dashboard/waveform-tab';
-import { DeviceTab } from '@/components/dashboard/device-tab';
+import { GraphsTab } from '@/components/dashboard/graphs-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
@@ -50,7 +49,7 @@ import {
   Moon,
   CheckCircle2,
   X,
-  Gauge,
+  BarChart,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -607,6 +606,11 @@ function AnalyzePageInner() {
                 <span className="sm:hidden text-[11px]">Ovw</span>
                 <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
+              <TabsTrigger value="graphs" className="gap-1.5">
+                <BarChart className="h-3.5 w-3.5" />
+                <span className="sm:hidden text-[11px]">Grph</span>
+                <span className="hidden sm:inline">Graphs</span>
+              </TabsTrigger>
               <TabsTrigger value="glasgow" className="gap-1.5">
                 <Activity className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">Gla</span>
@@ -617,16 +621,6 @@ function AnalyzePageInner() {
                 <span className="sm:hidden text-[11px]">Flow</span>
                 <span className="hidden sm:inline">Flow Analysis</span>
               </TabsTrigger>
-              <TabsTrigger value="waveform" className="gap-1.5">
-                <Waves className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Wave</span>
-                <span className="hidden sm:inline">Waveforms</span>
-              </TabsTrigger>
-              <TabsTrigger value="device" className="gap-1.5">
-                <Gauge className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Dev</span>
-                <span className="hidden sm:inline">Device</span>
-              </TabsTrigger>
               <TabsTrigger value="oximetry" className="gap-1.5">
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">O₂</span>
@@ -635,7 +629,7 @@ function AnalyzePageInner() {
               <TabsTrigger value="trends" className="gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">Trends</span>
-                <span className="hidden sm:inline">Trends &amp; Graphs</span>
+                <span className="hidden sm:inline">Trends</span>
               </TabsTrigger>
               <TabsTrigger value="compare" className="gap-1.5">
                 <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -652,6 +646,24 @@ function AnalyzePageInner() {
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
+                  onUploadOximetry={
+                    !isDemo && !currentNight.oximetry
+                      ? handleOximetryUpload
+                      : undefined
+                  }
+                />
+              </ErrorBoundary>
+            </TabsContent>
+
+            <TabsContent value="graphs" className="mt-6">
+              <ErrorBoundary context="Graphs">
+                <GraphsTab
+                  selectedNight={currentNight}
+                  nights={nights}
+                  therapyChangeDate={therapyChangeDate}
+                  isDemo={isDemo}
+                  sdFiles={sdFilesRef.current}
+                  onReUpload={handleReset}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
@@ -678,28 +690,6 @@ function AnalyzePageInner() {
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   nights={nights}
-                />
-              </ErrorBoundary>
-            </TabsContent>
-
-            <TabsContent value="waveform" className="mt-6">
-              <ErrorBoundary context="Waveforms">
-                <WaveformTab
-                  selectedNight={currentNight}
-                  isDemo={isDemo}
-                  sdFiles={sdFilesRef.current}
-                  onReUpload={handleReset}
-                />
-              </ErrorBoundary>
-            </TabsContent>
-
-            <TabsContent value="device" className="mt-6">
-              <ErrorBoundary context="Device">
-                <DeviceTab
-                  selectedNight={currentNight}
-                  isDemo={isDemo}
-                  sdFiles={sdFilesRef.current}
-                  onReUpload={handleReset}
                 />
               </ErrorBoundary>
             </TabsContent>
