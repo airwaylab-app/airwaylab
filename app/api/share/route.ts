@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
+/**
+ * Zod schema to validate the shape of analysis data.
+ * Accepts a single NightResult object or an array of NightResult objects.
+ * Each must have at minimum a dateStr and glasgow.overall to be plausible analysis data.
+ */
+const NightResultShape = z.object({
+  dateStr: z.string().min(1),
+  glasgow: z.object({ overall: z.number() }),
+});
+
+const SharePayloadSchema = z.object({
+  analysisData: z.union([NightResultShape, z.array(NightResultShape).min(1)]),
+  machineInfo: z.unknown().optional().nullable(),
+  nightsCount: z.number().int().positive().optional(),
+  shareScope: z.enum(['single', 'all']),
+});
+
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 const MAX_PAYLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
-const VALID_SCOPES = ['single', 'all'] as const;
 
 /**
  * POST /api/share
@@ -41,36 +58,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { analysisData, machineInfo, nightsCount, shareScope } = body as {
-      analysisData: unknown;
-      machineInfo: unknown;
-      nightsCount: unknown;
-      shareScope: unknown;
-    };
+    const parsed = SharePayloadSchema.safeParse(body);
 
-    // Validate analysisData
-    if (!analysisData || typeof analysisData !== 'object') {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Analysis data is required.' },
+        { error: 'Invalid analysis data. Please try again with valid results.' },
         { status: 400 }
       );
     }
 
-    // Validate shareScope
-    if (
-      typeof shareScope !== 'string' ||
-      !(VALID_SCOPES as readonly string[]).includes(shareScope)
-    ) {
-      return NextResponse.json(
-        { error: 'Invalid share scope.' },
-        { status: 400 }
-      );
-    }
+    const { analysisData, machineInfo, shareScope } = parsed.data;
 
-    // Validate nightsCount
-    const count = typeof nightsCount === 'number' && nightsCount > 0
-      ? nightsCount
-      : Array.isArray(analysisData) ? analysisData.length : 1;
+    const count = parsed.data.nightsCount
+      ?? (Array.isArray(analysisData) ? analysisData.length : 1);
 
     const supabase = getSupabaseAdmin();
     if (!supabase) {

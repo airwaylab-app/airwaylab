@@ -41,22 +41,6 @@ export const ShareButton = memo(function ShareButton({
   const [copyError, setCopyError] = useState(false);
   const focusTrapRef = useFocusTrap(state.step === 'success' || state.step === 'error');
 
-  const handleShareClick = useCallback(() => {
-    const consent = getShareConsent();
-
-    if (!consent || !consent.dataShareConsent) {
-      // First time: show full consent modal
-      events.shareOptinShown();
-      setState({ step: 'consent' });
-    } else if (consent.rememberedChoice) {
-      // Remembered: skip modal, generate immediately
-      createShareLink(consent.shareScope);
-    } else {
-      // Consented but not remembered: show simplified scope picker
-      setState({ step: 'scope' });
-    }
-  }, []);// eslint-disable-line react-hooks/exhaustive-deps
-
   const createShareLink = useCallback(
     async (scope: 'single' | 'all') => {
       setState({ step: 'loading' });
@@ -116,6 +100,22 @@ export const ShareButton = memo(function ShareButton({
     },
     [nights, selectedNight]
   );
+
+  const handleShareClick = useCallback(() => {
+    const consent = getShareConsent();
+
+    if (!consent || !consent.dataShareConsent) {
+      // First time: show full consent modal
+      events.shareOptinShown();
+      setState({ step: 'consent' });
+    } else if (consent.rememberedChoice) {
+      // Remembered: skip modal, generate immediately
+      createShareLink(consent.shareScope);
+    } else {
+      // Consented but not remembered: show simplified scope picker
+      setState({ step: 'scope' });
+    }
+  }, [createShareLink]);
 
   const handleConsentConfirm = useCallback(
     (scope: 'single' | 'all', remember: boolean) => {

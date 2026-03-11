@@ -27,10 +27,12 @@ CREATE POLICY "Service role can insert shared analyses"
   ON shared_analyses FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Service role can update access counts"
+-- Note: UPDATE restricted to service role via API (getSupabaseAdmin).
+-- The RLS policy denies anon/public updates as defense-in-depth.
+CREATE POLICY "Deny public updates to shared analyses"
   ON shared_analyses FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+  USING (false)
+  WITH CHECK (false);
 
 -- Indexes
 CREATE INDEX idx_shared_analyses_expires ON shared_analyses(expires_at);
