@@ -387,6 +387,12 @@ export default function PricingPage() {
               Learn more about AirwayLab
             </Link>
           </p>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Provider and clinic features are in development.{' '}
+            <Link href="/providers" className="text-primary hover:underline">
+              Learn more →
+            </Link>
+          </p>
         </div>
       </div>
 

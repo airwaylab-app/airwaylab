@@ -88,4 +88,43 @@ export const events = {
 
   /** User enabled cloud sync */
   cloudSyncUsed: () => trackEvent('Cloud Sync Used'),
+
+  // ── Share link events ──────────────────────────────────────
+  /** Share opt-in modal shown */
+  shareOptinShown: () => trackEvent('share_optin_shown'),
+
+  /** User opted in to share single night */
+  shareOptinSingle: () => trackEvent('share_optin_single'),
+
+  /** User opted in to share all nights */
+  shareOptinAll: () => trackEvent('share_optin_all'),
+
+  /** User checked "remember my choice" */
+  shareOptinRemembered: () => trackEvent('share_optin_remembered'),
+
+  /** Share link created */
+  shareCreated: (nightsCount: number, shareScope: string) =>
+    trackEvent('share_created', { nightsCount, shareScope }),
+
+  /** Shared analysis viewed */
+  shareViewed: () => trackEvent('share_viewed'),
+
+  /** Share link copied */
+  shareCopied: () => trackEvent('share_copied'),
+
+  /** Expired share link visited */
+  shareExpiredView: () => trackEvent('share_expired_view'),
+
+  // ── Providers page events ──────────────────────────────────
+  /** Providers page viewed */
+  providersPageView: () => trackEvent('providers_page_view'),
+
+  /** "Try the Demo" clicked on providers page */
+  providersDemoClick: () => trackEvent('providers_demo_click'),
+
+  /** "Get in Touch" clicked on providers page */
+  providersContactClick: () => trackEvent('providers_contact_click'),
+
+  /** Provider interest form submitted */
+  providersContactSubmit: () => trackEvent('providers_contact_submit'),
 } as const;

@@ -13,6 +13,7 @@ import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
+import { ShareButton } from '@/components/share/share-button';
 import { EmailOptIn } from '@/components/common/email-opt-in';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { ThresholdsProvider } from '@/components/common/thresholds-provider';
@@ -590,6 +591,7 @@ function AnalyzePageInner() {
               <div className="hidden sm:block">
                 <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
               </div>
+              {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} />}
               {!isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]} />}
               <ThresholdSettingsModal />
               <Button variant="ghost" size="sm" onClick={handleReset}>

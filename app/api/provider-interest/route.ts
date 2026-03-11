@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { validateOrigin } from '@/lib/csrf';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
+
+const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
+const ALLOWED_PRACTICE_TYPES = [
+  'independent_sleep_consultant',
+  'respiratory_therapist',
+  'sleep_physician',
+  'other',
+] as const;
+
+/**
+ * POST /api/provider-interest
+ *
+ * Accepts provider interest form submissions.
+ * No auth required. Rate limited to 5/hour per IP.
+ */
+export async function POST(request: NextRequest) {
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  try {
+    const ip = getRateLimitKey(request);
+    if (limiter.isLimited(ip)) {
+      console.error(`[provider-interest] 429 rate limited ip=${ip}`);
+      return NextResponse.json(
+        { error: 'Too many submissions. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    // Size guard
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json(
+        { error: 'Payload too large.' },
+        { status: 413 }
+      );
+    }
+
+    const body = await request.json();
+    const { name, email, practiceType, message } = body as {
+      name: unknown;
+      email: unknown;
+      practiceType?: unknown;
+      message?: unknown;
+    };
+
+    // Validate name
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return NextResponse.json(
+        { error: 'Name must be at least 2 characters.' },
+        { status: 400 }
+      );
+    }
+    if (name.trim().length > 100) {
+      return NextResponse.json(
+        { error: 'Name too long (max 100 characters).' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email
+    if (
+      !email ||
+      typeof email !== 'string' ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      email.length > 254
+    ) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate practiceType (optional)
+    const cleanPracticeType =
+      typeof practiceType === 'string' &&
+      (ALLOWED_PRACTICE_TYPES as readonly string[]).includes(practiceType)
+        ? practiceType
+        : null;
+
+    // Validate message (optional)
+    if (message !== undefined && message !== null && message !== '') {
+      if (typeof message !== 'string' || message.length > 2000) {
+        return NextResponse.json(
+          { error: 'Message too long (max 2000 characters).' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const supabase = getSupabaseAdmin();
+
+    if (supabase) {
+      const { error } = await supabase.from('provider_interest').insert({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        practice_type: cleanPracticeType,
+        message: typeof message === 'string' ? message.trim() || null : null,
+      });
+
+      if (error) {
+        console.error('[provider-interest] Supabase error:', error.message);
+        Sentry.captureException(error, { tags: { route: 'provider-interest' } });
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+      }
+    } else {
+      console.error('[provider-interest] Supabase not configured — submission not stored');
+    }
+
+    Sentry.captureMessage('New provider interest submission', {
+      level: 'info',
+      tags: { route: 'provider-interest', practice_type: cleanPracticeType ?? 'none' },
+      extra: {
+        name: (name as string).trim(),
+        emailDomain: (email as string).split('@')[1],
+      },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: 'provider-interest' } });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

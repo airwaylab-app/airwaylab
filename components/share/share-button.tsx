@@ -1,0 +1,304 @@
+'use client';
+
+import { memo, useState, useCallback } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Link2, Check, AlertCircle, Loader2, X, Copy } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { ShareConsentModal } from './share-consent-modal';
+import {
+  getShareConsent,
+  setShareConsent,
+} from '@/lib/share-consent';
+import { events } from '@/lib/analytics';
+import type { NightResult } from '@/lib/types';
+
+interface Props {
+  nights: NightResult[];
+  selectedNight: NightResult;
+}
+
+type ShareState =
+  | { step: 'idle' }
+  | { step: 'consent' }
+  | { step: 'scope' }
+  | { step: 'loading' }
+  | { step: 'success'; shareUrl: string; expiresAt: string; nightsCount: number; shareScope: string }
+  | { step: 'error'; message: string };
+
+export const ShareButton = memo(function ShareButton({
+  nights,
+  selectedNight,
+}: Props) {
+  const [state, setState] = useState<ShareState>({ step: 'idle' });
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  const focusTrapRef = useFocusTrap(state.step === 'success' || state.step === 'error');
+
+  const createShareLink = useCallback(
+    async (scope: 'single' | 'all') => {
+      setState({ step: 'loading' });
+
+      const analysisData =
+        scope === 'single' ? selectedNight : nights;
+      const nightsCount =
+        scope === 'single' ? 1 : nights.length;
+      const machineInfo = selectedNight.settings ?? null;
+
+      try {
+        const res = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            analysisData,
+            machineInfo,
+            nightsCount,
+            shareScope: scope,
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setState({
+            step: 'error',
+            message:
+              (data as { error?: string }).error ??
+              'Something went wrong creating the share link. Please try again.',
+          });
+          return;
+        }
+
+        const data = await res.json() as {
+          shareUrl: string;
+          expiresAt: string;
+          nightsCount: number;
+          shareScope: string;
+        };
+
+        events.shareCreated(data.nightsCount, data.shareScope);
+
+        setState({
+          step: 'success',
+          shareUrl: data.shareUrl,
+          expiresAt: data.expiresAt,
+          nightsCount: data.nightsCount,
+          shareScope: data.shareScope,
+        });
+      } catch {
+        setState({
+          step: 'error',
+          message:
+            'Something went wrong creating the share link. Please try again.',
+        });
+      }
+    },
+    [nights, selectedNight]
+  );
+
+  const handleShareClick = useCallback(() => {
+    const consent = getShareConsent();
+
+    if (!consent || !consent.dataShareConsent) {
+      // First time: show full consent modal
+      events.shareOptinShown();
+      setState({ step: 'consent' });
+    } else if (consent.rememberedChoice) {
+      // Remembered: skip modal, generate immediately
+      createShareLink(consent.shareScope);
+    } else {
+      // Consented but not remembered: show simplified scope picker
+      setState({ step: 'scope' });
+    }
+  }, [createShareLink]);
+
+  const handleConsentConfirm = useCallback(
+    (scope: 'single' | 'all', remember: boolean) => {
+      setShareConsent({
+        dataShareConsent: true,
+        shareScope: scope,
+        rememberedChoice: remember,
+      });
+      createShareLink(scope);
+    },
+    [createShareLink]
+  );
+
+  const handleCopy = useCallback(async () => {
+    if (state.step !== 'success') return;
+    try {
+      await navigator.clipboard.writeText(state.shareUrl);
+      setCopied(true);
+      setCopyError(false);
+      events.shareCopied();
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
+    }
+  }, [state]);
+
+  const handleClose = useCallback(() => {
+    setState({ step: 'idle' });
+    setCopied(false);
+    setCopyError(false);
+  }, []);
+
+  const handleChangePreferences = useCallback(() => {
+    events.shareOptinShown();
+    setState({ step: 'consent' });
+  }, []);
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          onClick={handleShareClick}
+          aria-label="Share analysis via link"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/[0.04] px-3 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.08]"
+        >
+          <Link2 className="h-3 w-3" />
+          <span className="hidden sm:inline">Share</span>
+        </TooltipTrigger>
+        <TooltipContent>Share analysis via link</TooltipContent>
+      </Tooltip>
+
+      {/* Consent modal (full) */}
+      <ShareConsentModal
+        open={state.step === 'consent'}
+        onClose={handleClose}
+        onConfirm={handleConsentConfirm}
+        nightsCount={nights.length}
+      />
+
+      {/* Scope picker (simplified — consent already given) */}
+      <ShareConsentModal
+        open={state.step === 'scope'}
+        onClose={handleClose}
+        onConfirm={handleConsentConfirm}
+        nightsCount={nights.length}
+        simplified
+      />
+
+      {/* Loading / Success / Error dialog */}
+      {(state.step === 'loading' ||
+        state.step === 'success' ||
+        state.step === 'error') && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={handleClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Share link"
+        >
+          <div
+            ref={focusTrapRef}
+            className="relative mx-4 w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleClose}
+              className="absolute right-3 top-3 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {state.step === 'loading' && (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  Creating share link...
+                </p>
+              </div>
+            )}
+
+            {state.step === 'success' && (
+              <div className="flex flex-col gap-4">
+                <h3 className="text-sm font-semibold">Share Link Created</h3>
+
+                {/* URL + copy */}
+                <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2">
+                  <p className="flex-1 truncate font-mono text-xs text-muted-foreground">
+                    {state.shareUrl}
+                  </p>
+                  <button
+                    onClick={handleCopy}
+                    className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent"
+                    aria-label="Copy share link"
+                  >
+                    {copyError ? (
+                      <span className="flex items-center gap-1 text-red-400">
+                        <AlertCircle className="h-3 w-3" /> Failed
+                      </span>
+                    ) : copied ? (
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <Check className="h-3 w-3" /> Copied!
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Copy className="h-3 w-3" /> Copy
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Meta */}
+                <p className="text-xs text-muted-foreground">
+                  {state.nightsCount} night
+                  {state.nightsCount !== 1 ? 's' : ''} · Expires{' '}
+                  {new Date(state.expiresAt).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </p>
+
+                {/* Provider cross-link */}
+                <p className="text-xs text-muted-foreground">
+                  Sharing with a sleep consultant?{' '}
+                  <Link
+                    href="/providers"
+                    className="text-primary underline decoration-primary/50 underline-offset-2 transition-colors hover:text-foreground"
+                    onClick={handleClose}
+                  >
+                    Tell them about AirwayLab
+                  </Link>
+                </p>
+
+                {/* Change preferences */}
+                <button
+                  onClick={handleChangePreferences}
+                  className="text-left text-[11px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                >
+                  Change sharing preferences
+                </button>
+              </div>
+            )}
+
+            {state.step === 'error' && (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <AlertCircle className="h-6 w-6 text-red-400" />
+                <p className="text-sm text-muted-foreground">
+                  {state.message}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareClick}
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </TooltipProvider>
+  );
+});

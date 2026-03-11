@@ -167,7 +167,7 @@ export default function Home() {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Shield className="h-4 w-4 shrink-0 text-emerald-400" />
-                <span>Your data never leaves your browser</span>
+                <span>Your data never leaves your browser — unless you choose to share it</span>
               </div>
 
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -653,6 +653,27 @@ export default function Home() {
               </a>{' '}
               for automated scoring and a different lens on your therapy data.
             </p>
+          </div>
+
+          {/* For Providers */}
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Stethoscope className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">Sleep consultant or clinician?</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your patients share a link, you see the full analysis. No software installs, no file transfers.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/providers"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              See how AirwayLab fits your workflow <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
 
           {/* Not on PAP yet? */}
