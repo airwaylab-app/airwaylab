@@ -69,9 +69,9 @@ export function ContributionNudgeDialog({
             Your {nightCount} {nightCount === 1 ? 'night' : 'nights'} could help thousands
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            We&apos;re building the largest PAP therapy dataset so patients and researchers can finally
-            benchmark therapy outcomes. Your anonymised scores would make a real difference — no
-            raw data leaves your device, ever.
+            We&apos;re building the largest PAP therapy dataset so researchers can train AI to
+            improve treatment for everyone. Your anonymised scores and breathing patterns would
+            make a real difference — no personal data leaves your device, ever.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export function ContributionNudgeDialog({
             onClick={onContribute}
           >
             <Heart className="h-4 w-4" />
-            Yes, contribute my scores
+            Yes, contribute my data
           </Button>
           <Button
             variant="ghost"

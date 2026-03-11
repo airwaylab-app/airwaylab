@@ -5,6 +5,19 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Waveform Data Contribution (2026-03-11)
+
+### Added
+
+- **Waveform data contribution**: Opted-in users now contribute raw breathing pattern data (flow waveforms) alongside analysis scores to the research dataset for AI training (`waveform-data-contribution`)
+- **Engine version tracking**: Analysis results are tagged with engine version; cached results are automatically invalidated when engines are updated (`waveform-data-contribution`)
+- **Incremental waveform upload**: Only new nights are uploaded; previously contributed dates are tracked and skipped (`waveform-data-contribution`)
+
+### Changed
+
+- **Updated contribution consent copy**: Opt-in checkbox and nudge dialog now mention "scores and breathing patterns" instead of just "scores" (`waveform-data-contribution`)
+- **Updated "What gets shared" disclosure**: Data contribution details now include breathing pattern data and remove the "never shared: raw waveforms" line (`waveform-data-contribution`)
+
 ## [Unreleased] — EDF Oximetry (SA2) Support (2026-03-11)
 
 ### Added

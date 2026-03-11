@@ -36,3 +36,54 @@ export function setConsentState(optedIn: boolean): void {
     localStorage.setItem(OPTED_IN_KEY, optedIn ? '1' : '0');
   } catch { /* noop */ }
 }
+
+// ── Waveform contribution date tracking ─────────────────────
+
+const WAVEFORM_DATES_KEY = 'airwaylab_contributed_waveform_dates';
+const WAVEFORM_ENGINE_KEY = 'airwaylab_contributed_waveform_engine';
+
+/** Get the set of night dates that have had waveforms contributed. */
+export function getContributedWaveformDates(): Set<string> {
+  try {
+    const raw = localStorage.getItem(WAVEFORM_DATES_KEY);
+    if (!raw) return new Set();
+    const arr: unknown = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr.filter((v): v is string => typeof v === 'string'));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Track successfully contributed waveform dates. */
+export function trackContributedWaveformDate(dateStr: string): void {
+  try {
+    const existing = getContributedWaveformDates();
+    existing.add(dateStr);
+    localStorage.setItem(WAVEFORM_DATES_KEY, JSON.stringify(Array.from(existing)));
+  } catch { /* noop */ }
+}
+
+/** Clear all contributed waveform dates (e.g., on engine version change). */
+export function clearContributedWaveformDates(): void {
+  try {
+    localStorage.removeItem(WAVEFORM_DATES_KEY);
+    localStorage.removeItem(WAVEFORM_ENGINE_KEY);
+  } catch { /* noop */ }
+}
+
+/** Get the engine version that was active when waveforms were last contributed. */
+export function getContributedWaveformEngine(): string | null {
+  try {
+    return localStorage.getItem(WAVEFORM_ENGINE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Store the engine version used for waveform contribution. */
+export function setContributedWaveformEngine(version: string): void {
+  try {
+    localStorage.setItem(WAVEFORM_ENGINE_KEY, version);
+  } catch { /* noop */ }
+}
