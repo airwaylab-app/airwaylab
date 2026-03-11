@@ -66,7 +66,7 @@ class WaveformOrchestrator {
     this.setState({ status: 'loading', waveform: null, error: null });
 
     try {
-      // Pre-filter to BRP files only — avoids reading non-flow files into memory
+      // Pre-filter to BRP + EVE files — avoids reading non-relevant files into memory
       const brpFiles = files.filter((f) => {
         const path =
           (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
@@ -79,20 +79,33 @@ class WaveformOrchestrator {
         return null;
       }
 
-      // Further filter to only BRP files matching the target date's DATALOG folder.
+      // Also find EVE.edf files (machine-recorded events, tiny ~1KB)
+      const eveFiles = files.filter((f) => {
+        const path =
+          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const name = (path.split('/').pop() || '').toLowerCase();
+        return name.endsWith('eve.edf') || name.endsWith('_eve.edf');
+      });
+
+      // Further filter to only files matching the target date's DATALOG folder.
       // A night like "2026-03-10" has files in DATALOG/20260310/.
       // This avoids reading ALL BRP files into memory (60+ files for large SD cards).
       const dateCompact = targetDate.replace(/-/g, ''); // "20260310"
-      const dateFiltered = brpFiles.filter((f) => {
+      const filterByDate = (f: File) => {
         const path =
           (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
         return path.includes(`DATALOG/${dateCompact}/`) || path.includes(`/${dateCompact}_`);
-      });
+      };
+
+      const dateFilteredBRP = brpFiles.filter(filterByDate);
+      const dateFilteredEVE = eveFiles.filter(filterByDate);
 
       // Fall back to all BRP files if no path-based match (non-standard folder structure)
-      const filesToRead = dateFiltered.length > 0 ? dateFiltered : brpFiles;
+      const brpToRead = dateFilteredBRP.length > 0 ? dateFilteredBRP : brpFiles;
+      const eveToRead = dateFilteredEVE.length > 0 ? dateFilteredEVE : eveFiles;
 
-      // Read only matching BRP files into ArrayBuffers
+      // Read BRP + EVE files into ArrayBuffers
+      const filesToRead = [...brpToRead, ...eveToRead];
       const fileBuffers = await readFiles(filesToRead);
 
       // Run worker

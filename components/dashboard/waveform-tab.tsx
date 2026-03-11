@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FlowWaveform } from '@/components/charts/flow-waveform';
+import { FlowWaveform, type EventType } from '@/components/charts/flow-waveform';
 import { waveformOrchestrator, type WaveformState } from '@/lib/waveform-orchestrator';
 import { generateSyntheticWaveform, formatElapsedTimeShort } from '@/lib/waveform-utils';
 import { loadCloudFiles } from '@/lib/storage/cloud-file-loader';
@@ -18,11 +18,29 @@ interface Props {
   onReUpload?: () => void;
 }
 
+const MACHINE_EVENT_DEFS: { type: EventType; label: string; color: string }[] = [
+  { type: 'obstructive-apnea', label: 'OA', color: 'hsl(0 70% 50%)' },
+  { type: 'central-apnea', label: 'CA', color: 'hsl(180 60% 45%)' },
+  { type: 'hypopnea', label: 'H', color: 'hsl(220 70% 55%)' },
+  { type: 'unclassified-apnea', label: 'UA', color: 'hsl(45 80% 50%)' },
+];
+
+const ALGORITHM_EVENT_DEFS: { type: EventType; label: string; color: string }[] = [
+  { type: 'rera', label: 'RERA', color: 'hsl(262 83% 58%)' },
+  { type: 'flow-limitation', label: 'FL', color: 'hsl(38 92% 50%)' },
+  { type: 'm-shape', label: 'M', color: 'hsl(0 84% 60%)' },
+];
+
+const ALL_EVENT_TYPES: EventType[] = [
+  ...MACHINE_EVENT_DEFS.map((d) => d.type),
+  ...ALGORITHM_EVENT_DEFS.map((d) => d.type),
+];
+
 export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props) {
   const { user } = useAuth();
   const [state, setState] = useState<WaveformState>(waveformOrchestrator.getState());
   const [showPressure, setShowPressure] = useState(false);
-  const [showEvents, setShowEvents] = useState(true);
+  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(() => new Set(ALL_EVENT_TYPES));
   const [cloudLoading, setCloudLoading] = useState(false);
   const [cloudAttempted, setCloudAttempted] = useState(false);
   const cloudAttemptedDates = useRef(new Set<string>());
@@ -36,7 +54,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     const dateStr = selectedNight.dateStr;
 
     if (isDemo) {
-      // Generate synthetic waveform for demo mode only
       const synthetic = generateSyntheticWaveform(
         selectedNight.durationHours,
         selectedNight.ned.breathCount,
@@ -54,14 +71,12 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     }
 
     if (sdFiles.length > 0) {
-      // Local files available — extract from them
       waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
         console.error('[waveform-tab] extraction failed:', err);
       });
       return;
     }
 
-    // No local files — try loading from cloud storage if authenticated
     if (user && !cloudAttemptedDates.current.has(dateStr)) {
       cloudAttemptedDates.current.add(dateStr);
       setCloudLoading(true);
@@ -91,7 +106,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         console.error('[waveform-tab] retry failed:', err);
       });
     } else if (user) {
-      // Retry cloud load
       cloudAttemptedDates.current.delete(selectedNight.dateStr);
       setCloudLoading(true);
       setCloudAttempted(false);
@@ -106,6 +120,31 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         .finally(() => setCloudLoading(false));
     }
   }, [sdFiles, selectedNight.dateStr, user]);
+
+  const waveform = state.waveform;
+
+  // Per-type event counts
+  const eventCounts = useMemo(() => {
+    if (!waveform) return new Map<EventType, number>();
+    const counts = new Map<EventType, number>();
+    for (const t of ALL_EVENT_TYPES) counts.set(t, 0);
+    for (const e of waveform.events) {
+      counts.set(e.type, (counts.get(e.type) ?? 0) + 1);
+    }
+    return counts;
+  }, [waveform]);
+
+  const toggleEventType = useCallback((type: EventType) => {
+    setVisibleTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
 
   // Cloud loading state
   if (cloudLoading) {
@@ -122,7 +161,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     );
   }
 
-  // Extraction loading state
   if (state.status === 'loading') {
     return (
       <Card className="border-border/50">
@@ -137,7 +175,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     );
   }
 
-  // Error state
   if (state.status === 'error') {
     return (
       <Card className="border-border/50">
@@ -152,7 +189,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     );
   }
 
-  // No files available — no local files, cloud attempted but no files found
   if (!isDemo && sdFiles.length === 0 && (cloudAttempted || !user)) {
     return (
       <Card className="border-border/50">
@@ -186,8 +222,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     );
   }
 
-  // No waveform data yet
-  if (!state.waveform) {
+  if (!waveform) {
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
@@ -197,8 +232,6 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
       </Card>
     );
   }
-
-  const waveform = state.waveform;
 
   const isFromCloud = sdFiles.length === 0 && !isDemo && cloudAttempted;
 
@@ -212,8 +245,8 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Controls — per-type toggles */}
+      <div className="flex flex-wrap items-center gap-1.5">
         <Button
           variant={showPressure ? 'secondary' : 'outline'}
           size="sm"
@@ -224,23 +257,75 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
           {showPressure ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
           Pressure
         </Button>
-        <Button
-          variant={showEvents ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => setShowEvents(!showEvents)}
-          disabled={waveform.events.length === 0}
-          className="gap-1.5 text-xs"
-        >
-          {showEvents ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-          Events ({waveform.events.length})
-        </Button>
+
+        <div className="mx-1 h-4 w-px bg-border/50" />
+
+        {/* Machine event toggles */}
+        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">Machine</span>
+        {MACHINE_EVENT_DEFS.map((def) => {
+          const count = eventCounts.get(def.type) ?? 0;
+          const isOn = visibleTypes.has(def.type);
+          return (
+            <button
+              key={def.type}
+              onClick={() => toggleEventType(def.type)}
+              disabled={count === 0}
+              aria-pressed={isOn}
+              aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                count === 0
+                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                  : isOn
+                    ? 'border-border bg-card text-foreground'
+                    : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+              }`}
+            >
+              <div
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: isOn && count > 0 ? def.color : 'hsl(215 20% 30%)' }}
+              />
+              {def.label} ({count})
+            </button>
+          );
+        })}
+
+        <div className="mx-1 h-4 w-px bg-border/50" />
+
+        {/* Algorithm event toggles */}
+        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">AirwayLab</span>
+        {ALGORITHM_EVENT_DEFS.map((def) => {
+          const count = eventCounts.get(def.type) ?? 0;
+          const isOn = visibleTypes.has(def.type);
+          return (
+            <button
+              key={def.type}
+              onClick={() => toggleEventType(def.type)}
+              disabled={count === 0}
+              aria-pressed={isOn}
+              aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                count === 0
+                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                  : isOn
+                    ? 'border-border bg-card text-foreground'
+                    : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+              }`}
+            >
+              <div
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: isOn && count > 0 ? def.color : 'hsl(215 20% 30%)' }}
+              />
+              {def.label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {/* Waveform chart */}
       <FlowWaveform
         waveform={waveform}
         showPressure={showPressure}
-        showEvents={showEvents}
+        visibleEventTypes={visibleTypes}
       />
 
       {/* Stats bar */}

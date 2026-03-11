@@ -148,6 +148,19 @@ export function findSTRFile(
 }
 
 /**
+ * Filter uploaded files to only valid EVE.edf event files (any size).
+ * EVE files contain machine-scored events (apnea, hypopnea, etc.) in EDF+ Annotations format.
+ */
+export function filterEVEFiles(
+  files: { name: string; path: string; size: number }[]
+): { name: string; path: string; size: number }[] {
+  return files.filter((f) => {
+    const name = f.name.toLowerCase();
+    return name.endsWith('eve.edf') && (name === 'eve.edf' || name.charAt(name.length - 8) === '_');
+  });
+}
+
+/**
  * Find Identification file from file list (case-insensitive).
  */
 export function findIdentificationFile(
