@@ -61,6 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Demo exit preserves data**: Exiting demo mode no longer clears previously persisted real analysis data (`onboarding-audit-v2`)
 - **Restored contribution nudge dialog**: Re-added accidentally deleted `contribution-nudge-dialog.tsx` component
 
+## [Unreleased] — Auto-fix Sentry Errors (2026-03-11)
+
+### Added
+
+- **Auto-fix Sentry errors**: GitHub Actions workflow that triggers on Sentry-labelled issues, runs Claude Code (Sonnet) to analyse and fix the error, and opens a PR for review. Includes branch deduplication, daily rate limit (5/day), and protected module guards. (`auto-fix-sentry-errors`)
+
 ## [Unreleased] — Share Link MVP & Providers Page (2026-03-11)
 
 ### Added
