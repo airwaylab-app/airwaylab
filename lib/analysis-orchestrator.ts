@@ -13,10 +13,9 @@ import type {
 } from './types';
 import { loadPersistedResults, persistResults } from './persistence';
 import {
-  diffAgainstManifest,
+  extractNightDate,
   buildManifest,
   saveManifest,
-  loadManifest,
 } from './file-manifest';
 
 type StateListener = (state: AnalysisState) => void;
@@ -67,47 +66,61 @@ export class AnalysisOrchestrator {
     });
 
     try {
-      // ── Incremental check ──
-      const manifest = loadManifest();
+      // ── Incremental check: skip nights already in cache ──
       const cached = loadPersistedResults();
-      let filesToProcess = sdArr;
-      let cachedNights: NightResult[] = [];
-      let skippedCount = 0;
+      const cachedNights = cached?.nights ?? [];
+      const cachedDateSet = new Set(cachedNights.map((n) => n.dateStr));
 
+      // Determine which dates in this upload are new (not yet cached)
+      const uploadDates = new Set<string>();
+      for (const file of sdArr) {
+        const path =
+          (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const date = extractNightDate(path);
+        if (date) uploadDates.add(date);
+      }
+
+      const newDates = new Set(
+        Array.from(uploadDates).filter((d) => !cachedDateSet.has(d))
+      );
       const hasNewOximetry = oximetryFiles && oximetryFiles.length > 0;
+      const skippedCount = uploadDates.size - newDates.size;
 
-      if (manifest && cached && cached.nights.length > 0) {
-        const diff = diffAgainstManifest(sdArr, manifest);
-        skippedCount = diff.unchanged.length;
-
-        if (diff.changedFiles.length === 0 && skippedCount > 0 && !hasNewOximetry) {
-          // ALL nights unchanged and no new oximetry — instant restore
-          const therapyChangeDate = detectTherapyChange(cached.nights);
-          this.setState({
-            status: 'complete',
-            nights: cached.nights,
-            therapyChangeDate,
-            progress: { current: 1, total: 1, stage: `All ${skippedCount} nights cached` },
-          });
-          // Re-save manifest to refresh its timestamp
-          saveManifest(buildManifest(sdArr));
-          return cached.nights;
+      // All uploaded nights already cached — instant restore or oximetry-only
+      if (newDates.size === 0 && cachedNights.length > 0) {
+        if (hasNewOximetry) {
+          // No new SD nights but new oximetry — delegate to oximetry-only path
+          return this.analyzeOximetryOnly(oximetryFiles!);
         }
+        const therapyChangeDate = detectTherapyChange(cachedNights);
+        this.setState({
+          status: 'complete',
+          nights: cachedNights,
+          therapyChangeDate,
+          progress: { current: 1, total: 1, stage: `All ${skippedCount} nights cached` },
+        });
+        saveManifest(buildManifest(sdArr));
+        return cachedNights;
+      }
 
-        if (skippedCount > 0) {
-          // Partial cache hit — pull cached results for unchanged nights
-          const unchangedSet = new Set(diff.unchanged);
-          cachedNights = cached.nights.filter((n) => unchangedSet.has(n.dateStr));
-          filesToProcess = diff.changedFiles;
-
-          this.setState({
-            progress: {
-              current: 0,
-              total: filesToProcess.length,
-              stage: `${skippedCount} night${skippedCount !== 1 ? 's' : ''} cached, reading ${diff.changedNights.size} new...`,
-            },
-          });
-        }
+      // Filter files: only new-date files + non-date files (STR.edf, Identification, etc.)
+      let filesToProcess: File[];
+      if (newDates.size > 0 && skippedCount > 0) {
+        filesToProcess = sdArr.filter((file) => {
+          const path =
+            (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+          const date = extractNightDate(path);
+          return date === null || newDates.has(date);
+        });
+        this.setState({
+          progress: {
+            current: 0,
+            total: filesToProcess.length,
+            stage: `${skippedCount} night${skippedCount !== 1 ? 's' : ''} cached, processing ${newDates.size} new...`,
+          },
+        });
+      } else {
+        filesToProcess = sdArr;
       }
 
       // ── Read files into ArrayBuffers ──
@@ -444,7 +457,10 @@ async function readCSVFiles(
 
 /**
  * Merge cached nights with freshly-analyzed nights.
- * Dedupes by dateStr (fresh wins). Returns sorted most-recent-first.
+ * Cached wins for duplicate dates — fresh only fills gaps.
+ * Exception: if cached night has no oximetry but fresh does, the
+ * oximetry data is merged in (fills empty data).
+ * Returns sorted most-recent-first.
  */
 function mergeNights(
   cached: NightResult[],
@@ -452,10 +468,19 @@ function mergeNights(
 ): NightResult[] {
   const map = new Map<string, NightResult>();
 
-  // Add cached first
-  for (const n of cached) map.set(n.dateStr, n);
-  // Fresh overwrites cached
+  // Add fresh first
   for (const n of fresh) map.set(n.dateStr, n);
+
+  // Cached overwrites fresh (cached wins), but preserve fresh oximetry
+  // if cached is missing it (fills empty data)
+  for (const n of cached) {
+    const freshVersion = map.get(n.dateStr);
+    if (freshVersion && !n.oximetry && freshVersion.oximetry) {
+      map.set(n.dateStr, { ...n, oximetry: freshVersion.oximetry });
+    } else {
+      map.set(n.dateStr, n);
+    }
+  }
 
   const merged = Array.from(map.values());
   // Sort most-recent-first
