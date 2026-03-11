@@ -21,9 +21,10 @@ export interface ContributionResult {
  */
 export async function contributeNights(
   nights: NightResult[],
-  onProgress?: (sent: number, total: number) => void
+  onProgress?: (sent: number, total: number) => void,
+  existingContributionId?: string
 ): Promise<ContributionResult> {
-  const contributionId = crypto.randomUUID();
+  const contributionId = existingContributionId ?? crypto.randomUUID();
   let totalSent = 0;
 
   for (let i = 0; i < nights.length; i += CHUNK_SIZE) {

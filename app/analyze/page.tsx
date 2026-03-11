@@ -32,6 +32,7 @@ import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { clearManifest } from '@/lib/file-manifest';
 import {
   RotateCcw,
@@ -277,10 +278,19 @@ function AnalyzePageInner() {
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
     setAutoSubmitStatus('sending');
-    contributeNights(nightsToSubmit)
+    const contributionId = crypto.randomUUID();
+    contributeNights(nightsToSubmit, undefined, contributionId)
       .then(() => {
         trackContributedDates(nightsToSubmit);
         setAutoSubmitStatus('success');
+        // Background waveform contribution — fire-and-forget, no UI
+        if (sdFilesRef.current.length > 0) {
+          contributeWaveformsBackground(
+            nightsToSubmit,
+            sdFilesRef.current,
+            contributionId
+          ).catch(() => { /* logged in contributeWaveformsBackground */ });
+        }
       })
       .catch(() => {
         setAutoSubmitStatus('error');

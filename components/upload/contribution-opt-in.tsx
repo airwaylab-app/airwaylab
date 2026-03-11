@@ -58,11 +58,11 @@ export function ContributionOptIn({
         <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-emerald-500" />
         <div className="flex-1 min-w-0">
           <span className="text-sm font-medium text-foreground">
-            {checked ? 'Contributing data, thank you' : 'Not contributing data'}
+            {checked ? 'Contributing data, thank you' : 'Not contributing'}
           </span>
           <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
             <Shield className="h-3 w-3 shrink-0" />
-            <span>Fully anonymous · no raw data shared</span>
+            <span>Fully anonymous · cannot be traced back to you</span>
           </div>
         </div>
         <button
@@ -107,16 +107,17 @@ export function ContributionOptIn({
           <div className="flex items-center gap-2">
             <Heart className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">
-              Help fellow PAP users — share your scores
+              Help fellow PAP users — share your data
             </span>
           </div>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            Your anonymised analysis scores help us build the largest PAP therapy dataset — so everyone
-            can benchmark their therapy and researchers can improve treatment for millions.
+            Your anonymised scores and breathing patterns help build the largest PAP therapy dataset
+            — so everyone can benchmark their therapy and researchers can train AI to improve treatment
+            for millions.
           </p>
           <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground/70">
             <Shield className="h-3 w-3" />
-            <span>No raw data shared · Fully anonymous · Cannot be traced back to you</span>
+            <span>No personal info shared · Fully anonymous · Cannot be traced back to you</span>
           </div>
         </div>
       </div>

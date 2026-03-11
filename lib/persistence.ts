@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { NightResult } from './types';
+import { ENGINE_VERSION } from './engine-version';
 
 const STORAGE_KEY = 'airwaylab_results';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -13,6 +14,7 @@ interface PersistedData {
   nights: NightResult[];
   therapyChangeDate: string | null;
   savedAt: number;
+  engineVersion?: string;
 }
 
 /**
@@ -45,6 +47,7 @@ export function persistResults(
       nights: stripBulkData(nights),
       therapyChangeDate,
       savedAt: Date.now(),
+      engineVersion: ENGINE_VERSION,
     };
     const json = JSON.stringify(data);
 
@@ -87,6 +90,12 @@ export function loadPersistedResults(): {
 
     // Expire after MAX_AGE_MS
     if (Date.now() - data.savedAt > MAX_AGE_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
+    // Invalidate if engine version changed
+    if (data.engineVersion && data.engineVersion !== ENGINE_VERSION) {
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }

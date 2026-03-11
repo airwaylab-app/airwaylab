@@ -278,17 +278,17 @@ export function DataContribution({
 
           {expanded && (
             <div className="rounded-md border border-border/30 bg-background/50 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
-              <p className="font-medium text-foreground/80 mb-1">Only anonymised metrics are shared:</p>
+              <p className="font-medium text-foreground/80 mb-1">What gets shared (anonymised):</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li>Analysis scores (Glasgow, Flow Limitation, NED, RERA)</li>
+                <li>Breathing pattern data (flow waveforms, for AI training)</li>
                 <li>Machine settings (mode, pressures — no serial numbers)</li>
                 <li>Oximetry summary metrics (if uploaded)</li>
                 <li>Duration and session count</li>
               </ul>
               <p className="mt-1.5 font-medium text-foreground/80">Never shared:</p>
               <ul className="list-disc pl-4 space-y-0.5">
-                <li>Raw breathing waveforms or SD card files</li>
-                <li>Dates, names, or any personal information</li>
+                <li>Names, dates of birth, or any personal information</li>
                 <li>IP addresses or device identifiers</li>
               </ul>
             </div>
