@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Lightbulb, ArrowRight } from 'lucide-react';
 import type { NightResult } from '@/lib/types';
@@ -16,6 +17,7 @@ interface Props {
 
 interface Step {
   text: string;
+  richText?: ReactNode;
   link?: { href: string; label: string };
   onClick?: () => void;
   actionLabel?: string;
@@ -64,6 +66,29 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
 
   steps.push({
     text: 'Share your results on r/SleepApnea or ApneaBoard for community feedback.',
+    richText: (
+      <>
+        Share your results on{' '}
+        <a
+          href="https://reddit.com/r/SleepApnea"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary hover:underline"
+        >
+          r/SleepApnea
+        </a>
+        {' '}or{' '}
+        <a
+          href="https://www.apneaboard.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary hover:underline"
+        >
+          ApneaBoard
+        </a>
+        {' '}for community feedback.
+      </>
+    ),
   });
 
   const shown = steps.slice(0, 3);
@@ -81,7 +106,7 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
               {i + 1}
             </span>
             <span>
-              {step.text}
+              {step.richText ?? step.text}
               {step.link && (
                 <Link
                   href={step.link.href}

@@ -301,6 +301,117 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── How It Works ─── */}
+      <section className="border-y border-border/50 bg-card/20 py-12 sm:py-16">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              How It Works
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              From SD card to actionable insights in seconds
+            </p>
+          </div>
+          <div className="mx-auto grid max-w-4xl gap-0 sm:grid-cols-3">
+            {steps.map((s, i) => (
+              <div key={s.num} className="relative flex gap-4 pb-8 sm:flex-col sm:items-center sm:pb-0 sm:text-center">
+                {/* Connector line */}
+                {i < steps.length - 1 && (
+                  <>
+                    <div className="absolute left-5 top-12 hidden h-[1px] w-[calc(100%-40px)] bg-border/50 sm:block" style={{ left: 'calc(50% + 24px)' }} />
+                    <div className="absolute left-5 top-12 h-[calc(100%-48px)] w-[1px] bg-border/50 sm:hidden" />
+                  </>
+                )}
+                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-card font-mono text-xs font-bold text-primary sm:mb-4 sm:h-12 sm:w-12 sm:text-sm">
+                  {s.num}
+                </div>
+                <div>
+                  <h3 className="mb-1 text-sm font-semibold">{s.title}</h3>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* What You'll Need */}
+          <div className="mx-auto mt-10 max-w-4xl rounded-xl border border-border/50 bg-card/50 p-5 sm:mt-14 sm:p-6">
+            <h3 className="mb-3 text-sm font-semibold">What You&apos;ll Need</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-start gap-3">
+                <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="text-xs font-medium">ResMed SD Card</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    AirSense 10/11 or AirCurve 10 with DATALOG folder. Select the entire SD card or just the DATALOG directory.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Pulse Oximetry CSV <span className="text-[10px]">(optional)</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Viatom/Checkme O2 Max CSV for SpO₂, heart rate surges, and coupled cardio-respiratory analysis.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              Use alongside{' '}
+              <a
+                href="https://www.sleepfiles.com/OSCAR/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-muted-foreground/50 underline-offset-2 transition-colors hover:text-foreground"
+              >
+                OSCAR
+              </a>{' '}
+              for automated scoring and a different lens on your therapy data.
+            </p>
+          </div>
+
+          {/* For Providers */}
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Stethoscope className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">Sleep consultant or clinician?</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your patients share a link, you see the full analysis. No software installs, no file transfers.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/providers"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              See how AirwayLab fits your workflow <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {/* Not on PAP yet? */}
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
+            <h3 className="text-sm font-semibold">Not on PAP therapy yet?</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              AirwayLab requires PAP flow data from a ResMed SD card.
+              If you suspect sleep-disordered breathing but aren&apos;t yet diagnosed,
+              talk to your doctor about a sleep study. Our blog has resources
+              to help you understand what to ask for.
+            </p>
+            <Link
+              href="/blog"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              Read the blog <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Mission ─── */}
       <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
         <div className="mb-8 sm:mb-12">
@@ -581,117 +692,6 @@ export default function Home() {
               Try the interactive demo
             </Button>
           </Link>
-        </div>
-      </section>
-
-      {/* ─── How It Works ─── */}
-      <section className="border-y border-border/50 bg-card/20 py-12 sm:py-16">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="mb-8 sm:mb-12">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              How It Works
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              From SD card to actionable insights in seconds
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-4xl gap-0 sm:grid-cols-3">
-            {steps.map((s, i) => (
-              <div key={s.num} className="relative flex gap-4 pb-8 sm:flex-col sm:items-center sm:pb-0 sm:text-center">
-                {/* Connector line */}
-                {i < steps.length - 1 && (
-                  <>
-                    <div className="absolute left-5 top-12 hidden h-[1px] w-[calc(100%-40px)] bg-border/50 sm:block" style={{ left: 'calc(50% + 24px)' }} />
-                    <div className="absolute left-5 top-12 h-[calc(100%-48px)] w-[1px] bg-border/50 sm:hidden" />
-                  </>
-                )}
-                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-card font-mono text-xs font-bold text-primary sm:mb-4 sm:h-12 sm:w-12 sm:text-sm">
-                  {s.num}
-                </div>
-                <div>
-                  <h3 className="mb-1 text-sm font-semibold">{s.title}</h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* What You'll Need */}
-          <div className="mx-auto mt-10 max-w-4xl rounded-xl border border-border/50 bg-card/50 p-5 sm:mt-14 sm:p-6">
-            <h3 className="mb-3 text-sm font-semibold">What You&apos;ll Need</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex items-start gap-3">
-                <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <div>
-                  <p className="text-xs font-medium">ResMed SD Card</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    AirSense 10/11 or AirCurve 10 with DATALOG folder. Select the entire SD card or just the DATALOG directory.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Pulse Oximetry CSV <span className="text-[10px]">(optional)</span>
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Viatom/Checkme O2 Max CSV for SpO₂, heart rate surges, and coupled cardio-respiratory analysis.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Use alongside{' '}
-              <a
-                href="https://www.sleepfiles.com/OSCAR/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-muted-foreground/50 underline-offset-2 transition-colors hover:text-foreground"
-              >
-                OSCAR
-              </a>{' '}
-              for automated scoring and a different lens on your therapy data.
-            </p>
-          </div>
-
-          {/* For Providers */}
-          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <Stethoscope className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold">Sleep consultant or clinician?</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Your patients share a link, you see the full analysis. No software installs, no file transfers.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/providers"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              See how AirwayLab fits your workflow <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          {/* Not on PAP yet? */}
-          <div className="mx-auto mt-6 max-w-4xl rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
-            <h3 className="text-sm font-semibold">Not on PAP therapy yet?</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              AirwayLab requires PAP flow data from a ResMed SD card.
-              If you suspect sleep-disordered breathing but aren&apos;t yet diagnosed,
-              talk to your doctor about a sleep study. Our blog has resources
-              to help you understand what to ask for.
-            </p>
-            <Link
-              href="/blog"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Read the blog <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
         </div>
       </section>
 

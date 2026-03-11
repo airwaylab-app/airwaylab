@@ -5,6 +5,26 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Onboarding Audit v2 (2026-03-11)
+
+### Changed
+
+- **Landing page reorder**: "How It Works" section now appears directly after the Trust Bar, before narrative sections (Mission, Vision), reducing scroll-to-conversion distance (`onboarding-audit-v2`)
+- **Overview tab hierarchy**: NextSteps CTA moved below the primary metrics grid and Glasgow breakdown — users see data before advice (`onboarding-audit-v2`)
+- **Dashboard density for new users**: SharePrompts and NightHeatmap hidden for first 5 sessions to reduce information overload (`onboarding-audit-v2`)
+- **Demo banner context**: Demo mode now explains the sample clinical scenario (BiPAP ST user, settings change on Jan 14) to help users interpret the data (`onboarding-audit-v2`)
+- **Upload screen simplified**: Removed StorageConsent and ContributionOptIn from upload idle screen; StorageConsent moved to post-analysis dashboard (`onboarding-audit-v2`)
+
+### Added
+
+- **Mobile upload warning**: `/analyze` page now shows a mobile-only banner suggesting the demo when SD card upload isn't practical (`onboarding-audit-v2`)
+- **Community links in NextSteps**: "Share your results" step now includes clickable links to r/SleepApnea and ApneaBoard (`onboarding-audit-v2`)
+
+### Fixed
+
+- **Demo exit preserves data**: Exiting demo mode no longer clears previously persisted real analysis data (`onboarding-audit-v2`)
+- **Restored contribution nudge dialog**: Re-added accidentally deleted `contribution-nudge-dialog.tsx` component
+
 ## [Unreleased] — Share Link MVP & Providers Page (2026-03-11)
 
 ### Added

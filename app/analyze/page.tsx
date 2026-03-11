@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useSearchParams } from 'next/navigation';
 import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
-import { ContributionOptIn } from '@/components/upload/contribution-opt-in';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
 import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageConsent } from '@/components/upload/storage-consent';
@@ -308,12 +307,22 @@ function AnalyzePageInner() {
         }
       } catch { /* noop */ }
     }
+
+    const wasDemo = isDemo;
     setIsDemo(false);
     orchestrator.reset();
     setSelectedNight(0);
-    setPersistedData(null);
-    clearPersistedResults();
-    clearManifest();
+
+    if (wasDemo) {
+      // Exiting demo: restore previously persisted data if it exists
+      const saved = loadPersistedResults();
+      setPersistedData(saved);
+    } else {
+      // Resetting real analysis: clear persisted data
+      setPersistedData(null);
+      clearPersistedResults();
+      clearManifest();
+    }
   }, [isDemo]);
 
   const { status, progress, error, warning } = state;
@@ -419,6 +428,21 @@ function AnalyzePageInner() {
       {/* Upload State */}
       {status === 'idle' && !isDemo && (
         <div className="mx-auto max-w-lg">
+          {/* Mobile upload warning */}
+          <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 sm:hidden">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div className="text-xs text-muted-foreground">
+              <p>SD card upload works best on a desktop computer.</p>
+              <button
+                type="button"
+                onClick={loadDemo}
+                className="mt-1 font-medium text-primary hover:underline"
+              >
+                Try the demo to see what AirwayLab can do &rarr;
+              </button>
+            </div>
+          </div>
+
           <FileUpload onFilesSelected={handleFiles} />
 
           {/* Demo CTA — shown immediately after upload for discoverability */}
@@ -440,16 +464,6 @@ function AnalyzePageInner() {
             <p className="text-[11px] text-muted-foreground/50">
               See what AirwayLab looks like with 5 nights of example data
             </p>
-          </div>
-
-          {/* Cloud storage consent — shown for eligible users */}
-          <div className="mt-4">
-            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
-          </div>
-
-          {/* Data contribution opt-in — shown during upload for higher conversion */}
-          <div className="mt-4">
-            <ContributionOptIn onChange={(v) => { contributeOptInRef.current = v; }} />
           </div>
         </div>
       )}
@@ -506,14 +520,21 @@ function AnalyzePageInner() {
         <div className="flex flex-col gap-6 animate-fade-in-up">
           {/* Demo Banner */}
           {isDemo && (
-            <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Demo mode</span>{' '}
-                — viewing sample data. Upload your own SD card to analyze your therapy.
+            <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Demo mode</span>{' '}
+                  — viewing sample data. Upload your own SD card to analyze your therapy.
+                </p>
+                <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 self-start sm:self-auto">
+                  <Upload className="h-3 w-3" /> Upload Your Data
+                </Button>
+              </div>
+              {/* Sample data context — update if lib/sample-data.ts changes */}
+              <p className="text-xs text-muted-foreground/70">
+                Sample scenario: BiPAP ST user with moderate flow limitation across 5 nights.
+                Settings were adjusted (EPAP 8&rarr;10, IPAP 14&rarr;16) on Jan 14 &mdash; compare nights before and after to see the effect.
               </p>
-              <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 self-start sm:self-auto">
-                <Upload className="h-3 w-3" /> Upload Your Data
-              </Button>
             </div>
           )}
 
@@ -599,6 +620,11 @@ function AnalyzePageInner() {
               </Button>
             </div>
           </div>
+
+          {/* Cloud storage consent — shown post-analysis for non-demo users */}
+          {!isDemo && (
+            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
+          )}
 
           {/* Tabbed Views */}
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>

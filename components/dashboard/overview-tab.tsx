@@ -234,15 +234,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </div>
       )}
 
-      {/* Next Steps CTA */}
-      <NextSteps
-        selectedNight={n}
-        hasOximetry={!!n.oximetry}
-        nightCount={nights.length}
-        onUploadOximetry={onUploadOximetry}
-        onReUpload={onReUpload}
-      />
-
       {/* Device Settings & Session Info */}
       <Card className="border-border/50">
         <CardHeader className="pb-2">
@@ -403,6 +394,15 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </div>
       </details>
 
+      {/* Next Steps CTA */}
+      <NextSteps
+        selectedNight={n}
+        hasOximetry={!!n.oximetry}
+        nightCount={nights.length}
+        onUploadOximetry={onUploadOximetry}
+        onReUpload={onReUpload}
+      />
+
       {/* Secondary Metrics */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
         <MetricCard
@@ -551,11 +551,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         );
       })()}
 
-      {/* Share Prompts (real data only) */}
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
+      {/* Share Prompts (real data only, hidden for new users to reduce density) */}
+      {!isNewUser && (
+        <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
+      )}
 
-      {/* Heatmap */}
-      {nights.length > 1 && (
+      {/* Heatmap (hidden for new users to reduce density) */}
+      {nights.length > 1 && !isNewUser && (
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
 
