@@ -21,7 +21,10 @@ export function Header() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 sm:h-8 sm:w-8">
               <Moon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
             </div>
-            <span className="text-sm font-bold tracking-tight sm:text-base">AirwayLab</span>
+            <span className="text-sm font-bold tracking-tight sm:text-base">
+              <span className="text-white">Airway</span>
+              <span className="font-normal text-brand-teal">Lab</span>
+            </span>
           </Link>
           <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
             <Link

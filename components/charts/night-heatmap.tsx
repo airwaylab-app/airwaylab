@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { NightResult } from '@/lib/types';
+import { CHART_COLORS } from '@/lib/chart-theme';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ function MiniSparkline({ values }: { values: number[] }) {
       <polyline
         points={points.join(' ')}
         fill="none"
-        stroke="hsl(213 94% 56%)"
+        stroke={CHART_COLORS[0]}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

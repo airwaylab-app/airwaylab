@@ -57,7 +57,7 @@ const engines = [
   {
     icon: Activity,
     title: 'Glasgow Index',
-    desc: '9-component per-breath flow shape scoring',
+    desc: 'Scores each breath shape on a clinical 0\u20138 scale. See your nightly average and spot nights where flow limitation spiked.',
     metrics: ['Skew', 'Spike', 'Flat Top', 'Multi-Peak', 'No Pause', 'Variable Amp'],
     example: '1.4',
     unit: 'overall',
@@ -68,7 +68,7 @@ const engines = [
   {
     icon: Waves,
     title: 'WAT Analysis',
-    desc: 'Ventilation regularity and periodic breathing',
+    desc: 'Detects the breathing restriction your AHI completely misses. Measures tidal volume ratios and breathing regularity.',
     metrics: ['FL Score', 'Sample Entropy', 'FFT Periodicity'],
     example: '28%',
     unit: 'FL score',
@@ -79,7 +79,7 @@ const engines = [
   {
     icon: BarChart3,
     title: 'NED Analysis',
-    desc: 'Negative effort dependence and RERA detection',
+    desc: 'Identifies effort-dependent airway collapse \u2014 a key marker of upper airway resistance that correlates with arousals.',
     metrics: ['NED Mean', 'Flatness Index', 'M-Shape', 'RERA Index'],
     example: '6.2',
     unit: 'RERA/hr',
@@ -90,7 +90,7 @@ const engines = [
   {
     icon: HeartPulse,
     title: 'Oximetry',
-    desc: '17-metric SpO₂ and HR surge framework',
+    desc: 'Your full oxygen story: desaturation depth, recovery speed, HR surges, and first-half vs second-half split analysis.',
     metrics: ['ODI-3/4', 'T<90%', 'HR Surges', 'Coupled Events'],
     example: '4.1',
     unit: 'ODI-3/hr',
@@ -173,7 +173,7 @@ export default function Home() {
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Your PAP device says your AHI is fine. But you still wake up exhausted.
                 AirwayLab uses the Glasgow Index and three more research-grade engines
-                to detect flow limitation, RERAs, and breathing pattern instability
+                to detect flow limitation, RERAs, and breathing instability
                 that standard metrics miss — automatically, in 60 seconds.
               </p>
 

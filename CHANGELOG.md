@@ -5,7 +5,25 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] — Brand Polish v1 (2026-03-11)
+
+### Added
+
+- **Brand voice guide**: `docs/BRAND_VOICE.md` — voice attributes, tone by context, writing rules, messaging hierarchy, and terminology reference for contributors (`brand-polish-v1`)
+- **Centralized chart theme**: `lib/chart-theme.ts` — single source of truth for all Recharts color values, axis styles, tooltip styles, and a `withAlpha()` helper (`brand-polish-v1`)
+
+### Changed
+
+- **Typography upgrade**: Swapped IBM Plex Sans → Plus Jakarta Sans for body text; JetBrains Mono retained for data values (`brand-polish-v1`)
+- **Color consolidation**: Added `brand-teal`, `data-good/monitor/elevated`, and `chart-6` tokens to Tailwind config; chart components now reference centralized theme instead of inline HSL values (`brand-polish-v1`)
+- **Landing page copy**: Benefit-first engine descriptions (Glasgow, WAT, NED, Oximetry); tighter hero subhead (`brand-polish-v1`)
+- **Pricing copy**: Community-funding framing — "Keep AirwayLab Independent" header (`brand-polish-v1`)
+- **Two-tone wordmark**: "Airway" bold white + "Lab" regular brand-teal in header and footer (`brand-polish-v1`)
+- **Favicon**: Minimal "A" in brand-teal on dark background (`brand-polish-v1`)
+- **OG/Twitter images**: Dark background with two-tone wordmark and updated tagline (`brand-polish-v1`)
+- **Meta descriptions**: Consistent L2 messaging across landing, analyze, and pricing pages (`brand-polish-v1`)
+- **Forum export**: Updated attribution and added GitHub star CTA line (`brand-polish-v1`)
+- **README**: Updated opening description to benefit-first copy (`brand-polish-v1`)
 
 ### Improved
 

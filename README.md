@@ -5,7 +5,7 @@
 [![Demo](https://img.shields.io/badge/Demo-airwaylab.app-brightgreen)](https://airwaylab.app)
 [![Privacy](https://img.shields.io/badge/Privacy-Data%20Never%20Leaves%20Your%20Device-blueviolet)]()
 
-Free, open-source flow limitation analysis for ResMed PAP data.
+Free, open-source airway analysis dashboard for PAP therapy users. See what your machine can't show you — flow limitation, breathing instability, oxygen patterns — all in your browser.
 
 [Try the demo →](https://airwaylab.app/analyze?demo) · [Live site →](https://airwaylab.app)
 

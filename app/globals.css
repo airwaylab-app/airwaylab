@@ -33,17 +33,24 @@
     --ring: 213 94% 56%;
     --radius: 0.5rem;
 
+    /* Brand accent */
+    --brand-teal: 168 60% 45%;
+
     /* Chart palette */
     --chart-1: 213 94% 56%;
     --chart-2: 142 71% 45%;
     --chart-3: 38 92% 50%;
     --chart-4: 262 83% 58%;
     --chart-5: 0 84% 60%;
+    --chart-6: 188 94% 43%;
 
-    /* Traffic light system */
+    /* Traffic light / data status system */
     --status-good: 142 71% 45%;
     --status-warn: 38 92% 50%;
     --status-bad: 0 84% 60%;
+    --data-good: 142 71% 45%;
+    --data-monitor: 38 92% 50%;
+    --data-elevated: 0 84% 60%;
   }
 
   * {
