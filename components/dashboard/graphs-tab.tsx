@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendChart } from '@/components/charts/trend-chart';
-import { FlowWaveform } from '@/components/charts/flow-waveform';
+import { FlowWaveform, type EventType } from '@/components/charts/flow-waveform';
 import { DevicePressureChart } from '@/components/charts/device-pressure-chart';
 import { DeviceLeakChart } from '@/components/charts/device-leak-chart';
 import { SpO2Trace } from '@/components/charts/spo2-trace';
@@ -37,6 +37,24 @@ interface Props {
   onUploadOximetry?: () => void;
 }
 
+const MACHINE_EVENT_DEFS: { type: EventType; label: string; color: string }[] = [
+  { type: 'obstructive-apnea', label: 'OA', color: 'hsl(0 70% 50%)' },
+  { type: 'central-apnea', label: 'CA', color: 'hsl(180 60% 45%)' },
+  { type: 'hypopnea', label: 'H', color: 'hsl(220 70% 55%)' },
+  { type: 'unclassified-apnea', label: 'UA', color: 'hsl(45 80% 50%)' },
+];
+
+const ALGORITHM_EVENT_DEFS: { type: EventType; label: string; color: string }[] = [
+  { type: 'rera', label: 'RERA', color: 'hsl(262 83% 58%)' },
+  { type: 'flow-limitation', label: 'FL', color: 'hsl(38 92% 50%)' },
+  { type: 'm-shape', label: 'M', color: 'hsl(0 84% 60%)' },
+];
+
+const ALL_EVENT_TYPES: EventType[] = [
+  ...MACHINE_EVENT_DEFS.map((d) => d.type),
+  ...ALGORITHM_EVENT_DEFS.map((d) => d.type),
+];
+
 export function GraphsTab({
   selectedNight,
   nights,
@@ -48,7 +66,9 @@ export function GraphsTab({
 }: Props) {
   const { state, cloudLoading, cloudAttempted, retry } = useWaveform(selectedNight, isDemo, sdFiles);
   const [showFlowPressure, setShowFlowPressure] = useState(false);
-  const [showEvents, setShowEvents] = useState(true);
+  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(() => new Set(ALL_EVENT_TYPES));
+  const [showODIEvents, setShowODIEvents] = useState(true);
+  const [showHR, setShowHR] = useState(true);
 
   const waveform = state.waveform;
   const hasPressure = waveform ? waveform.pressure.length > 0 : false;
@@ -59,6 +79,29 @@ export function GraphsTab({
   const isFromCloud = sdFiles.length === 0 && !isDemo && cloudAttempted;
 
   const oxTrace = selectedNight.oximetryTrace ?? null;
+
+  // Per-type event counts
+  const eventCounts = useMemo(() => {
+    if (!waveform) return new Map<EventType, number>();
+    const counts = new Map<EventType, number>();
+    for (const t of ALL_EVENT_TYPES) counts.set(t, 0);
+    for (const e of waveform.events) {
+      counts.set(e.type, (counts.get(e.type) ?? 0) + 1);
+    }
+    return counts;
+  }, [waveform]);
+
+  const toggleEventType = useCallback((type: EventType) => {
+    setVisibleTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
 
   // Compute data length for synced viewport (flow data is the reference)
   const dataLength = waveform?.flow.length ?? 0;
@@ -153,8 +196,9 @@ export function GraphsTab({
             {/* First-use interaction hint */}
             <ChartInteractionHint />
 
-            {/* Toggle buttons */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Toggle buttons — grouped by source */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* Pressure toggle */}
               <Button
                 variant={showFlowPressure ? 'secondary' : 'outline'}
                 size="sm"
@@ -165,15 +209,108 @@ export function GraphsTab({
                 {showFlowPressure ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                 Pressure Overlay
               </Button>
-              <Button
-                variant={showEvents ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setShowEvents(!showEvents)}
-                className="gap-1.5 text-xs"
-              >
-                {showEvents ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                Events ({waveform.events.length})
-              </Button>
+
+              <div className="mx-1 h-4 w-px bg-border/50" />
+
+              {/* Machine event toggles */}
+              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">Machine</span>
+              {MACHINE_EVENT_DEFS.map((def) => {
+                const count = eventCounts.get(def.type) ?? 0;
+                const isOn = visibleTypes.has(def.type);
+                return (
+                  <button
+                    key={def.type}
+                    onClick={() => toggleEventType(def.type)}
+                    disabled={count === 0}
+                    aria-pressed={isOn}
+                    aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      count === 0
+                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                        : isOn
+                          ? 'border-border bg-card text-foreground'
+                          : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    }`}
+                  >
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: isOn && count > 0 ? def.color : 'hsl(215 20% 30%)' }}
+                    />
+                    {def.label} ({count})
+                  </button>
+                );
+              })}
+
+              <div className="mx-1 h-4 w-px bg-border/50" />
+
+              {/* Algorithm event toggles */}
+              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">AirwayLab</span>
+              {ALGORITHM_EVENT_DEFS.map((def) => {
+                const count = eventCounts.get(def.type) ?? 0;
+                const isOn = visibleTypes.has(def.type);
+                return (
+                  <button
+                    key={def.type}
+                    onClick={() => toggleEventType(def.type)}
+                    disabled={count === 0}
+                    aria-pressed={isOn}
+                    aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      count === 0
+                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                        : isOn
+                          ? 'border-border bg-card text-foreground'
+                          : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    }`}
+                  >
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: isOn && count > 0 ? def.color : 'hsl(215 20% 30%)' }}
+                    />
+                    {def.label} ({count})
+                  </button>
+                );
+              })}
+
+              {/* SpO2 toggles — only when trace available */}
+              {oxTrace && (
+                <>
+                  <div className="mx-1 h-4 w-px bg-border/50" />
+                  <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">SpO₂</span>
+                  <button
+                    onClick={() => setShowODIEvents(!showODIEvents)}
+                    aria-pressed={showODIEvents}
+                    aria-label={`ODI-3: ${showODIEvents ? 'visible' : 'hidden'}`}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      showODIEvents
+                        ? 'border-border bg-card text-foreground'
+                        : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    }`}
+                  >
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: showODIEvents ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+                    />
+                    ODI-3 ({oxTrace.odi3Events.length})
+                  </button>
+                  <button
+                    onClick={() => setShowHR(!showHR)}
+                    aria-pressed={showHR}
+                    aria-label={`Heart Rate: ${showHR ? 'visible' : 'hidden'}`}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      showHR
+                        ? 'border-border bg-card text-foreground'
+                        : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    }`}
+                  >
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: showHR ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+                    />
+                    Heart Rate
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Stacked charts — each wrapped in its own ErrorBoundary */}
@@ -183,7 +320,7 @@ export function GraphsTab({
                 <FlowWaveform
                   waveform={waveform}
                   showPressure={showFlowPressure}
-                  showEvents={showEvents}
+                  visibleEventTypes={visibleTypes}
                 />
               </ErrorBoundary>
 
@@ -237,7 +374,7 @@ export function GraphsTab({
               {/* SpO2 — always visible */}
               {oxTrace ? (
                 <ErrorBoundary context="SpO₂ Trace">
-                  <SpO2Trace trace={oxTrace} />
+                  <SpO2Trace trace={oxTrace} showHR={showHR} showODIEvents={showODIEvents} />
                 </ErrorBoundary>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 py-6">

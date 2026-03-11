@@ -23,6 +23,8 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
   const THRESHOLDS = useThresholds();
   const ox = selectedNight.oximetry;
   const pOx = previousNight?.oximetry;
+  const [showODIEvents, setShowODIEvents] = useState(true);
+  const [showHR, setShowHR] = useState(true);
 
   const [detailMetric, setDetailMetric] = useState<{
     label: string;
@@ -83,11 +85,44 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
     <div className="flex flex-col gap-6">
       {/* SpO2 / HR Trace Chart */}
       {trace && (
-        <SpO2Trace
-          trace={trace}
-          showHR={true}
-          showODIEvents={true}
-        />
+        <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50">SpO₂</span>
+            <button
+              onClick={() => setShowODIEvents(!showODIEvents)}
+              aria-pressed={showODIEvents}
+              aria-label={`ODI-3 events: ${showODIEvents ? 'visible' : 'hidden'}`}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                showODIEvents
+                  ? 'border-border bg-card text-foreground'
+                  : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+              }`}
+            >
+              <div
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: showODIEvents ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+              />
+              ODI-3
+            </button>
+            <button
+              onClick={() => setShowHR(!showHR)}
+              aria-pressed={showHR}
+              aria-label={`Heart Rate: ${showHR ? 'visible' : 'hidden'}`}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                showHR
+                  ? 'border-border bg-card text-foreground'
+                  : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+              }`}
+            >
+              <div
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: showHR ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+              />
+              Heart Rate
+            </button>
+          </div>
+          <SpO2Trace trace={trace} showHR={showHR} showODIEvents={showODIEvents} />
+        </>
       )}
 
       {/* SpO2 Metrics */}

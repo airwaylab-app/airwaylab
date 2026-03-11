@@ -6,6 +6,7 @@
 
 import { parseEDF } from './parsers/edf-parser';
 import { groupByNight, filterBRPFiles } from './parsers/night-grouper';
+import { parseEVE } from './parsers/eve-parser';
 import {
   downsampleFlow,
   downsamplePressure,
@@ -116,7 +117,31 @@ function extractWaveform(
   const respiratoryRate = computeRespiratoryRate(combinedFlow, avgSamplingRate, bucketSeconds);
 
   // Detect events from flow patterns (flatness-based detection)
-  const events = detectEventsFromFlow(combinedFlow, avgSamplingRate);
+  const algorithmEvents = detectEventsFromFlow(combinedFlow, avgSamplingRate);
+
+  // Parse machine-recorded events from EVE.edf files (non-fatal — missing EVE is fine)
+  const machineEvents: WaveformEvent[] = [];
+  const eveFiles = files.filter((f) => /eve\.edf$/i.test(f.path));
+  for (const eveFile of eveFiles) {
+    try {
+      const parsed = parseEVE(eveFile.buffer);
+      for (const me of parsed) {
+        machineEvents.push({
+          startSec: me.onsetSec,
+          endSec: me.onsetSec + me.durationSec,
+          type: me.type,
+          label: `${me.rawLabel} (${me.durationSec}s)`,
+        });
+      }
+    } catch {
+      // EVE parse failure is non-fatal
+    }
+  }
+
+  // Merge machine + algorithm events, sorted by start time
+  const events = [...machineEvents, ...algorithmEvents].sort(
+    (a, b) => a.startSec - b.startSec
+  );
 
   // Leak data placeholder — real leak extraction requires parsing separate EDF channels
   const leak: import('./waveform-types').LeakPoint[] = [];

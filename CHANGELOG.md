@@ -5,6 +5,19 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Granular Event Toggles (2026-03-11)
+
+### Added
+
+- **Machine event parsing**: New EVE.edf parser extracts machine-recorded events (Obstructive Apnea, Central Apnea, Hypopnea, Unclassified Apnea) from ResMed EVE files using EDF+ TAL format — matching OSCAR's event types (`granular-event-toggles`)
+- **Per-type event toggles**: All event types (machine + algorithm-detected) now have individual toggle buttons on Graphs and Waveform tabs — grouped by source (Machine: OA/CA/H/UA, AirwayLab: RERA/FL/M) with event counts and color-coded dots (`granular-event-toggles`)
+- **SpO₂ trace toggles**: ODI-3 events and Heart Rate can be individually toggled on/off in the Graphs tab and Oximetry tab (`granular-event-toggles`)
+
+### Changed
+
+- **Waveform orchestrator**: Now loads EVE.edf files alongside BRP.edf files, date-filtered to avoid reading unnecessary files into memory (`granular-event-toggles`)
+- **Event overlays**: FlowWaveform chart now filters events by type using a `visibleEventTypes` set instead of a binary show/hide toggle (`granular-event-toggles`)
+
 ## [Unreleased] — Dashboard Density (2026-03-11)
 
 ### Changed

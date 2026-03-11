@@ -56,7 +56,8 @@ export interface WaveformEvent {
   /** End time in elapsed seconds */
   endSec: number;
   /** Event type identifier */
-  type: 'rera' | 'flow-limitation' | 'm-shape';
+  type: 'rera' | 'flow-limitation' | 'm-shape'
+    | 'obstructive-apnea' | 'central-apnea' | 'hypopnea' | 'unclassified-apnea';
   /** Human-readable label */
   label: string;
 }
