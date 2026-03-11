@@ -16,6 +16,7 @@ import type { WaveformData } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { downsampleForChart } from '@/lib/chart-downsample';
 
 interface Props {
   waveform: WaveformData;
@@ -75,9 +76,9 @@ export const FlowWaveform = memo(function FlowWaveform({
     }));
   }, [waveform.flow, waveform.pressure, showPressure]);
 
-  // Visible data slice using synced viewport
+  // Visible data slice using synced viewport, downsampled to prevent OOM
   const data = useMemo(() =>
-    allData.slice(viewport.clampedStart, viewport.clampedEnd),
+    downsampleForChart(allData.slice(viewport.clampedStart, viewport.clampedEnd)),
     [allData, viewport.clampedStart, viewport.clampedEnd]
   );
 
