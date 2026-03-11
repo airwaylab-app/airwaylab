@@ -10,8 +10,9 @@ import { generateInsights, type Insight } from '@/lib/insights';
 import { fetchAIInsights } from '@/lib/ai-insights-client';
 import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
 import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
-import Link from 'next/link';
-import { HeartPulse, TrendingDown, TrendingUp, AlertCircle, Info, CheckCircle, ChevronRight, Upload, Sparkles, Loader2, ArrowRight, Settings2 } from 'lucide-react';
+import { NightSummaryHero } from '@/components/dashboard/night-summary-hero';
+import { InsightsPanel } from '@/components/dashboard/insights-panel';
+import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2 } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess, incrementAIUsage } from '@/lib/auth/feature-gate';
@@ -41,13 +42,6 @@ function fmtHrs(h: number): string {
   return `${hrs}h ${mins}m`;
 }
 
-const insightStyles: Record<Insight['type'], { icon: typeof CheckCircle; border: string; bg: string; iconColor: string }> = {
-  positive: { icon: CheckCircle, border: 'border-emerald-500/20', bg: 'bg-emerald-500/5', iconColor: 'text-emerald-500' },
-  warning: { icon: AlertCircle, border: 'border-amber-500/20', bg: 'bg-amber-500/5', iconColor: 'text-amber-500' },
-  actionable: { icon: TrendingDown, border: 'border-red-500/20', bg: 'bg-red-500/5', iconColor: 'text-red-500' },
-  info: { icon: Info, border: 'border-blue-500/20', bg: 'bg-blue-500/5', iconColor: 'text-blue-400' },
-};
-
 interface Props {
   nights: NightResult[];
   selectedNight: NightResult;
@@ -56,9 +50,10 @@ interface Props {
   onUploadOximetry?: () => void;
   onReUpload?: () => void;
   isDemo?: boolean;
+  isNewUser?: boolean;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, isDemo = false }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, isDemo = false, isNewUser = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -121,15 +116,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
     setAiInsights(DEMO_AI_INSIGHTS);
   }, [isDemo]);
 
-  // Track session count for new-user UX (expand explanations for first 5 sessions)
-  const [isNewUser, setIsNewUser] = useState(false);
-  useEffect(() => {
-    const count = parseInt(localStorage.getItem('airwaylab_session_count') || '0', 10);
-    const next = count + 1;
-    localStorage.setItem('airwaylab_session_count', String(next));
-    setIsNewUser(next <= 5);
-  }, []);
-
   // Metric detail modal state
   const [detailMetric, setDetailMetric] = useState<{
     label: string;
@@ -152,85 +138,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   return (
     <div className="flex flex-col gap-6">
-      {/* AI Insights (shown above rule-based when available) */}
-      {aiLoading && (
-        <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3 animate-fade-in-up">
-          <Loader2 className="h-4 w-4 animate-spin text-primary/60" />
-          <span className="text-sm text-muted-foreground">Loading AI insights...</span>
-        </div>
-      )}
+      {/* Night Summary Hero — single glanceable takeaway */}
+      <NightSummaryHero night={n} />
 
-      {aiInsights && aiInsights.length > 0 && (
-        <div className="flex flex-col gap-2 animate-fade-in-up">
-          {aiInsights.map((insight) => {
-            const style = insightStyles[insight.type];
-            const Icon = style.icon;
-            return (
-              <div
-                key={insight.id}
-                className={`rounded-lg border ${style.border} ${style.bg} px-4 py-3`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${style.iconColor}`} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">
-                        {insight.title}
-                      </p>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        <Sparkles className="h-2.5 w-2.5" />
-                        AI
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {insight.body}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* AI Insights CTA (demo or community tier) */}
-      {aiInsights && aiInsights.length > 0 && (
-        <AIInsightsCTA isDemo={isDemo} remainingCredits={serverRemainingCredits} />
-      )}
-
-      {/* Rule-based Insights Panel */}
-      {insights.length > 0 && (
-        <div className="flex flex-col gap-2 animate-fade-in-up">
-          {insights.map((insight) => {
-            const style = insightStyles[insight.type];
-            const Icon = style.icon;
-            return (
-              <div
-                key={insight.id}
-                className={`rounded-lg border ${style.border} ${style.bg} px-4 py-3`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${style.iconColor}`} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {insight.title}
-                    </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {insight.body}
-                    </p>
-                    {insight.link && (
-                      <Link
-                        href={insight.link.href}
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                      >
-                        {insight.link.text} <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* Start-here guidance for new users — positioned right below hero */}
+      {isNewUser && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern on a 0–8 scale.
+            Green means normal, amber means worth monitoring, red means discuss with your clinician.
+            Click any metric for a detailed trend view.
+          </p>
         </div>
       )}
 
@@ -287,18 +206,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </CardContent>
       </Card>
 
-      {/* Start-here guidance for new users */}
-      {isNewUser && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern on a 0–8 scale.
-            Green means normal, amber means worth monitoring, red means discuss with your clinician.
-            Click any metric for a detailed trend view.
-          </p>
-        </div>
-      )}
-
       {/* Key Metrics Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
         <MetricCard
@@ -344,6 +251,21 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall)}
         defaultExpanded={isNewUser}
       />
+
+      {/* Collapsible Insights Panel — AI + rule-based insights */}
+      {(insights.length > 0 || aiLoading || (aiInsights && aiInsights.length > 0)) && (
+        <InsightsPanel
+          insights={insights}
+          aiInsights={aiInsights}
+          aiLoading={aiLoading}
+          defaultExpanded={!isNewUser}
+          aiCTA={
+            aiInsights && aiInsights.length > 0
+              ? <AIInsightsCTA isDemo={isDemo} remainingCredits={serverRemainingCredits} />
+              : undefined
+          }
+        />
+      )}
 
       {/* Glasgow Component Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">

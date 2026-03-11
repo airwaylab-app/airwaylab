@@ -5,6 +5,22 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Dashboard UX: Beginner-Friendly Redesign (2026-03-11)
+
+### Added
+
+- **Night Summary Hero card**: Single glanceable card above metrics showing traffic-light therapy status (green/amber/red) with one-sentence summary (`dashboard-ux-beginner-friendly`)
+- **Collapsible Insights Panel**: AI + rule-based insights wrapped in a `<details>` element — collapsed by default for new users (sessions <= 5), expanded for returning users (`dashboard-ux-beginner-friendly`)
+- **Tab group separator**: Visual divider between primary tabs (Overview, Graphs, Trends) and secondary tabs (Glasgow, Flow, Oximetry, Compare) (`dashboard-ux-beginner-friendly`)
+
+### Changed
+
+- **Tab bar visibility**: Switched from `default` to `line` variant with `bg-card/50` background — active tab now has a visible underline indicator (`dashboard-ux-beginner-friendly`)
+- **Primary tabs show full words on mobile**: Overview, Graphs, Trends are always readable; only secondary tabs use abbreviations (`dashboard-ux-beginner-friendly`)
+- **Simplified controls for beginners**: Email opt-in, Export, and Threshold Settings hidden for first 5 sessions to reduce clutter (`dashboard-ux-beginner-friendly`)
+- **New-user guidance repositioned**: "Start with Glasgow Index" hint moved directly below the hero card for maximum visibility (`dashboard-ux-beginner-friendly`)
+- **Session count tracking lifted**: `isNewUser` state moved from OverviewTab to AnalyzePage for shared access across controls and tabs (`dashboard-ux-beginner-friendly`)
+
 ## [Unreleased] — Onboarding Audit v2 (2026-03-11)
 
 ### Changed
