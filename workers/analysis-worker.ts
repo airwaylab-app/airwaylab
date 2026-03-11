@@ -4,7 +4,8 @@
 // ============================================================
 
 import { parseEDF } from '../lib/parsers/edf-parser';
-import { groupByNight, filterBRPFiles, findSTRFile, findIdentificationFile } from '../lib/parsers/night-grouper';
+import { groupByNight, filterBRPFiles, filterSA2Files, findSTRFile, findIdentificationFile } from '../lib/parsers/night-grouper';
+import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate } from '../lib/parsers/settings-extractor';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
@@ -148,13 +149,46 @@ async function processFiles(
 
   postProgress(2, nightGroups.length + 2, 'Analyzing nights...');
 
-  // Step 5: Parse oximetry CSVs
+  // Step 4.5: Parse SA2 EDF oximetry files (integrated/paired pulse oximeter)
   const oximetryByDate = new Map<string, ReturnType<typeof parseOximetryCSV>>();
+  const sa2Files = filterSA2Files(fileList);
+  if (sa2Files.length > 0) {
+    for (const sa2Info of sa2Files) {
+      const fileData = files.find((f) => f.path === sa2Info.path);
+      if (!fileData) continue;
+      try {
+        const parsed = parseSA2(fileData.buffer, fileData.path);
+        const filename = sa2Info.path.split('/').pop() || sa2Info.path;
+
+        // Multiple SA2 files per night: concatenate samples
+        const existing = oximetryByDate.get(parsed.dateStr);
+        if (existing) {
+          existing.samples.push(...parsed.samples);
+          existing.samples.sort((a, b) => a.time.getTime() - b.time.getTime());
+          existing.endTime = existing.samples[existing.samples.length - 1].time;
+          existing.durationSeconds = (existing.endTime.getTime() - existing.startTime.getTime()) / 1000;
+        } else {
+          oximetryByDate.set(parsed.dateStr, parsed);
+        }
+
+        console.error(`[sa2] Parsed ${parsed.samples.length} samples from ${filename} for night ${parsed.dateStr}`);
+      } catch (err) {
+        const filename = sa2Info.path.split('/').pop() || sa2Info.path;
+        console.error(`[sa2] Failed to parse ${filename}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
+  // Step 5: Parse oximetry CSVs (SA2 takes priority — skip CSV if SA2 already present)
   if (oximetryCSVs) {
     for (const csv of oximetryCSVs) {
       try {
         const parsed = parseOximetryCSV(csv);
-        oximetryByDate.set(parsed.dateStr, parsed);
+        if (oximetryByDate.has(parsed.dateStr)) {
+          console.error(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
+        } else {
+          oximetryByDate.set(parsed.dateStr, parsed);
+        }
       } catch (err) {
         console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
       }

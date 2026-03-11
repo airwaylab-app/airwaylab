@@ -5,6 +5,15 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — EDF Oximetry (SA2) Support (2026-03-11)
+
+### Added
+
+- **SA2 EDF oximetry parsing**: Automatically detects and parses pulse oximetry data from ResMed `_SA2.edf` files on SD cards — no separate CSV export needed (`edf-oximetry-sa2-support`)
+- **Flexible signal matching**: SpO2 and Pulse Rate signals are matched case-insensitively across known label variants (SpO2, SPO2, Sp O2, Pulse, PR) (`edf-oximetry-sa2-support`)
+- **SA2 priority over CSV**: When both SA2 (integrated oximeter) and CSV (external oximeter) data exist for the same night, SA2 takes priority as it's time-synchronized with the CPAP session (`edf-oximetry-sa2-support`)
+- **Upload validation info**: SD card uploads with SA2 files now show an info message confirming pulse oximetry data was detected (`edf-oximetry-sa2-support`)
+
 ## [Unreleased] — Provider-Grade Chart Browser (2026-03-11)
 
 ### Added

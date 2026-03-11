@@ -126,6 +126,19 @@ export function filterBRPFiles(
 }
 
 /**
+ * Filter uploaded files to only valid SA2.edf oximetry files (any size).
+ * SA2 files contain pulse oximetry data from integrated/paired oximeters.
+ */
+export function filterSA2Files(
+  files: { name: string; path: string; size: number }[]
+): { name: string; path: string; size: number }[] {
+  return files.filter((f) => {
+    const name = f.name.toLowerCase();
+    return name.endsWith('sa2.edf') || name.endsWith('_sa2.edf');
+  });
+}
+
+/**
  * Find STR.edf file from file list (case-insensitive).
  */
 export function findSTRFile(
