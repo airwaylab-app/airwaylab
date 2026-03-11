@@ -11,12 +11,26 @@ interface Props {
   disabled?: boolean;
 }
 
+function getActivePreset(visibleDuration: number): string | null {
+  // Find the preset whose duration is closest to the current visible duration
+  let best: { label: string; diff: number } | null = null;
+  for (const p of ZOOM_PRESETS) {
+    const diff = Math.abs(p.seconds - visibleDuration);
+    // Only match if within 20% of the preset duration
+    if (diff / p.seconds <= 0.2 && (!best || diff < best.diff)) {
+      best = { label: p.label, diff };
+    }
+  }
+  return best?.label ?? null;
+}
+
 export function SharedChartToolbar({ durationSeconds, disabled = false }: Props) {
   const viewport = useSyncedViewport();
 
   const visibleStart = viewport.clampedStart * viewport.bucketSeconds;
   const visibleEnd = viewport.clampedEnd * viewport.bucketSeconds;
   const visibleDuration = visibleEnd - visibleStart;
+  const activePreset = viewport.isFullView ? null : getActivePreset(visibleDuration);
 
   return (
     <div
@@ -26,18 +40,25 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
     >
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 bg-card/30 px-3 py-2">
         <div className="flex flex-wrap items-center gap-1.5">
-          {ZOOM_PRESETS.map((p) => (
-            <Button
-              key={p.label}
-              variant="ghost"
-              size="sm"
-              onClick={() => viewport.zoomToPreset(p.seconds)}
-              disabled={disabled || p.seconds > durationSeconds}
-              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
-            >
-              {p.label}
-            </Button>
-          ))}
+          {ZOOM_PRESETS.map((p) => {
+            const isActive = activePreset === p.label;
+            return (
+              <Button
+                key={p.label}
+                variant="outline"
+                size="sm"
+                onClick={() => viewport.zoomToPreset(p.seconds)}
+                disabled={disabled || p.seconds > durationSeconds}
+                className={
+                  isActive
+                    ? 'h-6 rounded-full border-primary/50 bg-primary/15 px-2.5 text-[10px] font-medium text-primary'
+                    : 'h-6 rounded-full border-border/60 px-2.5 text-[10px] font-medium text-muted-foreground hover:border-primary/40 hover:bg-primary/[0.06] hover:text-foreground'
+                }
+              >
+                {p.label}
+              </Button>
+            );
+          })}
           <div className="mx-1 h-4 w-px bg-border/50" />
           <Button
             variant="ghost"
@@ -106,7 +127,7 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
       {/* Minimap */}
       <div className="px-2">
         <div
-          className="relative h-2 w-full cursor-pointer rounded-full bg-border/30"
+          className="relative h-2 w-full cursor-pointer rounded-full bg-border/30 transition-colors hover:bg-border/50"
           onClick={(e) => {
             if (disabled) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -118,7 +139,7 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             viewport.setViewStart(newStart);
             viewport.setViewEnd(newStart + visibleCount);
           }}
-          aria-label="Click to jump to position"
+          aria-label="Minimap — click to jump to position"
         >
           <div
             className="absolute top-0 h-full rounded-full bg-primary/40 transition-all duration-100"

@@ -5,6 +5,19 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Chart UX Discoverability (2026-03-11)
+
+### Changed
+
+- **Zoom presets restyled as pill buttons**: Time range presets (5m/15m/30m/1h/2h) now render as distinct outline pill buttons instead of invisible ghost text, with the active preset highlighted (`chart-ux-discoverability`)
+- **Interaction hint near toolbar**: First-use hint explaining scroll-to-zoom and drag-to-pan appears below the toolbar (touch-aware), auto-dismisses after first interaction, dismissable via × button (`chart-ux-discoverability`)
+- **Minimap hover state**: Minimap bar now shows a visible hover state change for better affordance (`chart-ux-discoverability`)
+
+### Fixed
+
+- **Outdated waveform disclaimer**: Removed reference to non-existent "brush control" from waveform tab disclaimer text (`chart-ux-discoverability`)
+- **Buried interaction hints**: Removed 9px hint text previously hidden at the bottom of the page, replaced by the new near-toolbar hint (`chart-ux-discoverability`)
+
 ## [Unreleased] — E2E Testing with Real EDF Fixtures (2026-03-11)
 
 ### Added

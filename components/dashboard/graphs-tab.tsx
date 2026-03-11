@@ -11,6 +11,7 @@ import { SpO2Trace } from '@/components/charts/spo2-trace';
 import { TidalVolumeChart } from '@/components/charts/tidal-volume-chart';
 import { RespiratoryRateChart } from '@/components/charts/respiratory-rate-chart';
 import { SharedChartToolbar } from '@/components/charts/shared-chart-toolbar';
+import { ChartInteractionHint } from '@/components/charts/chart-interaction-hint';
 import { SyncedViewportProvider } from '@/hooks/use-synced-viewport';
 import { useWaveform } from '@/hooks/use-waveform';
 import { ErrorBoundary } from '@/components/common/error-boundary';
@@ -149,6 +150,9 @@ export function GraphsTab({
             {/* Shared toolbar + minimap */}
             <SharedChartToolbar durationSeconds={waveform.durationSeconds} />
 
+            {/* First-use interaction hint */}
+            <ChartInteractionHint />
+
             {/* Toggle buttons */}
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -266,13 +270,7 @@ export function GraphsTab({
               <span>Sample rate: <strong className="text-foreground">{waveform.originalSampleRate.toFixed(0)} Hz</strong></span>
             </div>
 
-            {/* Hints + disclaimer */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-[9px] text-muted-foreground/40">
-                Scroll to zoom · Drag to pan · Pinch to zoom on touch · Arrow keys navigate · Esc resets
-              </div>
-            </div>
-
+            {/* Disclaimer */}
             <p className="text-[10px] leading-relaxed text-muted-foreground/50">
               Flow waveforms are downsampled for display. Tidal volume and respiratory rate are approximate.
               Event detection on this view is approximate — refer to the Flow Analysis tab for authoritative engine results.
