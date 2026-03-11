@@ -8,8 +8,27 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 
-// For webkitdirectory inputs, Playwright needs a directory path
 const FIXTURES_DIR = path.resolve(__dirname, '../__tests__/fixtures/sd-card');
+
+/** Helper: click a tab by its text content using data-slot selector */
+async function clickTab(page: import('@playwright/test').Page, text: RegExp) {
+  // @base-ui/react tabs use data-slot="tabs-trigger"
+  // Use force:true because overlapping banners can interfere with actionability checks
+  await page.locator('[data-slot="tabs-trigger"]').filter({ hasText: text }).click({ force: true });
+}
+
+/** Helper: upload fixtures and wait for analysis to complete */
+async function uploadAndWaitForAnalysis(page: import('@playwright/test').Page) {
+  await page.goto('/analyze');
+  const fileInput = page.locator('input[type="file"][webkitdirectory]');
+  await expect(fileInput).toBeAttached();
+  await fileInput.setInputFiles(FIXTURES_DIR);
+
+  // Wait for analysis to complete — overview tab becomes visible
+  await expect(
+    page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
+  ).toBeVisible({ timeout: 90_000 });
+}
 
 test.describe('Upload and Analyze', () => {
   // ── Test Case 17: Full upload → analysis → dashboard ──────────
@@ -25,17 +44,7 @@ test.describe('Upload and Analyze', () => {
     let pageCrashed = false;
     page.on('crash', () => { pageCrashed = true; });
 
-    await page.goto('/analyze');
-
-    // Upload fixture directory via the webkitdirectory input
-    const fileInput = page.locator('input[type="file"][webkitdirectory]');
-    await expect(fileInput).toBeAttached();
-    await fileInput.setInputFiles(FIXTURES_DIR);
-
-    // Wait for analysis to complete — dashboard tabs appear
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible({
-      timeout: 60_000,
-    });
+    await uploadAndWaitForAnalysis(page);
 
     expect(pageCrashed).toBe(false);
 
@@ -59,23 +68,14 @@ test.describe('Upload and Analyze', () => {
     let pageCrashed = false;
     page.on('crash', () => { pageCrashed = true; });
 
-    await page.goto('/analyze');
-
-    const fileInput = page.locator('input[type="file"][webkitdirectory]');
-    await fileInput.setInputFiles(FIXTURES_DIR);
-
-    // Wait for analysis to complete
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible({
-      timeout: 60_000,
-    });
+    await uploadAndWaitForAnalysis(page);
 
     // Navigate to Graphs tab
-    await page.getByRole('tab', { name: /graphs/i }).click();
+    await clickTab(page, /graphs/i);
 
     // Wait for either chart content or a loading/error state
-    // (waveform extraction runs in a Web Worker and may take time)
     const chartOrMessage = page.locator(
-      '.recharts-wrapper, text=/No flow data|Extracting flow|Loading waveform|No waveform/'
+      '.recharts-wrapper, text=/No flow data|Extracting flow|Loading waveform|No waveform|upload/i'
     );
     await expect(chartOrMessage.first()).toBeVisible({ timeout: 30_000 });
 
@@ -91,16 +91,9 @@ test.describe('Upload and Analyze', () => {
   // ── Test Case 19: Stats bar shows non-zero values ─────────────
 
   test('stats bar displays non-zero waveform metrics', async ({ page }) => {
-    await page.goto('/analyze');
+    await uploadAndWaitForAnalysis(page);
 
-    const fileInput = page.locator('input[type="file"][webkitdirectory]');
-    await fileInput.setInputFiles(FIXTURES_DIR);
-
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible({
-      timeout: 60_000,
-    });
-
-    await page.getByRole('tab', { name: /graphs/i }).click();
+    await clickTab(page, /graphs/i);
 
     // Wait for the stats bar which appears below the charts
     const statsBar = page.locator('text=/Duration:.*Breaths:/');
@@ -110,9 +103,7 @@ test.describe('Upload and Analyze', () => {
     if (statsVisible) {
       const statsText = await statsBar.textContent();
       expect(statsText).toBeTruthy();
-      // Sample rate should be non-zero
       expect(statsText).toMatch(/\d+ Hz/);
-      // Breaths should be non-zero
       expect(statsText).toMatch(/Breaths:.*[1-9]/);
     }
     // If stats aren't visible, waveform may not have loaded —

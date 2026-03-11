@@ -1,5 +1,5 @@
 /**
- * E2E test: Crash prevention with large file sets (AC-10)
+ * E2E test: Crash prevention with file uploads (AC-10)
  *
  * Verifies that uploading files doesn't cause browser OOM
  * and that demo mode renders charts correctly.
@@ -9,19 +9,17 @@ import path from 'path';
 
 const FIXTURES_DIR = path.resolve(__dirname, '../__tests__/fixtures/sd-card');
 
+/** Helper: click a tab by its text content using data-slot selector */
+async function clickTab(page: import('@playwright/test').Page, text: RegExp) {
+  await page.locator('[data-slot="tabs-trigger"]').filter({ hasText: text }).click({ force: true });
+}
+
 test.describe('Crash Guard', () => {
   // ── Test Case 20: File upload doesn't crash ───────────────────
 
   test('uploading fixtures does not cause page crash or OOM', async ({ page }) => {
     let pageCrashed = false;
     page.on('crash', () => { pageCrashed = true; });
-
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
 
     await page.goto('/analyze');
 
@@ -30,14 +28,14 @@ test.describe('Crash Guard', () => {
     await fileInput.setInputFiles(FIXTURES_DIR);
 
     // Wait for analysis to complete
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible({
-      timeout: 60_000,
-    });
+    await expect(
+      page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
+    ).toBeVisible({ timeout: 90_000 });
 
     expect(pageCrashed).toBe(false);
 
     // Navigate to Graphs tab to trigger waveform extraction
-    await page.getByRole('tab', { name: /graphs/i }).click();
+    await clickTab(page, /graphs/i);
 
     // Wait for waveform processing
     await page.waitForTimeout(5_000);
@@ -46,9 +44,10 @@ test.describe('Crash Guard', () => {
     expect(pageCrashed).toBe(false);
 
     // Should be able to interact with the page
-    const overviewTab = page.getByRole('tab', { name: /overview/i });
-    await overviewTab.click();
-    await expect(overviewTab).toBeVisible();
+    await clickTab(page, /overview/i);
+    await expect(
+      page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
+    ).toBeVisible();
   });
 
   test('demo mode renders all charts without crash', async ({ page }) => {
@@ -58,12 +57,12 @@ test.describe('Crash Guard', () => {
     await page.goto('/analyze?demo=1');
 
     // Wait for demo analysis to complete
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(
+      page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
+    ).toBeVisible({ timeout: 30_000 });
 
     // Navigate to Graphs tab — demo mode generates synthetic waveforms
-    await page.getByRole('tab', { name: /graphs/i }).click();
+    await clickTab(page, /graphs/i);
 
     // Wait for charts to render
     await page.waitForTimeout(3_000);
@@ -71,8 +70,8 @@ test.describe('Crash Guard', () => {
     expect(pageCrashed).toBe(false);
 
     // Navigate away and back to verify stability
-    await page.getByRole('tab', { name: /overview/i }).click();
-    await page.getByRole('tab', { name: /graphs/i }).click();
+    await clickTab(page, /overview/i);
+    await clickTab(page, /graphs/i);
     await page.waitForTimeout(2_000);
 
     expect(pageCrashed).toBe(false);
