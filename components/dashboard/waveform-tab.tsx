@@ -55,11 +55,9 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
 
     if (sdFiles.length > 0) {
       // Local files available — extract from them
-      if (waveformOrchestrator.hasCached(dateStr)) {
-        waveformOrchestrator.extract(sdFiles, dateStr);
-      } else {
-        waveformOrchestrator.extract(sdFiles, dateStr);
-      }
+      waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
+        console.error('[waveform-tab] extraction failed:', err);
+      });
       return;
     }
 
@@ -72,8 +70,10 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
       loadCloudFiles(dateStr)
         .then((cloudFiles) => {
           if (cloudFiles.length > 0) {
-            waveformOrchestrator.extract(cloudFiles, dateStr);
+            return waveformOrchestrator.extract(cloudFiles, dateStr);
           }
+        })
+        .then(() => {
           setCloudAttempted(true);
         })
         .catch((err) => {
@@ -87,7 +87,9 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
 
   const handleRetry = useCallback(() => {
     if (sdFiles.length > 0) {
-      waveformOrchestrator.extract(sdFiles, selectedNight.dateStr);
+      waveformOrchestrator.extract(sdFiles, selectedNight.dateStr).catch((err) => {
+        console.error('[waveform-tab] retry failed:', err);
+      });
     } else if (user) {
       // Retry cloud load
       cloudAttemptedDates.current.delete(selectedNight.dateStr);
@@ -96,10 +98,10 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
       loadCloudFiles(selectedNight.dateStr)
         .then((cloudFiles) => {
           if (cloudFiles.length > 0) {
-            waveformOrchestrator.extract(cloudFiles, selectedNight.dateStr);
+            return waveformOrchestrator.extract(cloudFiles, selectedNight.dateStr);
           }
-          setCloudAttempted(true);
         })
+        .then(() => setCloudAttempted(true))
         .catch(() => setCloudAttempted(true))
         .finally(() => setCloudLoading(false));
     }

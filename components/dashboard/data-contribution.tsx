@@ -5,7 +5,7 @@ import { Users, Loader2, X, Shield, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
-import { getConsentState } from '@/components/upload/contribution-consent-utils';
+import { getConsentState, setConsentState } from '@/components/upload/contribution-consent-utils';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab_contribute_dismissed';
@@ -90,6 +90,8 @@ export function DataContribution({
       setStatus('success');
       events.contributionOptedIn();
       trackContributedDates(nights);
+      // Persist opt-in so the user isn't prompted again on future visits
+      setConsentState(true);
     } catch {
       setStatus('error');
     }
