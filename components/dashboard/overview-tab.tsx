@@ -12,7 +12,7 @@ import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
 import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
 import { NightSummaryHero } from '@/components/dashboard/night-summary-hero';
 import { InsightsPanel } from '@/components/dashboard/insights-panel';
-import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2 } from 'lucide-react';
+import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2 } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess, incrementAIUsage } from '@/lib/auth/feature-gate';
@@ -61,6 +61,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   const { user, tier, isPaid } = useAuth();
 
+  const [shareOpen, setShareOpen] = useState(false);
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
   const [serverRemainingCredits, setAiRemainingCredits] = useState<number | undefined>(undefined);
   const [aiLoading, setAiLoading] = useState(false);
@@ -473,9 +474,23 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         );
       })()}
 
-      {/* Share Prompts (real data only, hidden for new users to reduce density) */}
-      {!isNewUser && (
-        <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={isDemo} />
+      {/* Share button + modal (real data only, hidden for new users to reduce density) */}
+      {!isNewUser && !isDemo && (
+        <>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="flex w-full items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+          >
+            <Share2 className="h-4 w-4" />
+            Share your analysis
+          </button>
+          <SharePrompts
+            nights={nights}
+            selectedNight={selectedNight}
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+          />
+        </>
       )}
 
       {/* Heatmap (hidden for new users to reduce density) */}

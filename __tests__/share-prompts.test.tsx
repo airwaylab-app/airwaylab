@@ -4,18 +4,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { NightResult } from '@/lib/types';
 
-// ── Mock sessionStorage ──────────────────────────────────────
-const sessionStore = new Map<string, string>();
-const sessionStorageMock: Storage = {
-  getItem: vi.fn((key: string) => sessionStore.get(key) ?? null),
-  setItem: vi.fn((key: string, value: string) => { sessionStore.set(key, value); }),
-  removeItem: vi.fn((key: string) => { sessionStore.delete(key); }),
-  clear: vi.fn(() => { sessionStore.clear(); }),
-  get length() { return sessionStore.size; },
-  key: vi.fn((index: number) => Array.from(sessionStore.keys())[index] ?? null),
-};
-Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStorageMock, writable: true });
-
 // ── Mock clipboard ───────────────────────────────────────────
 const writeTextMock = vi.fn(() => Promise.resolve());
 Object.defineProperty(navigator, 'clipboard', {
@@ -88,21 +76,22 @@ function makeNight(dateStr: string): NightResult {
 describe('SharePrompts', () => {
   const nights = [makeNight('2025-01-01')];
   const selectedNight = nights[0];
+  let onClose: () => void;
 
   beforeEach(() => {
-    sessionStore.clear();
     vi.clearAllMocks();
     mockTier = 'community';
+    onClose = vi.fn() as unknown as () => void;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  // Test 1: Modal renders centered with items-center justify-center
-  it('renders as a centered modal overlay with correct positioning classes', () => {
+  // Test 1: Modal renders when open=true
+  it('renders as a centered modal overlay when open', () => {
     const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     const overlay = container.querySelector('[role="dialog"]');
@@ -110,58 +99,54 @@ describe('SharePrompts', () => {
     expect(overlay).toHaveClass('fixed', 'inset-0', 'z-50', 'items-center', 'justify-center');
   });
 
-  // Test 2: Clicking backdrop closes the modal
-  it('closes when backdrop is clicked', () => {
+  // Test 2: Does not render when open=false
+  it('does not render when open is false', () => {
     const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={false} onClose={onClose} />
+    );
+
+    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+  });
+
+  // Test 3: Clicking backdrop calls onClose
+  it('calls onClose when backdrop is clicked', () => {
+    const { container } = render(
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     const overlay = container.querySelector('[role="dialog"]');
-    expect(overlay).toBeInTheDocument();
-
     fireEvent.click(overlay!);
 
-    // After clicking backdrop, the modal should no longer render
-    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // Test 3: Pressing Escape closes the modal
-  it('closes when Escape key is pressed', () => {
-    const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+  // Test 4: Pressing Escape calls onClose
+  it('calls onClose when Escape key is pressed', () => {
+    render(
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
-
-    expect(container.querySelector('[role="dialog"]')).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // Test 4: Not rendered in demo mode
-  it('does not render when isDemo is true', () => {
-    const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={true} />
+  // Test 5: X button calls onClose
+  it('calls onClose when X button is clicked', () => {
+    render(
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
-    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
-  });
+    const closeButton = screen.getByLabelText('Dismiss share prompts');
+    fireEvent.click(closeButton);
 
-  // Test 5: Not rendered when sessionStorage dismiss key is set
-  it('does not render when sessionStorage dismiss key is set', () => {
-    sessionStore.set('airwaylab_share_dismissed', '1');
-
-    const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
-    );
-
-    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   // Test 6: Forum copy button copies text
   it('copies forum text to clipboard when Copy for Forum Post is clicked', async () => {
     render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     const copyButton = screen.getByText('Copy for Forum Post');
@@ -175,7 +160,7 @@ describe('SharePrompts', () => {
     mockTier = 'supporter';
 
     render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     expect(screen.getByText('Download PDF Report')).toBeInTheDocument();
@@ -185,7 +170,7 @@ describe('SharePrompts', () => {
     mockTier = 'community';
 
     render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     expect(screen.getByText('PDF reports are available on the Supporter plan.')).toBeInTheDocument();
@@ -194,24 +179,12 @@ describe('SharePrompts', () => {
   // Test 8: Accessibility attributes
   it('has aria-modal and role="dialog" on the overlay', () => {
     const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
+      <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
     const overlay = container.querySelector('[role="dialog"]');
     expect(overlay).toBeInTheDocument();
     expect(overlay).toHaveAttribute('aria-modal', 'true');
     expect(overlay).toHaveAttribute('role', 'dialog');
-  });
-
-  // Test: X button closes the modal
-  it('closes when X button is clicked', () => {
-    const { container } = render(
-      <SharePrompts nights={nights} selectedNight={selectedNight} isDemo={false} />
-    );
-
-    const closeButton = screen.getByLabelText('Dismiss share prompts');
-    fireEvent.click(closeButton);
-
-    expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
   });
 });
