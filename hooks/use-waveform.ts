@@ -49,7 +49,9 @@ export function useWaveform(
 
     if (sdFiles.length > 0) {
       // Local files available — extract from them
-      waveformOrchestrator.extract(sdFiles, dateStr);
+      waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
+        console.error('[use-waveform] extraction failed:', err);
+      });
       return;
     }
 
@@ -62,8 +64,10 @@ export function useWaveform(
       loadCloudFiles(dateStr)
         .then((cloudFiles) => {
           if (cloudFiles.length > 0) {
-            waveformOrchestrator.extract(cloudFiles, dateStr);
+            return waveformOrchestrator.extract(cloudFiles, dateStr);
           }
+        })
+        .then(() => {
           setCloudAttempted(true);
         })
         .catch((err: unknown) => {
@@ -77,7 +81,9 @@ export function useWaveform(
 
   const retry = useCallback(() => {
     if (sdFiles.length > 0) {
-      waveformOrchestrator.extract(sdFiles, selectedNight.dateStr);
+      waveformOrchestrator.extract(sdFiles, selectedNight.dateStr).catch((err) => {
+        console.error('[use-waveform] retry failed:', err);
+      });
     } else if (user) {
       // Retry cloud load
       cloudAttemptedDates.current.delete(selectedNight.dateStr);
@@ -86,10 +92,10 @@ export function useWaveform(
       loadCloudFiles(selectedNight.dateStr)
         .then((cloudFiles) => {
           if (cloudFiles.length > 0) {
-            waveformOrchestrator.extract(cloudFiles, selectedNight.dateStr);
+            return waveformOrchestrator.extract(cloudFiles, selectedNight.dateStr);
           }
-          setCloudAttempted(true);
         })
+        .then(() => setCloudAttempted(true))
         .catch(() => setCloudAttempted(true))
         .finally(() => setCloudLoading(false));
     }

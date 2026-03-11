@@ -14,7 +14,7 @@ export interface WaveformState {
   error: string | null;
 }
 
-const WORKER_TIMEOUT_MS = 30_000; // 30 seconds
+const WORKER_TIMEOUT_MS = 60_000; // 60 seconds (increased from 30 for large SD cards)
 const BUCKET_SECONDS = 2; // 2-second buckets for overview
 
 class WaveformOrchestrator {
@@ -66,8 +66,21 @@ class WaveformOrchestrator {
     this.setState({ status: 'loading', waveform: null, error: null });
 
     try {
-      // Read files into ArrayBuffers
-      const fileBuffers = await readFiles(files);
+      // Pre-filter to BRP files only — avoids reading non-flow files into memory
+      const brpFiles = files.filter((f) => {
+        const path =
+          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const name = (path.split('/').pop() || '').toLowerCase();
+        return (name.endsWith('brp.edf') || name.endsWith('_brp.edf')) && f.size > 50 * 1024;
+      });
+
+      if (brpFiles.length === 0) {
+        this.setState({ status: 'error', waveform: null, error: 'No flow data files found' });
+        return null;
+      }
+
+      // Read only BRP files into ArrayBuffers
+      const fileBuffers = await readFiles(brpFiles);
 
       // Run worker
       const waveform = await this.runWorker(fileBuffers, targetDate);
@@ -116,9 +129,15 @@ class WaveformOrchestrator {
         clearTimeout(timeout);
       };
 
-      this.worker = new Worker(
-        new URL('./waveform-worker.ts', import.meta.url)
-      );
+      try {
+        this.worker = new Worker(
+          new URL('./waveform-worker.ts', import.meta.url)
+        );
+      } catch (err) {
+        settle();
+        reject(new Error(err instanceof Error ? err.message : 'Failed to create waveform worker'));
+        return;
+      }
 
       this.worker.onmessage = (e: MessageEvent<WaveformWorkerResponse>) => {
         const msg = e.data;
