@@ -3,8 +3,57 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
+
+const PRACTICE_TYPE_LABELS: Record<string, string> = {
+  independent_sleep_consultant: 'Independent Sleep Consultant',
+  respiratory_therapist: 'Respiratory Therapist',
+  sleep_physician: 'Sleep Physician',
+  other: 'Other',
+};
+
+async function sendNotificationEmail(fields: {
+  name: string;
+  email: string;
+  practiceType: string | null;
+  message: string | null;
+}) {
+  const apiKey = serverEnv.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'AirwayLab <noreply@airwaylab.app>',
+        to: ['dev@airwaylab.app'],
+        subject: `New provider interest: ${fields.name}`,
+        text: [
+          `New provider interest submission on airwaylab.app/providers`,
+          '',
+          `Name: ${fields.name}`,
+          `Email: ${fields.email}`,
+          `Practice type: ${fields.practiceType ? PRACTICE_TYPE_LABELS[fields.practiceType] ?? fields.practiceType : '—'}`,
+          `Message: ${fields.message ?? '—'}`,
+        ].join('\n'),
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error('[provider-interest] Resend error:', res.status, body);
+    }
+  } catch (err) {
+    // Non-critical — don't fail the request if notification fails
+    console.error('[provider-interest] Notification email failed:', err);
+  }
+}
 
 const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
 const ALLOWED_PRACTICE_TYPES = [
@@ -111,6 +160,14 @@ export async function POST(request: NextRequest) {
         Sentry.captureException(error, { tags: { route: 'provider-interest' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
+
+      // Fire-and-forget notification email
+      sendNotificationEmail({
+        name: (name as string).trim(),
+        email: (email as string).trim().toLowerCase(),
+        practiceType: cleanPracticeType,
+        message: typeof message === 'string' ? message.trim() || null : null,
+      });
     } else {
       console.error('[provider-interest] Supabase not configured — submission not stored');
     }
