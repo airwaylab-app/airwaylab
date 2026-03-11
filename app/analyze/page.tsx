@@ -29,11 +29,10 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults, persistResults, clearPersistedResults } from '@/lib/persistence';
+import { loadPersistedResults, persistResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
-import { clearManifest } from '@/lib/file-manifest';
 import {
   RotateCcw,
   Shield,
@@ -341,10 +340,10 @@ function AnalyzePageInner() {
       const saved = loadPersistedResults();
       setPersistedData(saved);
     } else {
-      // Resetting real analysis: clear persisted data
+      // Resetting real analysis: clear React state so upload form shows,
+      // but keep localStorage cache + manifest so the orchestrator can
+      // skip unchanged nights on the next upload (incremental processing).
       setPersistedData(null);
-      clearPersistedResults();
-      clearManifest();
     }
   }, [isDemo]);
 
@@ -448,8 +447,8 @@ function AnalyzePageInner() {
         </div>
       )}
 
-      {/* Upload State */}
-      {status === 'idle' && !isDemo && (
+      {/* Upload State — hidden when persisted results are loaded */}
+      {status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto max-w-lg">
           {/* Mobile upload warning */}
           <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 sm:hidden">
