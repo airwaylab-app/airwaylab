@@ -10,12 +10,11 @@ import { canAccess } from '@/lib/auth/feature-gate';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import type { NightResult } from '@/lib/types';
 
-const DISMISS_KEY = 'airwaylab_share_dismissed';
-
 interface Props {
   nights: NightResult[];
   selectedNight: NightResult;
-  isDemo: boolean;
+  open: boolean;
+  onClose: () => void;
 }
 
 /**
@@ -23,30 +22,14 @@ interface Props {
  * 1. Community sharing (copy for Reddit / ApneaBoard)
  * 2. Clinician sharing (PDF report)
  *
- * Only shown for real data (not demo). Dismissable via sessionStorage.
+ * Controlled modal — parent manages open/close state.
  */
-export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
+export function SharePrompts({ nights, selectedNight, open, onClose }: Props) {
   const { tier } = useAuth();
   const pdfAllowed = canAccess('pdf_report', tier);
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return sessionStorage.getItem(DISMISS_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
   const [copied, setCopied] = useState<string | null>(null);
 
-  const open = !isDemo && !dismissed;
   const focusTrapRef = useFocusTrap(open);
-
-  const handleDismiss = useCallback(() => {
-    setDismissed(true);
-    try {
-      sessionStorage.setItem(DISMISS_KEY, '1');
-    } catch { /* noop */ }
-  }, []);
 
   // Close on Escape key
   useEffect(() => {
@@ -54,13 +37,13 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleDismiss();
+        onClose();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, handleDismiss]);
+  }, [open, onClose]);
 
   const handleCopyForum = useCallback(async () => {
     const text = exportForumSingleNight(selectedNight);
@@ -80,7 +63,7 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={handleDismiss}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Share your analysis"
@@ -91,7 +74,7 @@ export function SharePrompts({ nights, selectedNight, isDemo }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={handleDismiss}
+          onClick={onClose}
           className="absolute right-3 top-3 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Dismiss share prompts"
         >
