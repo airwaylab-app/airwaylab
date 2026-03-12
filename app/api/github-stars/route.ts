@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { captureApiError } from '@/lib/sentry-utils';
 
 const REPO = 'airwaylab-app/airwaylab';
 
@@ -21,6 +22,7 @@ export async function GET() {
 
     if (!r.ok) {
       console.error(`[github-stars] GitHub API returned ${r.status}`);
+      captureApiError(new Error(`GitHub API returned ${r.status}`), { route: 'github-stars' });
       return NextResponse.json(
         { stars: 0 },
         {
@@ -44,6 +46,7 @@ export async function GET() {
     );
   } catch (error) {
     console.error('[github-stars] fetch error:', error);
+    captureApiError(error, { route: 'github-stars' });
     return NextResponse.json(
       { stars: 0 },
       { status: 500 }
