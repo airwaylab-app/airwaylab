@@ -26,6 +26,7 @@ Focus on:
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
 - Therapy settings context (pressure support, EPR, mode) in relation to findings
 - Oximetry-flow correlations when oximetry data is present
+- Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL predicts sleepiness independently of arousals via limbic/HPA axis stress response. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 
 Rules:
 - Always include "discuss with your clinician" or similar language in actionable insights

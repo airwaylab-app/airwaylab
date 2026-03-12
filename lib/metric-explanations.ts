@@ -20,12 +20,12 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
   if (value === 0) return '';
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {
-    return `Your Estimated Arousal Index of ${fmt(value)}/hr is low. Your brain appears to be maintaining stable sleep without frequent respiratory disruptions.`;
+    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is low, indicating few detected recovery breaths after flow-limited sequences. Note: research suggests flow limitation itself can drive symptoms independently of arousals, so check your flow limitation metrics (Glasgow Index, FL Score, NED) as well.`;
   }
   if (light === 'warn') {
-    return `Your Estimated Arousal Index of ${fmt(value)}/hr is moderately elevated. Your breathing pattern shows signs of frequent mini-awakenings, which can fragment sleep even if you don't remember waking up.`;
+    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. Your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Note: this flow-based estimate typically reads higher than an in-lab arousal index measured with EEG.`;
   }
-  return `Your Estimated Arousal Index of ${fmt(value)}/hr is high. Your breathing pattern suggests your brain is waking up frequently — potentially dozens of times per hour — which can leave you feeling exhausted even after a full night of sleep.`;
+  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Frequent recovery breaths following flow limitation suggest your nervous system is repeatedly responding to breathing difficulty. Discuss with your clinician — an in-lab study with EEG can measure true cortical arousals directly.`;
 }
 
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {
