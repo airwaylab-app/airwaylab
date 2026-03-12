@@ -24,17 +24,32 @@ Focus on:
 - Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top high while NED shows low M-shape suggests steady-state flow limitation rather than oscillatory obstruction)
 - Patterns between WAT regularity/periodicity and Glasgow component breakdown
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
-- Therapy settings context (pressure support, EPR, mode) in relation to findings
+- Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Identify specific settings that may be contributing to findings and suggest concrete adjustments to investigate.
 - Oximetry-flow correlations when oximetry data is present
+- Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL predicts sleepiness independently of arousals via limbic/HPA axis stress response. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
+- When user-reported night context is provided (caffeine, alcohol, congestion, sleep position, stress, exercise): correlate these factors with the analysis findings. For example, afternoon caffeine + high disruptions, nasal congestion + elevated FL, back sleeping + H2 worsening, etc.
+- ACTIONABILITY: For every warning or actionable insight, include specific areas to investigate (e.g. "try adjusting EPR from 2 to 3", "consider side sleeping", "reduce afternoon caffeine"). Frame as "areas to investigate with your clinician" not as medical advice.
 
 Rules:
 - Always include "discuss with your clinician" or similar language in actionable insights
 - Never claim to be a medical device or provide a diagnosis
-- Be specific — reference actual metric values from the data
+- Be specific — reference actual metric values and settings from the data
 - Prioritise actionable findings over general observations
+- Generate at least one "actionable" type insight with concrete investigation suggestions
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
+
+// Zod schema for night notes
+const NightNotesSchema = z.object({
+  caffeine: z.enum(['none', 'before-noon', 'afternoon', 'evening']).nullable(),
+  alcohol: z.enum(['none', '1-2', '3+']).nullable(),
+  congestion: z.enum(['none', 'mild', 'severe']).nullable(),
+  position: z.enum(['back', 'side', 'stomach', 'mixed']).nullable(),
+  stress: z.enum(['low', 'moderate', 'high']).nullable(),
+  exercise: z.enum(['none', 'light', 'intense']).nullable(),
+  note: z.string().max(200).optional(),
+}).optional();
 
 // Zod schema for request validation (M4)
 const RequestBodySchema = z.object({
@@ -50,12 +65,13 @@ const RequestBodySchema = z.object({
   }).passthrough()).min(1).max(1095),
   selectedNightIndex: z.number().int().min(0),
   therapyChangeDate: z.string().nullable(),
+  nightNotes: NightNotesSchema,
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
 function buildUserPrompt(body: RequestBody): string {
-  const { nights, selectedNightIndex, therapyChangeDate } = body;
+  const { nights, selectedNightIndex, therapyChangeDate, nightNotes } = body;
   const selected = nights[selectedNightIndex];
   const previous = selectedNightIndex < nights.length - 1 ? nights[selectedNightIndex + 1] : null;
 
@@ -73,6 +89,21 @@ function buildUserPrompt(body: RequestBody): string {
     nightCount: nights.length,
     therapyChangeDate,
   };
+
+  // Include user-reported night context if available
+  if (nightNotes) {
+    const activeNotes: Record<string, string> = {};
+    if (nightNotes.caffeine) activeNotes.caffeine = nightNotes.caffeine;
+    if (nightNotes.alcohol) activeNotes.alcohol = nightNotes.alcohol;
+    if (nightNotes.congestion) activeNotes.congestion = nightNotes.congestion;
+    if (nightNotes.position) activeNotes.position = nightNotes.position;
+    if (nightNotes.stress) activeNotes.stress = nightNotes.stress;
+    if (nightNotes.exercise) activeNotes.exercise = nightNotes.exercise;
+    if (nightNotes.note) activeNotes.note = nightNotes.note;
+    if (Object.keys(activeNotes).length > 0) {
+      context.userReportedContext = activeNotes;
+    }
+  }
 
   if (previous) {
     context.previousNight = {

@@ -48,6 +48,18 @@ function anonymiseNight(n: NightResult, index: number) {
       trigger: n.settings.trigger,
       cycle: n.settings.cycle,
       easyBreathe: n.settings.easyBreathe,
+      // Extended settings (v0.7.0)
+      ...(n.settings.rampEnabled !== undefined && { rampEnabled: n.settings.rampEnabled }),
+      ...(n.settings.rampTime !== undefined && { rampTime: n.settings.rampTime }),
+      ...(n.settings.rampPressure !== undefined && { rampPressure: n.settings.rampPressure }),
+      ...(n.settings.humidifierLevel !== undefined && { humidifierLevel: n.settings.humidifierLevel }),
+      ...(n.settings.climateControlAuto !== undefined && { climateControlAuto: n.settings.climateControlAuto }),
+      ...(n.settings.tubeTempSetting !== undefined && { tubeTempSetting: n.settings.tubeTempSetting }),
+      ...(n.settings.maskType !== undefined && { maskType: n.settings.maskType }),
+      ...(n.settings.smartStart !== undefined && { smartStart: n.settings.smartStart }),
+      ...(n.settings.extendedSettings && Object.keys(n.settings.extendedSettings).length > 0 && {
+        extendedSettings: n.settings.extendedSettings,
+      }),
     },
     glasgow: {
       overall: n.glasgow.overall,

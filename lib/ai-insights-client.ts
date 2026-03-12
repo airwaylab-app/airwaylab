@@ -1,5 +1,5 @@
 import type { Insight } from './insights';
-import type { NightResult } from './types';
+import type { NightResult, NightNotes } from './types';
 
 export interface AIInsightsResult {
   insights: Insight[];
@@ -16,7 +16,8 @@ export async function fetchAIInsights(
   nights: NightResult[],
   selectedNightIndex: number,
   therapyChangeDate: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  nightNotes?: NightNotes
 ): Promise<AIInsightsResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
@@ -34,6 +35,7 @@ export async function fetchAIInsights(
         nights,
         selectedNightIndex,
         therapyChangeDate,
+        nightNotes,
       }),
       signal: controller.signal,
     });

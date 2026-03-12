@@ -20,6 +20,8 @@ import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
+import { NightNotesPanel } from '@/components/dashboard/night-notes-panel';
+import { loadNightNotes } from '@/lib/night-notes';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
@@ -82,11 +84,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
     setAiLoading(true);
     const selectedIdx = nights.indexOf(selectedNight);
 
+    const notes = loadNightNotes(selectedNight.dateStr);
+
     fetchAIInsights(
       nights,
       selectedIdx >= 0 ? selectedIdx : 0,
       therapyChangeDate,
-      controller.signal
+      controller.signal,
+      notes
     )
       .then((result) => {
         // L3: Don't update state if this request was aborted (stale)
