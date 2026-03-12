@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Cloud, Check, AlertCircle, X, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth/auth-context';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import type { UploadState } from '@/lib/storage/types';
 
@@ -13,20 +14,40 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * Slim banner showing cloud upload progress.
- * Auto-dismisses after upload completes successfully.
+ * Slim banner showing cloud upload progress or existing sync status.
+ * Shows "synced to cloud" when files exist, upload progress during sync,
+ * and auto-dismisses after upload completes successfully.
  */
 export function StorageProgressBanner() {
   const [state, setState] = useState<UploadState>(uploadOrchestrator.getState());
   const [dismissed, setDismissed] = useState(false);
+  const [cloudFileCount, setCloudFileCount] = useState<number | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     return uploadOrchestrator.subscribe(setState);
   }, []);
 
+  // Fetch cloud file count on mount for authenticated users
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/files/usage', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.fileCount > 0) {
+          setCloudFileCount(data.fileCount);
+        }
+      })
+      .catch(() => { /* noop */ });
+  }, [user]);
+
   // Auto-dismiss after 8 seconds on success
   useEffect(() => {
     if (state.status === 'complete' && state.result && state.result.failed === 0) {
+      // Update cloud file count after successful upload
+      if (state.result.uploaded > 0 || state.result.skipped > 0) {
+        setCloudFileCount(prev => (prev ?? 0) + (state.result?.uploaded ?? 0));
+      }
       const timer = setTimeout(() => setDismissed(true), 8000);
       return () => clearTimeout(timer);
     }
@@ -36,8 +57,21 @@ export function StorageProgressBanner() {
     }
   }, [state.status, state.result]);
 
-  // Don't show when idle or dismissed
-  if (state.status === 'idle' || dismissed) return null;
+  // Show cloud sync status when idle with existing files
+  const showSyncStatus = state.status === 'idle' && !dismissed && cloudFileCount !== null && cloudFileCount > 0;
+
+  // Don't show when idle (no cloud files) or dismissed
+  if (!showSyncStatus && (state.status === 'idle' || dismissed)) return null;
+
+  // Sync status badge (no active upload)
+  if (showSyncStatus) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] px-3 py-1.5 text-xs text-sky-400/70">
+        <Cloud className="h-3.5 w-3.5 shrink-0" />
+        <span>{cloudFileCount} files synced to cloud</span>
+      </div>
+    );
+  }
 
   const { progress, result, error } = state;
   const isAuthError = error?.includes('session') || error?.includes('sign in');

@@ -177,60 +177,65 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 ## Development Workflow
 
-**This workflow is mandatory. Every feature and fix must follow it. No exceptions.**
+**This workflow is mandatory.** The root failure mode: AI-generated code passes automated checks but introduces subtle UI, integration, and logic bugs that compound across features. The fix is friction between "code generated" and "code in production."
 
-The root failure mode is: AI-generated code passes automated checks but introduces subtle UI, integration, and logic bugs that compound across features. The fix is friction between "code generated" and "code in production."
+### Pipeline
 
-### Pipeline: spec → build → verify → review → merge
+`spec → build → test → review → verify (human) → merge → post-deploy check`
 
-**1. Spec** (`/spec`)
-- Define the problem and simplest solution
-- List **failure modes and edge cases** explicitly — not just the happy path
-- List **affected existing components** (blast radius analysis)
-- Include a **manual test checklist** — specific things to click/verify on the preview deploy
-- Wait for approval before proceeding to build
+Full process details are in `prompts/spec.md` and `prompts/build.md`. This section defines the rules; the prompts define the how.
 
-**2. Build** (`/build`)
-- Implement the spec. One concern per PR — never bundle unrelated changes.
-- Must pass full pipeline: `npm run lint` → `npx tsc --noEmit` → `npm test` → `npm run build`
-- Must include tests for the specific edge cases identified in the spec
-- E2e tests must pass locally (`npx playwright test`) for any UI-facing change
+### Scope Gates
 
-**3. Verify** (new gate — before requesting merge)
-- Push to branch. Vercel creates a preview deploy automatically.
-- Report the preview URL and the manual test checklist from the spec.
-- **Demian verifies on the preview.** No merge without this step.
-- If verification fails → fix on the same branch, re-verify.
+| Tier | When | Process | Examples |
+|------|------|---------|----------|
+| **Full spec** | New features, engine changes, API routes, privacy/consent, protected modules | `prompts/spec.md` → `prompts/build.md` (all agents) | New analysis metric, AI insights flow, auth changes, data contribution |
+| **Light spec** | UI changes, refactors, significant bug fixes | Write the step template (files, tests, manual QA). Review + all 5 checks + preview verification. | Dashboard layout change, component refactor, broken loading state |
+| **No spec** | Near-zero regression risk | Standard PR with all 5 checks. Quick visual check on preview. | Blog posts, copy changes, dependency bumps, CSS-only tweaks, docs |
 
-**4. Review** (self-review of diff against spec)
-- Check: does the diff introduce regressions in existing components?
-- Check: null checks, loading states, error states for all new UI
-- Check: display formatting with real data, not just synthetic test data
-- Check: no hardcoded values, no bundled unrelated changes
-- Check: e2e selectors match actual rendered DOM
+When in doubt, use the tier above.
 
-**5. Merge**
-- Only after verify + review pass
-- Squash merge to main
-- Monitor Vercel deploy + Sentry for 5 minutes post-deploy
+### Shipping Rules
 
-### PR Discipline
+1. **Spec before build.** Full-tier changes start with `prompts/spec.md`. Specs are saved to `specs/` as persistent files.
+2. **One concern per PR, max 400 lines.** No bundling unrelated changes.
+3. **Tests ship with the code.** No separate "test:" PRs.
+4. **All 5 checks must pass before PR:** `npx tsc --noEmit` + `npm run lint` + `npm test` + `npm run build` + `npx playwright test` (for UI changes).
+5. **Human QA before merge.** Demian verifies Vercel preview deploy. ALL manual QA boxes must be checked. Partial pass = no merge.
+6. **One step at a time.** Do not start the next spec step until the current PR is merged and verified in production.
+7. **Protected module changes are isolated.** Own PR, never bundled with other changes.
+8. **Max 3 feature PRs per day.** Ship, verify, observe.
+9. **Fix-on-fix = red flag.** Stop. Revert if merged. Re-spec the area.
+10. **Bundle size budget.** Flag any PR increasing bundle >10KB. LCP must stay under 2s.
 
-- **One concern per PR.** A feature is one PR. A bug fix is one PR. Never combine.
-- **Max 3 feature PRs per session.** Prevents avalanche deployments where bugs compound.
-- **Fix-on-fix = red flag.** If a fix needs a follow-up fix, the original spec missed edge cases. Stop and re-spec before continuing.
-- **No orphan e2e tests.** E2e tests ship in the same PR as the feature they test, not in separate PRs and not bundled into unrelated PRs.
-- **Green CI before merge.** All pipeline stages must pass. If e2e is flaky, fix the flake — don't merge around it.
+### Rollback Protocol
+
+1. **Assess severity.** Core analysis broken → revert immediately. Cosmetic/secondary → hotfix branch.
+2. **Revert first, investigate second.** `git revert <commit> && git push`.
+3. **Hotfix via light spec.** Review + all 5 checks + preview verification. No shortcuts.
+4. **Post-incident note** on the PR: what broke, why, what the spec/review missed.
+
+### Post-Deploy Verification
+
+After merge, "verified" means ALL of these:
+
+1. **Smoke test** — Upload SD card data on airwaylab.app. Full pipeline: upload → parse → analyze → all dashboard tabs.
+2. **Feature check** — The specific feature from the QA checklist works on production.
+3. **Regression spot-check** — 2-3 adjacent features that share components or state.
+4. **Console check** — DevTools shows no new errors or warnings.
+5. **Mobile check** — Changed area renders correctly on mobile viewport.
+6. **Sentry watch** — Monitor for 5 minutes immediately. Check again 24 hours later.
 
 ### Pre-Merge Checklist (copy into every PR)
 
 ```markdown
 - [ ] Full pipeline passes (lint, typecheck, test, build)
-- [ ] E2e tests pass locally for UI changes
+- [ ] E2e tests pass locally (for UI changes)
+- [ ] Bundle size impact checked (flag if >10KB increase)
 - [ ] Vercel preview deploy verified by Demian
-- [ ] Self-review: no regressions in existing components
-- [ ] Self-review: loading, error, and empty states handled
-- [ ] PR contains one concern only — no bundled changes
+- [ ] ALL manual QA items checked (partial pass = no merge)
+- [ ] Self-review: no regressions, loading/error/empty states handled
+- [ ] PR contains one concern only
 ```
 
 ## Anti-Patterns
