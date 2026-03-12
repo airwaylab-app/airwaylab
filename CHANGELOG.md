@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Returning User Nudge** — banner for anonymous returning users encouraging registration with night count context (ai-insights-conversion-funnel)
 - **Analysis Data Pipeline** — automatic storage of aggregate analysis scores for registered users, with per-breath summaries stored as JSON files in Supabase Storage (ai-insights-conversion-funnel)
 - **17 new analytics events** — full funnel tracking from upload through teaser shown, registration, AI generation, to upgrade (ai-insights-conversion-funnel)
+- **Deep AI Insights for paid users** — per-breath summary data sent to Claude for waveform-level analysis including RERA clustering, breath shape distribution, temporal FL patterns, and progressive FL detection. "Deep Analysis" badge distinguishes from aggregate-based insights (ai-insights-conversion-funnel)
+- **61 conversion funnel tests** — comprehensive test coverage for all spec acceptance criteria, edge cases, and analytics events (ai-insights-conversion-funnel)
 
 ### Changed
 
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cloud storage unlimited for all registered users** — removed tier gates and quota enforcement on file storage. Registration consent covers all data processing (ai-insights-conversion-funnel)
 - **Single registration consent** — AuthModal now includes a consent checkbox covering EDF storage, AI processing, and per-breath data storage. StorageConsent component no longer shown (ai-insights-conversion-funnel)
 - **Feature gate updates** — `raw_storage` and `cloud_sync` now available for community tier; added `deep_ai_insights` feature for supporter/champion (ai-insights-conversion-funnel)
+- **Privacy policy updated** — reflects single registration consent model, per-breath data for paid AI, instant data deletion from Account Settings (ai-insights-conversion-funnel)
+- **Pricing page updated** — community tier shows unlimited cloud storage, supporter tier shows waveform-level deep AI insights, FAQ updated for new data handling (ai-insights-conversion-funnel)
 
 ### Removed
 

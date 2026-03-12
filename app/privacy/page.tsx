@@ -66,12 +66,13 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div className="my-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-            <h3>Tier 2 — Server-Enhanced (Opt-In Only)</h3>
+            <h3>Tier 2 — Server-Enhanced (Registration Consent)</h3>
             <p>
-              Certain features require server communication and are only activated with your
-              explicit, informed consent. These include AI-powered insights, cloud file storage,
-              and anonymised data contribution. Every server interaction requires a separate
-              consent action — we never bundle or pre-select consent.
+              When you create an account, you consent to: storage of your EDF files on our
+              servers (Supabase, EU-West), processing of analysis scores and per-breath data
+              by AI (Anthropic Claude), and storage of analysis data for service improvement.
+              This is a single consent covering all data processing. You can delete all
+              server-stored data at any time from Account Settings.
             </p>
           </div>
         </section>
@@ -97,24 +98,30 @@ export default function PrivacyPolicyPage() {
             receive only your Stripe customer ID and subscription status.
           </p>
 
-          <h3 className="mt-4">3.3 Health Data (only with your explicit consent)</h3>
+          <h3 className="mt-4">3.3 Health Data (registered users)</h3>
           <p>
-            If you opt in to specific features, we process the following health-related data:
+            When you create an account, you consent to the following data processing:
           </p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              <strong>AI Insights:</strong> Aggregate analysis metrics (Glasgow Index, WAT, NED,
-              oximetry scores), machine settings, and optional night notes. Raw waveforms and
-              per-breath data are <strong>never</strong> sent.
+              <strong>Cloud Storage:</strong> EDF files and analysis data are stored on servers
+              in the EU (Supabase, EU-West). Storage is unlimited. All data is linked to your
+              account and can be deleted at any time from Account Settings.
+            </li>
+            <li>
+              <strong>AI Insights:</strong> When you generate AI insights, analysis data is
+              sent to Anthropic&rsquo;s Claude for processing. Free accounts send aggregate
+              scores. Paid accounts send per-breath summary data for deeper analysis. Raw
+              waveform samples are <strong>never</strong> sent to the AI model.
+            </li>
+            <li>
+              <strong>Analysis Data:</strong> Aggregate scores and per-breath summaries are
+              stored to enable AI insights and service improvement.
             </li>
             <li>
               <strong>Data Contribution:</strong> Anonymised aggregate metrics, device model,
-              and your self-reported sleep quality rating (1–5 scale). Used for community insights,
-              AI model improvement, and research. No dates, timestamps, names, or identifiers are included.
-            </li>
-            <li>
-              <strong>Cloud Storage:</strong> Encrypted raw SD card files stored in EU-region
-              servers, accessible only to your account.
+              and your self-reported sleep quality rating (1–5 scale). Used for community insights
+              and research. No dates, timestamps, names, or identifiers are included.
             </li>
           </ul>
 
@@ -140,7 +147,6 @@ export default function PrivacyPolicyPage() {
             <li>Browser fingerprints</li>
             <li>IP addresses for tracking (Plausible does not store IPs)</li>
             <li>Raw sleep waveforms (never transmitted to any server)</li>
-            <li>Per-breath analysis data</li>
             <li>Device serial numbers or user names from PAP machines</li>
           </ul>
         </section>
@@ -220,13 +226,13 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4 font-medium text-foreground">Supabase</td>
                   <td className="py-2 pr-4">Database &amp; authentication</td>
                   <td className="py-2 pr-4">EU (West)</td>
-                  <td className="py-2">Account data, subscriptions, contributed metrics</td>
+                  <td className="py-2">Account data, subscriptions, EDF files, analysis data, contributed metrics</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Anthropic (Claude)</td>
                   <td className="py-2 pr-4">AI-powered insights</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Aggregate metrics only (opt-in)</td>
+                  <td className="py-2">Aggregate metrics (free tier), per-breath summaries (paid tier)</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Stripe</td>
@@ -307,12 +313,13 @@ export default function PrivacyPolicyPage() {
               <strong>Rectification:</strong> Update your account details via your profile settings.
             </li>
             <li>
-              <strong>Erasure:</strong> Request deletion of your account and all associated data.
-              We process deletion requests within 30 days.
+              <strong>Erasure:</strong> Delete all server-stored data instantly from Account
+              Settings. This removes EDF files, analysis data, and contributed metrics. Account
+              deletion requests are processed within 30 days.
             </li>
             <li>
-              <strong>Withdraw consent:</strong> Disable any opt-in feature (AI insights, data
-              contribution, cloud storage) at any time via the dashboard.
+              <strong>Withdraw consent:</strong> Delete all your data at any time from Account
+              Settings. You can also contact us to request full account deletion.
             </li>
             <li>
               <strong>Opt out of analytics:</strong> Plausible respects your browser&rsquo;s

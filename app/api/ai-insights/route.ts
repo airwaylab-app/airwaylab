@@ -9,6 +9,18 @@ import { validateOrigin } from '@/lib/csrf';
 
 const AI_MONTHLY_LIMIT = 3;
 
+const DEEP_SYSTEM_PROMPT_EXTENSION = `
+
+When per-breath summary data is provided, analyse:
+- RERA clustering: identify runs of 3+ breaths with progressive NED increase
+- Breath shape distribution: what percentage are M-shaped vs flat-topped vs normal?
+- Temporal patterns: do FL episodes cluster in H1 vs H2? Are there periodic clusters?
+- Progressive FL: sequences where NED increases steadily over 5+ breaths
+- Recovery patterns: how quickly do metrics normalise after FL episodes?
+
+Reference specific breath indices when discussing patterns (e.g., "Breaths 47-62 show...").
+Mark all deep-analysis insights with category prefixed by the engine name for clarity.`;
+
 const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in PAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
 Your task is to generate 3–6 clinical insights in JSON format. Each insight must follow this exact schema:
@@ -53,6 +65,22 @@ const NightNotesSchema = z.object({
   symptomRating: z.number().int().min(1).max(5).nullable().optional(),
 }).optional();
 
+// Zod schema for per-breath summary (deep mode)
+const BreathSummarySchema = z.object({
+  ned: z.number(),
+  fi: z.number(),
+  mShape: z.boolean(),
+  tPeakTi: z.number(),
+  qPeak: z.number(),
+  duration: z.number(),
+});
+
+const PerBreathSummarySchema = z.object({
+  breaths: z.array(BreathSummarySchema).max(10000),
+  breathCount: z.number().int(),
+  sampleRate: z.number(),
+}).optional();
+
 // Zod schema for request validation (M4)
 const RequestBodySchema = z.object({
   nights: z.array(z.object({
@@ -68,6 +96,8 @@ const RequestBodySchema = z.object({
   selectedNightIndex: z.number().int().min(0),
   therapyChangeDate: z.string().nullable(),
   nightNotes: NightNotesSchema,
+  deep: z.boolean().optional(),
+  perBreathSummary: PerBreathSummarySchema,
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
@@ -124,6 +154,17 @@ function buildUserPrompt(body: RequestBody): string {
       glasgowValues: recent.map((n) => ({ date: n.dateStr, overall: n.glasgow.overall })),
       nedMeanValues: recent.map((n) => ({ date: n.dateStr, nedMean: n.ned.nedMean })),
       flScoreValues: recent.map((n) => ({ date: n.dateStr, flScore: n.wat.flScore })),
+    };
+  }
+
+  // Include per-breath summary for deep mode
+  if (body.deep && body.perBreathSummary) {
+    const pbs = body.perBreathSummary;
+    context.perBreathSummary = {
+      breathCount: pbs.breathCount,
+      sampleRate: pbs.sampleRate,
+      // Include up to 3000 breaths (truncate to stay within token limits)
+      breaths: pbs.breaths.slice(0, 3000),
     };
   }
 
@@ -234,11 +275,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const isDeepRequest = body.deep === true && body.perBreathSummary && userTier !== 'community';
+
+    // Extend system prompt for deep mode
+    if (isDeepRequest) {
+      systemPrompt += DEEP_SYSTEM_PROMPT_EXTENSION;
+    }
+
     const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 3 });
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: isDeepRequest ? 2048 : 1024,
       system: systemPrompt,
       messages: [
         {
@@ -306,6 +354,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       insights,
       source: 'ai',
+      isDeep: !!isDeepRequest,
       ...(remainingCredits !== undefined && { remainingCredits }),
     });
   } catch (err) {

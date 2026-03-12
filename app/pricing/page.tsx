@@ -23,14 +23,14 @@ const COMMUNITY_FEATURES = [
   'All 4 analysis engines (Glasgow, WAT, NED, Oximetry)',
   'Up to 3 nights per analysis',
   '3 AI-powered insights per month',
+  'Unlimited cloud storage for your EDF files',
   'CSV & JSON export',
   'Forum-formatted summaries',
-  'All data stays in your browser',
 ];
 
 const SUPPORTER_FEATURES = [
   'Everything in Community, plus:',
-  'Unlimited AI-powered insights',
+  'Unlimited waveform-level deep AI insights',
   'Cloud sync across devices',
   'Full trend analysis (up to 90 nights)',
   'PDF clinician reports',
@@ -54,7 +54,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens to my data?',
-    a: 'Your sleep data is processed entirely in your browser and never sent to our servers. AI insights use anonymized metrics only. We cannot see your waveforms or personal health data.',
+    a: 'Your sleep data is analysed entirely in your browser — no account required. Registered users get unlimited cloud storage and AI insights. Your data can be deleted anytime from Account Settings.',
   },
   {
     q: 'Can I cancel anytime?',
@@ -366,7 +366,7 @@ export default function PricingPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <Shield className="h-3.5 w-3.5 text-emerald-500" />
-            Your data never leaves your browser
+            Delete all data anytime
           </span>
         </div>
 
