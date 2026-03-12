@@ -66,7 +66,9 @@ export function GraphsTab({
 }: Props) {
   const { state, cloudLoading, cloudAttempted, retry } = useWaveform(selectedNight, isDemo, sdFiles);
   const [showFlowPressure, setShowFlowPressure] = useState(false);
-  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(() => new Set(ALL_EVENT_TYPES));
+  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(
+    () => new Set(ALL_EVENT_TYPES.filter((t) => t !== 'm-shape'))
+  );
   const [showODIEvents, setShowODIEvents] = useState(true);
   const [showHR, setShowHR] = useState(true);
 
