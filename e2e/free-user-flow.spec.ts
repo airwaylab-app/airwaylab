@@ -47,8 +47,8 @@ test.describe('Free User Flow', () => {
     await uploadAndWaitForAnalysis(page);
 
     await expect(page.getByText('Analysis complete')).toBeVisible();
-    // Should show at least 1 night analyzed
-    await expect(page.getByText(/\d+ nights? analyzed/)).toBeVisible();
+    // Should show at least 1 night analyzed (may match lifetime counter + banner)
+    await expect(page.getByText(/\d+ nights? analyzed/).first()).toBeVisible();
   });
 
   // ── All 7 tabs render without crash ──────────────────────────
@@ -147,8 +147,8 @@ test.describe('Free User Flow', () => {
   test('reset/new button returns to upload form', async ({ page }) => {
     await uploadAndWaitForAnalysis(page);
 
-    // Click the New/Reset button
-    await page.getByText('New').click();
+    // Click the New/Reset button (avoid matching "What's New" link or other text)
+    await page.locator('button').filter({ hasText: /^New$/ }).first().click();
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });

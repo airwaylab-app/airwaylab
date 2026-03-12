@@ -25,7 +25,7 @@ test.describe('Demo Mode Flow', () => {
     // Demo banner should be visible
     await expect(page.getByText('Demo mode')).toBeVisible();
     // Should show BiPAP context
-    await expect(page.getByText(/BiPAP ST|sample data/)).toBeVisible();
+    await expect(page.getByText(/BiPAP ST|sample data/).first()).toBeVisible();
     // "Upload Your Data" button should be in the demo banner
     await expect(page.getByText('Upload Your Data')).toBeVisible();
   });
