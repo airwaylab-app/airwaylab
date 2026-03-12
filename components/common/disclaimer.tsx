@@ -7,14 +7,19 @@ export function Disclaimer() {
   const [state, setState] = useState<'loading' | 'visible' | 'dismissed'>('loading');
 
   useEffect(() => {
-    // Migrate old key → new key
-    const oldVal = localStorage.getItem('airwaylab-disclaimer-dismissed');
-    if (oldVal !== null) {
-      localStorage.setItem('airwaylab_disclaimer_dismissed', oldVal);
-      localStorage.removeItem('airwaylab-disclaimer-dismissed');
+    try {
+      // Migrate old key → new key
+      const oldVal = localStorage.getItem('airwaylab-disclaimer-dismissed');
+      if (oldVal !== null) {
+        localStorage.setItem('airwaylab_disclaimer_dismissed', oldVal);
+        localStorage.removeItem('airwaylab-disclaimer-dismissed');
+      }
+      const wasDismissed = localStorage.getItem('airwaylab_disclaimer_dismissed') === 'true';
+      setState(wasDismissed ? 'dismissed' : 'visible');
+    } catch {
+      // localStorage unavailable (Safari private browsing, quota exceeded)
+      setState('visible');
     }
-    const wasDismissed = localStorage.getItem('airwaylab_disclaimer_dismissed') === 'true';
-    setState(wasDismissed ? 'dismissed' : 'visible');
   }, []);
 
   if (state !== 'visible') return null;
@@ -33,7 +38,11 @@ export function Disclaimer() {
         <button
           onClick={() => {
             setState('dismissed');
-            localStorage.setItem('airwaylab_disclaimer_dismissed', 'true');
+            try {
+              localStorage.setItem('airwaylab_disclaimer_dismissed', 'true');
+            } catch {
+              // Dismiss works for this session even if storage fails
+            }
           }}
           className="shrink-0 rounded-md p-1 text-amber-500/70 transition-colors hover:bg-amber-500/10 hover:text-amber-400"
           aria-label="Dismiss disclaimer"

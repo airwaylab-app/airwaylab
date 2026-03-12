@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid request body', details: parsed.error.issues }, { status: 400 });
+      console.error('[store-analysis-data] 400 validation failed:', parsed.error.issues);
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
     const serviceRole = getSupabaseServiceRole();

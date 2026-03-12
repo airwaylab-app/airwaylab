@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
+- **PDF report empty-array guard** — `openPDFReport([])` now returns silently instead of crashing on `nights[0]` access (codebase-audit-hardening)
+- **API schema leak** — Removed Zod validation error details from `/api/store-analysis-data` 400 response; details now logged server-side only (codebase-audit-hardening)
+- **useWaveform unmount safety** — Added cancelled flag to prevent setState after component unmount during cloud file loading (codebase-audit-hardening)
+- **ShareButton timer cleanup** — setTimeout IDs stored in ref and cleared on unmount to prevent memory leaks (codebase-audit-hardening)
+- **FlowWaveform stable keys** — Event overlay keys now use `type-startSec-endSec` instead of array index for correct React reconciliation (codebase-audit-hardening)
+- **Sentry navigation tracking** — Added missing `onRouterTransitionStart` export to `instrumentation-client.ts` (codebase-audit-hardening)
+
 ### Added
 
 - **safeLocalStorage utility** — centralised try/catch wrapper for localStorage calls, preventing crashes in Safari private browsing and quota-exceeded scenarios (codebase-audit-scope-boundary)

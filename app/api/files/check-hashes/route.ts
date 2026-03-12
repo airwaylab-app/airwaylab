@@ -54,19 +54,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ existing: [] });
     }
 
-    // Query all user's file hashes in one go
+    // Chunk .in() queries to avoid PostgREST URL length limits
     const hashValues = hashes.map((h: { filePath: string; fileHash: string }) => h.fileHash);
-    const { data: existingFiles, error } = await serviceRole
-      .from('user_files')
-      .select('file_hash, file_path')
-      .eq('user_id', user.id)
-      .in('file_hash', hashValues);
+    const CHUNK_SIZE = 200;
+    const allExistingFiles: { file_hash: string; file_path: string }[] = [];
 
-    if (error) throw error;
+    for (let i = 0; i < hashValues.length; i += CHUNK_SIZE) {
+      const chunk = hashValues.slice(i, i + CHUNK_SIZE);
+      const { data, error } = await serviceRole
+        .from('user_files')
+        .select('file_hash, file_path')
+        .eq('user_id', user.id)
+        .in('file_hash', chunk);
+
+      if (error) throw error;
+      if (data) allExistingFiles.push(...data);
+    }
 
     // Build a set of existing hash+path combos
     const existingSet = new Set(
-      (existingFiles ?? []).map((f: { file_hash: string; file_path: string }) => `${f.file_hash}|${f.file_path}`)
+      allExistingFiles.map((f) => `${f.file_hash}|${f.file_path}`)
     );
 
     // Return which input hashes already exist

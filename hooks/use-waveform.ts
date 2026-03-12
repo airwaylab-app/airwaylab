@@ -27,6 +27,7 @@ export function useWaveform(
 
   // Extract waveform when night changes
   useEffect(() => {
+    let cancelled = false;
     const dateStr = selectedNight.dateStr;
 
     if (isDemo) {
@@ -44,50 +45,52 @@ export function useWaveform(
       );
       synthetic.dateStr = dateStr;
       waveformOrchestrator.setDemoWaveform(synthetic);
-      return;
+    } else {
+      // Try IndexedDB first (instant load from local cache)
+      waveformOrchestrator.loadFromIDB(dateStr).then((cached) => {
+        if (cached || cancelled) return; // Already loaded from IDB
+
+        if (sdFiles.length > 0) {
+          // Local files available — extract from them
+          waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
+            console.error('[use-waveform] extraction failed:', err);
+          });
+          return;
+        }
+
+        // No local files, no IDB cache — try loading from cloud storage if authenticated
+        if (user && !cloudAttemptedDates.current.has(dateStr)) {
+          cloudAttemptedDates.current.add(dateStr);
+          if (!cancelled) setCloudLoading(true);
+          if (!cancelled) setCloudAttempted(false);
+
+          loadCloudFiles(dateStr)
+            .then((cloudFiles) => {
+              if (cancelled) return;
+              if (cloudFiles.length > 0) {
+                return waveformOrchestrator.extract(cloudFiles, dateStr);
+              }
+            })
+            .then(() => {
+              if (!cancelled) setCloudAttempted(true);
+            })
+            .catch((err: unknown) => {
+              console.error('[use-waveform] Cloud file load failed:', err);
+              if (!cancelled) setCloudAttempted(true);
+            })
+            .finally(() => { if (!cancelled) setCloudLoading(false); });
+        }
+      }).catch(() => {
+        // IDB load failed — proceed with extraction if files available
+        if (!cancelled && sdFiles.length > 0) {
+          waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
+            console.error('[use-waveform] extraction failed:', err);
+          });
+        }
+      });
     }
 
-    // Try IndexedDB first (instant load from local cache)
-    waveformOrchestrator.loadFromIDB(dateStr).then((cached) => {
-      if (cached) return; // Already loaded from IDB
-
-      if (sdFiles.length > 0) {
-        // Local files available — extract from them
-        waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
-          console.error('[use-waveform] extraction failed:', err);
-        });
-        return;
-      }
-
-      // No local files, no IDB cache — try loading from cloud storage if authenticated
-      if (user && !cloudAttemptedDates.current.has(dateStr)) {
-        cloudAttemptedDates.current.add(dateStr);
-        setCloudLoading(true);
-        setCloudAttempted(false);
-
-        loadCloudFiles(dateStr)
-          .then((cloudFiles) => {
-            if (cloudFiles.length > 0) {
-              return waveformOrchestrator.extract(cloudFiles, dateStr);
-            }
-          })
-          .then(() => {
-            setCloudAttempted(true);
-          })
-          .catch((err: unknown) => {
-            console.error('[use-waveform] Cloud file load failed:', err);
-            setCloudAttempted(true);
-          })
-          .finally(() => setCloudLoading(false));
-      }
-    }).catch(() => {
-      // IDB load failed — proceed with extraction if files available
-      if (sdFiles.length > 0) {
-        waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
-          console.error('[use-waveform] extraction failed:', err);
-        });
-      }
-    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNight.dateStr, isDemo, user]);
 
