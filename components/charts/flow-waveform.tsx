@@ -257,12 +257,12 @@ export const FlowWaveform = memo(function FlowWaveform({
             />
 
             {/* Event overlays */}
-            {visibleEvents.map((event, i) => {
+            {visibleEvents.map((event) => {
               const colors = EVENT_COLORS[event.type] ?? EVENT_COLORS['flow-limitation'];
               const labelText = EVENT_SHORT_LABELS[event.type] ?? event.type;
               return (
                 <ReferenceArea
-                  key={`${event.type}-${i}`}
+                  key={`${event.type}-${event.startSec}-${event.endSec}`}
                   yAxisId="flow"
                   x1={event.startSec}
                   x2={event.endSec}

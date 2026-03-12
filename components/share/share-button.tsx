@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Tooltip,
@@ -72,6 +72,14 @@ export const ShareButton = memo(function ShareButton({
   const [fileUpload, setFileUpload] = useState<FileUploadProgress>({ status: 'idle', uploaded: 0, total: 0 });
   const focusTrapRef = useFocusTrap(state.step === 'success' || state.step === 'error');
   const pendingScopeRef = useRef<'single' | 'all' | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Clear copy feedback timer on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const hasFiles = (sdFiles?.length ?? 0) > 0;
 
@@ -257,15 +265,16 @@ export const ShareButton = memo(function ShareButton({
 
   const handleCopy = useCallback(async () => {
     if (state.step !== 'success') return;
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     try {
       await navigator.clipboard.writeText(state.shareUrl);
       setCopied(true);
       setCopyError(false);
       events.shareCopied();
-      setTimeout(() => setCopied(false), 2000);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopyError(true);
-      setTimeout(() => setCopyError(false), 3000);
+      copyTimerRef.current = setTimeout(() => setCopyError(false), 3000);
     }
   }, [state]);
 
