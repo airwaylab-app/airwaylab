@@ -10,6 +10,17 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'hidden-respiratory-events',
+    title: 'The Hidden Respiratory Events Your Flow Data Isn\'t Showing You',
+    description:
+      'Your AHI is normal, your NED looks clean, but your oximetry shows constant arousals. Brief airway obstructions — events too short and too subtle for standard detection — may explain the gap.',
+    date: '2026-03-12',
+    readTime: '8 min read',
+    tags: ['Brief Obstructions', 'Flow Limitation', 'Amplitude', 'UARS'],
+    ogDescription:
+      'Standard flow analysis misses brief airway obstructions — 1-2 breath events that slip under every detection threshold. Learn how amplitude-based analysis fills the gap between your metrics and your symptoms.',
+  },
+  {
     slug: 'flow-limitation-and-sleepiness',
     title: 'Does Flow Limitation Drive Sleepiness? What the Evidence Shows',
     description:
