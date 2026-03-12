@@ -5,12 +5,18 @@ import { ArrowLeft, Calendar, Clock, Tag } from 'lucide-react';
 import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 
 // Lazy-load post components
+import FlowLimitationAndSleepiness from '../posts/flow-limitation-and-sleepiness';
+import ArousalsVsFlowLimitation from '../posts/arousals-vs-flow-limitation';
+import EpworthSleepinessScale from '../posts/epworth-sleepiness-scale';
 import CNSSensitization from '../posts/what-is-cns-sensitization';
 import UnderstandingFlowLimitation from '../posts/understanding-flow-limitation';
 import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'flow-limitation-and-sleepiness': FlowLimitationAndSleepiness,
+  'arousals-vs-flow-limitation': ArousalsVsFlowLimitation,
+  'epworth-sleepiness-scale': EpworthSleepinessScale,
   'what-is-cns-sensitization': CNSSensitization,
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,

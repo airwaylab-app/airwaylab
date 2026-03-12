@@ -7,6 +7,7 @@ import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
+import { METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 
 interface Props {
   selectedNight: NightResult;
@@ -52,6 +53,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             threshold={THRESHOLDS.watFL}
             previousValue={p?.wat.flScore}
             tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
+            methodology={METRIC_METHODOLOGIES.flScore}
             onClick={clickable ? () => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL }) : undefined}
           />
           <MetricCard
@@ -62,6 +64,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             threshold={THRESHOLDS.watRegularity}
             previousValue={p?.wat.regularityScore}
             tooltip="Measures breathing pattern predictability via Sample Entropy. Higher = more repetitive = worse. On PAP therapy, repetitive breathing often indicates the airway is persistently narrowed, causing uniform restricted breaths. Lower scores reflect healthy natural variability."
+            methodology={METRIC_METHODOLOGIES.regularity}
             onClick={clickable ? () => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity }) : undefined}
           />
           <MetricCard
@@ -72,6 +75,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             threshold={THRESHOLDS.watPeriodicity}
             previousValue={p?.wat.periodicityIndex}
             tooltip="Detects cyclic breathing patterns using FFT on minute ventilation. May indicate periodic breathing or Cheyne-Stokes. Lower is better."
+            methodology={METRIC_METHODOLOGIES.periodicity}
             onClick={clickable ? () => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity }) : undefined}
           />
         </div>
@@ -106,6 +110,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             threshold={THRESHOLDS.nedMean}
             previousValue={p?.ned.nedMean}
             tooltip="Average Negative Effort Dependence — measures wasted breathing effort due to airway obstruction. Lower is better."
+            methodology={METRIC_METHODOLOGIES.nedMean}
             onClick={clickable ? () => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean }) : undefined}
           />
           <MetricCard
@@ -116,6 +121,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             threshold={THRESHOLDS.nedP95}
             previousValue={p?.ned.nedP95}
             tooltip="95th percentile NED value — captures the worst 5% of breaths. Shows peak obstruction severity."
+            methodology={METRIC_METHODOLOGIES.nedMean}
             onClick={clickable ? () => openMetric('NED P95', (x) => x.ned.nedP95, { unit: '%', threshold: THRESHOLDS.nedP95 }) : undefined}
           />
           <MetricCard
@@ -124,7 +130,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             unit="/hr"
             threshold={THRESHOLDS.reraIndex}
             previousValue={p?.ned.reraIndex}
-            tooltip="Respiratory Effort-Related Arousals per hour. Detected by finding sequences of 3–15 breaths where NED >20% or Tpeak/Ti >0.40, then validated by rising NED slope, recovery breath (NED <10%), or max NED >34%. Each validated sequence counts as one RERA event. Lower is better."
+            tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort that don't show up in AHI. Lower is better."
+            methodology={METRIC_METHODOLOGIES.reraIndex}
             onClick={clickable ? () => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex }) : undefined}
           />
           <MetricCard
@@ -136,13 +143,14 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             onClick={clickable ? () => openMetric('RERA Count', (x) => x.ned.reraCount) : undefined}
           />
           <MetricCard
-            label="Est. Arousal Index"
+            label="Resp. Disruption Index"
             value={n.ned.estimatedArousalIndex}
             unit="/hr"
             threshold={THRESHOLDS.eai}
             previousValue={p?.ned.estimatedArousalIndex}
             tooltip="Estimated arousals per hour. Detects sudden spikes in respiratory rate (>20% above baseline) or tidal volume (>30% above baseline) compared to a 120-second rolling window. A 15-second refractory period prevents double-counting. Lower means less fragmented sleep."
-            onClick={clickable ? () => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
+            methodology={METRIC_METHODOLOGIES.eai}
+            onClick={clickable ? () => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
           />
         </div>
       </div>
@@ -296,6 +304,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
           previousValue={p?.ned.combinedFLPct}
           compact
           tooltip="Percentage of breaths classified as flow-limited by either NED (≥34%) or Flatness Index (≥0.85). Combines both detection methods to catch obstruction that either metric alone might miss. Lower is better."
+          methodology={METRIC_METHODOLOGIES.combinedFL}
           onClick={clickable ? () => openMetric('Combined FL', (x) => x.ned.combinedFLPct, { unit: '%', threshold: THRESHOLDS.combinedFL, description: 'Percentage of breaths classified as flow-limited by either NED (≥34%) or Flatness Index (≥0.85). Combines both detection methods to catch obstruction that either metric alone might miss.' }) : undefined}
         />
       </div>

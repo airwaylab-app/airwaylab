@@ -59,7 +59,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
-          tooltip="Sum of 8 breath-shape components (excluding Top Heavy). Lower values indicate more normal breathing. Based on the Glasgow sleep study methodology."
+          tooltip="Sum of 8 breath-shape components (excluding Top Heavy). Typical scores range from 0 to about 3 — lower is better. Based on the original Glasgow Index by DaveSkvn."
           onClick={clickable ? () => openMetric('Glasgow Overall', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' }) : undefined}
         />
         <div className="sm:col-span-2">

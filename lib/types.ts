@@ -222,6 +222,8 @@ export interface AnalysisState {
   therapyChangeDate: string | null;
   /** Non-fatal warning (e.g. oximetry CSV uploaded but no nights matched) */
   warning: string | null;
+  /** Warning from persistence layer (e.g. oldest nights dropped due to storage cap) */
+  persistenceWarning: string | null;
 }
 
 export interface WorkerAnalyzeMessage {

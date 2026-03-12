@@ -3,7 +3,7 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { getTrafficLight, getTrafficDotColor, getTrafficBg } from '@/lib/thresholds';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info, ChevronDown } from 'lucide-react';
 
 interface MetricCardProps {
   label: string;
@@ -14,6 +14,7 @@ interface MetricCardProps {
   previousValue?: number;
   compact?: boolean;
   tooltip?: string;
+  methodology?: string;
   onClick?: () => void;
 }
 
@@ -24,8 +25,9 @@ function formatValue(value: number, format?: string): string {
   return value.toFixed(1);
 }
 
-function InfoTooltip({ text }: { text: string }) {
+function InfoTooltip({ text, methodology }: { text: string; methodology?: string }) {
   const [show, setShow] = useState(false);
+  const [showMethodology, setShowMethodology] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ function InfoTooltip({ text }: { text: string }) {
     const handler = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setShow(false);
+        setShowMethodology(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -47,15 +50,32 @@ function InfoTooltip({ text }: { text: string }) {
     <div ref={ref} className="relative inline-flex">
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setShow(!show); }}
+        onClick={(e) => { e.stopPropagation(); setShow(!show); if (show) setShowMethodology(false); }}
         className="text-muted-foreground/40 transition-colors hover:text-muted-foreground"
         aria-label="More info"
       >
         <Info className="h-3 w-3" />
       </button>
       {show && (
-        <div className="absolute left-1/2 top-full z-50 mt-1.5 w-48 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md">
+        <div className={`absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md ${methodology ? 'w-72' : 'w-48'}`}>
           {text}
+          {methodology && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowMethodology(!showMethodology); }}
+                className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary/70 transition-colors hover:text-primary"
+              >
+                How is this calculated?
+                <ChevronDown className={`h-2.5 w-2.5 transition-transform duration-150 ${showMethodology ? 'rotate-180' : ''}`} />
+              </button>
+              {showMethodology && (
+                <div className="mt-1.5 border-t border-border/50 pt-1.5 text-[10px] leading-relaxed text-muted-foreground/80">
+                  {methodology}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -71,6 +91,7 @@ export const MetricCard = memo(function MetricCard({
   previousValue,
   compact,
   tooltip,
+  methodology,
   onClick,
 }: MetricCardProps) {
   const light = threshold ? getTrafficLight(value, threshold) : null;
@@ -103,7 +124,7 @@ export const MetricCard = memo(function MetricCard({
     >
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-medium text-muted-foreground sm:text-xs">{label}</span>
-        {tooltip && <InfoTooltip text={tooltip} />}
+        {tooltip && <InfoTooltip text={tooltip} methodology={methodology} />}
         {light && (
           <span
             className={`inline-block h-2 w-2 rounded-full ${dotColor}`}

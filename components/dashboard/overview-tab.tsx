@@ -22,7 +22,7 @@ import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
 import { NightNotesPanel } from '@/components/dashboard/night-notes-panel';
 import { loadNightNotes } from '@/lib/night-notes';
-import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
+import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 
@@ -152,9 +152,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern on a 0–8 scale.
-            Green means normal, amber means worth monitoring, red means discuss with your clinician.
-            Click any metric for a detailed trend view.
+            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern.
+            Typical scores range from 0 to about 3. Green means normal, amber means worth monitoring,
+            red means discuss with your clinician. Click any metric for a detailed trend view.
           </p>
         </div>
       )}
@@ -221,6 +221,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
           tooltip="A composite score measuring how abnormal your breathing waveform looks. Lower is better. Based on 9 breath shape components."
+          methodology={METRIC_METHODOLOGIES.glasgowIndex}
           onClick={() => openMetric('Glasgow Index', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' })}
         />
         <MetricCard
@@ -231,6 +232,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.watFL}
           previousValue={p?.wat.flScore}
           tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
+          methodology={METRIC_METHODOLOGIES.flScore}
           onClick={() => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL, description: 'Percentage of flow-limited breaths per night' })}
         />
         <MetricCard
@@ -241,6 +243,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.nedMean}
           previousValue={p?.ned.nedMean}
           tooltip="Negative Effort Dependence — measures how much your breathing effort is wasted due to airway obstruction. Lower is better."
+          methodology={METRIC_METHODOLOGIES.nedMean}
           onClick={() => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean, description: 'Average wasted breathing effort due to obstruction' })}
         />
         <MetricCard
@@ -250,6 +253,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.reraIndex}
           previousValue={p?.ned.reraIndex}
           tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort. Lower is better."
+          methodology={METRIC_METHODOLOGIES.reraIndex}
           onClick={() => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex, description: 'Respiratory effort-related arousals per hour' })}
         />
       </div>
@@ -343,6 +347,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.wat.regularityScore}
           compact
           tooltip="How consistent your breath timing is throughout the night. Higher means more regular breathing rhythm."
+          methodology={METRIC_METHODOLOGIES.regularity}
           onClick={() => openMetric('Regularity', (x) => x.wat.regularityScore, { unit: '%', threshold: THRESHOLDS.watRegularity })}
         />
         <MetricCard
@@ -354,6 +359,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.wat.periodicityIndex}
           compact
           tooltip="Detects repeating patterns in airflow that may indicate periodic breathing or Cheyne-Stokes. Lower is better."
+          methodology={METRIC_METHODOLOGIES.periodicity}
           onClick={() => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity })}
         />
         <MetricCard
@@ -365,17 +371,19 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.combinedFLPct}
           compact
           tooltip="Combined flow limitation from both WAT and NED analysis. Percentage of breaths with restricted airflow. Lower is better."
+          methodology={METRIC_METHODOLOGIES.combinedFL}
           onClick={() => openMetric('Combined FL', (x) => x.ned.combinedFLPct, { unit: '%', threshold: THRESHOLDS.combinedFL })}
         />
         <MetricCard
-          label="Est. Arousal Index"
+          label="Resp. Disruption Index"
           value={n.ned.estimatedArousalIndex}
           unit="/hr"
           threshold={THRESHOLDS.eai}
           previousValue={p?.ned.estimatedArousalIndex}
           compact
-          tooltip="Estimated arousals (brief awakenings) per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
-          onClick={() => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
+          tooltip="Respiratory disruptions per hour — recovery breaths following flow-limited breathing. This flow-based estimate typically reads higher than in-lab arousal index. Lower is better."
+          methodology={METRIC_METHODOLOGIES.eai}
+          onClick={() => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
       <MetricExplanation
@@ -404,6 +412,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 previousValue={p?.oximetry?.odi3}
                 compact
                 tooltip="Oxygen Desaturation Index — number of times per hour your blood oxygen drops by 3% or more. Lower is better."
+                methodology={METRIC_METHODOLOGIES.odi3}
                 onClick={() => openMetric('ODI-3', (x) => x.oximetry?.odi3, { unit: '/hr', threshold: THRESHOLDS.odi3 })}
               />
               <MetricCard

@@ -420,6 +420,92 @@ export default function AboutPage() {
             together gives a more complete picture than any single metric.
           </FAQItem>
 
+          <FAQItem question="Why can Glasgow and NED be low but FL Score high (or vice versa)?">
+            <p className="mb-3">
+              This is one of the most common questions, and it makes sense once you understand that each
+              metric detects flow limitation using a <em>different method</em>:
+            </p>
+            <ul className="mb-3 flex flex-col gap-2">
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
+                <span>
+                  <strong className="text-foreground">Glasgow Index</strong> scores 9 breath-shape characteristics
+                  (skew, spikes, flat tops, multi-peaks, etc.). It catches a wide range of waveform abnormalities,
+                  not just classic flow limitation.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-400" />
+                <span>
+                  <strong className="text-foreground">FL Score</strong> (WAT engine) measures how much of the
+                  tidal volume variance is concentrated at the flow peaks across all breaths. It&rsquo;s a
+                  population-level flatness measure &mdash; it looks at the <em>overall distribution</em>, not
+                  individual breath shapes.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
+                <span>
+                  <strong className="text-foreground">NED Mean</strong> measures the per-breath ratio of peak flow
+                  to mid-inspiratory flow. It specifically targets the pattern where the airway narrows during
+                  inhalation, causing mid-flow to drop below peak flow.
+                </span>
+              </li>
+            </ul>
+            <p className="mb-3">
+              A <strong className="text-foreground">high FL Score with low Glasgow</strong> can happen when breaths
+              are moderately flat-topped (the WAT flatness detector picks this up) but don&rsquo;t show the specific
+              shape distortions Glasgow targets (abnormal skew, spikes, multi-peaks). The breathing is restricted
+              but uniformly so.
+            </p>
+            <p>
+              A <strong className="text-foreground">low NED with high Glasgow</strong> can occur when breath shapes
+              are abnormal in ways that don&rsquo;t affect the peak-to-mid flow ratio &mdash; for example, variable
+              amplitude or unusual timing patterns. These are real abnormalities, just not the specific
+              &ldquo;negative effort&rdquo; pattern NED looks for.
+            </p>
+          </FAQItem>
+
+          <FAQItem question="What is the Estimated Arousal Index (EAI) and how is it calculated?">
+            <p className="mb-3">
+              The <strong className="text-foreground">Estimated Arousal Index (EAI)</strong> estimates how many
+              times per hour your brain briefly wakes up during sleep, based on breathing pattern changes.
+              True arousals can only be measured with EEG (brain wave monitoring), but respiratory pattern
+              changes correlate well with cortical arousals.
+            </p>
+            <p className="mb-3">
+              AirwayLab detects arousals by looking for sudden spikes in{' '}
+              <strong className="text-foreground">respiratory rate</strong> (&gt;20% above a 120-second rolling
+              baseline) or <strong className="text-foreground">tidal volume</strong> (&gt;30% above baseline).
+              Each spike suggests a micro-awakening &mdash; your brain briefly wakes up, takes a few deeper or
+              faster breaths, then returns to sleep. A 15-second refractory period prevents double-counting
+              closely spaced events.
+            </p>
+            <p>
+              An EAI below 10/hr is generally considered normal. Above 15/hr suggests significant sleep
+              fragmentation that may be worth discussing with your clinician, even if your AHI looks fine.
+            </p>
+          </FAQItem>
+
+          <FAQItem question="How is the FL Score calculated?">
+            <p className="mb-3">
+              The <strong className="text-foreground">FL Score</strong> is computed by the WAT (Wobble Analysis Tool)
+              engine. For each window of breaths, it calculates the ratio of tidal volume variance in the
+              top half of the signal versus the total variance.
+            </p>
+            <p className="mb-3">
+              In normal breathing, airflow ramps up smoothly and rounds off naturally &mdash; the variance is
+              distributed across the full waveform. In flow-limited breathing, the airflow hits a ceiling
+              (the airway is partially narrowed), creating a flat-topped pattern where most of the variance
+              is concentrated at the peaks.
+            </p>
+            <p>
+              A higher FL Score means more of your breaths show this flat-topped pattern. It&rsquo;s reported as
+              a percentage: an FL Score of 60% means 60% of your breath windows showed significant flow
+              limitation characteristics.
+            </p>
+          </FAQItem>
+
           <FAQItem question="Can I share results with my sleep doctor?">
             Yes. Use the export buttons in the dashboard to download your results
             as CSV (for spreadsheets), JSON (raw data), or open a print-ready PDF
