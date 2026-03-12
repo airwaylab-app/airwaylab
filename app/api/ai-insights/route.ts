@@ -28,10 +28,10 @@ Focus on:
 - Oximetry-flow correlations when oximetry data is present
 
 Rules:
+- Describe what the data shows — patterns, correlations, and observations. Do NOT recommend specific therapy or pressure changes based on metrics alone. Metrics are useful for verifying whether changes worked, but the visual picture (flow waveforms, apnea events, pressure traces, and breath forms together) is needed to guide adjustments. Frame insights as "what the data shows" rather than "what to change".
 - Always include "discuss with your clinician" or similar language in actionable insights
 - Never claim to be a medical device or provide a diagnosis
 - Be specific — reference actual metric values from the data
-- Prioritise actionable findings over general observations
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
