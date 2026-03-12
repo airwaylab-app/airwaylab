@@ -23,7 +23,7 @@ import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
 import { SymptomRating } from '@/components/dashboard/symptom-rating';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
-import { getConsentState, setConsentState } from '@/components/upload/contribution-consent-utils';
+import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import { AIConsentModal, hasAIInsightsConsent } from '@/components/dashboard/ai-consent-modal';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';

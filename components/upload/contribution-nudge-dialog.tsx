@@ -16,7 +16,7 @@ interface ContributionStats {
  * anonymised scores. Dismiss = no contribution, no hard feelings.
  */
 export function ContributionNudgeDialog({
-  nightCount,
+  nightCount: _nightCount,
   onContribute,
   onDismiss,
 }: {
