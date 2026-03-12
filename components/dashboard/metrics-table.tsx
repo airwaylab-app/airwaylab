@@ -10,7 +10,7 @@ import { getTrafficLight, getTrafficColor, type ThresholdDef } from '@/lib/thres
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 
-type SortKey = 'date' | 'glasgow' | 'fl' | 'regularity' | 'periodicity' | 'ned' | 'rera' | 'duration';
+type SortKey = 'date' | 'glasgow' | 'fl' | 'regularity' | 'periodicity' | 'ned' | 'rera' | 'boi' | 'duration';
 
 interface Props {
   nights: NightResult[];
@@ -25,6 +25,7 @@ const cols: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: 'periodicity', label: 'Periodicity', shortLabel: 'Per' },
   { key: 'ned', label: 'NED Mean', shortLabel: 'NED' },
   { key: 'rera', label: 'RERA/hr', shortLabel: 'RERA' },
+  { key: 'boi', label: 'BOI/hr', shortLabel: 'BOI' },
 ];
 
 function fmtDuration(h: number): string {
@@ -41,6 +42,7 @@ function getMetricValue(n: NightResult, key: SortKey): string {
     case 'periodicity': return n.wat.periodicityIndex.toFixed(1) + '%';
     case 'ned': return n.ned.nedMean.toFixed(1) + '%';
     case 'rera': return n.ned.reraIndex.toFixed(1);
+    case 'boi': return (n.ned.briefObstructionIndex ?? 0).toFixed(1);
   }
 }
 
@@ -52,6 +54,7 @@ function getMetricColor(n: NightResult, key: SortKey, t: Record<string, Threshol
     case 'periodicity': return getTrafficColor(getTrafficLight(n.wat.periodicityIndex, t.watPeriodicity));
     case 'ned': return getTrafficColor(getTrafficLight(n.ned.nedMean, t.nedMean));
     case 'rera': return getTrafficColor(getTrafficLight(n.ned.reraIndex, t.reraIndex));
+    case 'boi': return t.briefObstructionIndex ? getTrafficColor(getTrafficLight(n.ned.briefObstructionIndex ?? 0, t.briefObstructionIndex)) : '';
     default: return '';
   }
 }
@@ -80,6 +83,7 @@ export function MetricsTable({ nights }: Props) {
       case 'periodicity': return n.wat.periodicityIndex;
       case 'ned': return n.ned.nedMean;
       case 'rera': return n.ned.reraIndex;
+      case 'boi': return n.ned.briefObstructionIndex ?? 0;
       case 'duration': return n.durationHours;
     }
   };
@@ -92,7 +96,7 @@ export function MetricsTable({ nights }: Props) {
 
   const visible = sorted.slice(0, visibleCount);
   const remaining = sorted.length - visibleCount;
-  const metricKeys: SortKey[] = ['glasgow', 'fl', 'regularity', 'periodicity', 'ned', 'rera'];
+  const metricKeys: SortKey[] = ['glasgow', 'fl', 'regularity', 'periodicity', 'ned', 'rera', 'boi'];
 
   return (
     <Card className="border-border/50">
@@ -153,6 +157,9 @@ export function MetricsTable({ nights }: Props) {
                   </td>
                   <td className={`py-2 pr-4 font-mono tabular-nums ${getMetricColor(n, 'rera', THRESHOLDS)}`}>
                     {n.ned.reraIndex.toFixed(1)}
+                  </td>
+                  <td className={`py-2 pr-4 font-mono tabular-nums ${getMetricColor(n, 'boi', THRESHOLDS)}`}>
+                    {(n.ned.briefObstructionIndex ?? 0).toFixed(1)}
                   </td>
                 </tr>
               ))}

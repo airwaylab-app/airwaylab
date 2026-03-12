@@ -38,6 +38,15 @@ export const METRIC_METHODOLOGIES = {
   odi3:
     'Counts the number of times per hour your blood oxygen drops by 3% or more from a 2-minute rolling baseline. Each drop is called a desaturation event. More events per hour indicate more frequent breathing disruptions affecting oxygen levels.',
 
+  briefObstructionIndex:
+    'Detected by tracking peak inspiratory flow (Qpeak) against a rolling 30-breath median baseline. When Qpeak drops >40% from baseline for just 1-2 breaths, it counts as a brief obstruction. These events are too short for standard hypopnea scoring (which requires 10+ seconds) but represent momentary airway collapses. The detector skips 5 breaths after each event to avoid counting the same collapse twice.',
+
+  hypopneaIndex:
+    'When EVE.edf files are present in your upload, AirwayLab uses your machine\u2019s own hypopnea count \u2014 it has access to internal algorithms we can\u2019t replicate. When EVE.edf is absent, AirwayLab detects hypopneas by tracking flow amplitude drops (\u226530% from a rolling baseline, sustained \u226510 seconds). Either way, each event is also checked for NED shape \u2014 events with NED <34% during the drop are flagged as \u201cNED-invisible\u201d since shape-based analysis would miss them.',
+
+  amplitudeCv:
+    'Divides the night into 5-minute epochs and computes the coefficient of variation (standard deviation / mean) of peak inspiratory flow within each epoch. Normal tidal breathing has ~15-20% CV. Higher values indicate the airway is intermittently compromising \u2014 even if individual breath shapes look normal by NED.',
+
   whyDisagree:
     'Glasgow, FL Score, and NED use different methods to detect different aspects of flow limitation. Glasgow scores 9 breath-shape characteristics holistically. FL Score measures population-level flatness across all breaths. NED measures per-breath peak-to-mid flow drops specifically. A high FL Score with low Glasgow can happen when breaths are moderately flat but don\u2019t show the specific shape distortions Glasgow targets (skew, spikes, multi-peaks). Low NED with high Glasgow occurs when breath shapes are abnormal in ways that don\u2019t affect the peak-to-mid flow ratio. Using all three together gives a more complete picture than any single metric.',
 } as const;

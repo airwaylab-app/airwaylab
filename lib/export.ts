@@ -54,6 +54,12 @@ export function exportCSV(nights: NightResult[]): string {
     'HR Mean 10',
     'Coupled 3/6',
     'Coupled 3/10',
+    'Brief Obstruction Index (/hr)',
+    'Hypopnea Index (/hr)',
+    'Hypopnea Source',
+    'Amplitude CV (%)',
+    'Unstable Epochs (%)',
+    'NED-Invisible Events (%)',
   ];
 
   const ox = (n: NightResult, get: (o: NonNullable<NightResult['oximetry']>) => number) =>
@@ -107,6 +113,12 @@ export function exportCSV(nights: NightResult[]): string {
     ox(n, (o) => o.hrMean10),
     ox(n, (o) => o.coupled3_6),
     ox(n, (o) => o.coupled3_10),
+    (n.ned.briefObstructionIndex ?? 0).toFixed(2),
+    (n.ned.hypopneaIndex ?? 0).toFixed(2),
+    n.ned.hypopneaSource ?? 'algorithm',
+    (n.ned.amplitudeCvOverall ?? 0).toFixed(2),
+    (n.ned.unstableEpochPct ?? 0).toFixed(2),
+    (n.ned.hypopneaNedInvisiblePct ?? 0).toFixed(2),
   ]);
 
   // Properly escape fields containing commas, quotes, or newlines (RFC 4180)

@@ -148,6 +148,34 @@ export interface NEDResults {
   h2NedMean: number;
   combinedFLPct: number;
   estimatedArousalIndex: number;
+
+  // Hypopnea aggregate metrics (v0.7.0+)
+  hypopneaCount?: number;
+  hypopneaIndex?: number;
+  hypopneaSource?: 'machine' | 'algorithm';
+  hypopneaNedInvisibleCount?: number;
+  hypopneaNedInvisiblePct?: number;
+  hypopneaMeanDropPct?: number;
+  hypopneaMeanDurationS?: number;
+  hypopneaH1Index?: number;
+  hypopneaH2Index?: number;
+
+  // Brief obstruction metrics (v0.7.0+)
+  briefObstructionCount?: number;
+  briefObstructionIndex?: number;
+  briefObstructionH1Index?: number;
+  briefObstructionH2Index?: number;
+
+  // Amplitude stability metrics (v0.7.0+)
+  amplitudeCvOverall?: number;
+  amplitudeCvMedianEpoch?: number;
+  unstableEpochPct?: number;
+}
+
+/** Subset of MachineEvent relevant for passing to NED engine */
+export interface MachineHypopneaSummary {
+  onsetSec: number;
+  durationSec: number;
 }
 
 export interface OximetryResults {

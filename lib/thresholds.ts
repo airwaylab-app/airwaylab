@@ -24,6 +24,10 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   tBelow90: { green: 5, amber: 15, lowerIsBetter: true },
   tBelow94: { green: 10, amber: 30, lowerIsBetter: true },
   spo2Mean: { green: 95, amber: 92, lowerIsBetter: false },
+  briefObstructionIndex: { green: 3, amber: 6, lowerIsBetter: true },
+  hypopneaIndex: { green: 2, amber: 5, lowerIsBetter: true },
+  amplitudeCv: { green: 20, amber: 30, lowerIsBetter: true },
+  unstableEpochPct: { green: 15, amber: 25, lowerIsBetter: true },
 };
 
 export type TrafficLight = 'good' | 'warn' | 'bad';

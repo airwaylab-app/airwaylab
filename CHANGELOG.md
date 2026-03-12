@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Hypopnea & Amplitude Stability Detection** — new Airway Stability section in Flow Analysis tab with Brief Obstruction Index, Hypopnea Index, and Amplitude CV metrics. Machine-preferred/algorithm-fallback for hypopnea counting via EVE.edf. NED-invisible event flagging. 5-minute epoch stability analysis. 3 new insight rules, CSV/forum export columns, threshold definitions. Engine version bumped to 0.7.0 (hypopnea-amplitude-stability)
+
 ### Fixed
 
 - **InfoTooltip viewport overflow** — tooltip now flips above the trigger when near the bottom of the viewport instead of rendering off-screen (info-tooltip-viewport-overflow)

@@ -15,7 +15,7 @@ interface FileGroup {
  * Extract folder date from webkitRelativePath.
  * Looks for DATALOG/YYYYMMDD/ pattern.
  */
-function extractFolderDate(filePath: string): string | null {
+export function extractFolderDate(filePath: string): string | null {
   const match = filePath.match(/DATALOG\/(\d{8})\//);
   if (match) {
     const d = match[1];
