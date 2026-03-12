@@ -104,6 +104,8 @@ function AnalyzePageInner() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const { user } = useAuth();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
   const hasTriggeredAutoUpload = useRef(false);
 
   // Track session count for new-user UX (beginner vs returning user)
@@ -252,7 +254,7 @@ function AnalyzePageInner() {
 
         // Cloud storage: auto-upload raw files for authenticated users
         // Registration consent covers storage — no separate consent needed
-        if (user && sdFilesRef.current.length > 0) {
+        if (userRef.current && sdFilesRef.current.length > 0) {
           events.cloudSyncUsed();
           const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
           uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
