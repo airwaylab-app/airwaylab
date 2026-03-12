@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
         if (upsertErr) {
           console.error('[stripe-webhook] Subscription upsert failed:', upsertErr);
           Sentry.captureException(upsertErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          throw new Error(`Subscription upsert failed: ${upsertErr.message}`);
         }
 
         // Update profile tier
@@ -113,6 +114,7 @@ export async function POST(request: NextRequest) {
         if (profileErr) {
           console.error('[stripe-webhook] Profile update failed:', profileErr);
           Sentry.captureException(profileErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          throw new Error(`Profile update failed: ${profileErr.message}`);
         }
 
         break;
@@ -149,11 +151,17 @@ export async function POST(request: NextRequest) {
         if (subUpdateErr) {
           console.error('[stripe-webhook] Subscription update failed:', subUpdateErr);
           Sentry.captureException(subUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          throw new Error(`Subscription update failed: ${subUpdateErr.message}`);
         }
 
         // Update profile tier if subscription is still active
         if (userId && ['active', 'trialing'].includes(subscription.status)) {
-          await supabase.from('profiles').update({ tier }).eq('id', userId);
+          const { error: profileUpdateErr } = await supabase.from('profiles').update({ tier }).eq('id', userId);
+          if (profileUpdateErr) {
+            console.error('[stripe-webhook] Profile tier update failed:', profileUpdateErr);
+            Sentry.captureException(profileUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+            throw new Error(`Profile tier update failed: ${profileUpdateErr.message}`);
+          }
         }
 
         break;
@@ -164,10 +172,15 @@ export async function POST(request: NextRequest) {
         const userId = subscription.metadata?.supabase_user_id;
 
         // Mark subscription as canceled
-        await supabase
+        const { error: cancelErr } = await supabase
           .from('subscriptions')
           .update({ status: 'canceled' })
           .eq('stripe_subscription_id', subscription.id);
+        if (cancelErr) {
+          console.error('[stripe-webhook] Subscription cancel failed:', cancelErr);
+          Sentry.captureException(cancelErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          throw new Error(`Subscription cancel failed: ${cancelErr.message}`);
+        }
 
         // M8: Only downgrade if no other active subscriptions remain
         if (userId) {
@@ -178,18 +191,18 @@ export async function POST(request: NextRequest) {
             .in('status', ['active', 'trialing'])
             .limit(1);
 
-          if (!activeSubs || activeSubs.length === 0) {
-            await supabase
-              .from('profiles')
-              .update({ tier: 'community' })
-              .eq('id', userId);
-          } else {
-            // Keep the tier of the remaining active subscription
-            const remainingTier = activeSubs[0].tier as string;
-            await supabase
-              .from('profiles')
-              .update({ tier: remainingTier })
-              .eq('id', userId);
+          const newTier = (!activeSubs || activeSubs.length === 0)
+            ? 'community'
+            : activeSubs[0].tier as string;
+
+          const { error: downgradeErr } = await supabase
+            .from('profiles')
+            .update({ tier: newTier })
+            .eq('id', userId);
+          if (downgradeErr) {
+            console.error('[stripe-webhook] Profile downgrade failed:', downgradeErr);
+            Sentry.captureException(downgradeErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+            throw new Error(`Profile downgrade failed: ${downgradeErr.message}`);
           }
         }
 
@@ -214,6 +227,19 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (err) {
+    // Compensating action: remove idempotency record so Stripe can retry
+    const { error: deleteErr } = await supabase
+      .from('stripe_events')
+      .delete()
+      .eq('event_id', event.id);
+    if (deleteErr) {
+      console.error('[stripe-webhook] Failed to remove idempotency record:', deleteErr);
+      Sentry.captureException(deleteErr, {
+        level: 'error',
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'compensating-delete' },
+      });
+    }
+
     Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
     console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
     return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });

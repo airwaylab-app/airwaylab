@@ -1,4 +1,5 @@
 import { THRESHOLDS, type ThresholdDef } from './thresholds';
+import { safeSetItem, safeRemoveItem } from './safe-local-storage';
 
 const STORAGE_KEY = 'airwaylab_custom_thresholds';
 
@@ -32,16 +33,16 @@ export function saveOverrides(overrides: ThresholdOverrides): void {
     Object.entries(overrides).filter(([key]) => key in THRESHOLDS)
   );
   if (Object.keys(cleaned).length === 0) {
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveItem(STORAGE_KEY);
   } else {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+    safeSetItem(STORAGE_KEY, JSON.stringify(cleaned));
   }
 }
 
 /** Remove all custom threshold overrides. */
 export function clearOverrides(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
+  safeRemoveItem(STORAGE_KEY);
 }
 
 /** Merge default thresholds with overrides. */

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **safeLocalStorage utility** — centralised try/catch wrapper for localStorage calls, preventing crashes in Safari private browsing and quota-exceeded scenarios (codebase-audit-scope-boundary)
+
+### Fixed
+
+- **IndexedDB Sentry observability** — silent catch blocks in waveform-idb.ts now report to Sentry at warning level with module tags for filtering (codebase-audit-scope-boundary)
+- **Test act() warnings** — data-contribution.test.tsx no longer produces React act() warnings from unhandled async state updates (codebase-audit-scope-boundary)
+- **Rate limit tightening** — community-insights reduced from 30 to 10 req/min; health and version endpoints now rate-limited at 60 req/min (codebase-audit-scope-boundary)
+- **Stripe webhook atomicity** — downstream DB failures now remove the idempotency record, allowing Stripe to retry instead of leaving partial state (codebase-audit-scope-boundary)
+
+### Added
+
 - **Waveform Decimation & IndexedDB Persistence** — Replaced min/max/avg bucketing with simple decimation (take every Nth sample), displaying actual measured flow values. Full 25 Hz Float32Array stored in IndexedDB for instant reload on return visits (90-day TTL). Multi-resolution decimation: full night at 1 Hz, 30min–2h at 2 Hz, 5–30min at 5 Hz, <5min at full 25 Hz. (waveform-decimation-indexeddb)
 
 ### Fixed

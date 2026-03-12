@@ -36,6 +36,7 @@ import { loadPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
+import { safeGetItem } from '@/lib/safe-local-storage';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -238,7 +239,7 @@ function AnalyzePageInner() {
 
         // Contribute data: auto if opted in, show nudge if first time
         const contributedDates: string[] = JSON.parse(
-          localStorage.getItem('airwaylab_contributed_dates') || '[]'
+          safeGetItem('airwaylab_contributed_dates') || '[]'
         );
         const contributedSet = new Set(contributedDates);
         const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
