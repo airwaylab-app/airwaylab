@@ -22,6 +22,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [insufficient, setInsufficient] = useState(false);
+  const [error, setError] = useState(false);
 
   const iflRisk = computeIFLRisk(night);
 
@@ -30,6 +31,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
 
     setLoading(true);
     setInsufficient(false);
+    setError(false);
 
     const controller = new AbortController();
     const pressureBucket = night.settings.epap < 6 ? '<6'
@@ -58,6 +60,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
       .catch(() => {
         if (controller.signal.aborted) return;
         setStats(null);
+        setError(true);
       })
       .finally(() => {
         if (controller.signal.aborted) return;
@@ -94,6 +97,23 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
             <p className="text-xs font-medium text-muted-foreground/70">Community Comparison</p>
             <p className="text-[10px]">
               Not enough community data yet for your IFL Risk range. Check back as more users contribute.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // State 4: Error
+  if (error) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card/30 px-4 py-3">
+        <div className="flex items-center gap-2 text-muted-foreground/60">
+          <BarChart3 className="h-4 w-4 shrink-0" />
+          <div>
+            <p className="text-xs font-medium text-muted-foreground/70">Community Comparison</p>
+            <p className="text-[10px]">
+              Unable to load community data right now. This won&apos;t affect your analysis.
             </p>
           </div>
         </div>
