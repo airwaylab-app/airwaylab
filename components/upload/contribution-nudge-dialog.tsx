@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Heart, HeartHandshake, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
@@ -49,7 +50,7 @@ export function ContributionNudgeDialog({
       .catch(() => { /* non-critical */ });
   }, []);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-background/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="contribution-nudge-title">
       <div ref={focusTrapRef} className="relative mx-4 flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-primary/20 bg-card p-8 text-center shadow-2xl">
         <button
@@ -119,6 +120,7 @@ export function ContributionNudgeDialog({
           <span>Fully anonymous · No raw data · Cannot be traced to you</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
