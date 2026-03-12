@@ -31,6 +31,7 @@ const KNOWN_PUBLIC_ROUTES = [
   { path: '/terms', url: 'https://airwaylab.app/terms', dir: 'app/terms' },
   { path: '/accessibility', url: 'https://airwaylab.app/accessibility', dir: 'app/accessibility' },
   { path: '/supporters', url: 'https://airwaylab.app/supporters', dir: 'app/supporters' },
+  { path: '/glossary', url: 'https://airwaylab.app/glossary', dir: 'app/glossary' },
 ];
 
 const root = join(__dirname, '..');

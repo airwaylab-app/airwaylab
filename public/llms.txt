@@ -46,6 +46,7 @@ Optional 17-metric SpO₂ and heart rate analysis framework. Requires a separate
 - https://airwaylab.app/contact — Contact form
 - https://airwaylab.app/privacy — Privacy policy
 - https://airwaylab.app/terms — Terms of service
+- https://airwaylab.app/glossary — Sleep and PAP therapy glossary with 38 defined terms
 - https://airwaylab.app/accessibility — Accessibility statement
 
 ## How It Works

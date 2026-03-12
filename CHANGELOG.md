@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Glossary Page** — 38-term sleep and PAP therapy glossary with DefinedTermSet JSON-LD, A-Z quick-nav, category badges, anchor links, and medical disclaimer. SEO-optimised for featured snippets and LLM discoverability (glossary-page)
 ## [1.2.0] - 2026-03-12
 
 ### Added
