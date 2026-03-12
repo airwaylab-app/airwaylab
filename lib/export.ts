@@ -3,10 +3,12 @@
 // ============================================================
 
 import type { NightResult } from './types';
+import { computeIFLRisk } from './ifl-risk';
 
 export function exportCSV(nights: NightResult[]): string {
   const headers = [
     'Date',
+    'IFL Symptom Risk (%)',
     'Duration (hrs)',
     'Sessions',
     'Mode',
@@ -59,6 +61,7 @@ export function exportCSV(nights: NightResult[]): string {
 
   const rows = nights.map((n) => [
     n.dateStr,
+    computeIFLRisk(n).toFixed(1),
     n.durationHours.toFixed(2),
     n.sessionCount,
     n.settings.papMode,

@@ -7,6 +7,7 @@ import type { NightResult } from './types';
 import type { Tier } from './auth/auth-context';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
+import { computeIFLRisk } from './ifl-risk';
 
 function tierBadge(tier?: Tier): string {
   if (tier === 'champion') return ' 🏆';
@@ -45,6 +46,11 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
     lines.push(`Pressures: EPAP ${n.settings.epap} / IPAP ${n.settings.ipap} cmH₂O (PS ${n.settings.pressureSupport})`);
   }
   lines.push(`Duration: ${fmtHrs(n.durationHours)} (${n.sessionCount} session${n.sessionCount !== 1 ? 's' : ''})`);
+  lines.push('');
+
+  // IFL Symptom Risk
+  const iflRisk = computeIFLRisk(n);
+  lines.push(`**IFL Symptom Risk: ${fmt(iflRisk)}% ${light(iflRisk, 'iflRisk')}**`);
   lines.push('');
 
   // Glasgow
@@ -108,12 +114,13 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
   lines.push('');
 
   // Table header
-  lines.push('| Date | Duration | Glasgow | FL Score | NED Mean | RERA/hr | Regularity |');
-  lines.push('|------|----------|---------|----------|----------|---------|------------|');
+  lines.push('| Date | Duration | IFL Risk | Glasgow | FL Score | NED Mean | RERA/hr | Regularity |');
+  lines.push('|------|----------|----------|---------|----------|----------|---------|------------|');
 
   for (const n of sorted) {
+    const ifl = computeIFLRisk(n);
     lines.push(
-      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(n.glasgow.overall)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${Math.round(n.wat.regularityScore)}% |`
+      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(ifl)}% ${light(ifl, 'iflRisk')} | ${fmt(n.glasgow.overall)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${Math.round(n.wat.regularityScore)}% |`
     );
   }
 
@@ -122,7 +129,7 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
     sorted.reduce((sum, n) => sum + fn(n), 0) / sorted.length;
 
   lines.push(
-    `| **Average** | | **${fmt(avg((n) => n.glasgow.overall))}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
+    `| **Average** | | **${fmt(avg((n) => computeIFLRisk(n)))}%** | **${fmt(avg((n) => n.glasgow.overall))}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
   );
 
   lines.push('');

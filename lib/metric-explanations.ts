@@ -79,6 +79,17 @@ export function getNEDExplanation(nedMean: number, reraIndex: number, nedThresho
   return `Your NED analysis shows moderate breathing effort (mean ${fmt(nedMean)}%) with ${fmt(reraIndex)} RERAs/hr. Some residual flow limitation is present.`;
 }
 
+export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): string {
+  const light = getTrafficLight(value, threshold);
+  if (light === 'good') {
+    return 'Your flow limitation composite is low. Your airway appears to be functioning well during therapy.';
+  }
+  if (light === 'warn') {
+    return 'Moderate flow limitation detected across multiple metrics. This level of FL may be contributing to symptoms. Discuss whether pressure or settings adjustments could help with your clinician.';
+  }
+  return 'Significant flow limitation detected. Research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
+}
+
 export function getODIExplanation(odi3: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(odi3, threshold);
   if (light === 'good') {
