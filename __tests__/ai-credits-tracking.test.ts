@@ -148,10 +148,11 @@ describe('AI Credits Tracking — API response parsing', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns null when fetch fails (server unavailable)', async () => {
+  it('throws with error message when fetch fails (server unavailable)', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
+      json: async () => ({ error: 'AI service error' }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -169,9 +170,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       oximetryTrace: null,
     }] as never[];
 
-    const result = await fetchAIInsights(nights, 0, null);
-
-    expect(result).toBeNull();
+    await expect(fetchAIInsights(nights, 0, null)).rejects.toThrow('AI service error');
 
     vi.unstubAllGlobals();
   });

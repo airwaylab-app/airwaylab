@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
   // Auth check — require signed-in user
   const supabase = getSupabaseServer();
   if (!supabase) {
+    Sentry.captureMessage('AI insights: Supabase not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
     return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
   }
 
@@ -237,6 +238,7 @@ export async function POST(request: NextRequest) {
   // Validate Anthropic API key is configured
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) {
+    Sentry.captureMessage('AI insights: ANTHROPIC_API_KEY not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
     return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
   }
 
@@ -246,12 +248,23 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = RequestBodySchema.safeParse(raw);
     if (!parsed.success) {
-      console.warn('[ai-insights] 400 Zod validation failed:', parsed.error.issues[0]?.message);
-      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+      const zodIssue = parsed.error.issues[0];
+      const detail = zodIssue ? `${zodIssue.path.join('.')}: ${zodIssue.message}` : 'unknown';
+      console.error('[ai-insights] Zod validation failed:', detail);
+      Sentry.captureMessage(`AI insights: Zod validation failed — ${detail}`, {
+        level: 'warning',
+        tags: { route: 'ai-insights', error_type: 'validation' },
+        extra: { issues: parsed.error.issues.slice(0, 5), nightCount: Array.isArray(raw?.nights) ? raw.nights.length : 0 },
+      });
+      return NextResponse.json({ error: `Invalid request data: ${detail}` }, { status: 400 });
     }
     body = parsed.data;
   } catch {
-    console.warn('[ai-insights] 400 invalid request body (JSON parse failed)');
+    console.error('[ai-insights] JSON parse failed on request body');
+    Sentry.captureMessage('AI insights: request body JSON parse failed', {
+      level: 'warning',
+      tags: { route: 'ai-insights', error_type: 'validation' },
+    });
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -299,6 +312,12 @@ export async function POST(request: NextRequest) {
     // Extract text response
     const textBlock = message.content.find((block) => block.type === 'text');
     if (!textBlock || textBlock.type !== 'text') {
+      const blockTypes = message.content.map((b) => b.type).join(', ');
+      Sentry.captureMessage('AI insights: no text block in response', {
+        level: 'error',
+        tags: { route: 'ai-insights', error_type: 'ai_response' },
+        extra: { blockTypes, stopReason: message.stop_reason },
+      });
       return NextResponse.json({ error: 'No response from AI' }, { status: 502 });
     }
 
@@ -307,11 +326,21 @@ export async function POST(request: NextRequest) {
     try {
       insights = JSON.parse(textBlock.text);
     } catch {
+      Sentry.captureMessage('AI insights: JSON parse failed on AI response', {
+        level: 'error',
+        tags: { route: 'ai-insights', error_type: 'ai_response' },
+        extra: { responsePreview: textBlock.text.slice(0, 500), stopReason: message.stop_reason },
+      });
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 });
     }
 
     // Validate insight shape
     if (!Array.isArray(insights)) {
+      Sentry.captureMessage('AI insights: response is not an array', {
+        level: 'error',
+        tags: { route: 'ai-insights', error_type: 'ai_response' },
+        extra: { responseType: typeof insights, responsePreview: JSON.stringify(insights).slice(0, 500) },
+      });
       return NextResponse.json({ error: 'Invalid AI response format' }, { status: 502 });
     }
 

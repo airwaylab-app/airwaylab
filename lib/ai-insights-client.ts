@@ -41,9 +41,24 @@ function validateInsights(data: unknown): Insight[] | null {
 }
 
 /**
+ * Extract a user-facing error message from a non-OK API response.
+ */
+async function extractApiError(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    if (body.error && typeof body.error === 'string') {
+      return body.error;
+    }
+  } catch {
+    // Could not parse error body
+  }
+  return `AI service error (${res.status})`;
+}
+
+/**
  * Fetches AI-powered insights from the API route.
  * Auth is session-based (cookies) — no API key needed.
- * Returns null on any failure — the UI falls back to rule-based insights.
+ * Throws on failure with a user-facing error message.
  */
 export async function fetchAIInsights(
   nights: NightResult[],
@@ -51,7 +66,7 @@ export async function fetchAIInsights(
   therapyChangeDate: string | null,
   signal?: AbortSignal,
   nightNotes?: NightNotes
-): Promise<AIInsightsResult | null> {
+): Promise<AIInsightsResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -72,19 +87,33 @@ export async function fetchAIInsights(
       signal: controller.signal,
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errorMessage = await extractApiError(res);
+      console.error(`[ai-insights] API error ${res.status}: ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
 
     const data = await res.json();
     const validInsights = validateInsights(data);
-    if (!validInsights) return null;
+    if (!validInsights) {
+      console.error('[ai-insights] Invalid response format');
+      throw new Error('AI returned an invalid response. Please try again.');
+    }
 
     return {
       insights: validInsights,
       remainingCredits: typeof data.remainingCredits === 'number' ? data.remainingCredits : undefined,
       isDeep: data.isDeep === true,
     };
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      if (signal?.aborted) {
+        throw err; // External abort (unmount / re-generate)
+      }
+      console.error('[ai-insights] Request timed out after 15s');
+      throw new Error('AI analysis timed out. Please try again.');
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener('abort', onExternalAbort);
@@ -94,6 +123,7 @@ export async function fetchAIInsights(
 /**
  * Fetches deep AI insights for paid users — includes per-breath summary data.
  * Longer timeout (30s) since the prompt is larger.
+ * Throws on failure with a user-facing error message.
  */
 export async function fetchDeepAIInsights(
   nights: NightResult[],
@@ -102,7 +132,7 @@ export async function fetchDeepAIInsights(
   signal?: AbortSignal,
   nightNotes?: NightNotes,
   perBreathSummary?: PerBreathSummary
-): Promise<AIInsightsResult | null> {
+): Promise<AIInsightsResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
 
@@ -125,19 +155,33 @@ export async function fetchDeepAIInsights(
       signal: controller.signal,
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errorMessage = await extractApiError(res);
+      console.error(`[ai-insights] API error ${res.status}: ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
 
     const data = await res.json();
     const validInsights = validateInsights(data);
-    if (!validInsights) return null;
+    if (!validInsights) {
+      console.error('[ai-insights] Invalid response format');
+      throw new Error('AI returned an invalid response. Please try again.');
+    }
 
     return {
       insights: validInsights,
       remainingCredits: typeof data.remainingCredits === 'number' ? data.remainingCredits : undefined,
       isDeep: data.isDeep === true,
     };
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      if (signal?.aborted) {
+        throw err; // External abort (unmount / re-generate)
+      }
+      console.error('[ai-insights] Request timed out after 30s');
+      throw new Error('AI analysis timed out. Please try again.');
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener('abort', onExternalAbort);
