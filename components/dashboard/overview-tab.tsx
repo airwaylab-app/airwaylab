@@ -20,7 +20,6 @@ import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
-import { NightNotesPanel } from '@/components/dashboard/night-notes-panel';
 import { loadNightNotes } from '@/lib/night-notes';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';

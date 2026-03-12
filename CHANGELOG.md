@@ -5,230 +5,62 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — IFL Symptom Risk Indicator (2026-03-12)
+## [1.0.0] - 2026-03-12
 
 ### Added
 
-- **IFL Symptom Risk composite metric**: New 0–100% composite that weights FL Score (35%), NED Mean (30%), Flatness Index (20%), and Glasgow Index (15%) to give a single "how much is flow limitation driving symptoms" signal. Based on Gold's IFL theory and Mann et al. 2024 research showing FL predicts sleepiness independently of arousals (`ifl-symptom-risk-indicator`)
-- **IFL Risk MetricCard**: Appears as the first card in the primary metrics grid on the Overview tab, with traffic light colouring (green ≤20%, amber ≤45%, red >45%) and trend arrow (`ifl-symptom-risk-indicator`)
-- **IFL Risk breakdown panel**: Collapsible section showing normalised values, weights, and per-component contributions with a link to the FL and sleepiness blog post (`ifl-symptom-risk-indicator`)
-- **EAI contextual annotations**: When IFL Risk and disruption index diverge, a contextual note explains the clinical significance (`ifl-symptom-risk-indicator`)
-- **IFL Risk in all exports**: CSV, JSON, forum post, and PDF report now include IFL Symptom Risk (`ifl-symptom-risk-indicator`)
-- **IFL Risk insights**: Rule-based insights for high/low IFL Risk, EAI divergence patterns, and IFL Risk trends (`ifl-symptom-risk-indicator`)
-
-## [Unreleased] — Granular Event Toggles (2026-03-11)
-
-### Added
-
-- **Machine event parsing**: New EVE.edf parser extracts machine-recorded events (Obstructive Apnea, Central Apnea, Hypopnea, Unclassified Apnea) from ResMed EVE files using EDF+ TAL format — matching OSCAR's event types (`granular-event-toggles`)
-- **Per-type event toggles**: All event types (machine + algorithm-detected) now have individual toggle buttons on Graphs and Waveform tabs — grouped by source (Machine: OA/CA/H/UA, AirwayLab: RERA/FL/M) with event counts and color-coded dots (`granular-event-toggles`)
-- **SpO₂ trace toggles**: ODI-3 events and Heart Rate can be individually toggled on/off in the Graphs tab and Oximetry tab (`granular-event-toggles`)
-
-### Changed
-
-- **Waveform orchestrator**: Now loads EVE.edf files alongside BRP.edf files, date-filtered to avoid reading unnecessary files into memory (`granular-event-toggles`)
-- **Event overlays**: FlowWaveform chart now filters events by type using a `visibleEventTypes` set instead of a binary show/hide toggle (`granular-event-toggles`)
-
-## [Unreleased] — Dashboard Density (2026-03-11)
-
-### Changed
-
-- **Tighter dashboard spacing**: Reduced vertical gaps between sections (`gap-6` → `gap-4`, header margin reduced) so key metrics appear above the fold on typical laptop viewports (`dashboard-density-above-fold`)
-- **Device Settings collapsed by default**: Converted from always-visible card to a collapsible `<details>` element, saving ~120px of vertical space on load. All fields still accessible with one click (`dashboard-density-above-fold`)
-
-## [Unreleased] — Chart UX Discoverability (2026-03-11)
+- **IFL Symptom Risk composite metric** — new 0–100% composite that weights FL Score (35%), NED Mean (30%), Flatness Index (20%), and Glasgow Index (15%) into a single "how much is flow limitation driving symptoms" signal. Based on Gold's IFL theory and Mann et al. 2024 research. Includes MetricCard, collapsible breakdown panel, EAI contextual annotations, and integration across all exports (CSV, JSON, forum, PDF) and insights
+- **IFL theory blog posts** — 3 new articles based on Dr. Gold's research: "Does Flow Limitation Drive Sleepiness?", "Arousals Don't Tell the Whole Story", "Is the Epworth Sleepiness Scale Measuring What You Think?"
+- **Night context notes** — structured per-night logging (caffeine, alcohol, congestion, sleep position, stress, exercise) with free-text notes, persisted to localStorage, correlated by AI insights
+- **Actionable AI insights** — AI prompt now analyses all machine settings, correlates user-reported night context, and generates concrete investigation suggestions
+- **Extended settings extraction** — pulls all STR.edf machine settings (ramp, humidity, mask type, climate control, smart start) plus catch-all for remaining signals
+- **Metric methodology explanations** — every key metric now has a "How is this calculated?" expandable section in its info tooltip
+- **Progressive persistence** — when localStorage exceeds 4MB, oldest nights are dropped via binary search instead of losing everything, with warning banner
+- **Analysis complete banner** — shows night count and date range after processing
+- **Machine event parsing** — EVE.edf parser extracts machine-recorded events (OA, CA, H, UA) from ResMed EVE files using EDF+ TAL format
+- **Per-type event toggles** — all event types (machine + algorithm-detected) now have individual toggle buttons on Graphs and Waveform tabs
+- **Provider-grade chart browser** — synced stacked charts (Flow, Tidal Volume, Respiratory Rate, Pressure, Leak, SpO2) with shared toolbar, touch gestures, and minimap
+- **SA2 EDF oximetry parsing** — auto-detects pulse oximetry from ResMed `_SA2.edf` files, prioritised over CSV when both exist
+- **Waveform data contribution** — opted-in users contribute raw breathing patterns alongside analysis scores, with engine version tracking and incremental upload
+- **Share link MVP** — 30-day share links for analysis results with consent flow
+- **For Providers page** — marketing page for sleep consultants at `/providers` with contact form
+- **Night Summary Hero card** — glanceable traffic-light therapy status above metrics
+- **Auto-fix Sentry errors** — GitHub Actions workflow for automated error fixes via Claude Code
+- **Real EDF test fixtures** — 3 representative nights (~9.3MB) with integration tests (40 tests) and Playwright E2E tests
+- **Brand voice guide** — `docs/BRAND_VOICE.md` with voice attributes, tone, and terminology reference
+- **Centralised chart theme** — `lib/chart-theme.ts` as single source of truth for all chart styles
+- **Contribution nudge social proof** — live counter of contributors and total nights
+- **AI credits synced from server** — community tier credit count now reflects actual server-side usage
+- **Unlimited data contribution** — removed 1095-night cap; chunked batches of 1000
 
 ### Changed
 
-- **Zoom presets restyled as pill buttons**: Time range presets (5m/15m/30m/1h/2h) now render as distinct outline pill buttons instead of invisible ghost text, with the active preset highlighted (`chart-ux-discoverability`)
-- **Interaction hint near toolbar**: First-use hint explaining scroll-to-zoom and drag-to-pan appears below the toolbar (touch-aware), auto-dismisses after first interaction, dismissable via × button (`chart-ux-discoverability`)
-- **Minimap hover state**: Minimap bar now shows a visible hover state change for better affordance (`chart-ux-discoverability`)
+- **Reframed arousal-centric language** — metric explanations, insights, and AI prompt now reflect that flow limitation itself may drive symptoms independently of arousals
+- **Glasgow thresholds updated** — from theoretical 0–8 scale to practical 0–3 range matching real-world scores
+- **Typography upgrade** — Plus Jakarta Sans for body text (replacing IBM Plex Sans)
+- **Two-tone wordmark** — "Airway" bold white + "Lab" brand-teal
+- **Device-agnostic upload flow** — removed ResMed-specific language; ResMed mentioned only in compatibility note
+- **Dashboard density** — tighter spacing, Device Settings collapsed by default, beginner-friendly progressive disclosure
+- **Tab bar redesign** — `line` variant with visible underline indicator; primary tabs show full words on mobile
+- **Chart UX** — zoom presets as pill buttons, interaction hints near toolbar, minimap hover state
+- **Improved event detection** — flatness-based FL detection replacing amplitude-based
+- **Consolidated Supabase clients** — single module import
+- **Shared rate limiter** — replaced 5 inline implementations with `RateLimiter` class
 
 ### Fixed
 
-- **Outdated waveform disclaimer**: Removed reference to non-existent "brush control" from waveform tab disclaimer text (`chart-ux-discoverability`)
-- **Buried interaction hints**: Removed 9px hint text previously hidden at the bottom of the page, replaced by the new near-toolbar hint (`chart-ux-discoverability`)
-
-## [Unreleased] — E2E Testing with Real EDF Fixtures (2026-03-11)
-
-### Added
-
-- **Real EDF test fixtures**: 3 representative nights from a real BiPAP SD card (~9.3MB) committed as test fixtures for integration and E2E testing (`e2e-testing-real-edf-fixtures`)
-- **Integration tests (40 tests)**: Real EDF parsing, all analysis engines on real data, waveform orchestrator filtering/cache/errors, chart downsampling with real volumes, consent state persistence (`e2e-testing-real-edf-fixtures`)
-- **Playwright E2E tests**: Full browser upload→analyse→render pipeline, Graphs tab crash prevention, demo mode chart rendering (`e2e-testing-real-edf-fixtures`)
-- **CI E2E job**: Playwright runs in a separate CI job after build, with artifact upload on failure (`e2e-testing-real-edf-fixtures`)
-
-## [Unreleased] — Generic Upload Copy (2026-03-11)
-
-### Changed
-
-- **Device-agnostic upload flow**: Removed ResMed-specific language from upload heading, instructions, validation messages, and meta descriptions. ResMed is now only mentioned in a compatibility note below the upload steps. (`generic-upload-copy`)
-- **Other-device encouragement**: Added CTA inviting non-ResMed users to upload their data and enable sharing so we can analyse the structure and add support (`generic-upload-copy`)
-
-## [Unreleased] — Waveform Data Contribution (2026-03-11)
-
-### Added
-
-- **Waveform data contribution**: Opted-in users now contribute raw breathing pattern data (flow waveforms) alongside analysis scores to the research dataset for AI training (`waveform-data-contribution`)
-- **Engine version tracking**: Analysis results are tagged with engine version; cached results are automatically invalidated when engines are updated (`waveform-data-contribution`)
-- **Incremental waveform upload**: Only new nights are uploaded; previously contributed dates are tracked and skipped (`waveform-data-contribution`)
-
-### Changed
-
-- **Updated contribution consent copy**: Opt-in checkbox and nudge dialog now mention "scores and breathing patterns" instead of just "scores" (`waveform-data-contribution`)
-- **Updated "What gets shared" disclosure**: Data contribution details now include breathing pattern data and remove the "never shared: raw waveforms" line (`waveform-data-contribution`)
-
-## [Unreleased] — EDF Oximetry (SA2) Support (2026-03-11)
-
-### Added
-
-- **SA2 EDF oximetry parsing**: Automatically detects and parses pulse oximetry data from ResMed `_SA2.edf` files on SD cards — no separate CSV export needed (`edf-oximetry-sa2-support`)
-- **Flexible signal matching**: SpO2 and Pulse Rate signals are matched case-insensitively across known label variants (SpO2, SPO2, Sp O2, Pulse, PR) (`edf-oximetry-sa2-support`)
-- **SA2 priority over CSV**: When both SA2 (integrated oximeter) and CSV (external oximeter) data exist for the same night, SA2 takes priority as it's time-synchronized with the CPAP session (`edf-oximetry-sa2-support`)
-- **Upload validation info**: SD card uploads with SA2 files now show an info message confirming pulse oximetry data was detected (`edf-oximetry-sa2-support`)
-
-## [Unreleased] — Provider-Grade Chart Browser (2026-03-11)
-
-### Added
-
-- **Synced stacked chart view**: All waveform charts (Flow, Tidal Volume, Respiratory Rate, Pressure, Leak, SpO2) now share a single viewport — zoom/pan in one chart moves them all (`provider-grade-chart-browser`)
-- **Shared chart toolbar**: Single toolbar with zoom presets (5m/15m/30m/1h/2h), +/- zoom, pan arrows, reset button, and minimap overview bar (`provider-grade-chart-browser`)
-- **Tidal Volume chart**: New chart showing estimated tidal volume (mL) computed from inspiratory flow integration (`provider-grade-chart-browser`)
-- **Respiratory Rate chart**: New chart showing breaths/min computed via zero-crossing counting in a 30-second sliding window (`provider-grade-chart-browser`)
-- **Touch gesture support**: Pinch-to-zoom and swipe-to-pan on all charts for mobile/tablet devices (`provider-grade-chart-browser`)
-- **M-shape event detection**: Waveform event detector now identifies M-shape (double-peaked) inspiratory patterns (`provider-grade-chart-browser`)
-
-### Changed
-
-- **Improved event detection**: Replaced amplitude-based detector with flatness-based flow limitation detection — detects FL runs (3+ consecutive breaths with flatness >0.7), M-shape patterns, and arousal candidates (`provider-grade-chart-browser`)
-- **SpO2 always visible**: Removed collapsible sections — SpO2 trace or upload CTA is always shown to encourage oximetry data capture (`provider-grade-chart-browser`)
-- **Compact chart heights**: All sub-charts reduced in height (140-200px) to fit more data on screen without scrolling (`provider-grade-chart-browser`)
-- **Charts use synced viewport context**: Flow, Pressure, Leak, and SpO2 charts no longer have independent viewports — all consume shared SyncedViewportProvider (`provider-grade-chart-browser`)
-
-## [Unreleased] — Dashboard UX: Beginner-Friendly Redesign (2026-03-11)
-
-### Added
-
-- **Night Summary Hero card**: Single glanceable card above metrics showing traffic-light therapy status (green/amber/red) with one-sentence summary (`dashboard-ux-beginner-friendly`)
-- **Collapsible Insights Panel**: AI + rule-based insights wrapped in a `<details>` element — collapsed by default for new users (sessions <= 5), expanded for returning users (`dashboard-ux-beginner-friendly`)
-- **Tab group separator**: Visual divider between primary tabs (Overview, Graphs, Trends) and secondary tabs (Glasgow, Flow, Oximetry, Compare) (`dashboard-ux-beginner-friendly`)
-
-### Changed
-
-- **Tab bar visibility**: Switched from `default` to `line` variant with `bg-card/50` background — active tab now has a visible underline indicator (`dashboard-ux-beginner-friendly`)
-- **Primary tabs show full words on mobile**: Overview, Graphs, Trends are always readable; only secondary tabs use abbreviations (`dashboard-ux-beginner-friendly`)
-- **Simplified controls for beginners**: Email opt-in, Export, and Threshold Settings hidden for first 5 sessions to reduce clutter (`dashboard-ux-beginner-friendly`)
-- **New-user guidance repositioned**: "Start with Glasgow Index" hint moved directly below the hero card for maximum visibility (`dashboard-ux-beginner-friendly`)
-- **Session count tracking lifted**: `isNewUser` state moved from OverviewTab to AnalyzePage for shared access across controls and tabs (`dashboard-ux-beginner-friendly`)
-
-## [Unreleased] — Onboarding Audit v2 (2026-03-11)
-
-### Changed
-
-- **Share prompts modal**: Share prompts now display as a centered modal overlay instead of inline cards at the bottom of the overview tab (`share-prompts-centered-modal`)
-- **Landing page reorder**: "How It Works" section now appears directly after the Trust Bar, before narrative sections (Mission, Vision), reducing scroll-to-conversion distance (`onboarding-audit-v2`)
-- **Overview tab hierarchy**: NextSteps CTA moved below the primary metrics grid and Glasgow breakdown — users see data before advice (`onboarding-audit-v2`)
-- **Dashboard density for new users**: SharePrompts and NightHeatmap hidden for first 5 sessions to reduce information overload (`onboarding-audit-v2`)
-- **Demo banner context**: Demo mode now explains the sample clinical scenario (BiPAP ST user, settings change on Jan 14) to help users interpret the data (`onboarding-audit-v2`)
-- **Upload screen simplified**: Removed StorageConsent and ContributionOptIn from upload idle screen; StorageConsent moved to post-analysis dashboard (`onboarding-audit-v2`)
-
-### Added
-
-- **Mobile upload warning**: `/analyze` page now shows a mobile-only banner suggesting the demo when SD card upload isn't practical (`onboarding-audit-v2`)
-- **Threshold reset discoverability**: "Reset to defaults" button is now always visible in the Threshold Settings modal description area (disabled when no customisations exist), replacing the conditional footer button (`threshold-reset-to-defaults`)
-- **Community links in NextSteps**: "Share your results" step now includes clickable links to r/SleepApnea and ApneaBoard (`onboarding-audit-v2`)
-
-### Fixed
-
-- **Demo exit preserves data**: Exiting demo mode no longer clears previously persisted real analysis data (`onboarding-audit-v2`)
-- **Restored contribution nudge dialog**: Re-added accidentally deleted `contribution-nudge-dialog.tsx` component
-
-## [Unreleased] — Auto-fix Sentry Errors (2026-03-11)
-
-### Added
-
-- **Auto-fix Sentry errors**: GitHub Actions workflow that triggers on Sentry-labelled issues, runs Claude Code (Sonnet) to analyse and fix the error, and opens a PR for review. Includes branch deduplication, daily rate limit (5/day), and protected module guards. (`auto-fix-sentry-errors`)
-
-## [Unreleased] — Share Link MVP & Providers Page (2026-03-11)
-
-### Added
-
-- **Share link MVP**: Users can generate 30-day share links for their analysis results. Supports single-night or all-nights sharing with explicit consent flow and "remember my choice" option (`share-link-mvp`)
-- **For Providers page**: Marketing page targeting sleep consultants and clinicians at `/providers` with 7 sections, demo CTA, and contact form (`providers-page`)
-- **Provider interest API**: Supabase-backed form for provider/clinician contact requests with rate limiting and Sentry alerts (`provider-interest`)
-- **Share analytics**: Supabase SQL view for tracking share adoption metrics (creation rate, view rate, scope split) plus Plausible events (`share-analytics`)
-
-### Changed
-
-- **Privacy copy updated**: Landing page and hero now clarify "unless you choose to share it" alongside the privacy-first messaging
-- **Navigation expanded**: Added "For Providers" link to header nav (desktop and mobile menu)
-- **Internal cross-links**: Added provider references on landing page (How It Works section) and pricing page (after FAQ)
-
-## [Unreleased] — Brand Polish v1 (2026-03-11)
-
-### Added
-
-- **Brand voice guide**: `docs/BRAND_VOICE.md` — voice attributes, tone by context, writing rules, messaging hierarchy, and terminology reference for contributors (`brand-polish-v1`)
-- **Centralized chart theme**: `lib/chart-theme.ts` — single source of truth for all Recharts color values, axis styles, tooltip styles, and a `withAlpha()` helper (`brand-polish-v1`)
-
-### Changed
-
-- **Typography upgrade**: Swapped IBM Plex Sans → Plus Jakarta Sans for body text; JetBrains Mono retained for data values (`brand-polish-v1`)
-- **Color consolidation**: Added `brand-teal`, `data-good/monitor/elevated`, and `chart-6` tokens to Tailwind config; chart components now reference centralized theme instead of inline HSL values (`brand-polish-v1`)
-- **Landing page copy**: Benefit-first engine descriptions (Glasgow, WAT, NED, Oximetry); tighter hero subhead (`brand-polish-v1`)
-- **Pricing copy**: Community-funding framing — "Keep AirwayLab Independent" header (`brand-polish-v1`)
-- **Two-tone wordmark**: "Airway" bold white + "Lab" regular brand-teal in header and footer (`brand-polish-v1`)
-- **Favicon**: Minimal "A" in brand-teal on dark background (`brand-polish-v1`)
-- **OG/Twitter images**: Dark background with two-tone wordmark and updated tagline (`brand-polish-v1`)
-- **Meta descriptions**: Consistent L2 messaging across landing, analyze, and pricing pages (`brand-polish-v1`)
-- **Forum export**: Updated attribution and added GitHub star CTA line (`brand-polish-v1`)
-- **README**: Updated opening description to benefit-first copy (`brand-polish-v1`)
-
-### Improved
-
-- **Settings timeline change explanation**: Amber-highlighted rows in the Machine Settings Timeline now explain what changed — visible "Changed: EPAP, IPAP" text on desktop (matching mobile), subtitle describing the highlighting pattern, and tooltips on warning icons (`settings-timeline-change-explanation`)
-
-## [Unreleased] — Platform Audit (2026-03-10)
-
-### Added
-
-- **Contribution nudge social proof**: Post-upload contribution dialog now shows a live counter of how many people have already contributed and total nights, fetched from `/api/stats` (`contribution-nudge-social-proof`)
-- **AI credits synced from server**: Community tier AI credit count now reflects actual server-side usage instead of unreliable localStorage counter — clearing browser data no longer resets the display (`ai-credits-tracking-and-messaging`)
-- **Community funding messaging**: AI insights CTA explains that analyses are funded out of pocket, with warm invitation to support the project
-- **Unsupported data alerts**: Sentry warnings for unsupported oximetry formats and failed SD card parses, enabling prioritised format support (`unsupported-data-alerts`)
-- **Unlimited data contribution**: Removed 1095-night cap — all nights are submitted automatically via chunked batches of 1000 with shared `contributionId` (`unlimited-first-contribution`)
-
-### Improved
-
-- **Persistent contribution consent**: Remember opt-in status across sessions — returning users see a compact "Contributing data, thank you" confirmation instead of being asked again (persistent-contribution-consent)
-- **Mobile-first landing CTAs**: Demo is now the primary CTA on mobile, with a note that uploading requires a desktop computer (`onboarding-quick-wins`)
-- **"Start here" guidance**: New users see a brief callout above metrics explaining Glasgow Index and traffic light colours (`onboarding-quick-wins`)
-- **Export download feedback**: CSV and JSON export buttons show "Downloaded!" confirmation for 2 seconds (`onboarding-quick-wins`)
-- **Inclusive community sharing**: Share prompts now name ApneaBoard, Reddit, CPAPtalk, and "your favourite sleep community" (`onboarding-quick-wins`)
-- **Upload page reorder**: Demo CTA moved above consent sections for discoverability (`onboarding-quick-wins`)
-
-### Fixed
-
-- **Oximetry-only upload**: Uploading oximetry CSV no longer re-processes the entire SD card — oximetry is matched to cached nights instantly (oximetry-only-reanalysis)
-- **Oximetry upload from cached sessions**: Oximetry upload button now works after page refresh when previous analysis is restored from cache
-- **Glasgow radar chart scaling**: Changed axis domain from `[0, 100]` to `[0, 1]` so low component scores (0–0.5) are visually readable instead of invisible (`glasgow-radar-scaling`)
-- **Phase 1 — Critical engine bugs**: Fixed Glasgow Index weighted averaging, NED H1/H2 split boundary, WAT FFT zero-padding, oximetry buffer-zone trimming, and night-grouper date extraction
-- **Phase 2 — Security hardening**: Added CSRF origin validation, rate limiting on all API routes, Stripe webhook signature verification, Zod validation on all external inputs, Content-Security-Policy headers
-- **Phase 3 — Accessibility**: Added skip-to-content link, ARIA labels on all interactive elements, keyboard navigation for charts, semantic heading hierarchy, screen reader announcements for analysis progress
-- **Phase 4 — UX quick wins**: Added loading skeletons, error boundaries with retry, empty states, toast notifications, improved upload validation messages
-- **Heatmap date sort**: Fixed default sort to newest-first, added visible "Date" sort button replacing hidden arrow column, date sort now defaults to descending when re-selected
-- **Metrics table date sort**: Fixed re-selecting Date column after sorting by another metric to default to newest-first
-
-### Changed
-
-- **Consolidated Supabase clients** — merged `lib/supabase.ts` into `lib/supabase/server.ts`; all routes now import from single module
-- **Shared rate limiter** — replaced 5 inline rate-limiter implementations with shared `RateLimiter` class from `lib/rate-limit.ts`
-- **Tightened night-grouper regex** — `DATALOG/(\d{8})/` instead of bare `(\d{8})/` to prevent false matches on non-ResMed paths
-- **Removed stale Tailwind content path** — dropped `pages/**` entry (App Router only, no Pages Router)
+- **Critical engine bugs** — Glasgow weighted averaging, NED H1/H2 split, WAT FFT zero-padding, oximetry buffer-zone trimming, night-grouper date extraction
+- **Security hardening** — CSRF validation, rate limiting on all API routes, Stripe webhook verification, Zod validation, CSP headers
+- **Accessibility** — skip-to-content, ARIA labels, keyboard chart navigation, semantic heading hierarchy, screen reader announcements
+- **UX quick wins** — loading skeletons, error boundaries with retry, empty states, toast notifications
+- **Glasgow radar chart scaling** — axis domain corrected from `[0, 100]` to `[0, 1]`
+- **Oximetry-only upload** — no longer re-processes entire SD card
+- **Heatmap/metrics table date sort** — newest-first default, visible sort button
+- **Demo exit preserves data** — no longer clears persisted real analysis data
 
 ### Removed
 
-- **~85 macOS duplicate files** — removed Finder-created copies with " 2", " 3" etc. suffixes across entire codebase
+- **~85 macOS duplicate files** — removed Finder-created copies with " 2", " 3" suffixes
 
 ## [0.6.0] - 2026-03-09
 
