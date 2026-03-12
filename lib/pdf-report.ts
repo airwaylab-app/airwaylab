@@ -8,6 +8,7 @@ import type { NightResult } from './types';
 import { getTrafficLight, type TrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { generateRadarSVG, generateTrendSVG } from './pdf-charts';
+import { computeIFLRisk } from './ifl-risk';
 
 const TL_EMOJI: Record<TrafficLight, string> = {
   good: '\u2705',
@@ -67,6 +68,7 @@ function buildNightSection(n: NightResult, index: number): string {
           </tr>
         </thead>
         <tbody>
+          ${metricRow('IFL Symptom Risk', computeIFLRisk(n), '%', 'iflRisk')}
           <tr><td colspan="2" style="padding:8px 12px;font-weight:600;color:#3b82f6;border-bottom:1px solid #e2e8f0;">Glasgow Index</td></tr>
           ${metricRow('Overall', n.glasgow.overall, '', 'glasgowOverall')}
           ${metricRow('Skew', n.glasgow.skew, '')}
@@ -107,12 +109,14 @@ function buildSummaryPage(nights: NightResult[]): string {
   const avg = (fn: (n: NightResult) => number) =>
     nights.reduce((sum, n) => sum + fn(n), 0) / nights.length;
 
+  const avgIFL = avg((n) => computeIFLRisk(n));
   const avgGlasgow = avg((n) => n.glasgow.overall);
   const avgFL = avg((n) => n.wat.flScore);
   const avgNED = avg((n) => n.ned.nedMean);
   const avgRERA = avg((n) => n.ned.reraIndex);
   const avgReg = avg((n) => n.wat.regularityScore);
 
+  const iflTL = getTrafficLight(avgIFL, THRESHOLDS.iflRisk);
   const glTL = getTrafficLight(avgGlasgow, THRESHOLDS.glasgowOverall);
   const flTL = getTrafficLight(avgFL, THRESHOLDS.watFL);
   const nedTL = getTrafficLight(avgNED, THRESHOLDS.nedMean);
@@ -137,6 +141,7 @@ function buildSummaryPage(nights: NightResult[]): string {
       </p>
 
       <div style="display:flex;justify-content:space-around;border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin-bottom:24px;">
+        ${summaryMetric('Avg IFL Risk', fmt(avgIFL) + '%', iflTL)}
         ${summaryMetric('Avg Glasgow', fmt(avgGlasgow), glTL)}
         ${summaryMetric('Avg FL Score', fmt(avgFL) + '%', flTL)}
         ${summaryMetric('Avg NED Mean', fmt(avgNED) + '%', nedTL)}

@@ -5,6 +5,17 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — IFL Symptom Risk Indicator (2026-03-12)
+
+### Added
+
+- **IFL Symptom Risk composite metric**: New 0–100% composite that weights FL Score (35%), NED Mean (30%), Flatness Index (20%), and Glasgow Index (15%) to give a single "how much is flow limitation driving symptoms" signal. Based on Gold's IFL theory and Mann et al. 2024 research showing FL predicts sleepiness independently of arousals (`ifl-symptom-risk-indicator`)
+- **IFL Risk MetricCard**: Appears as the first card in the primary metrics grid on the Overview tab, with traffic light colouring (green ≤20%, amber ≤45%, red >45%) and trend arrow (`ifl-symptom-risk-indicator`)
+- **IFL Risk breakdown panel**: Collapsible section showing normalised values, weights, and per-component contributions with a link to the FL and sleepiness blog post (`ifl-symptom-risk-indicator`)
+- **EAI contextual annotations**: When IFL Risk and disruption index diverge, a contextual note explains the clinical significance (`ifl-symptom-risk-indicator`)
+- **IFL Risk in all exports**: CSV, JSON, forum post, and PDF report now include IFL Symptom Risk (`ifl-symptom-risk-indicator`)
+- **IFL Risk insights**: Rule-based insights for high/low IFL Risk, EAI divergence patterns, and IFL Risk trends (`ifl-symptom-risk-indicator`)
+
 ## [Unreleased] — Granular Event Toggles (2026-03-11)
 
 ### Added

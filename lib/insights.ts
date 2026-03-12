@@ -6,6 +6,7 @@
 import type { NightResult } from './types';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
+import { computeIFLRisk, getIFLContextNote } from './ifl-risk';
 
 export interface Insight {
   /** Unique key for React rendering */
@@ -68,6 +69,50 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
   const gl = getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall);
   const nedL = getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean);
   const regL = getTrafficLight(n.wat.regularityScore, THRESHOLDS.watRegularity);
+
+  // IFL Symptom Risk composite
+  const iflRisk = computeIFLRisk(n);
+  const iflL = getTrafficLight(iflRisk, THRESHOLDS.iflRisk);
+  if (iflL === 'bad') {
+    insights.push({
+      id: 'ifl-risk-high',
+      type: 'warning',
+      title: 'Flow limitation is driving significant symptom risk',
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% indicates substantial flow limitation across multiple metrics. Research suggests this level of FL can drive fatigue independently of arousals. Discuss pressure optimisation with your clinician.`,
+      category: 'ned',
+      link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
+    });
+  } else if (iflL === 'good') {
+    insights.push({
+      id: 'ifl-risk-good',
+      type: 'positive',
+      title: 'Low flow limitation symptom risk',
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is low — your airway appears to be functioning well during therapy.`,
+      category: 'ned',
+    });
+  }
+
+  // IFL Risk + EAI divergence
+  const eaiForContext = n.ned.estimatedArousalIndex ?? 0;
+  const contextNote = getIFLContextNote(iflRisk, eaiForContext);
+  if (contextNote && iflRisk > 30 && eaiForContext <= 5) {
+    insights.push({
+      id: 'ifl-eai-divergence-fl-high',
+      type: 'info',
+      title: 'High flow limitation with low disruption index',
+      body: contextNote,
+      category: 'ned',
+      link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
+    });
+  } else if (contextNote && iflRisk <= 15 && eaiForContext > 10) {
+    insights.push({
+      id: 'ifl-eai-divergence-eai-high',
+      type: 'info',
+      title: 'Elevated disruptions without significant flow limitation',
+      body: contextNote,
+      category: 'ned',
+    });
+  }
 
   // Glasgow summary
   if (gl === 'good') {
@@ -306,6 +351,27 @@ function trendInsights(
   // Nights are most-recent-first; reverse for chronological order
   const chrono = [...nights].reverse();
   const glasgowVals = chrono.map((n) => n.glasgow.overall);
+
+  // IFL Risk trend
+  const iflVals = chrono.map((n) => computeIFLRisk(n));
+  const iflTrend = trendLowerBetter(iflVals);
+  if (iflTrend === 'improving') {
+    insights.push({
+      id: 'trend-ifl-improving',
+      type: 'positive',
+      title: 'IFL Symptom Risk trending down',
+      body: `Your flow limitation composite has been improving over recent nights \u2014 from ${fmt(iflVals[0])}% to ${fmt(iflVals[iflVals.length - 1])}%. Your current therapy settings appear to be reducing flow limitation.`,
+      category: 'trend',
+    });
+  } else if (iflTrend === 'worsening') {
+    insights.push({
+      id: 'trend-ifl-worsening',
+      type: 'actionable',
+      title: 'IFL Symptom Risk trending upward',
+      body: `Your flow limitation composite is increasing over ${nights.length} nights (${fmt(iflVals[0])}% \u2192 ${fmt(iflVals[iflVals.length - 1])}%). Consider discussing pressure or settings adjustments with your clinician.`,
+      category: 'trend',
+    });
+  }
 
   const gTrend = trendLowerBetter(glasgowVals);
   if (gTrend === 'improving') {

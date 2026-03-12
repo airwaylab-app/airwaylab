@@ -20,7 +20,8 @@ import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
-import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
+import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation } from '@/lib/metric-explanations';
+import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 
@@ -208,8 +209,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </div>
       </details>
 
-      {/* Key Metrics Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
+      {/* IFL Symptom Risk + Key Metrics Grid */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 stagger-children">
+        <MetricCard
+          label="IFL Symptom Risk"
+          value={computeIFLRisk(n)}
+          unit="%"
+          format="pct"
+          threshold={THRESHOLDS.iflRisk}
+          previousValue={p ? computeIFLRisk(p) : undefined}
+          tooltip="Combines FL Score, NED, Flatness Index, and Glasgow Index to estimate how much flow limitation may be driving symptoms. Higher values suggest greater symptom risk from flow limitation."
+          onClick={() => openMetric('IFL Symptom Risk', (x) => computeIFLRisk(x), { unit: '%', threshold: THRESHOLDS.iflRisk, description: 'Composite flow limitation symptom risk across all nights' })}
+        />
         <MetricCard
           label="Glasgow Index"
           value={n.glasgow.overall}
@@ -250,8 +261,89 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </div>
 
       <MetricExplanation
-        text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall)}
+        text={getIFLRiskExplanation(computeIFLRisk(n), THRESHOLDS.iflRisk)}
         defaultExpanded={isNewUser}
+      />
+
+      {/* IFL Risk Breakdown (Collapsible) */}
+      <details className="group rounded-xl border border-border/50 bg-card/30">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+          IFL Symptom Risk — Breakdown
+          <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+            {computeIFLRisk(n).toFixed(1)}%
+          </span>
+        </summary>
+        <div className="border-t border-border/30 px-4 pb-4 pt-3">
+          <p className="mb-3 text-xs text-muted-foreground">
+            This composite metric weights four flow limitation measurements to give a single directional signal.
+            It is based on research suggesting flow limitation itself drives symptoms via a stress response, independent of arousals.
+          </p>
+          {(() => {
+            const flNorm = n.wat.flScore;
+            const nedNorm = n.ned.nedMean;
+            const fiNorm = (1 - n.ned.fiMean) * 100;
+            const glNorm = (n.glasgow.overall / 8) * 100;
+            const components = [
+              { label: 'FL Score', value: n.wat.flScore, unit: '%', norm: flNorm, weight: 0.35, contribution: flNorm * 0.35 },
+              { label: 'NED Mean', value: n.ned.nedMean, unit: '%', norm: nedNorm, weight: 0.30, contribution: nedNorm * 0.30 },
+              { label: 'Flatness Index', value: n.ned.fiMean, unit: '', norm: fiNorm, weight: 0.20, contribution: fiNorm * 0.20 },
+              { label: 'Glasgow Index', value: n.glasgow.overall, unit: '/8', norm: glNorm, weight: 0.15, contribution: glNorm * 0.15 },
+            ];
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border/30 text-muted-foreground/70">
+                      <th className="pb-2 text-left font-medium">Metric</th>
+                      <th className="pb-2 text-right font-medium">Value</th>
+                      <th className="pb-2 text-right font-medium">Normalised</th>
+                      <th className="pb-2 text-right font-medium">Weight</th>
+                      <th className="pb-2 text-right font-medium">Contribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {components.map((c) => (
+                      <tr key={c.label} className="border-b border-border/20">
+                        <td className="py-1.5 text-muted-foreground">{c.label}</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums">{c.value.toFixed(1)}{c.unit}</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums">{c.norm.toFixed(1)}</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums text-muted-foreground/70">{(c.weight * 100).toFixed(0)}%</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums font-medium">{c.contribution.toFixed(1)}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-medium">
+                      <td className="pt-2" colSpan={4}>Total</td>
+                      <td className="pt-2 text-right font-mono tabular-nums">{computeIFLRisk(n).toFixed(1)}%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+          {(() => {
+            const risk = computeIFLRisk(n);
+            const eai = n.ned.estimatedArousalIndex ?? 0;
+            const note = getIFLContextNote(risk, eai);
+            if (!note) return null;
+            return (
+              <div className="mt-3 rounded-lg border border-primary/10 bg-primary/[0.03] px-3 py-2">
+                <p className="text-xs text-muted-foreground">{note}</p>
+              </div>
+            );
+          })()}
+          <a
+            href="/blog/flow-limitation-and-sleepiness"
+            className="mt-3 inline-block text-xs text-primary/70 underline underline-offset-2 hover:text-primary"
+          >
+            Read: Does Flow Limitation Drive Sleepiness?
+          </a>
+        </div>
+      </details>
+
+      <MetricExplanation
+        text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall)}
+        defaultExpanded={false}
       />
 
       {/* Collapsible Insights Panel — AI + rule-based insights */}

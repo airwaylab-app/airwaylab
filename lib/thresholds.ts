@@ -7,6 +7,7 @@ export type ThresholdDef = {
 };
 
 export const THRESHOLDS: Record<string, ThresholdDef> = {
+  iflRisk: { green: 20, amber: 45, lowerIsBetter: true },
   glasgowOverall: { green: 1.0, amber: 2.0, lowerIsBetter: true },
   nedMean: { green: 15, amber: 25, lowerIsBetter: true },
   nedP95: { green: 30, amber: 50, lowerIsBetter: true },
