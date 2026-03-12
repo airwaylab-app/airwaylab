@@ -174,6 +174,8 @@ function buildTrendsPage(nights: NightResult[]): string {
  * User can then "Save as PDF" from the browser print dialog.
  */
 export function openPDFReport(nights: NightResult[]): void {
+  if (nights.length === 0) return;
+
   const now = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',

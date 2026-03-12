@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
+- **PDF report empty-array guard** — `openPDFReport([])` now returns silently instead of crashing on `nights[0]` access (codebase-audit-hardening)
+- **API schema leak** — Removed Zod validation error details from `/api/store-analysis-data` 400 response; details now logged server-side only (codebase-audit-hardening)
+- **useWaveform unmount safety** — Added cancelled flag to prevent setState after component unmount during cloud file loading (codebase-audit-hardening)
+- **ShareButton timer cleanup** — setTimeout IDs stored in ref and cleared on unmount to prevent memory leaks (codebase-audit-hardening)
+- **FlowWaveform stable keys** — Event overlay keys now use `type-startSec-endSec` instead of array index for correct React reconciliation (codebase-audit-hardening)
+- **Sentry navigation tracking** — Added missing `onRouterTransitionStart` export to `instrumentation-client.ts` (codebase-audit-hardening)
+
 ### Added
 
 - **Waveform Decimation & IndexedDB Persistence** — Replaced min/max/avg bucketing with simple decimation (take every Nth sample), displaying actual measured flow values. Full 25 Hz Float32Array stored in IndexedDB for instant reload on return visits (90-day TTL). Multi-resolution decimation: full night at 1 Hz, 30min–2h at 2 Hz, 5–30min at 5 Hz, <5min at full 25 Hz. (waveform-decimation-indexeddb)
