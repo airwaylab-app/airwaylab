@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle,
@@ -43,6 +43,15 @@ export function InsightsPanel({
   defaultExpanded,
   aiCTA,
 }: Props) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  // Force panel open when AI insights load or while loading spinner is visible
+  useEffect(() => {
+    if ((aiLoading || (aiInsights && aiInsights.length > 0)) && detailsRef.current) {
+      detailsRef.current.open = true;
+    }
+  }, [aiLoading, aiInsights]);
+
   const allInsights = [...(aiInsights ?? []), ...insights];
   const totalCount = allInsights.length + (aiLoading ? 1 : 0);
   const warningCount = allInsights.filter(
@@ -54,6 +63,7 @@ export function InsightsPanel({
 
   return (
     <details
+      ref={detailsRef}
       className="group rounded-xl border border-border/50 bg-card/30"
       open={defaultExpanded || undefined}
       role="group"
