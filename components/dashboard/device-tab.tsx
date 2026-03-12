@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DevicePressureChart } from '@/components/charts/device-pressure-chart';
 import { DeviceLeakChart } from '@/components/charts/device-leak-chart';
+import { SyncedViewportProvider, useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { SharedChartToolbar } from '@/components/charts/shared-chart-toolbar';
 import { useWaveform } from '@/hooks/use-waveform';
-import { formatElapsedTimeShort } from '@/lib/waveform-utils';
-import type { NightResult } from '@/lib/types';
+import { formatElapsedTimeShort, decimatePressureRange, getTargetRate } from '@/lib/waveform-utils';
+import type { StoredWaveform } from '@/lib/waveform-types';
+import type { NightResult, MachineSettings } from '@/lib/types';
 import { Loader2, AlertCircle, Gauge, Eye, EyeOff } from 'lucide-react';
 
 interface Props {
@@ -76,7 +79,7 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
   }
 
   const waveform = state.waveform;
-  const hasPressure = waveform.pressure.length > 0;
+  const hasPressure = waveform.pressure !== null && waveform.pressure.length > 0;
   const hasLeak = waveform.leak.length > 0;
 
   if (!hasPressure && !hasLeak) {
@@ -96,13 +99,72 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
   const settings = selectedNight.settings;
 
   return (
+    <SyncedViewportProvider
+      durationSeconds={waveform.durationSeconds}
+      dateStr={selectedNight.dateStr}
+    >
+      <DeviceTabCharts
+        waveform={waveform}
+        settings={settings}
+        showPressure={showPressure}
+        showLeak={showLeak}
+        hasPressure={hasPressure}
+        hasLeak={hasLeak}
+        onTogglePressure={() => setShowPressure(!showPressure)}
+        onToggleLeak={() => setShowLeak(!showLeak)}
+      />
+    </SyncedViewportProvider>
+  );
+}
+
+/**
+ * Inner component inside SyncedViewportProvider.
+ * Decimates pressure based on viewport zoom level.
+ */
+function DeviceTabCharts({
+  waveform,
+  settings,
+  showPressure,
+  showLeak,
+  hasPressure,
+  hasLeak,
+  onTogglePressure,
+  onToggleLeak,
+}: {
+  waveform: StoredWaveform;
+  settings: MachineSettings;
+  showPressure: boolean;
+  showLeak: boolean;
+  hasPressure: boolean;
+  hasLeak: boolean;
+  onTogglePressure: () => void;
+  onToggleLeak: () => void;
+}) {
+  const viewport = useSyncedViewport();
+
+  const pressureData = useMemo(() => {
+    if (!waveform.pressure) return [];
+    const targetRate = getTargetRate(viewport.visibleDurationSec, waveform.sampleRate);
+    return decimatePressureRange(
+      waveform.pressure,
+      waveform.sampleRate,
+      viewport.clampedStartSec,
+      viewport.clampedEndSec,
+      targetRate
+    );
+  }, [waveform.pressure, waveform.sampleRate, viewport.clampedStartSec, viewport.clampedEndSec, viewport.visibleDurationSec]);
+
+  return (
     <div className="flex flex-col gap-4">
+      {/* Shared toolbar */}
+      <SharedChartToolbar durationSeconds={waveform.durationSeconds} />
+
       {/* Toggle controls */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant={showPressure ? 'secondary' : 'outline'}
           size="sm"
-          onClick={() => setShowPressure(!showPressure)}
+          onClick={onTogglePressure}
           disabled={!hasPressure}
           className="gap-1.5 text-xs"
         >
@@ -112,7 +174,7 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
         <Button
           variant={showLeak ? 'secondary' : 'outline'}
           size="sm"
-          onClick={() => setShowLeak(!showLeak)}
+          onClick={onToggleLeak}
           disabled={!hasLeak}
           className="gap-1.5 text-xs"
         >
@@ -124,7 +186,7 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
       {/* Pressure chart */}
       {showPressure && hasPressure && (
         <DevicePressureChart
-          pressure={waveform.pressure}
+          pressure={pressureData}
           settings={settings}
         />
       )}

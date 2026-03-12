@@ -12,6 +12,7 @@ import { AILockedTeasers } from '@/components/dashboard/ai-locked-teasers';
 import { DeepInsightTeasers } from '@/components/dashboard/deep-insight-teasers';
 import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
 import { loadNightNotes } from '@/lib/night-notes';
+import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 import type { Insight } from '@/lib/insights';
@@ -121,21 +122,26 @@ export function AIInsightsGate({
     fetchFn()
       .then((result) => {
         if (controller.signal.aborted) return;
-        if (result) {
-          setServerRemainingCredits(result.remainingCredits);
-          setAiInsights(result.insights);
-          setIsDeepResult(result.isDeep ?? false);
-          insightsNightRef.current = selectedNight.dateStr;
-          events.aiInsightsGenerated(tier, result.insights.length, isDeepAccess);
-        } else {
-          setAiError('AI analysis temporarily unavailable. Please try again.');
-          events.aiInsightsFailed(tier, 'null_result');
-        }
+        setServerRemainingCredits(result.remainingCredits);
+        setAiInsights(result.insights);
+        setIsDeepResult(result.isDeep ?? false);
+        insightsNightRef.current = selectedNight.dateStr;
+        events.aiInsightsGenerated(tier, result.insights.length, isDeepAccess);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        setAiError('AI analysis temporarily unavailable. Please try again.');
-        events.aiInsightsFailed(tier, 'fetch_error');
+        const message = err instanceof Error ? err.message : 'AI analysis failed. Please try again.';
+        setAiError(message);
+        events.aiInsightsFailed(tier, message);
+
+        // Capture to Sentry — skip expected user-facing errors
+        const skipSentry = /unauthorized|session.*expired|limit reached/i.test(message);
+        if (!skipSentry) {
+          Sentry.captureException(err instanceof Error ? err : new Error(message), {
+            tags: { component: 'ai-insights-gate', tier },
+            extra: { nightCount: nights.length, isDeepAccess },
+          });
+        }
       })
       .finally(() => {
         if (controller.signal.aborted) return;

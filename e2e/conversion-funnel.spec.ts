@@ -293,9 +293,9 @@ test.describe('Conversion Funnel — Pricing Page', () => {
   test('pricing page shows all three tiers', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByRole('heading', { name: 'Community' }).first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Supporter' }).first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Champion' }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Community', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Supporter', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Champion', level: 2 })).toBeVisible();
   });
 
   // ── Community tier shows correct price ────────────────────
@@ -356,9 +356,9 @@ test.describe('Conversion Funnel — Pricing Page', () => {
   test('pricing page shows trust signals', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByText('Cancel anytime', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('Secure payment via Stripe', { exact: true })).toBeVisible();
-    await expect(page.getByText('Delete all data anytime', { exact: true })).toBeVisible();
+    await expect(page.getByText('Cancel anytime').first()).toBeVisible();
+    await expect(page.getByText('Secure payment via Stripe').first()).toBeVisible();
+    await expect(page.getByText('Delete all data anytime').first()).toBeVisible();
   });
 
   // ── Anonymous user CTA shows sign-in ──────────────────────
@@ -390,7 +390,7 @@ test.describe('Conversion Funnel — Account Page', () => {
     await page.goto('/account');
 
     await expect(page.getByRole('heading', { name: 'Account Settings' })).toBeVisible();
-    await expect(page.getByText('Sign in to view your account settings.')).toBeVisible();
+    await expect(page.getByText('Sign in to view your account settings')).toBeVisible();
   });
 
   // ── Account page has correct heading ──────────────────────

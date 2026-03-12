@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Tooltip,
@@ -13,10 +13,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { ShareConsentModal } from './share-consent-modal';
+import { AuthModal } from '@/components/auth/auth-modal';
 import {
   getShareConsent,
   setShareConsent,
 } from '@/lib/share-consent';
+import { useAuth } from '@/lib/auth/auth-context';
 import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 
@@ -36,27 +38,113 @@ function stripForShare(nights: NightResult[]): NightResult[] {
   }));
 }
 
+interface FileUploadProgress {
+  status: 'idle' | 'uploading' | 'done' | 'error';
+  uploaded: number;
+  total: number;
+  errorMessage?: string;
+}
+
 interface Props {
   nights: NightResult[];
   selectedNight: NightResult;
+  sdFiles?: File[];
 }
 
 type ShareState =
   | { step: 'idle' }
+  | { step: 'auth' }
   | { step: 'consent' }
   | { step: 'scope' }
   | { step: 'loading' }
-  | { step: 'success'; shareUrl: string; expiresAt: string; nightsCount: number; shareScope: string }
+  | { step: 'success'; shareUrl: string; expiresAt: string; nightsCount: number; shareScope: string; shareId: string }
   | { step: 'error'; message: string };
 
 export const ShareButton = memo(function ShareButton({
   nights,
   selectedNight,
+  sdFiles,
 }: Props) {
+  const { user } = useAuth();
   const [state, setState] = useState<ShareState>({ step: 'idle' });
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [fileUpload, setFileUpload] = useState<FileUploadProgress>({ status: 'idle', uploaded: 0, total: 0 });
   const focusTrapRef = useFocusTrap(state.step === 'success' || state.step === 'error');
+  const pendingScopeRef = useRef<'single' | 'all' | null>(null);
+
+  const hasFiles = (sdFiles?.length ?? 0) > 0;
+
+  const uploadFilesToShare = useCallback(async (shareId: string, files: File[]) => {
+    if (files.length === 0) return;
+
+    setFileUpload({ status: 'uploading', uploaded: 0, total: files.length });
+
+    try {
+      // Get presigned upload URLs
+      const presignRes = await fetch('/api/share/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareId,
+          files: files.map((f) => ({ fileName: f.name, fileSize: f.size })),
+        }),
+      });
+
+      if (!presignRes.ok) {
+        throw new Error('Could not prepare file upload');
+      }
+
+      const { uploadUrls } = await presignRes.json() as {
+        uploadUrls: { fileName: string; uploadUrl: string; storagePath: string }[];
+      };
+
+      // Upload files in batches of 3
+      const storagePaths: string[] = [];
+      const batchSize = 3;
+
+      for (let i = 0; i < uploadUrls.length; i += batchSize) {
+        const batch = uploadUrls.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (entry) => {
+            const file = files.find((f) => f.name === entry.fileName);
+            if (!file) return;
+
+            const uploadRes = await fetch(entry.uploadUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/octet-stream' },
+              body: file,
+            });
+
+            if (uploadRes.ok) {
+              storagePaths.push(entry.storagePath);
+              setFileUpload((prev) => ({ ...prev, uploaded: prev.uploaded + 1 }));
+            }
+          })
+        );
+      }
+
+      if (storagePaths.length === 0) {
+        throw new Error('No files could be uploaded');
+      }
+
+      // Finalise upload
+      await fetch('/api/share/files', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareId, filePaths: storagePaths }),
+      });
+
+      const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+      events.shareFilesUploaded(storagePaths.length, totalBytes);
+      setFileUpload({ status: 'done', uploaded: storagePaths.length, total: files.length });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'File upload failed';
+      console.error('[share-button] file upload failed:', message);
+      events.shareFilesUploadFailed(message);
+      setFileUpload((prev) => ({ ...prev, status: 'error', errorMessage: message }));
+    }
+  }, []);
 
   const createShareLink = useCallback(
     async (scope: 'single' | 'all') => {
@@ -84,6 +172,14 @@ export const ShareButton = memo(function ShareButton({
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
+
+          // If 401, prompt auth
+          if (res.status === 401) {
+            pendingScopeRef.current = scope;
+            setState({ step: 'auth' });
+            return;
+          }
+
           setState({
             step: 'error',
             message:
@@ -94,6 +190,7 @@ export const ShareButton = memo(function ShareButton({
         }
 
         const data = await res.json() as {
+          shareId: string;
           shareUrl: string;
           expiresAt: string;
           nightsCount: number;
@@ -108,7 +205,13 @@ export const ShareButton = memo(function ShareButton({
           expiresAt: data.expiresAt,
           nightsCount: data.nightsCount,
           shareScope: data.shareScope,
+          shareId: data.shareId,
         });
+
+        // Upload files in background if available
+        if (sdFiles && sdFiles.length > 0) {
+          uploadFilesToShare(data.shareId, sdFiles);
+        }
       } catch {
         setState({
           step: 'error',
@@ -117,24 +220,28 @@ export const ShareButton = memo(function ShareButton({
         });
       }
     },
-    [nights, selectedNight]
+    [nights, selectedNight, sdFiles, uploadFilesToShare]
   );
 
   const handleShareClick = useCallback(() => {
+    // Auth check — share creation requires login
+    if (!user) {
+      events.authStarted('share');
+      setState({ step: 'auth' });
+      return;
+    }
+
     const consent = getShareConsent();
 
     if (!consent || !consent.dataShareConsent) {
-      // First time: show full consent modal
       events.shareOptinShown();
       setState({ step: 'consent' });
     } else if (consent.rememberedChoice) {
-      // Remembered: skip modal, generate immediately
       createShareLink(consent.shareScope);
     } else {
-      // Consented but not remembered: show simplified scope picker
       setState({ step: 'scope' });
     }
-  }, [createShareLink]);
+  }, [user, createShareLink]);
 
   const handleConsentConfirm = useCallback(
     (scope: 'single' | 'all', remember: boolean) => {
@@ -166,6 +273,12 @@ export const ShareButton = memo(function ShareButton({
     setState({ step: 'idle' });
     setCopied(false);
     setCopyError(false);
+    setFileUpload({ status: 'idle', uploaded: 0, total: 0 });
+  }, []);
+
+  const handleAuthClose = useCallback(() => {
+    setState({ step: 'idle' });
+    pendingScopeRef.current = null;
   }, []);
 
   const handleChangePreferences = useCallback(() => {
@@ -187,12 +300,19 @@ export const ShareButton = memo(function ShareButton({
         <TooltipContent>Share analysis via link</TooltipContent>
       </Tooltip>
 
+      {/* Auth modal */}
+      <AuthModal
+        open={state.step === 'auth'}
+        onClose={handleAuthClose}
+      />
+
       {/* Consent modal (full) */}
       <ShareConsentModal
         open={state.step === 'consent'}
         onClose={handleClose}
         onConfirm={handleConsentConfirm}
         nightsCount={nights.length}
+        hasFiles={hasFiles}
       />
 
       {/* Scope picker (simplified — consent already given) */}
@@ -201,6 +321,7 @@ export const ShareButton = memo(function ShareButton({
         onClose={handleClose}
         onConfirm={handleConsentConfirm}
         nightsCount={nights.length}
+        hasFiles={hasFiles}
         simplified
       />
 
@@ -267,10 +388,28 @@ export const ShareButton = memo(function ShareButton({
                   </button>
                 </div>
 
+                {/* File upload progress */}
+                {fileUpload.status === 'uploading' && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Uploading waveform data ({fileUpload.uploaded}/{fileUpload.total} files)...</span>
+                  </div>
+                )}
+                {fileUpload.status === 'done' && (
+                  <p className="text-xs text-emerald-400">
+                    Waveform data uploaded ({fileUpload.uploaded} files) &mdash; consultants can view the Graphs tab.
+                  </p>
+                )}
+                {fileUpload.status === 'error' && (
+                  <p className="text-xs text-amber-400">
+                    Waveform data could not be uploaded. Your share link still works for metrics.
+                  </p>
+                )}
+
                 {/* Meta */}
                 <p className="text-xs text-muted-foreground">
                   {state.nightsCount} night
-                  {state.nightsCount !== 1 ? 's' : ''} · Expires{' '}
+                  {state.nightsCount !== 1 ? 's' : ''} &middot; Expires{' '}
                   {new Date(state.expiresAt).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'short',

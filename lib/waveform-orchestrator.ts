@@ -1,27 +1,33 @@
 // ============================================================
 // AirwayLab — Waveform Orchestrator
 // Manages waveform extraction worker lifecycle.
+// Stores raw Float32Array data in IndexedDB for instant reload.
 // Runs independently from the main analysis orchestrator.
 // ============================================================
 
-import type { WaveformData, WaveformWorkerResponse } from './waveform-types';
+import type {
+  StoredWaveform,
+  WaveformWorkerResponse,
+  RawWaveformResult,
+} from './waveform-types';
+import { ENGINE_VERSION } from './engine-version';
+import { storeWaveform, loadWaveform, deleteExpired } from './waveform-idb';
 
 type WaveformListener = (state: WaveformState) => void;
 
 export interface WaveformState {
   status: 'idle' | 'loading' | 'ready' | 'error' | 'unavailable';
-  waveform: WaveformData | null;
+  waveform: StoredWaveform | null;
   error: string | null;
 }
 
 const WORKER_TIMEOUT_MS = 60_000; // 60 seconds (increased from 30 for large SD cards)
-const BUCKET_SECONDS = 2; // 2-second buckets for overview
 
 class WaveformOrchestrator {
   private worker: Worker | null = null;
   private state: WaveformState = { status: 'idle', waveform: null, error: null };
   private listeners = new Set<WaveformListener>();
-  private cache = new Map<string, WaveformData>();
+  private cache = new Map<string, StoredWaveform>();
 
   subscribe(listener: WaveformListener): () => void {
     this.listeners.add(listener);
@@ -46,11 +52,34 @@ class WaveformOrchestrator {
   }
 
   /**
-   * Extract waveform data for a specific night from SD card files.
-   * Caches results in memory — subsequent requests for the same night are instant.
+   * Try to load from IndexedDB first.
+   * Returns the StoredWaveform if found, null otherwise.
    */
-  async extract(files: File[], targetDate: string): Promise<WaveformData | null> {
-    // Check cache first
+  async loadFromIDB(dateStr: string): Promise<StoredWaveform | null> {
+    // Check in-memory cache first
+    const cached = this.cache.get(dateStr);
+    if (cached) {
+      this.setState({ status: 'ready', waveform: cached, error: null });
+      return cached;
+    }
+
+    // Try IndexedDB
+    const stored = await loadWaveform(dateStr);
+    if (stored) {
+      this.cache.set(dateStr, stored);
+      this.setState({ status: 'ready', waveform: stored, error: null });
+      return stored;
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract waveform data for a specific night from SD card files.
+   * Stores raw Float32Array in IndexedDB after extraction.
+   */
+  async extract(files: File[], targetDate: string): Promise<StoredWaveform | null> {
+    // Check in-memory cache first
     const cached = this.cache.get(targetDate);
     if (cached) {
       this.setState({ status: 'ready', waveform: cached, error: null });
@@ -88,9 +117,7 @@ class WaveformOrchestrator {
       });
 
       // Further filter to only files matching the target date's DATALOG folder.
-      // A night like "2026-03-10" has files in DATALOG/20260310/.
-      // This avoids reading ALL BRP files into memory (60+ files for large SD cards).
-      const dateCompact = targetDate.replace(/-/g, ''); // "20260310"
+      const dateCompact = targetDate.replace(/-/g, '');
       const filterByDate = (f: File) => {
         const path =
           (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
@@ -100,7 +127,6 @@ class WaveformOrchestrator {
       const dateFilteredBRP = brpFiles.filter(filterByDate);
       const dateFilteredEVE = eveFiles.filter(filterByDate);
 
-      // Fall back to all BRP files if no path-based match (non-standard folder structure)
       const brpToRead = dateFilteredBRP.length > 0 ? dateFilteredBRP : brpFiles;
       const eveToRead = dateFilteredEVE.length > 0 ? dateFilteredEVE : eveFiles;
 
@@ -108,17 +134,41 @@ class WaveformOrchestrator {
       const filesToRead = [...brpToRead, ...eveToRead];
       const fileBuffers = await readFiles(filesToRead);
 
-      // Run worker
-      const waveform = await this.runWorker(fileBuffers, targetDate);
+      // Run worker — now returns raw Float32Arrays
+      const result = await this.runWorker(fileBuffers, targetDate);
 
-      if (waveform) {
-        this.cache.set(targetDate, waveform);
-        this.setState({ status: 'ready', waveform, error: null });
+      if (result && result.flow) {
+        const stored: StoredWaveform = {
+          dateStr: targetDate,
+          flow: result.flow,
+          pressure: result.pressure,
+          sampleRate: result.sampleRate,
+          durationSeconds: result.durationSeconds,
+          events: result.events,
+          stats: result.stats,
+          tidalVolume: result.tidalVolume,
+          respiratoryRate: result.respiratoryRate,
+          leak: result.leak,
+          storedAt: Date.now(),
+          engineVersion: ENGINE_VERSION,
+        };
+
+        this.cache.set(targetDate, stored);
+        this.setState({ status: 'ready', waveform: stored, error: null });
+
+        // Store in IndexedDB (non-blocking, non-fatal)
+        storeWaveform(stored).catch((err) => {
+          console.error('[waveform] IDB store failed:', err);
+        });
+
+        // Clean up expired entries (non-blocking)
+        deleteExpired().catch(() => {});
+
+        return stored;
       } else {
         this.setState({ status: 'error', waveform: null, error: 'No flow data found for this night' });
+        return null;
       }
-
-      return waveform;
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       console.error('[waveform] extraction failed:', error);
@@ -130,7 +180,7 @@ class WaveformOrchestrator {
   /**
    * Set synthetic/demo waveform data directly (bypasses worker).
    */
-  setDemoWaveform(waveform: WaveformData): void {
+  setDemoWaveform(waveform: StoredWaveform): void {
     this.cache.set(waveform.dateStr, waveform);
     this.setState({ status: 'ready', waveform, error: null });
   }
@@ -138,7 +188,7 @@ class WaveformOrchestrator {
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
     targetDate: string
-  ): Promise<WaveformData | null> {
+  ): Promise<RawWaveformResult | null> {
     return new Promise((resolve, reject) => {
       let settled = false;
 
@@ -167,13 +217,15 @@ class WaveformOrchestrator {
 
       this.worker.onmessage = (e: MessageEvent<WaveformWorkerResponse>) => {
         const msg = e.data;
-        if (msg.type === 'WAVEFORM_RESULT') {
+        if (msg.type === 'RAW_WAVEFORM_RESULT') {
           settle();
           this.terminate();
           if (msg.error) {
             reject(new Error(msg.error));
+          } else if (msg.flow) {
+            resolve(msg);
           } else {
-            resolve(msg.waveform);
+            resolve(null);
           }
         }
       };
@@ -187,7 +239,7 @@ class WaveformOrchestrator {
       // Transfer ArrayBuffers for zero-copy
       const transferable = files.map((f) => f.buffer);
       this.worker.postMessage(
-        { type: 'EXTRACT_WAVEFORM', files, targetDate, bucketSeconds: BUCKET_SECONDS },
+        { type: 'EXTRACT_WAVEFORM', files, targetDate },
         transferable
       );
     });

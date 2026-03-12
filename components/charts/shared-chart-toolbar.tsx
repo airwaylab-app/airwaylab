@@ -27,9 +27,9 @@ function getActivePreset(visibleDuration: number): string | null {
 export function SharedChartToolbar({ durationSeconds, disabled = false }: Props) {
   const viewport = useSyncedViewport();
 
-  const visibleStart = viewport.clampedStart * viewport.bucketSeconds;
-  const visibleEnd = viewport.clampedEnd * viewport.bucketSeconds;
-  const visibleDuration = visibleEnd - visibleStart;
+  const visibleStart = viewport.clampedStartSec;
+  const visibleEnd = viewport.clampedEndSec;
+  const visibleDuration = viewport.visibleDurationSec;
   const activePreset = viewport.isFullView ? null : getActivePreset(visibleDuration);
 
   return (
@@ -95,7 +95,7 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             variant="ghost"
             size="sm"
             onClick={() => viewport.panBy(-PAN_STEP_FRACTION)}
-            disabled={disabled || viewport.clampedStart === 0}
+            disabled={disabled || viewport.clampedStartSec === 0}
             className="h-6 w-6 p-0"
             aria-label="Pan left"
           >
@@ -105,7 +105,7 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             variant="ghost"
             size="sm"
             onClick={() => viewport.panBy(PAN_STEP_FRACTION)}
-            disabled={disabled || viewport.clampedEnd >= viewport.dataLength}
+            disabled={disabled || viewport.clampedEndSec >= viewport.durationSeconds}
             className="h-6 w-6 p-0"
             aria-label="Pan right"
           >
@@ -132,12 +132,11 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             if (disabled) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const fraction = (e.clientX - rect.left) / rect.width;
-            const visibleCount = viewport.clampedEnd - viewport.clampedStart;
-            const center = Math.round(fraction * viewport.dataLength);
-            const halfVisible = Math.round(visibleCount / 2);
-            const newStart = Math.max(0, Math.min(center - halfVisible, viewport.dataLength - visibleCount));
-            viewport.setViewStart(newStart);
-            viewport.setViewEnd(newStart + visibleCount);
+            const centerSec = fraction * viewport.durationSeconds;
+            const halfVisible = viewport.visibleDurationSec / 2;
+            const newStart = Math.max(0, Math.min(centerSec - halfVisible, viewport.durationSeconds - viewport.visibleDurationSec));
+            viewport.setViewStartSec(newStart);
+            viewport.setViewEndSec(newStart + viewport.visibleDurationSec);
           }}
           aria-label="Minimap — click to jump to position"
         >

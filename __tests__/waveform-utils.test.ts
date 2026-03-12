@@ -1,125 +1,198 @@
 import { describe, it, expect } from 'vitest';
 import {
-  downsampleFlow,
-  downsamplePressure,
+  decimateFlow,
+  decimateFlowRange,
+  decimatePressure,
+  decimatePressureRange,
   computeFlowStats,
+  computeFlowStatsFromRaw,
   generateSyntheticWaveform,
+  sliceByTime,
+  getTargetRate,
   formatElapsedTime,
   formatElapsedTimeShort,
+  downsampleFlow,
+  downsamplePressure,
 } from '@/lib/waveform-utils';
-import type { WaveformPoint, PressurePoint } from '@/lib/waveform-types';
+import type { FlowSample, PressurePoint } from '@/lib/waveform-types';
 
-// ── downsampleFlow ──────────────────────────────────────────
+// ── decimateFlow ──────────────────────────────────────────
 
-describe('downsampleFlow', () => {
+describe('decimateFlow', () => {
   it('returns empty array for empty input', () => {
-    const result = downsampleFlow(new Float32Array(0), 25, 2);
-    expect(result).toEqual([]);
+    expect(decimateFlow(new Float32Array(0), 25, 5)).toEqual([]);
   });
 
   it('returns empty array for zero sample rate', () => {
-    const result = downsampleFlow(new Float32Array([1, 2, 3]), 0, 2);
-    expect(result).toEqual([]);
+    expect(decimateFlow(new Float32Array([1, 2, 3]), 0, 5)).toEqual([]);
   });
 
   it('returns empty array for negative sample rate', () => {
-    const result = downsampleFlow(new Float32Array([1, 2, 3]), -1, 2);
-    expect(result).toEqual([]);
+    expect(decimateFlow(new Float32Array([1, 2, 3]), -1, 5)).toEqual([]);
   });
 
-  it('buckets data correctly at 25 Hz with 2-second buckets', () => {
-    // 25 Hz * 2 seconds = 50 samples per bucket
-    const sampleRate = 25;
-    const bucketSeconds = 2;
-    const samplesPerBucket = sampleRate * bucketSeconds; // 50
-    const numBuckets = 3;
-    const data = new Float32Array(numBuckets * samplesPerBucket);
+  it('takes every Nth sample with correct timestamps', () => {
+    // 25 Hz, target 5 Hz → step = 5, take every 5th sample
+    const data = new Float32Array(25);
+    for (let i = 0; i < 25; i++) data[i] = i * 10;
 
-    // Fill bucket 0 with values 0-49 → min=0, max=49, avg=24.5
-    for (let i = 0; i < samplesPerBucket; i++) data[i] = i;
-    // Fill bucket 1 with constant 10
-    for (let i = samplesPerBucket; i < 2 * samplesPerBucket; i++) data[i] = 10;
-    // Fill bucket 2 with -5 and 5 alternating
-    for (let i = 2 * samplesPerBucket; i < 3 * samplesPerBucket; i++) data[i] = i % 2 === 0 ? -5 : 5;
+    const result = decimateFlow(data, 25, 5);
 
-    const result = downsampleFlow(data, sampleRate, bucketSeconds);
-
-    expect(result).toHaveLength(3);
-
-    // Bucket 0
-    expect(result[0].t).toBe(0);
-    expect(result[0].min).toBe(0);
-    expect(result[0].max).toBe(49);
-    expect(result[0].avg).toBeCloseTo(24.5, 0);
-
-    // Bucket 1: constant 10
-    expect(result[1].t).toBe(2);
-    expect(result[1].min).toBe(10);
-    expect(result[1].max).toBe(10);
-    expect(result[1].avg).toBe(10);
-
-    // Bucket 2: alternating -5/5
-    expect(result[2].t).toBe(4);
-    expect(result[2].min).toBe(-5);
-    expect(result[2].max).toBe(5);
-    expect(result[2].avg).toBeCloseTo(0, 0);
+    // Should take indices 0, 5, 10, 15, 20 → 5 samples
+    expect(result).toHaveLength(5);
+    expect(result[0]).toEqual({ t: 0, value: 0 });
+    expect(result[1]).toEqual({ t: 0.2, value: 50 });
+    expect(result[2]).toEqual({ t: 0.4, value: 100 });
+    expect(result[3]).toEqual({ t: 0.6, value: 150 });
+    expect(result[4]).toEqual({ t: 0.8, value: 200 });
   });
 
-  it('handles partial last bucket', () => {
-    // 10 samples at 5 Hz, 2-second buckets = 10 samples/bucket → should be 1 bucket
-    const data = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const result = downsampleFlow(data, 5, 2);
-    expect(result).toHaveLength(1);
-    expect(result[0].min).toBe(1);
-    expect(result[0].max).toBe(10);
+  it('returns all samples when targetRate equals sampleRate', () => {
+    const data = new Float32Array([1, 2, 3, 4, 5]);
+    const result = decimateFlow(data, 25, 25);
 
-    // 11 samples → 2 buckets (10 + 1)
-    const data2 = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100]);
-    const result2 = downsampleFlow(data2, 5, 2);
-    expect(result2).toHaveLength(2);
-    expect(result2[1].min).toBe(100);
-    expect(result2[1].max).toBe(100);
+    expect(result).toHaveLength(5);
+    expect(result[0].value).toBe(1);
+    expect(result[4].value).toBe(5);
   });
 
-  it('preserves extreme values (peaks and valleys)', () => {
-    const sampleRate = 10;
-    const bucketSeconds = 1;
-    // One bucket of 10 samples with one spike
-    const data = new Float32Array([0, 0, 0, 0, 100, 0, 0, 0, 0, -50]);
-    const result = downsampleFlow(data, sampleRate, bucketSeconds);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].max).toBe(100);
-    expect(result[0].min).toBe(-50);
+  it('output length equals ceil(input.length / step)', () => {
+    const data = new Float32Array(100);
+    const result = decimateFlow(data, 25, 1); // step = 25
+    expect(result).toHaveLength(Math.ceil(100 / 25)); // 4
   });
 
   it('handles single sample', () => {
     const data = new Float32Array([42]);
-    const result = downsampleFlow(data, 25, 2);
+    const result = decimateFlow(data, 25, 1);
     expect(result).toHaveLength(1);
-    expect(result[0].min).toBe(42);
-    expect(result[0].max).toBe(42);
-    expect(result[0].avg).toBe(42);
+    expect(result[0].value).toBe(42);
+    expect(result[0].t).toBe(0);
+  });
+
+  it('preserves actual measured values (not computed aggregates)', () => {
+    // Each output value should be exactly a value from the input
+    const data = new Float32Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+    const result = decimateFlow(data, 10, 2); // step = 5
+
+    for (const sample of result) {
+      const idx = Math.round(sample.t * 10);
+      expect(sample.value).toBe(data[idx]);
+    }
   });
 });
 
-// ── downsamplePressure ──────────────────────────────────────
+// ── decimateFlowRange ──────────────────────────────────────
 
-describe('downsamplePressure', () => {
+describe('decimateFlowRange', () => {
+  it('returns empty for empty input', () => {
+    expect(decimateFlowRange(new Float32Array(0), 25, 0, 10, 5)).toEqual([]);
+  });
+
+  it('decimates only the specified time range', () => {
+    // 25 Hz, 4 seconds = 100 samples
+    const data = new Float32Array(100);
+    for (let i = 0; i < 100; i++) data[i] = i;
+
+    // Request range 1s to 3s at 5 Hz (step = 5)
+    const result = decimateFlowRange(data, 25, 1, 3, 5);
+
+    // All timestamps should be within [1, 3] range
+    for (const s of result) {
+      expect(s.t).toBeGreaterThanOrEqual(0.8); // aligned start might be slightly before
+      expect(s.t).toBeLessThanOrEqual(3);
+    }
+    // Should have roughly 2 seconds * 5 Hz = 10 points (±1 due to alignment)
+    expect(result.length).toBeGreaterThan(5);
+    expect(result.length).toBeLessThanOrEqual(15);
+  });
+});
+
+// ── decimatePressure ────────────────────────────────────────
+
+describe('decimatePressure', () => {
   it('returns empty array for empty input', () => {
-    expect(downsamplePressure(new Float32Array(0), 25, 2)).toEqual([]);
+    expect(decimatePressure(new Float32Array(0), 25, 5)).toEqual([]);
   });
 
-  it('computes bucket averages', () => {
-    // 10 samples at 5 Hz, 2-second buckets = 10 samples per bucket
-    const data = new Float32Array([10, 12, 14, 10, 12, 14, 10, 12, 14, 10]);
-    const result = downsamplePressure(data, 5, 2);
-    expect(result).toHaveLength(1);
-    expect(result[0].avg).toBeCloseTo(11.8, 1);
+  it('takes every Nth pressure sample', () => {
+    const data = new Float32Array(10);
+    for (let i = 0; i < 10; i++) data[i] = 10 + i * 0.5;
+
+    const result = decimatePressure(data, 10, 2); // step = 5
+    expect(result).toHaveLength(2);
+    expect(result[0].avg).toBe(10);
+    expect(result[1].avg).toBe(12.5);
   });
 });
 
-// ── computeFlowStats ────────────────────────────────────────
+// ── decimatePressureRange ──────────────────────────────────
+
+describe('decimatePressureRange', () => {
+  it('returns empty for empty input', () => {
+    expect(decimatePressureRange(new Float32Array(0), 25, 0, 10, 5)).toEqual([]);
+  });
+});
+
+// ── sliceByTime ─────────────────────────────────────────────
+
+describe('sliceByTime', () => {
+  it('returns empty for empty input', () => {
+    expect(sliceByTime([], 0, 10)).toEqual([]);
+  });
+
+  it('slices by time range using binary search', () => {
+    const data = [
+      { t: 0 }, { t: 1 }, { t: 2 }, { t: 3 }, { t: 4 },
+      { t: 5 }, { t: 6 }, { t: 7 }, { t: 8 }, { t: 9 },
+    ];
+
+    const result = sliceByTime(data, 3, 7);
+    expect(result).toHaveLength(5); // t=3,4,5,6,7
+    expect(result[0].t).toBe(3);
+    expect(result[result.length - 1].t).toBe(7);
+  });
+
+  it('returns empty when range has no points', () => {
+    const data = [{ t: 0 }, { t: 1 }, { t: 5 }, { t: 6 }];
+    const result = sliceByTime(data, 2, 4);
+    expect(result).toHaveLength(0);
+  });
+
+  it('handles exact boundary matches', () => {
+    const data = [{ t: 0 }, { t: 1 }, { t: 2 }, { t: 3 }];
+    const result = sliceByTime(data, 0, 3);
+    expect(result).toHaveLength(4);
+  });
+});
+
+// ── getTargetRate ───────────────────────────────────────────
+
+describe('getTargetRate', () => {
+  it('returns full rate for < 5 min', () => {
+    expect(getTargetRate(299, 25)).toBe(25);
+    expect(getTargetRate(60, 25)).toBe(25);
+  });
+
+  it('returns 5 Hz for 5–30 min', () => {
+    expect(getTargetRate(300, 25)).toBe(25); // exactly 5 min → full
+    expect(getTargetRate(301, 25)).toBe(5);
+    expect(getTargetRate(1800, 25)).toBe(5);
+  });
+
+  it('returns 2 Hz for 30 min–2h', () => {
+    expect(getTargetRate(1801, 25)).toBe(2);
+    expect(getTargetRate(3600, 25)).toBe(2); // 1h
+    expect(getTargetRate(7200, 25)).toBe(2);
+  });
+
+  it('returns 1 Hz for > 2h', () => {
+    expect(getTargetRate(7201, 25)).toBe(1);
+    expect(getTargetRate(28800, 25)).toBe(1); // 8h
+  });
+});
+
+// ── computeFlowStats (FlowSample[]) ────────────────────────
 
 describe('computeFlowStats', () => {
   it('returns zeros for empty flow', () => {
@@ -132,28 +205,26 @@ describe('computeFlowStats', () => {
   });
 
   it('computes flow range and breath count from zero crossings', () => {
-    // Simulated breathing: positive (insp) → negative (exp) → positive → negative
-    const flow: WaveformPoint[] = [
-      { t: 0, min: 5, max: 30, avg: 20 },    // inspiration
-      { t: 2, min: 10, max: 35, avg: 25 },   // inspiration
-      { t: 4, min: -25, max: -5, avg: -15 },  // expiration (1 crossing)
-      { t: 6, min: -20, max: -3, avg: -10 },  // expiration
-      { t: 8, min: 5, max: 30, avg: 20 },     // inspiration (2 crossings)
-      { t: 10, min: -25, max: -5, avg: -15 }, // expiration (3 crossings)
-      { t: 12, min: 10, max: 28, avg: 18 },   // inspiration (4 crossings)
+    const flow: FlowSample[] = [
+      { t: 0, value: 20 },    // positive
+      { t: 2, value: 25 },    // positive
+      { t: 4, value: -15 },   // negative (1 crossing)
+      { t: 6, value: -10 },   // negative
+      { t: 8, value: 20 },    // positive (2 crossings)
+      { t: 10, value: -15 },  // negative (3 crossings)
+      { t: 12, value: 18 },   // positive (4 crossings)
     ];
     const stats = computeFlowStats(flow, []);
 
-    expect(stats.flowMin).toBe(-25);
-    expect(stats.flowMax).toBe(35);
-    // 4 zero crossings → ~2 breaths
-    expect(stats.breathCount).toBe(2);
+    expect(stats.flowMin).toBe(-15);
+    expect(stats.flowMax).toBe(25);
+    expect(stats.breathCount).toBe(2); // 4 crossings / 2
     expect(stats.pressureMin).toBeNull();
     expect(stats.pressureMax).toBeNull();
   });
 
   it('computes pressure range when available', () => {
-    const flow: WaveformPoint[] = [{ t: 0, min: -10, max: 30, avg: 10 }];
+    const flow: FlowSample[] = [{ t: 0, value: 10 }];
     const pressure: PressurePoint[] = [
       { t: 0, avg: 10 },
       { t: 2, avg: 16 },
@@ -165,19 +236,75 @@ describe('computeFlowStats', () => {
   });
 });
 
+// ── computeFlowStatsFromRaw ────────────────────────────────
+
+describe('computeFlowStatsFromRaw', () => {
+  it('returns zeros for empty flow', () => {
+    const stats = computeFlowStatsFromRaw(new Float32Array(0), 25, null);
+    expect(stats.breathCount).toBe(0);
+    expect(stats.flowMin).toBe(0);
+    expect(stats.flowMax).toBe(0);
+  });
+
+  it('applies refractory period to prevent high RR', () => {
+    // Create a signal with rapid oscillations (e.g. noise at 2 Hz = every 0.5s)
+    // At 25 Hz, 0.5s = 12.5 samples per cycle
+    // Without refractory period: many crossings
+    // With 1.5s refractory: only crossings 1.5s+ apart count
+    const sampleRate = 25;
+    const duration = 30; // 30 seconds
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+
+    // Create a 2 Hz signal (too fast to be real breathing)
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 2 * i / sampleRate) * 20;
+    }
+
+    const stats = computeFlowStatsFromRaw(data, sampleRate, null);
+    // With 1.5s refractory, max ~40 br/min → over 30s, max ~20 breaths
+    // A 2 Hz signal would give 60 crossings/min without refractory
+    // With refractory, it should be capped at roughly 40/min → ~20 in 30s
+    expect(stats.breathCount).toBeLessThanOrEqual(22);
+  });
+
+  it('counts breaths correctly for normal breathing rate', () => {
+    // Normal breathing: ~15 br/min = 0.25 Hz
+    const sampleRate = 25;
+    const duration = 60; // 60 seconds
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+
+    // 15 breaths/min = one breath every 4 seconds
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * (15 / 60) * i / sampleRate) * 20;
+    }
+
+    const stats = computeFlowStatsFromRaw(data, sampleRate, null);
+    // Should count approximately 15 breaths
+    expect(stats.breathCount).toBeGreaterThanOrEqual(13);
+    expect(stats.breathCount).toBeLessThanOrEqual(17);
+  });
+});
+
 // ── generateSyntheticWaveform ───────────────────────────────
 
 describe('generateSyntheticWaveform', () => {
-  it('generates waveform with correct duration', () => {
-    const waveform = generateSyntheticWaveform(7.5, 4000);
-    const expectedBuckets = Math.ceil(7.5 * 3600 / 2);
-    expect(waveform.flow.length).toBe(expectedBuckets);
-    expect(waveform.durationSeconds).toBe(7.5 * 3600);
+  it('returns a StoredWaveform with Float32Array flow data', () => {
+    const waveform = generateSyntheticWaveform(1, 500);
+    expect(waveform.flow).toBeInstanceOf(Float32Array);
+    expect(waveform.pressure).toBeInstanceOf(Float32Array);
+    expect(waveform.sampleRate).toBe(25);
+    expect(waveform.storedAt).toBeGreaterThan(0);
+    expect(waveform.engineVersion).toBeTruthy();
   });
 
-  it('generates matching pressure data', () => {
+  it('generates correct number of raw samples', () => {
     const waveform = generateSyntheticWaveform(1, 500);
-    expect(waveform.pressure.length).toBe(waveform.flow.length);
+    // 1 hour = 3600 seconds at 25 Hz = 90,000 samples
+    expect(waveform.flow.length).toBe(3600 * 25);
+    expect(waveform.pressure!.length).toBe(3600 * 25);
+    expect(waveform.durationSeconds).toBe(3600);
   });
 
   it('generates RERA events matching reraCount', () => {
@@ -200,24 +327,30 @@ describe('generateSyntheticWaveform', () => {
 
   it('generates flow values in realistic range', () => {
     const waveform = generateSyntheticWaveform(1, 500);
-    for (const p of waveform.flow) {
-      expect(p.max).toBeLessThan(60);  // Max realistic flow
-      expect(p.min).toBeGreaterThan(-50);  // Min realistic flow
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < waveform.flow.length; i++) {
+      if (waveform.flow[i] < min) min = waveform.flow[i];
+      if (waveform.flow[i] > max) max = waveform.flow[i];
     }
+    expect(max).toBeLessThan(60);
+    expect(min).toBeGreaterThan(-50);
   });
 
   it('respects pressure settings', () => {
     const waveform = generateSyntheticWaveform(1, 500, { epap: 12, ipap: 20 });
-    const pressureValues = waveform.pressure.map((p) => p.avg);
-    const min = Math.min(...pressureValues);
-    const max = Math.max(...pressureValues);
-    // Pressure should be roughly in the EPAP-IPAP range
-    expect(min).toBeGreaterThanOrEqual(10); // Some margin below EPAP
-    expect(max).toBeLessThanOrEqual(22); // Some margin above IPAP
+    expect(waveform.pressure).not.toBeNull();
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < waveform.pressure!.length; i++) {
+      if (waveform.pressure![i] < min) min = waveform.pressure![i];
+      if (waveform.pressure![i] > max) max = waveform.pressure![i];
+    }
+    expect(min).toBeGreaterThanOrEqual(10);
+    expect(max).toBeLessThanOrEqual(22);
   });
 
   it('handles edge case of zero breath count', () => {
-    // Should not crash
     const waveform = generateSyntheticWaveform(1, 0, { reraCount: 0 });
     expect(waveform.flow.length).toBeGreaterThan(0);
   });
@@ -226,6 +359,42 @@ describe('generateSyntheticWaveform', () => {
     const waveform = generateSyntheticWaveform(0.01, 10);
     expect(waveform.flow.length).toBeGreaterThan(0);
     expect(waveform.durationSeconds).toBeCloseTo(36, 0);
+  });
+
+  it('includes tidal volume and respiratory rate arrays', () => {
+    const waveform = generateSyntheticWaveform(1, 500);
+    expect(Array.isArray(waveform.tidalVolume)).toBe(true);
+    expect(Array.isArray(waveform.respiratoryRate)).toBe(true);
+    expect(waveform.tidalVolume.length).toBeGreaterThan(0);
+    expect(waveform.respiratoryRate.length).toBeGreaterThan(0);
+  });
+
+  it('includes leak data', () => {
+    const waveform = generateSyntheticWaveform(1, 500);
+    expect(Array.isArray(waveform.leak)).toBe(true);
+    expect(waveform.leak.length).toBeGreaterThan(0);
+  });
+});
+
+// ── Deprecated functions still work ────────────────────────
+
+describe('downsampleFlow (deprecated)', () => {
+  it('still produces WaveformPoint[] with min/max/avg', () => {
+    const data = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const result = downsampleFlow(data, 5, 2);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toHaveProperty('min');
+    expect(result[0]).toHaveProperty('max');
+    expect(result[0]).toHaveProperty('avg');
+  });
+});
+
+describe('downsamplePressure (deprecated)', () => {
+  it('still produces PressurePoint[] with avg', () => {
+    const data = new Float32Array([10, 12, 14, 10, 12, 14, 10, 12, 14, 10]);
+    const result = downsamplePressure(data, 5, 2);
+    expect(result).toHaveLength(1);
+    expect(result[0].avg).toBeCloseTo(11.8, 1);
   });
 });
 

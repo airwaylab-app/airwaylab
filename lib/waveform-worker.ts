@@ -8,30 +8,56 @@ import { parseEDF } from './parsers/edf-parser';
 import { groupByNight, filterBRPFiles } from './parsers/night-grouper';
 import { parseEVE } from './parsers/eve-parser';
 import {
-  downsampleFlow,
-  downsamplePressure,
-  computeFlowStats,
+  computeFlowStatsFromRaw,
   computeTidalVolume,
   computeRespiratoryRate,
+  detectMShapeInWorker,
 } from './waveform-utils';
 import type {
   WaveformWorkerMessage,
-  WaveformWorkerResult,
-  WaveformData,
+  RawWaveformResult,
   WaveformEvent,
 } from './waveform-types';
 import type { EDFFile } from './types';
 
 self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
   try {
-    const { files, targetDate, bucketSeconds } = e.data;
-    const waveform = extractWaveform(files, targetDate, bucketSeconds);
-    const response: WaveformWorkerResult = { type: 'WAVEFORM_RESULT', waveform };
-    self.postMessage(response);
+    const { files, targetDate } = e.data;
+    const result = extractWaveform(files, targetDate);
+    if (result) {
+      // Transfer Float32Array buffers for zero-copy
+      const transferable: ArrayBuffer[] = [result.flow!.buffer as ArrayBuffer];
+      if (result.pressure) transferable.push(result.pressure.buffer as ArrayBuffer);
+      (self as unknown as Worker).postMessage(result, transferable);
+    } else {
+      const response: RawWaveformResult = {
+        type: 'RAW_WAVEFORM_RESULT',
+        flow: null,
+        pressure: null,
+        sampleRate: 0,
+        durationSeconds: 0,
+        events: [],
+        stats: { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, leakMean: null, leakMax: null, leakP95: null },
+        tidalVolume: [],
+        respiratoryRate: [],
+        leak: [],
+        dateStr: targetDate,
+      };
+      self.postMessage(response);
+    }
   } catch (err) {
-    const response: WaveformWorkerResult = {
-      type: 'WAVEFORM_RESULT',
-      waveform: null,
+    const response: RawWaveformResult = {
+      type: 'RAW_WAVEFORM_RESULT',
+      flow: null,
+      pressure: null,
+      sampleRate: 0,
+      durationSeconds: 0,
+      events: [],
+      stats: { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, leakMean: null, leakMax: null, leakP95: null },
+      tidalVolume: [],
+      respiratoryRate: [],
+      leak: [],
+      dateStr: e.data.targetDate,
       error: err instanceof Error ? err.message : String(err),
     };
     self.postMessage(response);
@@ -40,9 +66,8 @@ self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
 
 function extractWaveform(
   files: { buffer: ArrayBuffer; path: string }[],
-  targetDate: string,
-  bucketSeconds: number
-): WaveformData | null {
+  targetDate: string
+): RawWaveformResult | null {
   // Filter to BRP files only
   const fileList = files.map((f) => ({
     name: f.path.split('/').pop() || '',
@@ -106,15 +131,9 @@ function extractWaveform(
 
   const totalDuration = sessions.reduce((sum, s) => sum + s.durationSeconds, 0);
 
-  // Downsample
-  const flow = downsampleFlow(combinedFlow, avgSamplingRate, bucketSeconds);
-  const pressure = combinedPressure
-    ? downsamplePressure(combinedPressure, avgSamplingRate, bucketSeconds)
-    : [];
-
-  // Compute tidal volume and respiratory rate
-  const tidalVolume = computeTidalVolume(combinedFlow, avgSamplingRate, bucketSeconds);
-  const respiratoryRate = computeRespiratoryRate(combinedFlow, avgSamplingRate, bucketSeconds);
+  // Compute derived metrics from raw data
+  const tidalVolume = computeTidalVolume(combinedFlow, avgSamplingRate);
+  const respiratoryRate = computeRespiratoryRate(combinedFlow, avgSamplingRate);
 
   // Detect events from flow patterns (flatness-based detection)
   const algorithmEvents = detectEventsFromFlow(combinedFlow, avgSamplingRate);
@@ -146,19 +165,20 @@ function extractWaveform(
   // Leak data placeholder — real leak extraction requires parsing separate EDF channels
   const leak: import('./waveform-types').LeakPoint[] = [];
 
-  const stats = computeFlowStats(flow, pressure, leak);
+  const stats = computeFlowStatsFromRaw(combinedFlow, avgSamplingRate, combinedPressure, leak);
 
   return {
-    dateStr: targetDate,
+    type: 'RAW_WAVEFORM_RESULT',
+    flow: combinedFlow,
+    pressure: combinedPressure,
+    sampleRate: avgSamplingRate,
     durationSeconds: totalDuration,
-    originalSampleRate: avgSamplingRate,
-    flow,
-    pressure,
-    leak,
     events,
+    stats,
     tidalVolume,
     respiratoryRate,
-    stats,
+    leak,
+    dateStr: targetDate,
   };
 }
 
@@ -297,7 +317,7 @@ function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[
     if (!prevPositive && positive) {
       const breathLen = i - breathStart;
       if (breathLen >= minBreathSamples && breathLen <= maxBreathSamples) {
-        const features = computeBreathFeatures(flow, breathStart, i, sampleRate);
+        const features = computeBreathFeatures(flow, breathStart, i);
         if (features) breaths.push(features);
       }
       breathStart = i;
@@ -315,7 +335,6 @@ function computeBreathFeatures(
   flow: Float32Array,
   start: number,
   end: number,
-  _sampleRate: number
 ): BreathFeatures | null {
   // Find the inspiratory portion (positive flow from start)
   let inspEnd = start;
@@ -350,18 +369,9 @@ function computeBreathFeatures(
   }
   const amplitude = peak - trough;
 
-  // M-shape detection: look for a valley in the middle 50% of inspiration
-  let hasMShape = false;
-  const inspLen = inspEnd - start;
-  const midStart = start + Math.round(inspLen * 0.25);
-  const midEnd = start + Math.round(inspLen * 0.75);
-  if (midEnd > midStart + 2) {
-    let midMin = peak;
-    for (let i = midStart; i < midEnd; i++) {
-      if (flow[i] < midMin) midMin = flow[i];
-    }
-    hasMShape = midMin < peak * 0.85;
-  }
+  // M-shape detection: matches NED engine logic (80% threshold + bi-modal verification)
+  const inspFlow = flow.subarray(start, inspEnd);
+  const hasMShape = detectMShapeInWorker(inspFlow, peak);
 
   return {
     startSample: start,
