@@ -15,35 +15,57 @@ export const metadata: Metadata = {
 };
 
 /**
- * Rehydrate Date objects from JSONB serialisation.
- * Matches the pattern in lib/persistence.ts.
+ * Rehydrate a single night from JSONB.
+ * Restores Date objects and migrates missing fields (matches persistence.ts).
  */
-function rehydrateNights(raw: unknown): NightResult[] {
-  if (!Array.isArray(raw)) {
-    // Single night stored as object — wrap in array
-    const night = raw as Record<string, unknown>;
-    return [
-      {
-        ...night,
-        date: new Date(night.date as string),
-        ned: {
-          ...(night.ned as Record<string, unknown>),
-          estimatedArousalIndex:
-            (night.ned as Record<string, unknown>).estimatedArousalIndex ?? 0,
-        },
-      } as NightResult,
-    ];
-  }
-
-  return raw.map((n: Record<string, unknown>) => ({
-    ...n,
-    date: new Date(n.date as string),
+function rehydrateNight(raw: Record<string, unknown>): NightResult {
+  const ned = (raw.ned ?? {}) as Record<string, unknown>;
+  return {
+    ...raw,
+    date: new Date(raw.date as string),
     ned: {
-      ...(n.ned as Record<string, unknown>),
-      estimatedArousalIndex:
-        (n.ned as Record<string, unknown>).estimatedArousalIndex ?? 0,
+      ...ned,
+      estimatedArousalIndex: ned.estimatedArousalIndex ?? 0,
+      // v0.7.0 field migrations
+      hypopneaCount: ned.hypopneaCount ?? 0,
+      hypopneaIndex: ned.hypopneaIndex ?? 0,
+      hypopneaSource: ned.hypopneaSource ?? 'algorithm',
+      hypopneaNedInvisibleCount: ned.hypopneaNedInvisibleCount ?? 0,
+      hypopneaNedInvisiblePct: ned.hypopneaNedInvisiblePct ?? 0,
+      hypopneaMeanDropPct: ned.hypopneaMeanDropPct ?? 0,
+      hypopneaMeanDurationS: ned.hypopneaMeanDurationS ?? 0,
+      hypopneaH1Index: ned.hypopneaH1Index ?? 0,
+      hypopneaH2Index: ned.hypopneaH2Index ?? 0,
+      briefObstructionCount: ned.briefObstructionCount ?? 0,
+      briefObstructionIndex: ned.briefObstructionIndex ?? 0,
+      briefObstructionH1Index: ned.briefObstructionH1Index ?? 0,
+      briefObstructionH2Index: ned.briefObstructionH2Index ?? 0,
+      amplitudeCvOverall: ned.amplitudeCvOverall ?? 0,
+      amplitudeCvMedianEpoch: ned.amplitudeCvMedianEpoch ?? 0,
+      unstableEpochPct: ned.unstableEpochPct ?? 0,
     },
-  })) as NightResult[];
+  } as NightResult;
+}
+
+/**
+ * Rehydrate nights from JSONB serialisation.
+ * Wraps in try/catch — returns null on malformed data so the page
+ * can show a graceful error instead of crashing.
+ */
+function rehydrateNights(raw: unknown): NightResult[] | null {
+  try {
+    if (!raw || (typeof raw !== 'object')) return null;
+
+    if (!Array.isArray(raw)) {
+      return [rehydrateNight(raw as Record<string, unknown>)];
+    }
+
+    if (raw.length === 0) return null;
+
+    return raw.map((n: Record<string, unknown>) => rehydrateNight(n));
+  } catch {
+    return null;
+  }
 }
 
 interface PageProps {
@@ -94,6 +116,9 @@ export default async function SharedAnalysisPage({ params }: PageProps) {
     });
 
   const nights = rehydrateNights(data.analysis_data);
+  if (!nights) {
+    return <ExpiredState />;
+  }
   const machineInfo = data.machine_info as MachineSettings | null;
   const nightsCount = data.nights_count as number;
   const expiresAt = data.expires_at as string;
