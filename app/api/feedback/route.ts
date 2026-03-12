@@ -3,12 +3,62 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
 // ── Allowed feedback types ────────────────────────────────────
 const ALLOWED_TYPES = ['feature', 'bug', 'support', 'feedback'] as const;
+const TYPE_LABELS: Record<string, string> = {
+  feature: 'Feature request',
+  bug: 'Bug report',
+  support: 'Support request',
+  feedback: 'Feedback',
+};
 const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
+
+async function sendNotificationEmail(fields: {
+  type: string;
+  message: string;
+  email: string | null;
+  page: string | null;
+}) {
+  const apiKey = serverEnv.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const label = TYPE_LABELS[fields.type] ?? 'Feedback';
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'AirwayLab <noreply@airwaylab.app>',
+        to: ['dev@airwaylab.app'],
+        subject: `${label}: ${fields.message.slice(0, 60)}${fields.message.length > 60 ? '...' : ''}`,
+        text: [
+          `New ${label.toLowerCase()} on airwaylab.app`,
+          '',
+          `Type: ${label}`,
+          `Page: ${fields.page ?? '—'}`,
+          `Email: ${fields.email ?? '—'}`,
+          '',
+          `Message:`,
+          fields.message,
+        ].join('\n'),
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error('[feedback] Resend error:', res.status, body);
+    }
+  } catch (err) {
+    console.error('[feedback] Notification email failed:', err);
+  }
+}
 
 /**
  * POST /api/feedback
@@ -101,6 +151,13 @@ export async function POST(request: NextRequest) {
         Sentry.captureException(error, { tags: { route: 'feedback' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
+      // Fire-and-forget notification email
+      sendNotificationEmail({
+        type: cleanType,
+        message: (message as string).trim(),
+        email: typeof email === 'string' ? email.trim() || null : null,
+        page: cleanPage,
+      });
     } else {
       console.info(`[feedback] ${cleanType}: ${message.slice(0, 100)} (Supabase not configured)`);
     }

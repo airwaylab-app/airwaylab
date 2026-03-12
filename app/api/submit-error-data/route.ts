@@ -3,10 +3,49 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
 
 const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
+
+async function sendNotificationEmail(fields: {
+  fileNames: string[];
+  errorMessage: string;
+  email: string | null;
+}) {
+  const apiKey = serverEnv.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'AirwayLab <noreply@airwaylab.app>',
+        to: ['dev@airwaylab.app'],
+        subject: `Unsupported format: ${fields.fileNames.slice(0, 3).join(', ')}`,
+        text: [
+          'New unsupported data format submission on airwaylab.app',
+          '',
+          `Files (${fields.fileNames.length}): ${fields.fileNames.slice(0, 10).join(', ')}`,
+          `Error: ${fields.errorMessage.slice(0, 500)}`,
+          `Email: ${fields.email ?? '—'}`,
+        ].join('\n'),
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error('[submit-error-data] Resend error:', res.status, body);
+    }
+  } catch (err) {
+    console.error('[submit-error-data] Notification email failed:', err);
+  }
+}
 
 /**
  * POST /api/submit-error-data
@@ -82,6 +121,13 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error('[submit-error-data] Supabase error:', error.message);
         Sentry.captureException(error, { tags: { route: 'submit-error-data' } });
+      } else {
+        // Fire-and-forget notification email
+        sendNotificationEmail({
+          fileNames: sanitizedFiles,
+          errorMessage: errorMessage.slice(0, 2000),
+          email: email?.trim() || null,
+        });
       }
     }
 
