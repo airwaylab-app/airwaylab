@@ -25,8 +25,9 @@ export function Disclaimer() {
         <div className="flex items-start gap-2.5 text-xs text-amber-300/90 sm:items-center sm:text-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 sm:mt-0" />
           <span>
-            Not medical advice. AirwayLab is a free research tool. Always consult
-            qualified healthcare providers for treatment decisions.
+            Not medical advice. AirwayLab is not a medical device and is not FDA/CE cleared.
+            Always consult qualified healthcare providers for treatment decisions.{' '}
+            <a href="/terms#medical-disclaimer" className="underline underline-offset-2 hover:text-amber-200">Learn more</a>
           </span>
         </div>
         <button

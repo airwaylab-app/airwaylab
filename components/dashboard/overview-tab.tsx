@@ -21,6 +21,7 @@ import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
+import { AIConsentModal, hasAIInsightsConsent } from '@/components/dashboard/ai-consent-modal';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
@@ -69,13 +70,15 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const [aiLoading, setAiLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  // AI consent modal state
+  const [showAIConsent, setShowAIConsent] = useState(false);
+  const [aiConsentGranted, setAiConsentGranted] = useState(() => hasAIInsightsConsent());
+
   // Check if user can use AI insights (signed in + has quota or is paid)
   const hasAIAccess = !!user && canAccess('ai_insights', tier);
 
-  // H4: Cancel in-flight AI requests when night changes + L3: prevent stale responses
-  useEffect(() => {
-    if (!hasAIAccess || isDemo) return;
-
+  // Trigger AI fetch — called directly or after consent is granted
+  const triggerAIFetch = useCallback(() => {
     // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -83,7 +86,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
     setAiLoading(true);
     const selectedIdx = nights.indexOf(selectedNight);
-
     const notes = loadNightNotes(selectedNight.dateStr);
 
     fetchAIInsights(
@@ -94,7 +96,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       notes
     )
       .then((result) => {
-        // L3: Don't update state if this request was aborted (stale)
         if (controller.signal.aborted) return;
         if (result) {
           incrementAIUsage();
@@ -111,10 +112,23 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         setAiLoading(false);
       });
 
-    return () => {
-      controller.abort();
-    };
-  }, [hasAIAccess, isDemo, nights, selectedNight, therapyChangeDate]);
+    return () => { controller.abort(); };
+  }, [nights, selectedNight, therapyChangeDate]);
+
+  // H4: Cancel in-flight AI requests when night changes + L3: prevent stale responses
+  // Now gated by consent — show modal if consent not yet given
+  useEffect(() => {
+    if (!hasAIAccess || isDemo) return;
+
+    if (!aiConsentGranted) {
+      // Show consent modal on first eligible load
+      setShowAIConsent(true);
+      return;
+    }
+
+    const cleanup = triggerAIFetch();
+    return cleanup;
+  }, [hasAIAccess, isDemo, aiConsentGranted, triggerAIFetch]);
 
   // Demo mode: load static AI insights instantly (no API call, no credits)
   useEffect(() => {
@@ -622,6 +636,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClose={() => setDetailMetric(null)}
         />
       )}
+
+      {/* AI Insights Consent Modal */}
+      <AIConsentModal
+        open={showAIConsent}
+        onConsent={() => {
+          setShowAIConsent(false);
+          setAiConsentGranted(true);
+        }}
+        onDecline={() => {
+          setShowAIConsent(false);
+        }}
+      />
     </div>
   );
 }
