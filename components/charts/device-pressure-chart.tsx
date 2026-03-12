@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import type { PressurePoint } from '@/lib/waveform-types';
 import type { MachineSettings } from '@/lib/types';
-import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -46,8 +46,8 @@ export const DevicePressureChart = memo(function DevicePressureChart({
   const viewport = useSyncedViewport();
 
   const data = useMemo(() =>
-    downsampleForChart(pressure.slice(viewport.clampedStart, viewport.clampedEnd)),
-    [pressure, viewport.clampedStart, viewport.clampedEnd]
+    downsampleForChart(sliceByTime(pressure, viewport.clampedStartSec, viewport.clampedEndSec)),
+    [pressure, viewport.clampedStartSec, viewport.clampedEndSec]
   );
 
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);

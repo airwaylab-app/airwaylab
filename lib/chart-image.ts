@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { NightResult, GlasgowComponents } from './types';
-import type { WaveformData } from './waveform-types';
+import type { FlowSample } from './waveform-types';
 
 // Colour palette matching globals.css dark theme
 const COLORS = {
@@ -546,10 +546,11 @@ export async function renderGlasgowRadarImage(
 
 /**
  * Render flow waveform image — 1600x600 @ 2x.
- * Shows the flow envelope (min/max area) for the visible viewport slice.
+ * Shows the flow trace (actual measured values) for the visible viewport slice.
  */
 export async function renderFlowWaveformImage(
-  waveform: WaveformData,
+  flow: FlowSample[],
+  dateStr: string,
   viewStart: number,
   viewEnd: number
 ): Promise<Blob> {
@@ -568,7 +569,7 @@ export async function renderFlowWaveformImage(
   ctx.font = `bold 16px ${FONT_BODY}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`Flow Waveform — ${waveform.dateStr}`, 40, 30);
+  ctx.fillText(`Flow Waveform — ${dateStr}`, 40, 30);
 
   // Viewport time range label
   const startMin = Math.floor(viewStart / 60);
@@ -584,7 +585,7 @@ export async function renderFlowWaveformImage(
   const plotH = H - pad.top - pad.bottom;
 
   // Filter flow data within viewport
-  const viewPoints = waveform.flow.filter(
+  const viewPoints = flow.filter(
     (p) => p.t >= viewStart && p.t <= viewEnd
   );
 
@@ -601,8 +602,8 @@ export async function renderFlowWaveformImage(
   let flowMin = Infinity;
   let flowMax = -Infinity;
   for (const p of viewPoints) {
-    if (p.min < flowMin) flowMin = p.min;
-    if (p.max > flowMax) flowMax = p.max;
+    if (p.value < flowMin) flowMin = p.value;
+    if (p.value > flowMax) flowMax = p.value;
   }
   // Add 10% padding
   const yRange = flowMax - flowMin || 1;
@@ -632,42 +633,29 @@ export async function renderFlowWaveformImage(
     ctx.setLineDash([]);
   }
 
-  // Flow envelope (filled area between min and max)
+  // Flow filled area (value to zero baseline)
   ctx.beginPath();
-  // Top edge (max values, left to right)
   for (let i = 0; i < viewPoints.length; i++) {
     const x = toCanvasX(viewPoints[i].t);
-    const y = toCanvasY(viewPoints[i].max);
+    const y = toCanvasY(viewPoints[i].value);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
-  // Bottom edge (min values, right to left)
-  for (let i = viewPoints.length - 1; i >= 0; i--) {
-    const x = toCanvasX(viewPoints[i].t);
-    const y = toCanvasY(viewPoints[i].min);
-    ctx.lineTo(x, y);
-  }
+  // Close back along baseline
+  const baselineY = toCanvasY(0);
+  ctx.lineTo(toCanvasX(viewPoints[viewPoints.length - 1].t), baselineY);
+  ctx.lineTo(toCanvasX(viewPoints[0].t), baselineY);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(33, 150, 243, 0.25)';
+  ctx.fillStyle = 'rgba(33, 150, 243, 0.15)';
   ctx.fill();
 
-  // Envelope outline
+  // Flow line
   ctx.strokeStyle = COLORS.primary;
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = 0; i < viewPoints.length; i++) {
     const x = toCanvasX(viewPoints[i].t);
-    const y = toCanvasY(viewPoints[i].max);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(33, 150, 243, 0.6)';
-  ctx.beginPath();
-  for (let i = 0; i < viewPoints.length; i++) {
-    const x = toCanvasX(viewPoints[i].t);
-    const y = toCanvasY(viewPoints[i].min);
+    const y = toCanvasY(viewPoints[i].value);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }

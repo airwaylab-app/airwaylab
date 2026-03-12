@@ -52,13 +52,12 @@ export const SpO2Trace = memo(function SpO2Trace({
   const points = trace.trace;
   const viewport = useSyncedViewport();
 
-  // SpO2 has its own time axis — convert synced viewport indices to time range
-  // then find the corresponding SpO2 indices
-  const { localStart, localEnd } = useMemo(() => {
-    if (points.length === 0) return { localStart: 0, localEnd: 0 };
+  // SpO2 uses time-based slicing via the synced viewport
+  const data = useMemo(() => {
+    if (points.length === 0) return [];
 
-    const timeStart = viewport.clampedStart * viewport.bucketSeconds;
-    const timeEnd = viewport.clampedEnd * viewport.bucketSeconds;
+    const timeStart = viewport.clampedStartSec;
+    const timeEnd = viewport.clampedEndSec;
 
     // Binary search for start index in SpO2 trace
     let lo = 0;
@@ -79,17 +78,12 @@ export const SpO2Trace = memo(function SpO2Trace({
     }
     const endIdx = lo;
 
-    return { localStart: startIdx, localEnd: endIdx };
-  }, [points, viewport.clampedStart, viewport.clampedEnd, viewport.bucketSeconds]);
-
-  const data = useMemo(() =>
-    downsampleForChart(points.slice(localStart, localEnd).map((p) => ({
+    return downsampleForChart(points.slice(startIdx, endIdx).map((p) => ({
       t: p.t,
       spo2: p.spo2,
       hr: p.hr > 0 ? p.hr : undefined,
-    }))),
-    [points, localStart, localEnd]
-  );
+    })));
+  }, [points, viewport.clampedStartSec, viewport.clampedEndSec]);
 
   // Filter ODI events to visible range, capped to prevent SVG OOM
   const MAX_VISIBLE_ODI = 100;

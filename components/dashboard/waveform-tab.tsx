@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FlowWaveform, type EventType } from '@/components/charts/flow-waveform';
+import { SharedChartToolbar } from '@/components/charts/shared-chart-toolbar';
+import { SyncedViewportProvider, useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { waveformOrchestrator, type WaveformState } from '@/lib/waveform-orchestrator';
-import { generateSyntheticWaveform, formatElapsedTimeShort } from '@/lib/waveform-utils';
+import { generateSyntheticWaveform, formatElapsedTimeShort, decimateFlowRange, decimatePressureRange, getTargetRate } from '@/lib/waveform-utils';
 import { loadCloudFiles } from '@/lib/storage/cloud-file-loader';
 import { useAuth } from '@/lib/auth/auth-context';
+import type { StoredWaveform } from '@/lib/waveform-types';
 import type { NightResult } from '@/lib/types';
 import { Eye, EyeOff, Loader2, AlertCircle, Waves, Cloud } from 'lucide-react';
 
@@ -251,7 +254,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
           variant={showPressure ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setShowPressure(!showPressure)}
-          disabled={waveform.pressure.length === 0}
+          disabled={!waveform.pressure || waveform.pressure.length === 0}
           className="gap-1.5 text-xs"
         >
           {showPressure ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
@@ -321,12 +324,17 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         })}
       </div>
 
-      {/* Waveform chart */}
-      <FlowWaveform
-        waveform={waveform}
-        showPressure={showPressure}
-        visibleEventTypes={visibleTypes}
-      />
+      {/* Waveform chart with viewport-aware decimation */}
+      <SyncedViewportProvider
+        durationSeconds={waveform.durationSeconds}
+        dateStr={selectedNight.dateStr}
+      >
+        <WaveformTabCharts
+          waveform={waveform}
+          showPressure={showPressure}
+          visibleTypes={visibleTypes}
+        />
+      </SyncedViewportProvider>
 
       {/* Stats bar */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-xs text-muted-foreground sm:gap-5">
@@ -348,15 +356,68 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
           Events: <strong className="text-foreground">{waveform.events.length}</strong>
         </span>
         <span>
-          Sample rate: <strong className="text-foreground">{waveform.originalSampleRate.toFixed(0)} Hz</strong>
+          Sample rate: <strong className="text-foreground">{waveform.sampleRate.toFixed(0)} Hz</strong>
         </span>
       </div>
 
       {/* Disclaimer */}
       <p className="text-[10px] leading-relaxed text-muted-foreground/70">
-        Flow waveforms are downsampled for display. Event detection on this view is approximate —
+        Flow waveforms show actual measured samples, decimated for display.
+        Event detection on this view is approximate —
         refer to the Flow Analysis tab for authoritative engine results.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Inner component inside SyncedViewportProvider.
+ * Decimates flow + pressure based on viewport zoom level.
+ */
+function WaveformTabCharts({
+  waveform,
+  showPressure,
+  visibleTypes,
+}: {
+  waveform: StoredWaveform;
+  showPressure: boolean;
+  visibleTypes: Set<EventType>;
+}) {
+  const viewport = useSyncedViewport();
+
+  const flowData = useMemo(() => {
+    const targetRate = getTargetRate(viewport.visibleDurationSec, waveform.sampleRate);
+    return decimateFlowRange(
+      waveform.flow,
+      waveform.sampleRate,
+      viewport.clampedStartSec,
+      viewport.clampedEndSec,
+      targetRate
+    );
+  }, [waveform.flow, waveform.sampleRate, viewport.clampedStartSec, viewport.clampedEndSec, viewport.visibleDurationSec]);
+
+  const pressureData = useMemo(() => {
+    if (!waveform.pressure) return [];
+    const targetRate = getTargetRate(viewport.visibleDurationSec, waveform.sampleRate);
+    return decimatePressureRange(
+      waveform.pressure,
+      waveform.sampleRate,
+      viewport.clampedStartSec,
+      viewport.clampedEndSec,
+      targetRate
+    );
+  }, [waveform.pressure, waveform.sampleRate, viewport.clampedStartSec, viewport.clampedEndSec, viewport.visibleDurationSec]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <SharedChartToolbar durationSeconds={waveform.durationSeconds} />
+      <FlowWaveform
+        flow={flowData}
+        pressure={pressureData}
+        events={waveform.events}
+        showPressure={showPressure}
+        visibleEventTypes={visibleTypes}
+      />
     </div>
   );
 }

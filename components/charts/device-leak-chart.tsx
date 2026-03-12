@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { LeakPoint } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -49,13 +49,13 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
   const bucketSeconds = leak.length > 1 ? leak[1].t - leak[0].t : 2;
 
   const data = useMemo(() => {
-    const sliced = downsampleForChart(leak.slice(viewport.clampedStart, viewport.clampedEnd));
+    const sliced = downsampleForChart(sliceByTime(leak, viewport.clampedStartSec, viewport.clampedEndSec));
     return sliced.map((l) => ({
       t: l.t,
       avg: Math.min(l.avg, Y_AXIS_MAX),
       aboveThreshold: l.avg > LEAK_THRESHOLD_LMIN ? Math.min(l.avg, Y_AXIS_MAX) : undefined,
     }));
-  }, [leak, viewport.clampedStart, viewport.clampedEnd]);
+  }, [leak, viewport.clampedStartSec, viewport.clampedEndSec]);
 
   // Compute time above threshold
   const timeAboveThreshold = useMemo(() => {

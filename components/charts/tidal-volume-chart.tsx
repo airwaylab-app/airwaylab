@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { TidalVolumePoint } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
@@ -42,8 +42,8 @@ export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume }: 
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
   const data = useMemo(() =>
-    downsampleForChart(tidalVolume.slice(viewport.clampedStart, viewport.clampedEnd)),
-    [tidalVolume, viewport.clampedStart, viewport.clampedEnd]
+    downsampleForChart(sliceByTime(tidalVolume, viewport.clampedStartSec, viewport.clampedEndSec)),
+    [tidalVolume, viewport.clampedStartSec, viewport.clampedEndSec]
   );
 
   if (tidalVolume.length === 0) {

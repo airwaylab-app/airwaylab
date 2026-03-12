@@ -3,7 +3,17 @@
 // Types for the flow data browser / waveform viewer
 // ============================================================
 
-/** A single data point in the downsampled waveform (min/max envelope) */
+/** A single decimated flow sample — actual measured value, not a computed aggregate */
+export interface FlowSample {
+  /** Elapsed seconds from session start */
+  t: number;
+  /** Actual measured flow rate (L/min) */
+  value: number;
+}
+
+/**
+ * @deprecated Use FlowSample instead. Kept for backward compatibility during transition.
+ */
 export interface WaveformPoint {
   /** Elapsed seconds from session start */
   t: number;
@@ -62,7 +72,20 @@ export interface WaveformEvent {
   label: string;
 }
 
-/** Complete waveform data for a single night */
+/** Summary statistics computed from waveform data */
+export interface WaveformStats {
+  breathCount: number;
+  flowMin: number;
+  flowMax: number;
+  flowMean: number;
+  pressureMin: number | null;
+  pressureMax: number | null;
+  leakMean: number | null;
+  leakMax: number | null;
+  leakP95: number | null;
+}
+
+/** Complete waveform data for a single night (view-ready, decimated) */
 export interface WaveformData {
   /** Night date string (YYYY-MM-DD) */
   dateStr: string;
@@ -70,9 +93,9 @@ export interface WaveformData {
   durationSeconds: number;
   /** Original sampling rate (Hz) */
   originalSampleRate: number;
-  /** Downsampled flow envelope */
-  flow: WaveformPoint[];
-  /** Downsampled pressure trace (if available) */
+  /** Decimated flow samples (actual measured values) */
+  flow: FlowSample[];
+  /** Decimated pressure trace (if available) */
   pressure: PressurePoint[];
   /** Downsampled leak rate trace (if available) */
   leak: LeakPoint[];
@@ -83,17 +106,38 @@ export interface WaveformData {
   /** Estimated respiratory rate per bucket (if available) */
   respiratoryRate?: RespiratoryRatePoint[];
   /** Summary stats */
-  stats: {
-    breathCount: number;
-    flowMin: number;
-    flowMax: number;
-    flowMean: number;
-    pressureMin: number | null;
-    pressureMax: number | null;
-    leakMean: number | null;
-    leakMax: number | null;
-    leakP95: number | null;
-  };
+  stats: WaveformStats;
+}
+
+/**
+ * Raw waveform data stored in IndexedDB.
+ * Contains full-resolution Float32Arrays for on-demand decimation.
+ */
+export interface StoredWaveform {
+  /** Night date string (YYYY-MM-DD) */
+  dateStr: string;
+  /** Full 25 Hz raw flow data */
+  flow: Float32Array;
+  /** Full raw pressure data (if available) */
+  pressure: Float32Array | null;
+  /** Sampling rate (Hz) */
+  sampleRate: number;
+  /** Total duration in seconds */
+  durationSeconds: number;
+  /** Pre-detected events */
+  events: WaveformEvent[];
+  /** Summary stats */
+  stats: WaveformStats;
+  /** Estimated tidal volume per bucket */
+  tidalVolume: TidalVolumePoint[];
+  /** Estimated respiratory rate per bucket */
+  respiratoryRate: RespiratoryRatePoint[];
+  /** Leak data (placeholder — currently empty) */
+  leak: LeakPoint[];
+  /** Timestamp when stored (for TTL) */
+  storedAt: number;
+  /** Engine version for cache invalidation */
+  engineVersion: string;
 }
 
 /** Message sent to the waveform worker */
@@ -101,14 +145,33 @@ export interface WaveformWorkerMessage {
   type: 'EXTRACT_WAVEFORM';
   files: { buffer: ArrayBuffer; path: string }[];
   targetDate: string;
-  bucketSeconds: number;
 }
 
-/** Response from the waveform worker */
-export interface WaveformWorkerResult {
-  type: 'WAVEFORM_RESULT';
-  waveform: WaveformData | null;
+/** Response from the waveform worker — returns raw Float32Arrays */
+export interface RawWaveformResult {
+  type: 'RAW_WAVEFORM_RESULT';
+  /** Raw flow data at original sample rate */
+  flow: Float32Array | null;
+  /** Raw pressure data at original sample rate */
+  pressure: Float32Array | null;
+  /** Original sampling rate (Hz) */
+  sampleRate: number;
+  /** Total duration in seconds */
+  durationSeconds: number;
+  /** Detected events */
+  events: WaveformEvent[];
+  /** Summary stats */
+  stats: WaveformStats;
+  /** Tidal volume per bucket */
+  tidalVolume: TidalVolumePoint[];
+  /** Respiratory rate per bucket */
+  respiratoryRate: RespiratoryRatePoint[];
+  /** Leak data */
+  leak: LeakPoint[];
+  /** Night date string */
+  dateStr: string;
+  /** Error message if extraction failed */
   error?: string;
 }
 
-export type WaveformWorkerResponse = WaveformWorkerResult;
+export type WaveformWorkerResponse = RawWaveformResult;
