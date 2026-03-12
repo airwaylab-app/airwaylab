@@ -536,7 +536,7 @@ export async function renderGlasgowRadarImage(
 
   ctx.fillStyle = COLORS.muted;
   ctx.font = `14px ${FONT_BODY}`;
-  ctx.fillText('Overall Score (0–8)  |  Dashed = normal range', W / 2, radarCy + radarR + 80);
+  ctx.fillText('Overall Score  |  Dashed = normal range', W / 2, radarCy + radarR + 80);
 
   // Watermark
   drawWatermark(ctx, W / 2, H - 40);

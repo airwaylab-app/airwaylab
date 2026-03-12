@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: 'Glasgow Index — PAP Flow Limitation Scoring | AirwayLab',
   description:
-    'How the Glasgow Index scores each PAP breath for flow limitation across 9 shape descriptors. Understand the 0–8 scale and what your score means for therapy optimisation.',
+    'How the Glasgow Index scores each PAP breath for flow limitation across 9 shape descriptors. Understand the scoring and what your result means for therapy optimisation.',
   openGraph: {
     title: 'Glasgow Index — PAP Flow Limitation Scoring | AirwayLab',
     description:
@@ -101,8 +101,9 @@ export default function GlasgowIndexPage() {
           The Glasgow Index is a 9-component scoring system that evaluates every
           breath for flow limitation characteristics. Originally developed by
           DaveSkvn as an open-source PAP flow analyzer (GPL-3.0), it provides
-          a single composite score (0&ndash;8) that summarises the severity of
-          flow limitation across your entire therapy session.
+          a single composite score that summarises the severity of flow limitation
+          across your entire therapy session. Typical scores range from 0 to about
+          3 &mdash; scores above 3 are rare and indicate very significant problems.
         </p>
       </div>
 
@@ -134,19 +135,22 @@ export default function GlasgowIndexPage() {
             <li className="flex gap-3">
               <span className="mt-px shrink-0 font-mono text-xs text-blue-400/70">03</span>
               <span>
-                <strong className="text-foreground">Statistical scoring</strong> &mdash;
-                Each component is scored 0&ndash;1 based on where the breath falls
-                relative to the population distribution for that metric. Scores are
-                derived from percentile thresholds within the session.
+                <strong className="text-foreground">Per-breath scoring</strong> &mdash;
+                Each breath is scored against fixed thresholds for each component.
+                If the breath exhibits that characteristic, it scores 1 for that
+                component; otherwise 0. The session component score is the proportion
+                of breaths flagged (0&ndash;1).
               </span>
             </li>
             <li className="flex gap-3">
               <span className="mt-px shrink-0 font-mono text-xs text-blue-400/70">04</span>
               <span>
                 <strong className="text-foreground">Composite index</strong> &mdash;
-                The overall Glasgow Index is the sum of 8 components (Top Heavy is
-                computed but excluded), yielding a 0&ndash;8 scale. Session
-                averages, medians, and per-breath distributions are reported.
+                The overall Glasgow Index sums 8 component scores (Top Heavy is
+                computed but excluded from the overall). The theoretical maximum is
+                8.0, but in practice scores above 3 are extremely uncommon. The
+                original author describes 0&ndash;0.2 as &ldquo;good, clean
+                breathing&rdquo; and 3 as &ldquo;significant problems.&rdquo;
               </span>
             </li>
           </ol>
@@ -189,17 +193,17 @@ export default function GlasgowIndexPage() {
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="mb-1 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-emerald-500" />
-              <span className="text-sm font-semibold text-emerald-400">Below 2.0</span>
+              <span className="text-sm font-semibold text-emerald-400">Below 1.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Good therapy. Minimal flow limitation detected. Your current
-              pressure settings appear to be managing your airway well.
+              Minimal flow limitation detected. Your current pressure settings
+              appear to be managing your airway well.
             </p>
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="mb-1 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-semibold text-amber-400">2.0 &ndash; 3.0</span>
+              <span className="text-sm font-semibold text-amber-400">1.0 &ndash; 2.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Moderate flow limitation. Worth discussing with your clinician.
@@ -209,15 +213,22 @@ export default function GlasgowIndexPage() {
           <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
             <div className="mb-1 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-red-500" />
-              <span className="text-sm font-semibold text-red-400">Above 3.0</span>
+              <span className="text-sm font-semibold text-red-400">Above 2.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Significant flow limitation. Your airway may be partially obstructed
-              despite therapy. Consider consulting your sleep physician about
-              pressure adjustment.
+              despite therapy. The original Glasgow Index author describes a score
+              of 3 as &ldquo;significant problems.&rdquo; Consider consulting
+              your sleep physician about pressure adjustment.
             </p>
           </div>
         </div>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+          These thresholds are AirwayLab&rsquo;s interpretation. The original Glasgow Index does not define
+          clinical thresholds beyond noting that 0&ndash;0.2 represents &ldquo;good, clean breathing&rdquo;
+          and a score of 3 indicates &ldquo;significant problems.&rdquo; Your clinician should interpret
+          scores in the context of your symptoms and therapy settings.
+        </p>
       </section>
 
       {/* Origin & License */}
@@ -227,12 +238,16 @@ export default function GlasgowIndexPage() {
         </h2>
         <div className="rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            The Glasgow Index algorithm was originally developed by DaveSkvn as an
-            open-source JavaScript analyzer, inspired by flow limitation analysis
-            techniques from the Glasgow Sleep Centre. The algorithm has been ported
-            to TypeScript, validated against the reference implementation, and
-            integrated into AirwayLab under the same GPL-3.0 license. The core
-            mathematical methods are preserved exactly as published.
+            The Glasgow Index algorithm was originally developed by{' '}
+            <a href="https://github.com/DaveSkvn/GlasgowIndex" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">DaveSkvn</a>{' '}
+            as an open-source JavaScript analyzer for PAP flow limitation. The
+            algorithm has been ported to TypeScript and integrated into AirwayLab
+            under the same GPL-3.0 license. The core algorithm &mdash; breath
+            segmentation, 9 shape descriptors, and overall scoring formula &mdash; is
+            preserved exactly. AirwayLab adds traffic-light thresholds and
+            multi-night trending, which are not part of the original tool. The
+            original processes one BRP.edf session at a time; AirwayLab uses
+            duration-weighted averaging to combine multiple sessions per night.
           </p>
         </div>
       </section>
