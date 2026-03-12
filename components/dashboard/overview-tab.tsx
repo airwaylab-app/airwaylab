@@ -21,6 +21,9 @@ import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
+import { SymptomRating } from '@/components/dashboard/symptom-rating';
+import { CommunityComparison } from '@/components/dashboard/community-comparison';
+import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import { AIConsentModal, hasAIInsightsConsent } from '@/components/dashboard/ai-consent-modal';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
@@ -60,7 +63,18 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
-  const insights = generateInsights(nights, n, p, therapyChangeDate);
+
+  const [symptomRating, setSymptomRating] = useState<number | null>(null);
+  const [isContributeConsented, setIsContributeConsented] = useState(() => getConsentState());
+
+  // Reload symptom rating when night changes
+  useEffect(() => {
+    const notes = loadNightNotes(n.dateStr);
+    setSymptomRating(notes.symptomRating);
+    setIsContributeConsented(getConsentState());
+  }, [n.dateStr]);
+
+  const insights = generateInsights(nights, n, p, therapyChangeDate, symptomRating);
 
   const { user, tier, isPaid } = useAuth();
 
@@ -161,13 +175,21 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       {/* Night Summary Hero — single glanceable takeaway */}
       <NightSummaryHero night={n} />
 
+      {/* Symptom Rating — how did you sleep? */}
+      <SymptomRating
+        night={n}
+        value={symptomRating}
+        onChange={setSymptomRating}
+        isContributeConsented={isContributeConsented}
+      />
+
       {/* Start-here guidance for new users — positioned right below hero */}
       {isNewUser && (
         <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Start with Glasgow Index</span> — it scores your overall breathing pattern.
-            Typical scores range from 0 to about 3. Green means normal, amber means worth monitoring,
+            <span className="font-medium text-foreground">Start with IFL Symptom Risk</span> — it combines multiple flow limitation metrics into a single signal.
+            Green means low risk, amber means worth monitoring,
             red means discuss with your clinician. Click any metric for a detailed trend view.
           </p>
         </div>
@@ -382,6 +404,13 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           }
         />
       )}
+
+      {/* Community Comparison — shows how your results compare */}
+      <CommunityComparison
+        night={n}
+        symptomRating={symptomRating}
+        isContributeConsented={isContributeConsented}
+      />
 
       {/* Glasgow Component Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">

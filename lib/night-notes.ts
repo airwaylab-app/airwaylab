@@ -15,6 +15,7 @@ export const EMPTY_NOTES: NightNotes = {
   stress: null,
   exercise: null,
   note: '',
+  symptomRating: null,
 };
 
 function storageKey(dateStr: string): string {
@@ -35,6 +36,12 @@ export function loadNightNotes(dateStr: string): NightNotes {
       stress: parsed.stress ?? null,
       exercise: parsed.exercise ?? null,
       note: typeof parsed.note === 'string' ? parsed.note.slice(0, 200) : '',
+      symptomRating:
+        typeof parsed.symptomRating === 'number' &&
+        parsed.symptomRating >= 1 &&
+        parsed.symptomRating <= 5
+          ? parsed.symptomRating
+          : null,
     };
   } catch {
     return { ...EMPTY_NOTES };
@@ -51,7 +58,8 @@ export function saveNightNotes(dateStr: string, notes: NightNotes): void {
       notes.position === null &&
       notes.stress === null &&
       notes.exercise === null &&
-      notes.note.trim() === '';
+      notes.note.trim() === '' &&
+      notes.symptomRating === null;
 
     if (isEmpty) {
       localStorage.removeItem(storageKey(dateStr));

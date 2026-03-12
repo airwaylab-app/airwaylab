@@ -50,6 +50,7 @@ const NightNotesSchema = z.object({
   stress: z.enum(['low', 'moderate', 'high']).nullable(),
   exercise: z.enum(['none', 'light', 'intense']).nullable(),
   note: z.string().max(200).optional(),
+  symptomRating: z.number().int().min(1).max(5).nullable().optional(),
 }).optional();
 
 // Zod schema for request validation (M4)
@@ -219,12 +220,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Enrich system prompt with aggregate symptom stats if available
+    let systemPrompt = SYSTEM_PROMPT;
+    const adminForStats = getSupabaseServiceRole();
+    if (adminForStats) {
+      try {
+        const { data: aggStats } = await adminForStats.rpc('get_symptom_aggregate_stats');
+        if (aggStats && aggStats.total_ratings >= 100) {
+          systemPrompt += `\n\nCommunity context (${aggStats.total_ratings} self-reported sleep quality ratings across all users):\n- Average rating: ${Number(aggStats.avg_rating).toFixed(1)}/5\n- Users with IFL Risk >45% who rated sleep as Poor/Terrible: ${aggStats.high_ifl_poor_pct ?? 0}%\n- Users with IFL Risk <20% who rated sleep as Good/Great: ${aggStats.low_ifl_good_pct ?? 0}%\nUse this context to frame whether this user's experience is typical or atypical relative to the community.`;
+        }
+      } catch {
+        // Non-critical — proceed without aggregate stats
+      }
+    }
+
     const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 3 });
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [
         {
           role: 'user',

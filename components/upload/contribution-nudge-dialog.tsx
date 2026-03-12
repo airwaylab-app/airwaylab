@@ -16,7 +16,7 @@ interface ContributionStats {
  * anonymised scores. Dismiss = no contribution, no hard feelings.
  */
 export function ContributionNudgeDialog({
-  nightCount,
+  nightCount: _nightCount,
   onContribute,
   onDismiss,
 }: {
@@ -66,12 +66,16 @@ export function ContributionNudgeDialog({
 
         <div>
           <h2 id="contribution-nudge-title" className="text-lg font-bold">
-            Your {nightCount} {nightCount === 1 ? 'night' : 'nights'} could help thousands
+            Help improve sleep analysis for everyone
           </h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            We&apos;re building the largest PAP therapy dataset so researchers can train AI to
-            improve treatment for everyone. Your anonymised scores and breathing patterns would
-            make a real difference — no personal data leaves your device, ever.
+          <ul className="mx-auto mt-2 max-w-sm space-y-1.5 text-sm leading-relaxed text-muted-foreground text-left">
+            <li>Unlock community comparison for your results</li>
+            <li>Help build the largest open PAP therapy dataset</li>
+            <li>Enable researchers to improve treatment for everyone</li>
+          </ul>
+          <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-muted-foreground/70">
+            <strong className="text-muted-foreground">What&apos;s shared:</strong> anonymised scores, sleep quality rating, and device model.
+            No dates, names, or raw data — cannot be traced back to you.
           </p>
         </div>
 
@@ -98,7 +102,7 @@ export function ContributionNudgeDialog({
             onClick={onContribute}
           >
             <Heart className="h-4 w-4" />
-            Yes, contribute my data
+            Share &amp; Unlock
           </Button>
           <Button
             variant="ghost"
@@ -106,7 +110,7 @@ export function ContributionNudgeDialog({
             className="text-muted-foreground sm:w-auto"
             onClick={onDismiss}
           >
-            Not this time
+            Not now
           </Button>
         </div>
 

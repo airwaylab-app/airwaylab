@@ -8,6 +8,15 @@ import type { Tier } from './auth/auth-context';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { computeIFLRisk } from './ifl-risk';
+import { loadNightNotes } from './night-notes';
+
+const RATING_LABELS: Record<number, string> = {
+  1: 'Terrible',
+  2: 'Poor',
+  3: 'OK',
+  4: 'Good',
+  5: 'Great',
+};
 
 function tierBadge(tier?: Tier): string {
   if (tier === 'champion') return ' 🏆';
@@ -51,6 +60,13 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
   // IFL Symptom Risk
   const iflRisk = computeIFLRisk(n);
   lines.push(`**IFL Symptom Risk: ${fmt(iflRisk)}% ${light(iflRisk, 'iflRisk')}**`);
+  try {
+    const notes = loadNightNotes(n.dateStr);
+    if (notes.symptomRating !== null) {
+      const label = RATING_LABELS[notes.symptomRating] ?? '';
+      lines.push(`Sleep quality: ${notes.symptomRating}/5 (${label})`);
+    }
+  } catch { /* noop */ }
   lines.push('');
 
   // Glasgow

@@ -156,6 +156,70 @@ describe('generateInsights', () => {
     });
   });
 
+  describe('symptom rating cross-reference', () => {
+    it('generates symptom-fl-correlation when IFL >45 and rating <=2', () => {
+      // Build a night with IFL >45 but minimal other warning triggers
+      // IFL Risk = 70*0.35 + 35*0.30 + 35*0.20 + (2.0/8)*100*0.15
+      //          = 24.5 + 10.5 + 7.0 + 3.75 = 45.75 → above threshold
+      const highFLNight: NightResult = {
+        ...SAMPLE_NIGHTS[2],
+        wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
+        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.65, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        glasgow: { ...SAMPLE_NIGHTS[2].glasgow, overall: 2.0 },
+      };
+      const result = generateInsights([highFLNight], highFLNight, null, null, 2);
+      const correlation = result.find((i) => i.id === 'symptom-fl-correlation');
+      expect(correlation).toBeDefined();
+      expect(correlation!.type).toBe('warning');
+      expect(correlation!.body).toContain('Poor');
+    });
+
+    it('generates symptom-fl-asymptomatic when IFL >45 and rating >=4', () => {
+      // Build a night with IFL >45 but minimal other warning triggers
+      // IFL Risk = 65*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/8)*100*0.15
+      //          = 22.75 + 10.5 + 7.0 + 3.75 = 44.0... need slightly more
+      // IFL Risk = 70*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/8)*100*0.15
+      //          = 24.5 + 10.5 + 7.0 + 3.75 = 45.75 → just above threshold
+      const highFLNight: NightResult = {
+        ...SAMPLE_NIGHTS[2],
+        wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
+        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.65, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        glasgow: { ...SAMPLE_NIGHTS[2].glasgow, overall: 2.0 },
+      };
+      const result = generateInsights([highFLNight], highFLNight, null, null, 4);
+      const asymptomatic = result.find((i) => i.id === 'symptom-fl-asymptomatic');
+      expect(asymptomatic).toBeDefined();
+      expect(asymptomatic!.type).toBe('info');
+    });
+
+    it('generates symptom-non-fl-cause when IFL <20 and rating <=2', () => {
+      // Create a night with low FL metrics
+      const lowFLNight: NightResult = {
+        ...SAMPLE_NIGHTS[1],
+        wat: { ...SAMPLE_NIGHTS[1].wat, flScore: 10 },
+        ned: { ...SAMPLE_NIGHTS[1].ned, nedMean: 8, fiMean: 0.95 },
+        glasgow: { ...SAMPLE_NIGHTS[1].glasgow, overall: 0.5 },
+      };
+      const result = generateInsights([lowFLNight], lowFLNight, null, null, 1);
+      const nonFL = result.find((i) => i.id === 'symptom-non-fl-cause');
+      expect(nonFL).toBeDefined();
+      expect(nonFL!.type).toBe('info');
+      expect(nonFL!.body).toContain('Terrible');
+    });
+
+    it('does not generate symptom insights when rating is 3 (OK)', () => {
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0], SAMPLE_NIGHTS[1], null, 3);
+      const symptomInsights = result.filter((i) => i.id.startsWith('symptom-'));
+      expect(symptomInsights).toHaveLength(0);
+    });
+
+    it('does not generate symptom insights when rating is null', () => {
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0], SAMPLE_NIGHTS[1], null, null);
+      const symptomInsights = result.filter((i) => i.id.startsWith('symptom-'));
+      expect(symptomInsights).toHaveLength(0);
+    });
+  });
+
   describe('edge cases', () => {
     it('handles single night with no previous', () => {
       const result = generateInsights([SAMPLE_NIGHTS[0]], SAMPLE_NIGHTS[0], null, null);

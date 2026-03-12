@@ -43,7 +43,7 @@ describe('ContributionNudgeDialog social proof', () => {
     render(<ContributionNudgeDialog {...defaultProps} />);
 
     // Dialog renders
-    expect(screen.getByText(/could help thousands/)).toBeInTheDocument();
+    expect(screen.getByText(/Help improve sleep analysis/)).toBeInTheDocument();
 
     // Wait for fetch to settle, then verify no social proof
     await waitFor(() => {
@@ -121,11 +121,11 @@ describe('ContributionNudgeDialog social proof', () => {
     });
 
     // Click contribute
-    fireEvent.click(screen.getByRole('button', { name: /yes, contribute/i }));
+    fireEvent.click(screen.getByRole('button', { name: /share.*unlock/i }));
     expect(onContribute).toHaveBeenCalledOnce();
 
     // Click dismiss
-    fireEvent.click(screen.getByRole('button', { name: /not this time/i }));
+    fireEvent.click(screen.getByRole('button', { name: /not now/i }));
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 });
