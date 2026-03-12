@@ -40,11 +40,14 @@ export function StorageProgressBanner() {
   if (state.status === 'idle' || dismissed) return null;
 
   const { progress, result, error } = state;
+  const isAuthError = error?.includes('session') || error?.includes('sign in');
 
   return (
     <div className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 text-xs ${
       state.status === 'error'
-        ? 'border-red-500/20 bg-red-500/5 text-red-400'
+        ? isAuthError
+          ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+          : 'border-red-500/20 bg-red-500/5 text-red-400'
         : state.status === 'complete'
           ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
           : 'border-sky-500/20 bg-sky-500/5 text-sky-400'
