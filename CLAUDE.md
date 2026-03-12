@@ -168,6 +168,12 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - Plus Jakarta Sans (body) + JetBrains Mono (code/data)
 - Error messages: never expose raw errors to users; map to user-friendly text
 - Medical compliance: all AI-generated insights must include "discuss with your clinician" language
+- Legal pages: Privacy Policy (`/privacy`), Terms of Service (`/terms`), Accessibility (`/accessibility`), Contact (`/contact`) — keep updated when data flows change
+- Every page that collects or displays health data must include the medical disclaimer component
+- Every server feature that sends data externally must have an explicit consent step — no implicit consent via feature gates alone
+- Every new API route must log the action type + user ID (anonymised if unauthenticated) for audit purposes
+- Account deletion requests must be fulfillable within 30 days — any new data store must have a documented deletion path
+- Any new third-party integration must be added to the Privacy Policy's processor list before deployment
 
 ## Anti-Patterns
 
@@ -181,6 +187,10 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - **Never install dependencies without discussion.** Each dependency is maintenance cost against the 2hr/week budget.
 - **Never use `any` or `@ts-ignore`.** If TypeScript complains, the types are wrong — fix them.
 - **Never present analysis as medical advice.** Always include "discuss with your clinician" language. This is a consumer health tool, not a medical device.
+- **Never deploy a new third-party data integration without updating the Privacy Policy.** The processor table in `/privacy` must reflect all services that receive user data.
+- **Never store health data server-side without documenting retention period and deletion mechanism.** Every table with health-related data must have a documented retention schedule and a path to deletion for DSAR requests.
+- **Never add automated decision-making (AI/ML) features without an explicit user consent step.** GDPR requires informed consent for automated processing of health data. Use the `AIConsentModal` pattern or similar.
+- **Never remove or weaken medical disclaimers from any output.** All exports (CSV, JSON, PDF, forum), reports, AI insights, and chart images must include the standard disclaimer language.
 
 ## Common Gotchas
 

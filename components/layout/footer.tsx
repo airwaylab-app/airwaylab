@@ -84,6 +84,27 @@ export function Footer() {
               </a>
             </nav>
           </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Legal
+            </h4>
+            <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
+              <Link href="/privacy" className="transition-colors hover:text-foreground">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-foreground">
+                Terms of Service
+              </Link>
+              <Link href="/accessibility" className="transition-colors hover:text-foreground">
+                Accessibility
+              </Link>
+              <Link href="/contact" className="transition-colors hover:text-foreground">
+                Contact
+              </Link>
+            </nav>
+          </div>
         </div>
 
         {/* Bottom bar */}
@@ -93,7 +114,9 @@ export function Footer() {
             <span>100% client-side processing — your data never leaves your device.</span>
           </div>
           <p className="text-[11px] text-muted-foreground/60">
-            GPL-3.0 · Not a medical device · For educational and informational purposes only
+            GPL-3.0 · Not a medical device · Not FDA/CE cleared · For educational and informational purposes only ·{' '}
+            <Link href="/privacy" className="hover:text-muted-foreground transition-colors">Privacy</Link>{' · '}
+            <Link href="/terms" className="hover:text-muted-foreground transition-colors">Terms</Link>
           </p>
         </div>
       </div>
