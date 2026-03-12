@@ -147,8 +147,8 @@ test.describe('Free User Flow', () => {
   test('reset/new button returns to upload form', async ({ page }) => {
     await uploadAndWaitForAnalysis(page);
 
-    // Click the New/Reset button (use getByRole for accessible name which normalises whitespace from icon)
-    await page.getByRole('button', { name: 'New', exact: true }).click();
+    // Click the New/Reset button (force: true bypasses stability check during nudge dialog animation)
+    await page.getByRole('button', { name: 'New', exact: true }).click({ force: true });
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
