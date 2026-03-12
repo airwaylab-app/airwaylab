@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Shared Waveform Data** — Store EDF files in Supabase Storage when sharing, enabling consultants to view the full Graphs tab (flow waveforms, pressure, events) in shared analysis links. Share creation now requires authentication. (shared-waveform-edf-storage)
 - **AI Insights Conversion Funnel** — registration-gated AI insights with locked teasers for anonymous users, "Generate AI Insights" button for free users (3/month), and deep waveform-level insights for paid users (ai-insights-conversion-funnel)
 - **Account Settings Page** — `/account` with profile, subscription management, data usage stats, and comprehensive server-side data deletion (ai-insights-conversion-funnel)
 - **Returning User Nudge** — banner for anonymous returning users encouraging registration with night count context (ai-insights-conversion-funnel)

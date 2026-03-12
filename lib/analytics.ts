@@ -115,6 +115,17 @@ export const events = {
   /** Expired share link visited */
   shareExpiredView: () => trackEvent('share_expired_view'),
 
+  /** Share EDF files uploaded successfully */
+  shareFilesUploaded: (fileCount: number, totalBytes: number) =>
+    trackEvent('share_files_uploaded', { file_count: fileCount, total_bytes: totalBytes }),
+
+  /** Share EDF file upload failed */
+  shareFilesUploadFailed: (errorType: string) =>
+    trackEvent('share_files_upload_failed', { error_type: errorType }),
+
+  /** Shared waveform loaded and rendered in shared view */
+  shareWaveformLoaded: () => trackEvent('share_waveform_loaded'),
+
   // ── Providers page events ──────────────────────────────────
   /** Providers page viewed */
   providersPageView: () => trackEvent('providers_page_view'),

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
@@ -30,7 +30,9 @@ const MAX_PAYLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
  * POST /api/share
  *
  * Creates a share link by storing analysis results in Supabase.
- * No auth required. Rate limited to 10/hour per IP.
+ * Requires authentication — provides identity for abuse tracking,
+ * storage quotas, and GDPR deletion path.
+ * Rate limited to 10/hour per IP.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -44,6 +46,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Too many shares. Please try again later.' },
         { status: 429 }
+      );
+    }
+
+    // Auth check — share creation requires a logged-in user
+    const supabaseAuth = getSupabaseServer();
+    if (!supabaseAuth) {
+      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
+    }
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Sign in to share your analysis.' },
+        { status: 401 }
       );
     }
 
@@ -72,22 +88,25 @@ export async function POST(request: NextRequest) {
     const count = parsed.data.nightsCount
       ?? (Array.isArray(analysisData) ? analysisData.length : 1);
 
-    const supabase = getSupabaseAdmin();
-    if (!supabase) {
-      console.error('[share] Supabase not configured');
+    const serviceRole = getSupabaseServiceRole();
+    if (!serviceRole) {
+      console.error('[share] Supabase service role not configured');
       return NextResponse.json(
         { error: 'Something went wrong. Please try again.' },
         { status: 500 }
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceRole
       .from('shared_analyses')
       .insert({
         analysis_data: analysisData,
         machine_info: machineInfo ?? null,
         nights_count: count,
         share_scope: shareScope,
+        created_by_user_id: user.id,
+        has_files: false,
+        file_paths: [],
       })
       .select('id, expires_at')
       .single();

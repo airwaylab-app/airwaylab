@@ -14,6 +14,8 @@ interface Props {
   nightsCount: number;
   /** If true, skip consent text and show only scope picker */
   simplified?: boolean;
+  /** If true, SD card files will be uploaded alongside the share */
+  hasFiles?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export function ShareConsentModal({
   onConfirm,
   nightsCount,
   simplified = false,
+  hasFiles = false,
 }: Props) {
   const [scope, setScope] = useState<'single' | 'all'>('single');
   const [remember, setRemember] = useState(false);
@@ -74,14 +77,30 @@ export function ShareConsentModal({
 
         {!simplified && (
           <div className="mb-5 space-y-2">
-            <p className="text-sm text-muted-foreground">
-              To create a share link, your analysis results will be stored on our
-              servers for 30 days.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Raw SD card data is never uploaded — only processed metrics and
-              scores.
-            </p>
+            {hasFiles ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Your analysis results and therapy data files are stored on our
+                  servers for 30 days. Raw files are encrypted and only accessible
+                  via this share link.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  This allows consultants to view detailed flow waveforms alongside
+                  your metrics and scores.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  To create a share link, your analysis results will be stored on our
+                  servers for 30 days.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Raw SD card data is not included &mdash; only processed metrics and
+                  scores.
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -203,7 +222,7 @@ export function ShareConsentModal({
             <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
             <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
             <p className="text-[11px] text-muted-foreground/80">
-              EU servers · Encrypted · Expires in 30 days
+              EU servers &middot; Encrypted &middot; Expires in 30 days
             </p>
           </div>
         )}
