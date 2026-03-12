@@ -80,7 +80,7 @@ export const blogPosts: BlogPost[] = [
     title: 'Understanding Flow Limitation: What Your PAP Machine Doesn\'t Tell You',
     description:
       'Flow limitation is the subtle breathing restriction your AHI score completely ignores. Learn what it is, why it matters, and how to detect it in your own PAP data.',
-    date: '2025-03-06',
+    date: '2026-03-06',
     readTime: '8 min read',
     tags: ['Flow Limitation', 'PAP', 'Sleep Apnea'],
     ogDescription:
@@ -91,7 +91,7 @@ export const blogPosts: BlogPost[] = [
     title: 'Beyond AHI: Why Your Sleep Apnea Score Might Be Misleading You',
     description:
       'The Apnea-Hypopnea Index has been the gold standard for decades. But a growing body of research shows it misses critical breathing events. Here\'s what you should be tracking instead.',
-    date: '2025-02-20',
+    date: '2026-02-20',
     readTime: '10 min read',
     tags: ['AHI', 'Sleep Metrics', 'Research'],
     ogDescription:
@@ -102,7 +102,7 @@ export const blogPosts: BlogPost[] = [
     title: 'Your PAP Data Belongs to You: Privacy in Sleep Medicine',
     description:
       'Every night, your PAP machine collects intimate health data. Where does it go? Who can see it? And what are your rights? A look at privacy in the age of connected sleep devices.',
-    date: '2025-02-05',
+    date: '2026-02-05',
     readTime: '7 min read',
     tags: ['Privacy', 'Data Rights', 'ResMed'],
     ogDescription:
