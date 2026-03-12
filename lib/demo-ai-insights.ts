@@ -35,8 +35,8 @@ export const DEMO_AI_INSIGHTS: Insight[] = [
   {
     id: 'demo-ai-oximetry',
     type: 'actionable',
-    title: 'Elevated arousal index driving coupled HR-desaturation events',
-    body: 'The estimated arousal index of 12.4/hr is generating coupled heart-rate and desaturation events at 1.4/hr (HR Clin 10), which is above the 1.0/hr threshold. This coupling pattern suggests RERA-driven arousals rather than frank apneas. Discuss whether RERA-focused titration adjustments could reduce sleep fragmentation with your clinician.',
+    title: 'Coupled HR-desaturation events linked to flow limitation',
+    body: 'Coupled heart-rate and desaturation events at 1.4/hr (HR Clin 10) are occurring alongside elevated flow limitation scores. Research suggests that flow limitation itself triggers a limbic stress response that can drive these coupled autonomic events, independent of cortical arousals. Discuss whether further flow limitation reduction could improve this pattern with your clinician.',
     category: 'oximetry',
   },
 ];

@@ -39,7 +39,7 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
 
   if (eaiL === 'bad' && gl === 'good') {
     steps.push({
-      text: 'Your arousals are high despite low flow limitation. Read about CNS sensitization and discuss with your specialist.',
+      text: 'Your respiratory disruptions are elevated despite low flow limitation. Read about CNS sensitization and discuss with your specialist.',
       link: { href: '/blog/what-is-cns-sensitization', label: 'Read about CNS sensitization' },
     });
   }

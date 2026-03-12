@@ -47,22 +47,22 @@ describe('getEAIExplanation', () => {
   });
 
   it('returns low explanation for good values', () => {
-    const text = getEAIExplanation(5, threshold);
-    expect(text).toContain('5.0');
+    const text = getEAIExplanation(3, threshold);
+    expect(text).toContain('3.0');
     expect(text).toContain('low');
   });
 
   it('returns moderate explanation for warn values', () => {
-    const text = getEAIExplanation(15, threshold);
-    expect(text).toContain('15.0');
+    const text = getEAIExplanation(7, threshold);
+    expect(text).toContain('7.0');
     expect(text).toContain('moderately elevated');
   });
 
-  it('returns high explanation for bad values', () => {
-    const text = getEAIExplanation(30, threshold);
-    expect(text).toContain('30.0');
-    expect(text).toContain('high');
-    expect(text).toContain('exhausted');
+  it('returns elevated explanation for bad values', () => {
+    const text = getEAIExplanation(15, threshold);
+    expect(text).toContain('15.0');
+    expect(text).toContain('elevated');
+    expect(text).toContain('clinician');
   });
 });
 

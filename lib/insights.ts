@@ -129,35 +129,35 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     });
   }
 
-  // Estimated Arousal Index
+  // Respiratory Disruption Index
   const eaiVal = n.ned.estimatedArousalIndex ?? 0;
   const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai);
   if (eaiL === 'bad') {
     insights.push({
       id: 'eai-high',
       type: 'warning',
-      title: 'Elevated estimated arousal index',
-      body: `EAI of ${fmt(eaiVal)}/hr suggests frequent respiratory rate and tidal volume spikes, indicating possible sleep fragmentation.`,
+      title: 'Elevated respiratory disruption index',
+      body: `RDI of ${fmt(eaiVal)}/hr suggests frequent recovery breaths following flow-limited breathing. Areas to investigate: EPR/PS level, positional factors. Get personalised suggestions with AI Analysis.`,
       category: 'ned',
     });
   } else if (eaiL === 'good' && eaiVal > 0) {
     insights.push({
       id: 'eai-good',
       type: 'positive',
-      title: 'Low estimated arousal burden',
-      body: `EAI of ${fmt(eaiVal)}/hr indicates few respiratory arousal-like events — sleep continuity appears well-maintained.`,
+      title: 'Low respiratory disruption burden',
+      body: `RDI of ${fmt(eaiVal)}/hr indicates few detected disruptions. Note: research suggests flow limitation itself can drive symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
       category: 'ned',
     });
   }
 
-  // Sensitization mismatch: low flow limitation but high arousals
+  // Sensitization mismatch: low flow limitation but high disruptions
   const glasgowVal = n.glasgow.overall;
-  if (glasgowVal <= 2.0 && eaiVal >= 40) {
+  if (glasgowVal <= 2.0 && eaiVal >= 15) {
     insights.push({
       id: 'sensitization-mismatch',
-      type: 'info',
-      title: 'Unusual pattern: low flow limitation, high arousals',
-      body: `Your Glasgow Index of ${fmt(glasgowVal)} suggests mild flow limitation, but your EAI of ${fmt(eaiVal)}/hr indicates frequent arousals. This mismatch has been described in sleep medicine research as possible CNS sensitization — discuss with your clinician.`,
+      type: 'actionable',
+      title: 'Low FL but high disruptions — investigate further',
+      body: `Glasgow Index of ${fmt(glasgowVal)} shows mild flow limitation, but RDI of ${fmt(eaiVal)}/hr indicates frequent disruptions. This mismatch suggests non-respiratory causes may be contributing: check for mask leak, pressure comfort (EPR/ramp), nasal congestion, caffeine timing, or stress. Log your night context to track patterns. If this persists, discuss CNS sensitization with your clinician.`,
       category: 'ned',
       link: { text: 'Learn more about this pattern', href: '/blog/what-is-cns-sensitization' },
     });
@@ -200,7 +200,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
       id: 'rera-high',
       type: 'warning',
       title: 'Elevated RERA events',
-      body: `RERA index of ${fmt(n.ned.reraIndex)} events/hr is above the clinical threshold. These respiratory effort-related arousals may fragment sleep.`,
+      body: `RERA index of ${fmt(n.ned.reraIndex)} events/hr is above the clinical threshold. These effort-related arousals fragment sleep. Consider reviewing pressure support, trigger sensitivity, and whether nasal congestion is increasing breathing effort. AI Analysis can provide personalised suggestions based on your full data.`,
       category: 'ned',
     });
   } else if (n.ned.reraIndex < 5 && nedL === 'good') {
