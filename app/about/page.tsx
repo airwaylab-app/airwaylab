@@ -126,7 +126,7 @@ const engines = [
       'Each inspiration is segmented from the raw flow signal using zero-crossing detection with minimum window filtering.',
       'Nine shape descriptors are computed per breath: Skew, Spike, Flat Top, Top Heavy, Multi-Peak, No Pause, Inspiratory Rate, Multi-Breath, and Variable Amplitude.',
       'Each component is scored 0\u20131 based on statistical thresholds derived from the breath population.',
-      'The overall Glasgow Index is the sum of 8 components (Top Heavy is computed but excluded from the total), yielding a 0\u20138 scale where lower is better.',
+      'The overall Glasgow Index is the sum of all 9 components, yielding a 0\u20139 scale where lower is better.',
     ],
     reference: 'Based on Glasgow Sleep Centre flow limitation analysis methodology.',
     link: '/about/glasgow-index',

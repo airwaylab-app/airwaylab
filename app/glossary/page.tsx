@@ -174,7 +174,7 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Glasgow Index',
     category: 'airwaylab-metrics',
     definition:
-      'A composite flow limitation score computed per breath across 9 shape characteristics: skewness, spikiness, flat-top pattern, top-heaviness, multi-peak pattern, no-pause pattern, inspiratory rate variability, multi-breath pattern, and variable amplitude. Each component is scored 0\u20131 based on the proportion of breaths exhibiting that characteristic. The overall Glasgow Index sums 8 components (Top Heavy is computed but excluded from the total), yielding a 0\u20138 scale where lower is better. Scores below 1.0 indicate well-controlled therapy, 1.0\u20132.0 is borderline, and above 2.0 suggests significant flow limitation. Originally developed by DaveSkvn (GPL-3.0).',
+      'A composite flow limitation score computed per breath across 9 shape characteristics: skewness, spikiness, flat-top pattern, top-heaviness, multi-peak pattern, no-pause pattern, inspiratory rate variability, multi-breath pattern, and variable amplitude. Each component is scored 0\u20131 based on the proportion of breaths exhibiting that characteristic. The overall Glasgow Index sums all 9 components, yielding a 0\u20139 scale where lower is better. Scores below 1.0 indicate well-controlled therapy, 1.0\u20132.0 is borderline, and above 2.0 suggests significant flow limitation. Originally developed by DaveSkvn (GPL-3.0).',
     link: '/about/glasgow-index',
   },
   {

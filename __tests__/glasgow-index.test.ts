@@ -57,7 +57,7 @@ describe('Glasgow Index Engine', () => {
       expect(result.variableAmp).toBeGreaterThanOrEqual(0);
     });
 
-    it('overall = sum of 8 components (excludes topHeavy)', () => {
+    it('overall = sum of all 9 components', () => {
       const data = makeSineWave(30);
       const result = computeGlasgowIndex(data, 25);
 
@@ -65,6 +65,7 @@ describe('Glasgow Index Engine', () => {
         result.skew +
         result.flatTop +
         result.spike +
+        result.topHeavy +
         result.multiPeak +
         result.noPause +
         result.inspirRate +
@@ -74,12 +75,12 @@ describe('Glasgow Index Engine', () => {
       expect(result.overall).toBeCloseTo(expectedOverall, 1);
     });
 
-    it('overall score is between 0 and 8', () => {
+    it('overall score is between 0 and 9', () => {
       const data = makeSineWave(30);
       const result = computeGlasgowIndex(data, 25);
 
       expect(result.overall).toBeGreaterThanOrEqual(0);
-      expect(result.overall).toBeLessThanOrEqual(8);
+      expect(result.overall).toBeLessThanOrEqual(9);
     });
 
     it('detects flat-topped breathing patterns', () => {
@@ -139,7 +140,7 @@ describe('Glasgow Index Engine', () => {
 
       // Should complete without error and return valid scores
       expect(result.overall).toBeGreaterThanOrEqual(0);
-      expect(result.overall).toBeLessThanOrEqual(8);
+      expect(result.overall).toBeLessThanOrEqual(9);
     });
   });
 });

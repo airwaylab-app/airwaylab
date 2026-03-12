@@ -168,9 +168,8 @@ export default function GlasgowIndexPage() {
               <span className="mt-px shrink-0 font-mono text-xs text-blue-400/70">04</span>
               <span>
                 <strong className="text-foreground">Composite index</strong> &mdash;
-                The overall Glasgow Index sums 8 component scores (Top Heavy is
-                computed but excluded from the overall). The theoretical maximum is
-                8.0, but in practice scores above 3 are extremely uncommon. The
+                The overall Glasgow Index sums all 9 component scores. The theoretical
+                maximum is 9.0, but in practice scores above 3 are extremely uncommon. The
                 original author describes 0&ndash;0.2 as &ldquo;good, clean
                 breathing&rdquo; and 3 as &ldquo;significant problems.&rdquo;
               </span>
