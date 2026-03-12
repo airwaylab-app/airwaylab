@@ -25,6 +25,9 @@ export function Header() {
               <span className="text-white">Airway</span>
               <span className="font-normal text-brand-teal">Lab</span>
             </span>
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-400">
+              beta
+            </span>
           </Link>
           <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
             <Link
