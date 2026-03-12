@@ -12,8 +12,8 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
  */
 const NightResultShape = z.object({
   dateStr: z.string().min(1),
-  glasgow: z.object({ overall: z.number() }),
-});
+  glasgow: z.object({ overall: z.number() }).passthrough(),
+}).passthrough();
 
 const SharePayloadSchema = z.object({
   analysisData: z.union([NightResultShape, z.array(NightResultShape).min(1)]),
