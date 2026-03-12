@@ -52,6 +52,12 @@ export function Header() {
               For Providers
             </Link>
             <Link
+              href="/glossary"
+              className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
+            >
+              Glossary
+            </Link>
+            <Link
               href="/about"
               className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
             >
@@ -93,6 +99,13 @@ export function Header() {
                       className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
                       For Providers
+                    </Link>
+                    <Link
+                      href="/glossary"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      Glossary
                     </Link>
                     <Link
                       href="/about"
