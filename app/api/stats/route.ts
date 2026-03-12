@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/sentry-utils';
 
 const statsRateLimiter = new RateLimiter({ windowMs: 60_000, max: 30 });
 
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
 
     if (uploadsError) {
       console.error('[stats] uploads count error:', uploadsError.message);
+      captureApiError(uploadsError, { route: 'stats', query: 'uploads' });
     }
 
     // Sum all nights from non-demo sessions
@@ -54,6 +56,7 @@ export async function GET(request: Request) {
 
     if (nightsError) {
       console.error('[stats] nights sum error:', nightsError.message);
+      captureApiError(nightsError, { route: 'stats', query: 'nights' });
     }
 
     const totalNights = nightsData?.reduce((sum, row) => sum + (row.night_count || 0), 0) ?? 0;
@@ -117,7 +120,8 @@ export async function GET(request: Request) {
         },
       }
     );
-  } catch {
+  } catch (err) {
+    captureApiError(err, { route: 'stats' });
     return NextResponse.json(
       {
         totalUploads: 0, totalNights: 0, totalContributions: 0, totalContributedNights: 0,
