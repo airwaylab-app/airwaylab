@@ -207,4 +207,22 @@ export const events = {
   /** Server-side data deletion successful */
   dataDeletionCompleted: () =>
     trackEvent('Data Deletion Completed'),
+
+  // ── Conversion & revenue ─────────────────────────────────────
+  /** User completed signup (auth callback verified) */
+  signupCompleted: (source: string) =>
+    trackEvent('Signup Completed', { source }),
+
+  /** Subscription created via Stripe */
+  subscriptionStarted: (tier: string, interval: string, source: string) =>
+    trackEvent('Subscription Started', { tier, interval, source }),
+
+  /** Subscription cancelled */
+  subscriptionCancelled: (tier: string, monthsActive: number) =>
+    trackEvent('Subscription Cancelled', { tier, months_active: monthsActive }),
+
+  // ── UX quality ───────────────────────────────────────────────
+  /** Error occurred and user recovered (or not) */
+  errorRecovery: (errorType: string, recovered: boolean) =>
+    trackEvent('Error Recovery', { error_type: errorType, recovered }),
 } as const;

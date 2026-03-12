@@ -30,6 +30,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Vercel Speed Insights** — Core Web Vitals (LCP, CLS, INP) real-user monitoring via `@vercel/speed-insights`, auto-configured on Vercel (analytics-completeness-audit)
+- **Subscription lifecycle analytics** — new `subscription_events` Supabase table tracking created/updated/cancelled/past_due events with MRR for LTV and churn analysis (analytics-completeness-audit)
+- **ML training data export** — two Supabase RPC functions (`export_ml_training_data`, `ml_dataset_stats`) and admin-only `/api/admin/ml-export` endpoint for exporting anonymised symptom contribution data as CSV or JSON (analytics-completeness-audit)
+- **4 new Plausible events** — `Signup Completed`, `Subscription Started`, `Subscription Cancelled`, `Error Recovery` for conversion and UX quality tracking (analytics-completeness-audit)
+
+### Fixed
+
+- **Privacy Policy accuracy** — replaced PostHog (listed but never integrated) with Vercel Speed Insights in both the product analytics bullet and the service providers table (analytics-completeness-audit)
+
 - **Waveform Decimation & IndexedDB Persistence** — Replaced min/max/avg bucketing with simple decimation (take every Nth sample), displaying actual measured flow values. Full 25 Hz Float32Array stored in IndexedDB for instant reload on return visits (90-day TTL). Multi-resolution decimation: full night at 1 Hz, 30min–2h at 2 Hz, 5–30min at 5 Hz, <5min at full 25 Hz. (waveform-decimation-indexeddb)
 
 ### Fixed

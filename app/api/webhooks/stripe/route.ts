@@ -2,9 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+/** Compute monthly recurring revenue in cents from a unit amount and interval. */
+function computeMrrCents(unitAmount: number, interval: string): number {
+  if (interval === 'year') return Math.round(unitAmount / 12);
+  return unitAmount; // monthly
+}
+
+/** Log a subscription lifecycle event for LTV/churn analytics. Non-blocking. */
+async function logSubscriptionEvent(
+  supabase: SupabaseClient,
+  params: {
+    userId: string | undefined;
+    eventType: 'created' | 'updated' | 'cancelled' | 'renewed' | 'past_due';
+    tier?: string;
+    interval?: string;
+    stripeSubscriptionId?: string;
+    mrrCents?: number;
+  }
+) {
+  const { error } = await supabase.from('subscription_events').insert({
+    user_id: params.userId ?? null,
+    event_type: params.eventType,
+    tier: params.tier ?? null,
+    interval: params.interval ?? null,
+    stripe_subscription_id: params.stripeSubscriptionId ?? null,
+    mrr_cents: params.mrrCents ?? null,
+  });
+  if (error) {
+    // Non-blocking — log but don't throw
+    console.error('[stripe-webhook] subscription_events insert failed:', error);
+  }
+}
 
 function getTierFromPrice(priceId: string): 'supporter' | 'champion' {
   const supporter_monthly = process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID;
@@ -83,6 +116,17 @@ export async function POST(request: NextRequest) {
         const priceId = firstItem?.price.id;
         const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
         const periodEnd = firstItem?.current_period_end;
+        const interval = firstItem?.price.recurring?.interval ?? 'unknown';
+
+        // Log subscription event for analytics
+        await logSubscriptionEvent(supabase, {
+          userId,
+          eventType: 'created',
+          tier,
+          interval,
+          stripeSubscriptionId: subscriptionId,
+          mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
+        });
 
         // Upsert subscription record
         const { error: upsertErr } = await supabase.from('subscriptions').upsert(
@@ -127,6 +171,17 @@ export async function POST(request: NextRequest) {
         const priceId = updatedItem?.price.id;
         const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
         const periodEnd = updatedItem?.current_period_end;
+        const updatedInterval = updatedItem?.price.recurring?.interval ?? 'unknown';
+
+        // Log subscription event for analytics
+        await logSubscriptionEvent(supabase, {
+          userId,
+          eventType: 'updated',
+          tier,
+          interval: updatedInterval,
+          stripeSubscriptionId: subscription.id,
+          mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+        });
 
         if (!userId) {
           console.error(`[stripe-webhook] subscription.updated missing userId, event=${event.id}`);
@@ -170,6 +225,13 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.supabase_user_id;
+
+        // Log subscription event for analytics
+        await logSubscriptionEvent(supabase, {
+          userId,
+          eventType: 'cancelled',
+          stripeSubscriptionId: subscription.id,
+        });
 
         // Mark subscription as canceled
         const { error: cancelErr } = await supabase
@@ -217,6 +279,13 @@ export async function POST(request: NextRequest) {
           : subDetails?.subscription?.id;
 
         if (subscriptionId) {
+          // Log subscription event for analytics
+          await logSubscriptionEvent(supabase, {
+            userId: undefined,
+            eventType: 'past_due',
+            stripeSubscriptionId: subscriptionId,
+          });
+
           await supabase
             .from('subscriptions')
             .update({ status: 'past_due' })
