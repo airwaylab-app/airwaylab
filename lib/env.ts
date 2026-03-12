@@ -51,6 +51,9 @@ export const serverEnv = {
 
   /** Secret for authenticating Vercel Cron requests */
   CRON_SECRET: process.env.CRON_SECRET ?? undefined,
+
+  /** Admin API key for internal endpoints (ML export, etc.) */
+  ADMIN_API_KEY: process.env.ADMIN_API_KEY ?? undefined,
 } as const;
 
 /**

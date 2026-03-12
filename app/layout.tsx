@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/header';
@@ -129,6 +130,7 @@ export default function RootLayout({
             <VersionChecker />
           </div>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

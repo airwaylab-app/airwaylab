@@ -136,8 +136,8 @@ export default function PrivacyPolicyPage() {
               browser type, page URL, and error stack traces. Does not include health data.
             </li>
             <li>
-              <strong>Product analytics:</strong> Collected by PostHog for feature usage patterns.
-              No health data is included.
+              <strong>Performance monitoring:</strong> Collected by Vercel Speed Insights for
+              page load performance (Core Web Vitals). No personal data or health data is included.
             </li>
           </ul>
 
@@ -259,10 +259,10 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2">Error traces, browser type, page URL</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">PostHog</td>
-                  <td className="py-2 pr-4">Product analytics</td>
-                  <td className="py-2 pr-4">EU</td>
-                  <td className="py-2">Feature usage patterns, no health data</td>
+                  <td className="py-2 pr-4 font-medium text-foreground">Vercel</td>
+                  <td className="py-2 pr-4">Speed Insights (RUM)</td>
+                  <td className="py-2 pr-4">Global edge</td>
+                  <td className="py-2">Core Web Vitals (LCP, CLS, INP), no personal data</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Resend</td>
