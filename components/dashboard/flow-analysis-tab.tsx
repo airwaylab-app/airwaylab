@@ -136,13 +136,13 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             onClick={clickable ? () => openMetric('RERA Count', (x) => x.ned.reraCount) : undefined}
           />
           <MetricCard
-            label="Est. Arousal Index"
+            label="Resp. Disruption Index"
             value={n.ned.estimatedArousalIndex}
             unit="/hr"
             threshold={THRESHOLDS.eai}
             previousValue={p?.ned.estimatedArousalIndex}
             tooltip="Estimated arousals per hour. Detects sudden spikes in respiratory rate (>20% above baseline) or tidal volume (>30% above baseline) compared to a 120-second rolling window. A 15-second refractory period prevents double-counting. Lower means less fragmented sleep."
-            onClick={clickable ? () => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
+            onClick={clickable ? () => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai }) : undefined}
           />
         </div>
       </div>

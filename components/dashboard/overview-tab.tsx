@@ -20,6 +20,7 @@ import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
+import { NightNotesPanel } from '@/components/dashboard/night-notes-panel';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation } from '@/lib/metric-explanations';
 import type { GlasgowComponents } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
@@ -208,6 +209,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         </div>
       </details>
 
+      {/* Night Context Notes */}
+      {!isDemo && <NightNotesPanel dateStr={n.dateStr} isPaid={isPaid} />}
+
       {/* Key Metrics Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
         <MetricCard
@@ -363,14 +367,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClick={() => openMetric('Combined FL', (x) => x.ned.combinedFLPct, { unit: '%', threshold: THRESHOLDS.combinedFL })}
         />
         <MetricCard
-          label="Est. Arousal Index"
+          label="Resp. Disruption Index"
           value={n.ned.estimatedArousalIndex}
           unit="/hr"
           threshold={THRESHOLDS.eai}
           previousValue={p?.ned.estimatedArousalIndex}
           compact
-          tooltip="Estimated arousals (brief awakenings) per hour, derived from breathing pattern changes. Lower means less fragmented sleep."
-          onClick={() => openMetric('Est. Arousal Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
+          tooltip="Respiratory disruptions per hour — recovery breaths following flow-limited breathing. This flow-based estimate typically reads higher than in-lab arousal index. Lower is better."
+          onClick={() => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
       <MetricExplanation

@@ -39,15 +39,15 @@ export default function CNSSensitizationPost() {
           <p>
             But some people show a pattern that breaks this logic entirely. Their flow limitation
             is mild — maybe a Glasgow Index of 1 or 2. Their airway isn&apos;t collapsing
-            dramatically. Yet their estimated arousal index is sky-high: 40, 60, even over 100
+            dramatically. Yet their respiratory disruption index is elevated: 15, 20, or higher
             events per hour. Their brain is reacting as though something catastrophic is happening,
             even though the breathing disruption is minor.
           </p>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <p className="text-sm font-semibold text-amber-400">The Key Pattern</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Low Glasgow Index (mild flow limitation) paired with a high Estimated Arousal Index
-              (frequent arousals). If you&apos;ve seen this in your AirwayLab data, you&apos;re
+              Low Glasgow Index (mild flow limitation) paired with a high Respiratory Disruption Index
+              (frequent disruptions). If you&apos;ve seen this in your AirwayLab data, you&apos;re
               looking at a pattern researchers have been studying for over two decades.
             </p>
           </div>
@@ -166,26 +166,26 @@ export default function CNSSensitizationPost() {
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-emerald-400" />
                 <p className="text-sm font-semibold text-foreground">
-                  The Estimated Arousal Index (EAI)
+                  The Respiratory Disruption Index (RDI)
                 </p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Measures how frequently your breathing pattern shows signs of arousal — sudden
-                changes in respiratory rate and tidal volume that suggest your brain is repeatedly
-                interrupting sleep.
+                Measures how frequently your breathing shows a disruption pattern — sudden
+                flow-limited breaths followed by recovery breaths with increased rate and volume.
+                Note: this flow-based metric typically reads higher than in-lab arousal index.
               </p>
             </div>
           </div>
           <p>
-            When these two metrics tell different stories — mild flow limitation but extreme
-            arousal frequency — you may be looking at the sensitization pattern. Your airway
+            When these two metrics tell different stories — mild flow limitation but elevated
+            disruption frequency — you may be looking at the sensitization pattern. Your airway
             isn&apos;t the main problem. Your brain&apos;s response to your airway is.
           </p>
           <p>
             This isn&apos;t something OSCAR or your PAP machine&apos;s built-in software can
             show you. AHI doesn&apos;t capture it. Even RERA scoring only tells you part of the
             story. The relationship <em>between</em> the severity of your flow limitation and the
-            magnitude of your arousal response is what makes this pattern visible — and that
+            magnitude of your respiratory disruption response is what makes this pattern visible — and that
             requires analyzing both simultaneously.
           </p>
         </div>
@@ -220,9 +220,9 @@ export default function CNSSensitizationPost() {
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
               <span>
-                The EAI is an <em>estimate</em> derived from flow data, not from EEG. A true
-                arousal index requires brain wave monitoring during a polysomnogram. The EAI is a
-                useful proxy, but it&apos;s not a direct measurement.
+                The Respiratory Disruption Index is a <em>flow-based estimate</em>, not equivalent
+                to the arousal index measured with EEG during a polysomnogram. Published research
+                shows flow-only methods typically detect 2–3× more events than EEG-confirmed arousals.
               </span>
             </li>
           </ul>
@@ -247,7 +247,7 @@ export default function CNSSensitizationPost() {
                   Discuss it with your sleep specialist.
                 </strong>{' '}
                 Bring your AirwayLab report. Point to the gap between your Glasgow Index and your
-                EAI. Ask whether a sensitization component might be contributing to your residual
+                Respiratory Disruption Index. Ask whether a sensitization component might be contributing to your residual
                 symptoms.
               </span>
             </li>
@@ -276,7 +276,7 @@ export default function CNSSensitizationPost() {
               <span>
                 <strong className="text-foreground">Track your trends.</strong> AirwayLab&apos;s
                 multi-night view lets you see whether the mismatch is consistent or variable. If
-                your EAI is always high regardless of what your Glasgow does, that&apos;s a
+                your Respiratory Disruption Index is always elevated regardless of what your Glasgow does, that&apos;s a
                 meaningful pattern worth sharing with your doctor.
               </span>
             </li>
@@ -307,7 +307,7 @@ export default function CNSSensitizationPost() {
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">See If Your Data Shows This Pattern</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload your ResMed SD card to see your Glasgow Index alongside your Estimated Arousal
+          Upload your ResMed SD card to see your Glasgow Index alongside your Respiratory Disruption
           Index. AirwayLab will flag the mismatch automatically if it&apos;s present. Free,
           open-source, and 100% private.
         </p>

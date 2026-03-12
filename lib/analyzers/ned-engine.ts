@@ -23,7 +23,7 @@ export function computeNED(flowData: Float32Array, samplingRate: number): NEDRes
   // Detect RERA sequences
   const reras = detectRERASequences(breaths, samplingRate);
 
-  // Compute Estimated Arousal Index
+  // Compute Respiratory Disruption Index
   const eai = computeEAI(breaths, samplingRate);
 
   // Compute night summary
@@ -275,16 +275,21 @@ function evaluateRERACandidate(
 }
 
 // ============================================================
-// Estimated Arousal Index (EAI)
-// Based on existentialblu's wobble-analysis-tool algorithm.
-// Detects arousal events from respiratory rate and tidal volume
-// spikes relative to a 120-second rolling baseline.
+// Respiratory Disruption Index (RDI-est)
+// Estimates respiratory disruptions from flow data only.
+// Requires preceding flow limitation (NED >= 20% or FI >= 0.85)
+// followed by a spike in BOTH respiratory rate AND tidal volume,
+// consistent with a recovery breath after flow-limited breathing.
+//
+// This is NOT equivalent to PSG arousal index (which requires EEG).
+// Respiratory-only methods typically detect 2-3x more events than
+// EEG-confirmed arousals (Mansour et al. 2019, Jordan et al. 2011).
 // ============================================================
 function computeEAI(breaths: Breath[], samplingRate: number): number {
   if (breaths.length < 10) return 0;
 
-  // Compute per-breath respiratory rate and tidal volume
-  const breathData: { time: number; rate: number; volume: number }[] = [];
+  // Compute per-breath respiratory rate, tidal volume, and FL status
+  const breathData: { time: number; rate: number; volume: number; isFL: boolean }[] = [];
 
   for (let i = 1; i < breaths.length; i++) {
     const prev = breaths[i - 1];
@@ -302,25 +307,38 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
       volume += curr.inspFlow[j] / samplingRate;
     }
 
+    // Flow limitation: NED >= 20% or FI >= 0.85
+    const isFL = curr.ned >= 20 || curr.fi >= 0.85;
+
     breathData.push({
       time: curr.inspStart / samplingRate,
       rate,
       volume,
+      isFL,
     });
   }
 
   if (breathData.length < 10) return 0;
 
   const BASELINE_WINDOW = 120; // seconds
-  const RATE_THRESHOLD = 0.20; // 20% rate increase
-  const VOLUME_THRESHOLD = 0.30; // 30% volume increase
-  const REFRACTORY = 15; // seconds between events
+  const RATE_THRESHOLD = 0.25; // 25% rate increase
+  const VOLUME_THRESHOLD = 0.40; // 40% volume increase
+  const REFRACTORY = 30; // seconds between events
+  const MIN_FL_PRECEDING = 2; // minimum flow-limited breaths before spike
 
   let arousalCount = 0;
   let lastArousalTime = -Infinity;
 
   for (let i = 0; i < breathData.length; i++) {
     const current = breathData[i];
+
+    // Check for preceding flow limitation: >= MIN_FL_PRECEDING of
+    // the last 5 breaths must be flow-limited
+    let flCount = 0;
+    for (let k = Math.max(0, i - 5); k < i; k++) {
+      if (breathData[k].isFL) flCount++;
+    }
+    if (flCount < MIN_FL_PRECEDING) continue;
 
     // Compute rolling baseline from preceding window
     let rateSum = 0, volSum = 0, count = 0;
@@ -339,7 +357,8 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
     const rateSpike = baseRate > 0 && (current.rate - baseRate) / baseRate > RATE_THRESHOLD;
     const volSpike = baseVol > 0 && (current.volume - baseVol) / baseVol > VOLUME_THRESHOLD;
 
-    if ((rateSpike || volSpike) && current.time - lastArousalTime > REFRACTORY) {
+    // Require BOTH rate AND volume spike (not OR)
+    if (rateSpike && volSpike && current.time - lastArousalTime > REFRACTORY) {
       arousalCount++;
       lastArousalTime = current.time;
     }
