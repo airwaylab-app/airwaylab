@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-12
+
 ### Added
 
 - **Hypopnea & Amplitude Stability Detection** — new Airway Stability section in Flow Analysis tab with Brief Obstruction Index, Hypopnea Index, and Amplitude CV metrics. Machine-preferred/algorithm-fallback for hypopnea counting via EVE.edf. NED-invisible event flagging. 5-minute epoch stability analysis. 3 new insight rules, CSV/forum export columns, threshold definitions. Engine version bumped to 0.7.0 (hypopnea-amplitude-stability)
