@@ -28,6 +28,8 @@ interface Props {
   insights: Insight[];
   aiInsights?: Insight[] | null;
   aiLoading?: boolean;
+  /** Whether the AI insights are from deep (per-breath) analysis */
+  isDeepAnalysis?: boolean;
   defaultExpanded: boolean;
   /** Optional CTA rendered below AI insights */
   aiCTA?: ReactNode;
@@ -37,6 +39,7 @@ export function InsightsPanel({
   insights,
   aiInsights,
   aiLoading = false,
+  isDeepAnalysis = false,
   defaultExpanded,
   aiCTA,
 }: Props) {
@@ -70,7 +73,7 @@ export function InsightsPanel({
         {aiLoading && (
           <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3 animate-fade-in-up">
             <Loader2 className="h-4 w-4 animate-spin text-primary/60" />
-            <span className="text-sm text-muted-foreground">Loading AI insights...</span>
+            <span className="text-sm text-muted-foreground">{isDeepAnalysis ? 'Analysing waveform patterns...' : 'Loading AI insights...'}</span>
           </div>
         )}
 
@@ -96,6 +99,11 @@ export function InsightsPanel({
                           <Sparkles className="h-2.5 w-2.5" />
                           AI
                         </span>
+                        {isDeepAnalysis && (
+                          <span className="inline-flex items-center rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                            Deep Analysis
+                          </span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                         {insight.body}

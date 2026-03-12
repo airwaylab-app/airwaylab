@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess, getAIRemaining } from '@/lib/auth/feature-gate';
-import { fetchAIInsights } from '@/lib/ai-insights-client';
+import { fetchAIInsights, fetchDeepAIInsights } from '@/lib/ai-insights-client';
 import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
 import { InsightsPanel } from '@/components/dashboard/insights-panel';
 import { AILockedTeasers } from '@/components/dashboard/ai-locked-teasers';
@@ -52,6 +52,7 @@ export function AIInsightsGate({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [serverRemainingCredits, setServerRemainingCredits] = useState<number | undefined>(undefined);
+  const [isDeepResult, setIsDeepResult] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // Track which night the current insights are for
@@ -90,18 +91,40 @@ export function AIInsightsGate({
 
     events.aiInsightsButtonClicked(tier, aiRemaining === Infinity ? 999 : aiRemaining);
 
-    fetchAIInsights(
-      nights,
-      selectedIdx >= 0 ? selectedIdx : 0,
-      therapyChangeDate,
-      controller.signal,
-      notes
-    )
+    const nightIdx = selectedIdx >= 0 ? selectedIdx : 0;
+
+    // Use deep fetch for paid users — includes per-breath data from the selected night
+    const fetchFn = isDeepAccess
+      ? () => {
+          // Extract per-breath summary from NED engine breaths if available
+          const night = nights[nightIdx];
+          const nedData = night.ned as unknown as Record<string, unknown>;
+          const nedBreaths = nedData.breaths as Array<Record<string, unknown>> | undefined;
+          const perBreathSummary = nedBreaths && nedBreaths.length > 0
+            ? {
+                breaths: nedBreaths.map((b) => ({
+                  ned: Number(b.ned ?? 0),
+                  fi: Number(b.flatnessIndex ?? 0),
+                  mShape: Boolean(b.mShape),
+                  tPeakTi: Number(b.tPeakTi ?? 0),
+                  qPeak: Number(b.qPeak ?? 0),
+                  duration: Number(b.duration ?? 0),
+                })),
+                breathCount: nedBreaths.length,
+                sampleRate: Number(nedData.sampleRate ?? 25),
+              }
+            : undefined;
+          return fetchDeepAIInsights(nights, nightIdx, therapyChangeDate, controller.signal, notes, perBreathSummary);
+        }
+      : () => fetchAIInsights(nights, nightIdx, therapyChangeDate, controller.signal, notes);
+
+    fetchFn()
       .then((result) => {
         if (controller.signal.aborted) return;
         if (result) {
           setServerRemainingCredits(result.remainingCredits);
           setAiInsights(result.insights);
+          setIsDeepResult(result.isDeep ?? false);
           insightsNightRef.current = selectedNight.dateStr;
           events.aiInsightsGenerated(tier, result.insights.length, isDeepAccess);
         } else {
@@ -193,6 +216,7 @@ export function AIInsightsGate({
           insights={ruleBasedInsights}
           aiInsights={aiInsights}
           aiLoading={aiLoading}
+          isDeepAnalysis={isDeepResult}
           defaultExpanded={!isNewUser}
           aiCTA={
             aiInsights && aiInsights.length > 0
