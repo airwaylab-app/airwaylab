@@ -74,7 +74,7 @@ describe('computeIFLRisk', () => {
   });
 
   it('returns 100 when all inputs are maximum', () => {
-    const night = makeNight({ flScore: 100, nedMean: 100, fiMean: 0.0, glasgowOverall: 8 });
+    const night = makeNight({ flScore: 100, nedMean: 100, fiMean: 0.0, glasgowOverall: 9 });
     expect(computeIFLRisk(night)).toBe(100);
   });
 
@@ -82,11 +82,11 @@ describe('computeIFLRisk', () => {
     // FL Score 50 × 0.35 = 17.5
     // NED Mean 40 × 0.30 = 12.0
     // FI (1 - 0.6) × 100 = 40 × 0.20 = 8.0
-    // Glasgow (3 / 8) × 100 = 37.5 × 0.15 = 5.625
-    // Total = 43.125
+    // Glasgow (3 / 9) × 100 = 33.33 × 0.15 = 5.0
+    // Total = 42.5
     const night = makeNight({ flScore: 50, nedMean: 40, fiMean: 0.6, glasgowOverall: 3 });
     const result = computeIFLRisk(night);
-    expect(result).toBeCloseTo(43.125, 1);
+    expect(result).toBeCloseTo(42.5, 1);
   });
 
   it('scores green for mild FL data', () => {

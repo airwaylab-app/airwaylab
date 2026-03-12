@@ -35,7 +35,7 @@ describe('Glasgow Index — real data', () => {
     const glasgow = computeGlasgowIndex(edf.flowData, edf.samplingRate);
 
     expect(glasgow.overall).toBeGreaterThanOrEqual(0);
-    expect(glasgow.overall).toBeLessThanOrEqual(8);
+    expect(glasgow.overall).toBeLessThanOrEqual(9);
 
     const components = [
       'skew', 'spike', 'flatTop', 'topHeavy', 'multiPeak',

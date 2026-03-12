@@ -159,8 +159,8 @@ describe('generateInsights', () => {
   describe('symptom rating cross-reference', () => {
     it('generates symptom-fl-correlation when IFL >45 and rating <=2', () => {
       // Build a night with IFL >45 but minimal other warning triggers
-      // IFL Risk = 70*0.35 + 35*0.30 + 35*0.20 + (2.0/8)*100*0.15
-      //          = 24.5 + 10.5 + 7.0 + 3.75 = 45.75 → above threshold
+      // IFL Risk = 70*0.35 + 35*0.30 + 35*0.20 + (2.0/9)*100*0.15
+      //          = 24.5 + 10.5 + 7.0 + 3.33 = 45.33 → above threshold
       const highFLNight: NightResult = {
         ...SAMPLE_NIGHTS[2],
         wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
@@ -176,10 +176,10 @@ describe('generateInsights', () => {
 
     it('generates symptom-fl-asymptomatic when IFL >45 and rating >=4', () => {
       // Build a night with IFL >45 but minimal other warning triggers
-      // IFL Risk = 65*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/8)*100*0.15
-      //          = 22.75 + 10.5 + 7.0 + 3.75 = 44.0... need slightly more
-      // IFL Risk = 70*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/8)*100*0.15
-      //          = 24.5 + 10.5 + 7.0 + 3.75 = 45.75 → just above threshold
+      // IFL Risk = 65*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/9)*100*0.15
+      //          = 22.75 + 10.5 + 7.0 + 3.33 = 43.58... need slightly more
+      // IFL Risk = 70*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/9)*100*0.15
+      //          = 24.5 + 10.5 + 7.0 + 3.33 = 45.33 → just above threshold
       const highFLNight: NightResult = {
         ...SAMPLE_NIGHTS[2],
         wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },

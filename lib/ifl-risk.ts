@@ -28,13 +28,13 @@ function safe(v: number): number {
  * - FL Score (0–100): already normalised
  * - NED Mean (0–100): already normalised
  * - FI Mean (0–1): inverted → (1 - fi) × 100
- * - Glasgow Overall (0–8): scaled → (overall / 8) × 100
+ * - Glasgow Overall (0–9): scaled → (overall / 9) × 100
  */
 export function computeIFLRisk(night: NightResult): number {
   const flScoreNorm = safe(night.wat.flScore);
   const nedMeanNorm = safe(night.ned.nedMean);
   const fiInvertedNorm = (1 - safe(night.ned.fiMean)) * 100;
-  const glasgowNorm = (safe(night.glasgow.overall) / 8) * 100;
+  const glasgowNorm = (safe(night.glasgow.overall) / 9) * 100;
 
   const risk =
     flScoreNorm * W_FL_SCORE +
