@@ -91,9 +91,6 @@ function AnalyzePageInner() {
   const contributeOptInRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_contribute_optin') === '1'; } catch { return false; } })()
   );
-  const storageConsentRef = useRef(
-    typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_storage_consent') === '1'; } catch { return false; } })()
-  );
   const [oximetryJustAdded, setOximetryJustAdded] = useState(false);
   const hadOximetryRef = useRef(false);
   const [showContributeNudge, setShowContributeNudge] = useState(false);
@@ -261,11 +258,6 @@ function AnalyzePageInner() {
           uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
           // Store aggregate analysis data
           storeAnalysisData(newState.nights).catch(() => { /* logged in client */ });
-        } else if (storageConsentRef.current && sdFilesRef.current.length > 0) {
-          // Legacy path for existing consented users
-          events.cloudSyncUsed();
-          const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
-          uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
         }
 
         // Update local lifetime night count (deduplicate by date)

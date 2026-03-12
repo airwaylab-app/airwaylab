@@ -203,7 +203,13 @@ class UploadOrchestrator {
     });
 
     if (!res.ok) {
-      throw new Error('Failed to check existing files');
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('Cloud sync requires an active session. Please sign in again.');
+      }
+      console.error('[upload-orchestrator] check-hashes failed:', res.status, body.error);
+      // For server errors (500/503), skip dedup and attempt upload anyway
+      return new Set<string>();
     }
 
     const data = await res.json();
@@ -305,6 +311,9 @@ class UploadOrchestrator {
 
     if (!presignRes.ok) {
       const err = await presignRes.json().catch(() => ({ error: 'Presign failed' }));
+      if (presignRes.status === 401 || presignRes.status === 403) {
+        throw new Error('Cloud sync requires an active session. Please sign in again.');
+      }
       throw new Error(err.error || `Presign failed: ${presignRes.status}`);
     }
 
