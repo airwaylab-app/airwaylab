@@ -78,3 +78,27 @@ jobs:
           model: claude-sonnet-4-6
           prompt_file: .github/prompts/fix-sentry-error.md
           issue_number: ${{ github.event.issue.number }}
+
+      - name: Enable auto-merge
+        if: |
+          steps.check-branch.outputs.exists == 'false' &&
+          steps.rate-limit.outputs.exceeded == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="fix/sentry-${{ github.event.issue.number }}"
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null)
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR found — Claude Code may have applied needs-human label instead"
+            exit 0
+          fi
+
+          # Check for hold label
+          HOLD=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name] | map(select(. == "hold")) | length')
+          if [ "$HOLD" -gt 0 ]; then
+            echo "PR #$PR_NUMBER has 'hold' label — skipping auto-merge"
+            exit 0
+          fi
+
+          gh pr merge "$PR_NUMBER" --auto --squash || echo "Auto-merge could not be enabled (check repo settings)"
