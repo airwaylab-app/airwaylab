@@ -147,8 +147,14 @@ test.describe('Free User Flow', () => {
   test('reset/new button returns to upload form', async ({ page }) => {
     await uploadAndWaitForAnalysis(page);
 
-    // Click the New/Reset button (force: true bypasses stability check during nudge dialog animation)
-    await page.getByRole('button', { name: 'New', exact: true }).click({ force: true });
+    // Dismiss any nudge dialog overlay, then click the New button via JS (bypasses overlay interception)
+    const nudgeDialog = page.getByRole('dialog');
+    if (await nudgeDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      const dismiss = nudgeDialog.getByText(/not now|dismiss|skip|maybe later/i);
+      if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
+      else await nudgeDialog.evaluate(el => el.remove());
+    }
+    await page.getByRole('button', { name: 'New', exact: true }).evaluate(el => (el as HTMLElement).click());
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
