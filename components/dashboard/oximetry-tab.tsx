@@ -273,6 +273,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
           <MetricCard
             label="HR Ratio"
             value={ox.coupledHRRatio}
+            unit="%"
             format="pct"
             previousValue={pOx?.coupledHRRatio}
             compact
@@ -324,7 +325,6 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               label="HR SD"
               value={ox.hrSD}
               unit="bpm"
-              format="pct"
               previousValue={pOx?.hrSD}
               compact
               tooltip="Standard deviation of heart rate — measures HR variability. Higher values may indicate frequent arousals or autonomic instability."

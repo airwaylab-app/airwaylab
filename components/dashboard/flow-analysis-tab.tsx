@@ -186,7 +186,6 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             <MetricCard
               label="Flatness Index"
               value={n.ned.fiMean}
-              format="pct"
               previousValue={p?.ned.fiMean}
               compact
               tooltip="Measures how flat (vs rounded) the inspiratory flow peak is. Flatter peaks suggest flow limitation."
@@ -196,7 +195,6 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
               label="FI > 0.85"
               value={n.ned.fiFL85Pct}
               unit="%"
-              format="pct"
               previousValue={p?.ned.fiFL85Pct}
               compact
               tooltip="Percentage of breaths with Flatness Index above 0.85 — a very flat waveform indicating likely flow limitation."
@@ -206,7 +204,6 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
               label="M-Shape"
               value={n.ned.mShapePct}
               unit="%"
-              format="pct"
               previousValue={p?.ned.mShapePct}
               compact
               tooltip="Percentage of breaths with an M-shaped flow pattern — a double-peaked waveform classic for flow limitation."
@@ -215,7 +212,6 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             <MetricCard
               label="Tpeak/Ti Mean"
               value={n.ned.tpeakMean}
-              format="pct"
               previousValue={p?.ned.tpeakMean}
               compact
               tooltip="Ratio of time to peak flow vs total inspiratory time. Values closer to 0.5 suggest normal ramp; lower values suggest early peaking from obstruction."
