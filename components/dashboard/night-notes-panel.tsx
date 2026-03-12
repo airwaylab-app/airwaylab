@@ -109,7 +109,8 @@ export function NightNotesPanel({ dateStr, isPaid = false }: NightNotesPanelProp
       loaded.position !== null ||
       loaded.stress !== null ||
       loaded.exercise !== null ||
-      loaded.note.trim() !== ''
+      loaded.note.trim() !== '' ||
+      loaded.symptomRating !== null
     );
   }, [dateStr]);
 
@@ -125,7 +126,8 @@ export function NightNotesPanel({ dateStr, isPaid = false }: NightNotesPanelProp
           next.position !== null ||
           next.stress !== null ||
           next.exercise !== null ||
-          next.note.trim() !== ''
+          next.note.trim() !== '' ||
+          next.symptomRating !== null
         );
         return next;
       });
