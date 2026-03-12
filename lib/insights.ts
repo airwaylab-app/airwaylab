@@ -83,7 +83,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
       id: 'glasgow-bad',
       type: 'warning',
       title: 'Significant flow limitation detected',
-      body: `Glasgow Index of ${fmt(n.glasgow.overall)} suggests persistent upper airway obstruction. Consider discussing pressure adjustments with your clinician.`,
+      body: `Glasgow Index of ${fmt(n.glasgow.overall)} suggests persistent upper airway obstruction. Review your flow waveforms for visual confirmation and discuss with your clinician.`,
       category: 'glasgow',
     });
   }
@@ -133,15 +133,11 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
   const eaiVal = n.ned.estimatedArousalIndex ?? 0;
   const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai);
   if (eaiL === 'bad') {
-    const hints: string[] = [];
-    if (n.settings.rampEnabled) hints.push('ramp settings');
-    if (n.settings.maskType) hints.push('mask fit');
-    hints.push('EPR/PS level', 'positional factors');
     insights.push({
       id: 'eai-high',
       type: 'warning',
       title: 'Elevated respiratory disruption index',
-      body: `RDI of ${fmt(eaiVal)}/hr suggests frequent recovery breaths following flow-limited breathing. Areas to investigate: ${hints.join(', ')}. Log your night context (caffeine, congestion, position) to help identify patterns. Get personalised suggestions with AI Analysis.`,
+      body: `RDI of ${fmt(eaiVal)}/hr suggests frequent recovery breaths following flow-limited breathing. Areas to investigate: EPR/PS level, positional factors. Get personalised suggestions with AI Analysis.`,
       category: 'ned',
     });
   } else if (eaiL === 'good' && eaiVal > 0) {
@@ -325,7 +321,7 @@ function trendInsights(
       id: 'trend-glasgow-worsening',
       type: 'actionable',
       title: 'Glasgow Index trending upward',
-      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0])} → ${fmt(glasgowVals[glasgowVals.length - 1])}). Consider discussing pressure or settings changes.`,
+      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0])} → ${fmt(glasgowVals[glasgowVals.length - 1])}). Review flow waveforms alongside this trend for context.`,
       category: 'trend',
     });
   }
@@ -368,7 +364,7 @@ function trendInsights(
       id: 'consistent-bad',
       type: 'actionable',
       title: 'Persistent flow limitation across all nights',
-      body: `All ${nights.length} nights show elevated Glasgow Index. A pressure or settings review is strongly recommended.`,
+      body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern.`,
       category: 'trend',
     });
   }

@@ -24,7 +24,9 @@ describe('persistence', () => {
   describe('persistResults', () => {
     it('saves results to localStorage', () => {
       const result = persistResults(SAMPLE_NIGHTS, null);
-      expect(result).toBe(true);
+      expect(result.saved).toBe(true);
+      expect(result.nightsSaved).toBe(SAMPLE_NIGHTS.length);
+      expect(result.nightsDropped).toBe(0);
       expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
     });
 
@@ -56,31 +58,37 @@ describe('persistence', () => {
       expect(parsed.savedAt).toBeLessThanOrEqual(after);
     });
 
-    it('returns false when data exceeds size limit', () => {
-      // Create a massive nights array that would exceed 4MB
-      const hugeNights = Array.from({ length: 500 }, (_, i) => ({
+    it('saves all nights when stripped data fits within limit', () => {
+      // Create a large nights array — breaths are stripped so should still fit
+      const manyNights = Array.from({ length: 500 }, (_, i) => ({
         ...SAMPLE_NIGHTS[0],
         dateStr: `2025-01-${String(i + 1).padStart(2, '0')}`,
         ned: {
           ...SAMPLE_NIGHTS[0].ned,
-          // Add a large dummy field to bloat the size
           breaths: new Array(5000).fill({ nedPct: 10, fi: 0.5, tpeak: 0.3 }),
         },
       }));
-      // Note: stripBulkData will remove breaths, so this should still succeed
-      // unless the base data alone is too big. The actual test is the size check.
-      const result = persistResults(hugeNights as any, null);
+      const result = persistResults(manyNights as any, null);
       // With stripped data, 500 nights should still be within 4MB
-      expect(result).toBe(true);
+      expect(result.saved).toBe(true);
+      expect(result.nightsSaved).toBe(500);
+      expect(result.nightsDropped).toBe(0);
     });
 
-    it('returns false when localStorage throws', () => {
-      // Simulate QuotaExceededError
-      (localStorageMock.setItem as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+    it('returns failure when localStorage throws', () => {
+      // Simulate QuotaExceededError — must persist across all setItem calls
+      // so the progressive fallback also fails
+      const originalSetItem = localStorageMock.setItem;
+      (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = vi.fn(() => {
         throw new DOMException('quota exceeded', 'QuotaExceededError');
       });
       const result = persistResults(SAMPLE_NIGHTS, null);
-      expect(result).toBe(false);
+      expect(result.saved).toBe(false);
+      expect(result.nightsSaved).toBe(0);
+      expect(result.nightsDropped).toBe(SAMPLE_NIGHTS.length);
+      expect(result.reason).toBeDefined();
+      // Restore original mock
+      (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = originalSetItem;
     });
   });
 

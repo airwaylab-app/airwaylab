@@ -27,6 +27,7 @@ const initialState: AnalysisState = {
   error: null,
   therapyChangeDate: null,
   warning: null,
+  persistenceWarning: null,
 };
 
 export class AnalysisOrchestrator {
@@ -183,13 +184,14 @@ export class AnalysisOrchestrator {
 
       // ── Save manifest + results ──
       saveManifest(buildManifest(sdArr));
-      persistResults(merged, therapyChangeDate);
+      const persistResult = persistResults(merged, therapyChangeDate);
 
       this.setState({
         status: 'complete',
         nights: merged,
         therapyChangeDate,
         warning,
+        persistenceWarning: persistResult.reason ?? null,
         progress: { current: 1, total: 1, stage: 'Complete' },
       });
 
@@ -329,13 +331,14 @@ export class AnalysisOrchestrator {
 
       // Persist updated results
       const therapyChangeDate = detectTherapyChange(merged);
-      persistResults(merged, therapyChangeDate);
+      const persistResult = persistResults(merged, therapyChangeDate);
 
       this.setState({
         status: 'complete',
         nights: merged,
         therapyChangeDate,
         warning,
+        persistenceWarning: persistResult.reason ?? null,
         progress: { current: 1, total: 1, stage: 'Complete' },
       });
 

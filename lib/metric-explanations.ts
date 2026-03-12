@@ -5,6 +5,43 @@ function fmt(n: number, dp = 1): string {
   return n.toFixed(dp);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Plain-language methodology descriptions                           */
+/*  Used in MetricCard info popovers and the About page               */
+/* ------------------------------------------------------------------ */
+
+export const METRIC_METHODOLOGIES = {
+  glasgowIndex:
+    'Each breath is scored against 9 shape characteristics (skew, spike, flat top, top heavy, multi-peak, no pause, inspiratory rate, multi-breath, variable amplitude). Each component represents the proportion of breaths exhibiting that characteristic (0\u20131). The overall Glasgow Index sums 8 components (excluding Top Heavy). Typical scores range from 0 to about 3 \u2014 scores above 3 are rare and indicate very significant problems. It\u2019s a holistic breath-shape score that catches many types of abnormality, not just classic flow limitation.',
+
+  flScore:
+    'Computed by the WAT (Wobble Analysis Tool) engine. For each breath window, it measures the ratio of tidal volume variance in the top half vs the full signal. A higher ratio means more variation is concentrated at the flow peaks, indicating flat-topped (flow-limited) breathing. This is a population-level metric \u2014 it looks at the overall distribution of breath shapes, not individual breaths.',
+
+  nedMean:
+    'Measured per-breath as (Qpeak \u2212 Qmid) / Qpeak \u00d7 100, where Qpeak is peak inspiratory flow and Qmid is flow at the midpoint of inspiration. When the airway narrows during inhalation, mid-inspiratory flow drops below peak flow. The NED mean is the average of this ratio across all breaths in the night.',
+
+  reraIndex:
+    'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Tpeak/Ti exceeds 0.40. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
+
+  eai:
+    'Estimated by detecting sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). Each spike suggests a micro-awakening that fragments sleep. A 15-second refractory period prevents double-counting. This is a proxy \u2014 true arousals require EEG, but respiratory pattern changes correlate well with cortical arousals.',
+
+  regularity:
+    'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing often indicates a persistently narrowed airway forcing uniform restricted breaths. Lower scores reflect healthy natural breath-to-breath variability.',
+
+  periodicity:
+    'Applies FFT (frequency spectrum analysis) to minute ventilation, looking for power concentrated in the 0.01\u20130.03 Hz band. This band corresponds to 30\u2013100 second breathing cycles, characteristic of periodic breathing or Cheyne-Stokes respiration.',
+
+  combinedFL:
+    'Percentage of breaths classified as flow-limited by either NED (\u226534%) or Flatness Index (\u22650.85). Combines both detection methods to catch obstruction that either method alone might miss.',
+
+  odi3:
+    'Counts the number of times per hour your blood oxygen drops by 3% or more from a 2-minute rolling baseline. Each drop is called a desaturation event. More events per hour indicate more frequent breathing disruptions affecting oxygen levels.',
+
+  whyDisagree:
+    'Glasgow, FL Score, and NED use different methods to detect different aspects of flow limitation. Glasgow scores 9 breath-shape characteristics holistically. FL Score measures population-level flatness across all breaths. NED measures per-breath peak-to-mid flow drops specifically. A high FL Score with low Glasgow can happen when breaths are moderately flat but don\u2019t show the specific shape distortions Glasgow targets (skew, spikes, multi-peaks). Low NED with high Glasgow occurs when breath shapes are abnormal in ways that don\u2019t affect the peak-to-mid flow ratio. Using all three together gives a more complete picture than any single metric.',
+} as const;
+
 export function getGlasgowExplanation(value: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {

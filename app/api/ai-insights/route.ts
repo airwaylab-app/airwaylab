@@ -29,10 +29,10 @@ Focus on:
 - Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL predicts sleepiness independently of arousals via limbic/HPA axis stress response. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 
 Rules:
+- Describe what the data shows — patterns, correlations, and observations. Do NOT recommend specific therapy or pressure changes based on metrics alone. Metrics are useful for verifying whether changes worked, but the visual picture (flow waveforms, apnea events, pressure traces, and breath forms together) is needed to guide adjustments. Frame insights as "what the data shows" rather than "what to change".
 - Always include "discuss with your clinician" or similar language in actionable insights
 - Never claim to be a medical device or provide a diagnosis
 - Be specific — reference actual metric values from the data
-- Prioritise actionable findings over general observations
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
