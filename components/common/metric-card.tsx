@@ -28,7 +28,9 @@ function formatValue(value: number, format?: string): string {
 function InfoTooltip({ text, methodology }: { text: string; methodology?: string }) {
   const [show, setShow] = useState(false);
   const [showMethodology, setShowMethodology] = useState(false);
+  const [position, setPosition] = useState<'above' | 'below'>('below');
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!show) return;
@@ -46,18 +48,40 @@ function InfoTooltip({ text, methodology }: { text: string; methodology?: string
     };
   }, [show]);
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (show) {
+      setShow(false);
+      setShowMethodology(false);
+      return;
+    }
+    // Measure available space before opening
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const estimatedHeight = methodology ? 200 : 120;
+      setPosition(spaceBelow < estimatedHeight ? 'above' : 'below');
+    }
+    setShow(true);
+  };
+
+  const positionClasses = position === 'above'
+    ? 'bottom-full mb-1.5'
+    : 'top-full mt-1.5';
+
   return (
     <div ref={ref} className="relative inline-flex">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => { e.stopPropagation(); setShow(!show); if (show) setShowMethodology(false); }}
+        onClick={handleToggle}
         className="text-muted-foreground/40 transition-colors hover:text-muted-foreground"
         aria-label="More info"
       >
         <Info className="h-3 w-3" />
       </button>
       {show && (
-        <div className={`absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md ${methodology ? 'w-72' : 'w-48'}`}>
+        <div className={`absolute left-1/2 ${positionClasses} z-50 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md ${methodology ? 'w-72' : 'w-48'}`}>
           {text}
           {methodology && (
             <>
