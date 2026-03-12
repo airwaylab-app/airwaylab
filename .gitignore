@@ -54,5 +54,6 @@ CLAUDE.local.md
 # AI development pipeline (private)
 CLAUDE.md
 .claude/commands/
+prompts/
 specs/
 cache/
