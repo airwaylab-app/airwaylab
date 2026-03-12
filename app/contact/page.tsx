@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Mail, Github, MessageSquare, Shield, FileText, Accessibility } from 'lucide-react';
+import { Suspense } from 'react';
+import { Github, AlertTriangle } from 'lucide-react';
+import { ContactForm } from '@/components/contact/contact-form';
 
 export const metadata: Metadata = {
   title: 'Contact — AirwayLab',
@@ -12,104 +14,56 @@ export const metadata: Metadata = {
   },
 };
 
-const channels = [
-  {
-    icon: MessageSquare,
-    title: 'Bugs & Feature Requests',
-    description: 'Report issues or suggest features via GitHub Issues.',
-    link: 'https://github.com/airwaylab-app/airwaylab/issues',
-    linkText: 'Open an issue',
-    external: true,
-  },
-  {
-    icon: Mail,
-    title: 'General Questions',
-    description: 'For questions about AirwayLab, partnerships, or press inquiries.',
-    link: 'mailto:hello@airwaylab.app',
-    linkText: 'hello@airwaylab.app',
-    external: false,
-  },
-  {
-    icon: Shield,
-    title: 'Privacy & Data Requests',
-    description: 'For data access, deletion, or privacy-related questions (GDPR, CCPA).',
-    link: 'mailto:privacy@airwaylab.app',
-    linkText: 'privacy@airwaylab.app',
-    external: false,
-  },
-  {
-    icon: FileText,
-    title: 'Billing & Subscriptions',
-    description: 'For refund requests, billing questions, or subscription issues.',
-    link: 'mailto:billing@airwaylab.app',
-    linkText: 'billing@airwaylab.app',
-    external: false,
-  },
-  {
-    icon: Accessibility,
-    title: 'Accessibility',
-    description: 'Report accessibility barriers or suggest improvements.',
-    link: 'mailto:accessibility@airwaylab.app',
-    linkText: 'accessibility@airwaylab.app',
-    external: false,
-  },
-  {
-    icon: Github,
-    title: 'Source Code',
-    description: 'AirwayLab is open source under GPL-3.0. Browse the code, contribute, or fork.',
-    link: 'https://github.com/airwaylab-app/airwaylab',
-    linkText: 'View on GitHub',
-    external: true,
-  },
-];
-
 export default function ContactPage() {
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8 sm:py-12">
-      <div className="mb-10">
+    <div className="container mx-auto max-w-xl px-4 py-8 sm:py-12">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Contact</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          AirwayLab is built and maintained by a small team. We read every message and aim to
-          respond within 2 business days. For bugs and feature requests, GitHub Issues is the
-          fastest channel.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {channels.map((channel) => (
+          We read every message and aim to respond within 2 business days. For bugs and feature
+          requests,{' '}
           <a
-            key={channel.title}
-            href={channel.link}
-            target={channel.external ? '_blank' : undefined}
-            rel={channel.external ? 'noopener noreferrer' : undefined}
-            className="group rounded-xl border border-border/50 bg-card/30 p-5 transition-colors hover:border-border hover:bg-card/50"
-          >
-            <div className="mb-2 flex items-center gap-2.5">
-              <channel.icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-              <h2 className="text-sm font-semibold text-foreground">{channel.title}</h2>
-            </div>
-            <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-              {channel.description}
-            </p>
-            <span className="text-xs font-medium text-primary group-hover:underline">
-              {channel.linkText}
-            </span>
-          </a>
-        ))}
-      </div>
-
-      <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          <strong className="text-foreground">Security vulnerabilities:</strong> If you discover
-          a security issue, please email{' '}
-          <a
-            href="mailto:security@airwaylab.app"
+            href="https://github.com/airwaylab-app/airwaylab/issues"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
-            security@airwaylab.app
+            GitHub Issues
           </a>{' '}
-          directly. Do not open a public GitHub issue for security vulnerabilities.
+          is the fastest channel.
         </p>
+      </div>
+
+      <Suspense fallback={null}>
+        <ContactForm />
+      </Suspense>
+
+      <div className="mt-8 space-y-4">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              <strong className="text-foreground">Security vulnerabilities:</strong> Please use the
+              form above with &ldquo;Security vulnerability&rdquo; selected. Do not open a public
+              GitHub issue for security vulnerabilities.
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="https://github.com/airwaylab-app/airwaylab"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-2.5 rounded-xl border border-border/50 bg-card/30 p-4 transition-colors hover:border-border hover:bg-card/50"
+        >
+          <Github className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Source Code</p>
+            <p className="text-xs text-muted-foreground">
+              Open source under GPL-3.0. Browse, contribute, or fork.
+            </p>
+          </div>
+        </a>
       </div>
 
       <div className="mt-6 text-xs text-muted-foreground/60">

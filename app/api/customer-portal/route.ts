@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         extra: { userId: user.id },
       });
       return NextResponse.json(
-        { error: 'Your billing account could not be found. Please contact us at support@airwaylab.app.' },
+        { error: 'Your billing account could not be found. Please contact us via the contact form at /contact.' },
         { status: 404 }
       );
     }

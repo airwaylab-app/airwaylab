@@ -19,7 +19,6 @@ import {
   Github,
   Shield,
   BookOpen,
-  Mail,
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -138,7 +137,7 @@ export default function ProvidersPage() {
                 size="lg"
                 className="w-full gap-2 sm:w-auto"
               >
-                <Mail className="h-4 w-4" /> Get in Touch
+                <MessageSquare className="h-4 w-4" /> Get in Touch
               </Button>
             </a>
           </div>
@@ -346,12 +345,12 @@ export default function ProvidersPage() {
             <ProviderInterestForm />
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Or email us directly at{' '}
+            Or use our{' '}
             <a
-              href="mailto:dev@airwaylab.app"
+              href="/contact"
               className="text-primary underline decoration-primary/50 underline-offset-2 transition-colors hover:text-foreground"
             >
-              dev@airwaylab.app
+              general contact form
             </a>
           </p>
         </div>
