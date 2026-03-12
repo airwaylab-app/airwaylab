@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
-import { getUserTier, getStorageUsage, hasStorageConsent } from '@/lib/storage/quota';
+import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 500 });
@@ -60,25 +60,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
     }
 
-    // Check consent
+    // Check consent — registration now covers storage consent
     const consent = await hasStorageConsent(serviceRole, user.id);
     if (!consent) {
       return NextResponse.json({ error: 'Storage consent not granted' }, { status: 403 });
     }
 
-    // Check tier & quota
-    const tier = await getUserTier(serviceRole, user.id);
-    if (tier === 'community') {
-      return NextResponse.json({ error: 'Cloud storage requires a Supporter or Champion subscription' }, { status: 403 });
-    }
-
-    const usage = await getStorageUsage(serviceRole, user.id, tier);
-    if (usage.remainingBytes < fileSize) {
-      return NextResponse.json({
-        error: 'Storage quota exceeded',
-        usage: { totalBytes: usage.totalBytes, quotaBytes: usage.quotaBytes },
-      }, { status: 413 });
-    }
+    // Storage is unlimited for all registered users — no tier gate or quota check
 
     // Dedup: check if file with same hash already exists
     const { data: existing } = await serviceRole

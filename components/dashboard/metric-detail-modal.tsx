@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LineChart,
   Line,
@@ -94,7 +95,7 @@ export function MetricDetailModal({
 
   const unitLabel = unit ? ` (${unit})` : '';
 
-  return (
+  return createPortal(
     <div
       ref={focusTrapRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in-up"
@@ -233,6 +234,7 @@ export function MetricDetailModal({
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

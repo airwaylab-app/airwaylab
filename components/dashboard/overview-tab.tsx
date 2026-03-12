@@ -1,21 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricCard } from '@/components/common/metric-card';
 import { NightHeatmap } from '@/components/charts/night-heatmap';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
-import { generateInsights, type Insight } from '@/lib/insights';
-import { fetchAIInsights } from '@/lib/ai-insights-client';
-import { DEMO_AI_INSIGHTS } from '@/lib/demo-ai-insights';
-import { AIInsightsCTA } from '@/components/dashboard/ai-insights-cta';
+import { generateInsights } from '@/lib/insights';
 import { NightSummaryHero } from '@/components/dashboard/night-summary-hero';
-import { InsightsPanel } from '@/components/dashboard/insights-panel';
+import { AIInsightsGate } from '@/components/dashboard/ai-insights-gate';
 import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2 } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
-import { canAccess, incrementAIUsage } from '@/lib/auth/feature-gate';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
 import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import { NextSteps } from '@/components/dashboard/next-steps';
@@ -24,7 +20,6 @@ import { loadNightNotes } from '@/lib/night-notes';
 import { SymptomRating } from '@/components/dashboard/symptom-rating';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
-import { AIConsentModal, hasAIInsightsConsent } from '@/components/dashboard/ai-consent-modal';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
@@ -55,11 +50,12 @@ interface Props {
   therapyChangeDate: string | null;
   onUploadOximetry?: () => void;
   onReUpload?: () => void;
+  onOpenAuth?: () => void;
   isDemo?: boolean;
   isNewUser?: boolean;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, isDemo = false, isNewUser = false }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, isDemo = false, isNewUser = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -76,79 +72,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
   const insights = generateInsights(nights, n, p, therapyChangeDate, symptomRating);
 
-  const { user, tier, isPaid } = useAuth();
+  const { isPaid } = useAuth();
 
   const [shareOpen, setShareOpen] = useState(false);
-  const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
-  const [serverRemainingCredits, setAiRemainingCredits] = useState<number | undefined>(undefined);
-  const [aiLoading, setAiLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-
-  // AI consent modal state
-  const [showAIConsent, setShowAIConsent] = useState(false);
-  const [aiConsentGranted, setAiConsentGranted] = useState(() => hasAIInsightsConsent());
-
-  // Check if user can use AI insights (signed in + has quota or is paid)
-  const hasAIAccess = !!user && canAccess('ai_insights', tier);
-
-  // Trigger AI fetch — called directly or after consent is granted
-  const triggerAIFetch = useCallback(() => {
-    // Cancel any in-flight request
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setAiLoading(true);
-    const selectedIdx = nights.indexOf(selectedNight);
-    const notes = loadNightNotes(selectedNight.dateStr);
-
-    fetchAIInsights(
-      nights,
-      selectedIdx >= 0 ? selectedIdx : 0,
-      therapyChangeDate,
-      controller.signal,
-      notes
-    )
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (result) {
-          incrementAIUsage();
-          setAiRemainingCredits(result.remainingCredits);
-        }
-        setAiInsights(result?.insights ?? null);
-      })
-      .catch(() => {
-        if (controller.signal.aborted) return;
-        setAiInsights(null);
-      })
-      .finally(() => {
-        if (controller.signal.aborted) return;
-        setAiLoading(false);
-      });
-
-    return () => { controller.abort(); };
-  }, [nights, selectedNight, therapyChangeDate]);
-
-  // H4: Cancel in-flight AI requests when night changes + L3: prevent stale responses
-  // Now gated by consent — show modal if consent not yet given
-  useEffect(() => {
-    if (!hasAIAccess || isDemo) return;
-
-    if (!aiConsentGranted) {
-      // Show consent modal on first eligible load
-      setShowAIConsent(true);
-      return;
-    }
-
-    const cleanup = triggerAIFetch();
-    return cleanup;
-  }, [hasAIAccess, isDemo, aiConsentGranted, triggerAIFetch]);
-
-  // Demo mode: load static AI insights instantly (no API call, no credits)
-  useEffect(() => {
-    if (!isDemo) return;
-    setAiInsights(DEMO_AI_INSIGHTS);
-  }, [isDemo]);
 
   // Metric detail modal state
   const [detailMetric, setDetailMetric] = useState<{
@@ -390,20 +316,17 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         defaultExpanded={false}
       />
 
-      {/* Collapsible Insights Panel — AI + rule-based insights */}
-      {(insights.length > 0 || aiLoading || (aiInsights && aiInsights.length > 0)) && (
-        <InsightsPanel
-          insights={insights}
-          aiInsights={aiInsights}
-          aiLoading={aiLoading}
-          defaultExpanded={!isNewUser}
-          aiCTA={
-            aiInsights && aiInsights.length > 0
-              ? <AIInsightsCTA isDemo={isDemo} remainingCredits={serverRemainingCredits} />
-              : undefined
-          }
-        />
-      )}
+      {/* AI Insights Gate — handles anon teasers, generate button, deep insights */}
+      <AIInsightsGate
+        nights={nights}
+        selectedNight={n}
+        previousNight={p}
+        therapyChangeDate={therapyChangeDate}
+        ruleBasedInsights={insights}
+        isDemo={isDemo}
+        isNewUser={isNewUser}
+        onOpenAuth={onOpenAuth}
+      />
 
       {/* Community Comparison — shows how your results compare */}
       <CommunityComparison
@@ -649,7 +572,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
 
       {/* Upgrade prompt for community users */}
       {!isPaid && (
-        <UpgradePrompt feature="AI-powered therapy insights and detailed metric explanations are available to supporters." remainingCredits={serverRemainingCredits} />
+        <UpgradePrompt feature="Waveform-level deep AI insights and detailed metric explanations are available to supporters." />
       )}
 
       {/* Metric Detail Modal */}
@@ -666,17 +589,6 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         />
       )}
 
-      {/* AI Insights Consent Modal */}
-      <AIConsentModal
-        open={showAIConsent}
-        onConsent={() => {
-          setShowAIConsent(false);
-          setAiConsentGranted(true);
-        }}
-        onDecline={() => {
-          setShowAIConsent(false);
-        }}
-      />
     </div>
   );
 }

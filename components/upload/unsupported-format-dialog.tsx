@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Send, X } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 
@@ -58,7 +59,7 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
     }
   }, [files, deviceName, onClose]);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="unsupported-format-title">
       <div ref={focusTrapRef} className="relative w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         <button
@@ -136,6 +137,7 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -88,13 +88,13 @@ describe('SharePrompts', () => {
     vi.restoreAllMocks();
   });
 
-  // Test 1: Modal renders when open=true
+  // Test 1: Modal renders when open=true (portaled to document.body)
   it('renders as a centered modal overlay when open', () => {
-    const { container } = render(
+    render(
       <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
-    const overlay = container.querySelector('[role="dialog"]');
+    const overlay = document.body.querySelector('[role="dialog"]');
     expect(overlay).toBeInTheDocument();
     expect(overlay).toHaveClass('fixed', 'inset-0', 'z-50', 'items-center', 'justify-center');
   });
@@ -108,13 +108,13 @@ describe('SharePrompts', () => {
     expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
   });
 
-  // Test 3: Clicking backdrop calls onClose
+  // Test 3: Clicking backdrop calls onClose (portaled to document.body)
   it('calls onClose when backdrop is clicked', () => {
-    const { container } = render(
+    render(
       <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
-    const overlay = container.querySelector('[role="dialog"]');
+    const overlay = document.body.querySelector('[role="dialog"]');
     fireEvent.click(overlay!);
 
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -176,13 +176,13 @@ describe('SharePrompts', () => {
     expect(screen.getByText('PDF reports are available on the Supporter plan.')).toBeInTheDocument();
   });
 
-  // Test 8: Accessibility attributes
+  // Test 8: Accessibility attributes (portaled to document.body)
   it('has aria-modal and role="dialog" on the overlay', () => {
-    const { container } = render(
+    render(
       <SharePrompts nights={nights} selectedNight={selectedNight} open={true} onClose={onClose} />
     );
 
-    const overlay = container.querySelector('[role="dialog"]');
+    const overlay = document.body.querySelector('[role="dialog"]');
     expect(overlay).toBeInTheDocument();
     expect(overlay).toHaveAttribute('aria-modal', 'true');
     expect(overlay).toHaveAttribute('role', 'dialog');

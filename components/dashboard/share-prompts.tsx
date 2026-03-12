@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageSquare, FileText, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportForumSingleNight } from '@/lib/forum-export';
@@ -60,7 +61,7 @@ export function SharePrompts({ nights, selectedNight, open, onClose }: Props) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}
@@ -151,6 +152,7 @@ export function SharePrompts({ nights, selectedNight, open, onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth/auth-context';
 import { X, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ export function AuthModal({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
   const focusTrapRef = useFocusTrap(open);
 
   const handleSubmit = useCallback(
@@ -63,12 +65,13 @@ export function AuthModal({ open, onClose }: Props) {
     setLoading(false);
     setSent(false);
     setError(null);
+    setConsentChecked(false);
     onClose();
   }, [onClose]);
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={handleClose}
@@ -124,11 +127,32 @@ export function AuthModal({ open, onClose }: Props) {
                 className="h-10 rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
 
+              {/* Single consent checkbox */}
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-md bg-muted/20 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => {
+                    setConsentChecked(e.target.checked);
+                    if (e.target.checked) {
+                      events.authConsentChecked();
+                    }
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
+                />
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  I agree to store my sleep data on AirwayLab&apos;s servers and have it processed by AI to generate insights. I can delete all data anytime.{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+
               {error && (
                 <p className="text-xs text-red-400">{error}</p>
               )}
 
-              <Button type="submit" disabled={loading || !email.trim()}>
+              <Button type="submit" disabled={loading || !email.trim() || !consentChecked}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -143,12 +167,13 @@ export function AuthModal({ open, onClose }: Props) {
             <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2.5">
               <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
               <p className="text-[11px] leading-snug text-muted-foreground/60">
-                We only store your email for sign-in. Your analysis data stays in your browser unless you choose cloud sync.
+                Your analysis runs in your browser. Registered accounts get cloud storage and AI insights. All data can be deleted anytime from Account Settings.
               </p>
             </div>
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
