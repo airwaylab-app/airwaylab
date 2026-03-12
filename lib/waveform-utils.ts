@@ -711,3 +711,51 @@ export function formatElapsedTimeShort(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   return `${h}:${String(m).padStart(2, '0')}`;
 }
+
+/**
+ * M-shape detection for waveform worker.
+ * Matches NED engine logic: valley < 80% of Qpeak in middle 50% of inspiration,
+ * with bi-modal verification (peaks on both sides must exceed 80% threshold).
+ * Minimum 12 samples required.
+ */
+export function detectMShapeInWorker(inspFlow: Float32Array, qPeak: number): boolean {
+  const len = inspFlow.length;
+  if (len < 12) return false;
+
+  const start25 = Math.floor(len * 0.25);
+  const end75 = Math.floor(len * 0.75);
+  const threshold = qPeak * 0.8;
+
+  // Look for a valley below threshold in the middle 50%
+  let minInMiddle = qPeak;
+  for (let i = start25; i < end75; i++) {
+    if (inspFlow[i] < minInMiddle) minInMiddle = inspFlow[i];
+  }
+
+  if (minInMiddle < threshold) {
+    // Find valley index
+    let valleyIdx = start25;
+    for (let i = start25; i < end75; i++) {
+      if (inspFlow[i] === minInMiddle) {
+        valleyIdx = i;
+        break;
+      }
+    }
+
+    // Verify peaks on both sides of the valley
+    let leftPeak = 0;
+    for (let i = 0; i < valleyIdx; i++) {
+      if (inspFlow[i] > leftPeak) leftPeak = inspFlow[i];
+    }
+
+    let rightPeak = 0;
+    for (let i = valleyIdx; i < len; i++) {
+      if (inspFlow[i] > rightPeak) rightPeak = inspFlow[i];
+    }
+
+    // Both sides must have peaks above the threshold
+    return leftPeak > threshold && rightPeak > threshold;
+  }
+
+  return false;
+}

@@ -43,7 +43,9 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
   const { user } = useAuth();
   const [state, setState] = useState<WaveformState>(waveformOrchestrator.getState());
   const [showPressure, setShowPressure] = useState(false);
-  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(() => new Set(ALL_EVENT_TYPES));
+  const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(
+    () => new Set(ALL_EVENT_TYPES.filter((t) => t !== 'm-shape'))
+  );
   const [cloudLoading, setCloudLoading] = useState(false);
   const [cloudAttempted, setCloudAttempted] = useState(false);
   const cloudAttemptedDates = useRef(new Set<string>());

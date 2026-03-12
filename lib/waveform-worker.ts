@@ -11,6 +11,7 @@ import {
   computeFlowStatsFromRaw,
   computeTidalVolume,
   computeRespiratoryRate,
+  detectMShapeInWorker,
 } from './waveform-utils';
 import type {
   WaveformWorkerMessage,
@@ -368,18 +369,9 @@ function computeBreathFeatures(
   }
   const amplitude = peak - trough;
 
-  // M-shape detection: look for a valley in the middle 50% of inspiration
-  let hasMShape = false;
-  const inspLen = inspEnd - start;
-  const midStart = start + Math.round(inspLen * 0.25);
-  const midEnd = start + Math.round(inspLen * 0.75);
-  if (midEnd > midStart + 2) {
-    let midMin = peak;
-    for (let i = midStart; i < midEnd; i++) {
-      if (flow[i] < midMin) midMin = flow[i];
-    }
-    hasMShape = midMin < peak * 0.85;
-  }
+  // M-shape detection: matches NED engine logic (80% threshold + bi-modal verification)
+  const inspFlow = flow.subarray(start, inspEnd);
+  const hasMShape = detectMShapeInWorker(inspFlow, peak);
 
   return {
     startSample: start,
