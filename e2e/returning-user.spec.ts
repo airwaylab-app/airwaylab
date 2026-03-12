@@ -119,7 +119,9 @@ test.describe('Returning User Flow', () => {
   });
 
   // ── Re-upload works after previous session ──────────────────
-  test('user can re-upload new data after previous session', async ({ page }) => {
+  test('user can re-upload new data after previous session', async ({ page, context }) => {
+    // Two full analyses need extra time on CI
+    test.setTimeout(240_000);
     // First analysis
     await page.goto('/analyze');
     const fileInput = page.locator('input[type="file"][webkitdirectory]');
