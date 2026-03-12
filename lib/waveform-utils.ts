@@ -592,30 +592,6 @@ export function generateSyntheticWaveform(
   };
 }
 
-// ── M-shape detection helper (used by waveform-worker) ──────
-
-/**
- * Detect M-shape patterns in a breath's inspiratory phase.
- * Used by waveform-worker.ts for event detection.
- */
-export function detectMShapeInWorker(
-  flow: Float32Array,
-  start: number,
-  inspEnd: number,
-  peak: number
-): boolean {
-  const inspLen = inspEnd - start;
-  const midStart = start + Math.round(inspLen * 0.25);
-  const midEnd = start + Math.round(inspLen * 0.75);
-  if (midEnd <= midStart + 2) return false;
-
-  let midMin = peak;
-  for (let i = midStart; i < midEnd; i++) {
-    if (flow[i] < midMin) midMin = flow[i];
-  }
-  return midMin < peak * 0.85;
-}
-
 // ── Deprecated functions (kept for backward compatibility) ──
 
 /**
