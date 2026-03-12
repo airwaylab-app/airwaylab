@@ -293,9 +293,9 @@ test.describe('Conversion Funnel — Pricing Page', () => {
   test('pricing page shows all three tiers', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByText('Community')).toBeVisible();
-    await expect(page.getByText('Supporter')).toBeVisible();
-    await expect(page.getByText('Champion')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Community', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Supporter', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Champion', level: 2 })).toBeVisible();
   });
 
   // ── Community tier shows correct price ────────────────────
@@ -356,9 +356,9 @@ test.describe('Conversion Funnel — Pricing Page', () => {
   test('pricing page shows trust signals', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByText('Cancel anytime')).toBeVisible();
-    await expect(page.getByText('Secure payment via Stripe')).toBeVisible();
-    await expect(page.getByText('Delete all data anytime')).toBeVisible();
+    await expect(page.getByText('Cancel anytime').first()).toBeVisible();
+    await expect(page.getByText('Secure payment via Stripe').first()).toBeVisible();
+    await expect(page.getByText('Delete all data anytime').first()).toBeVisible();
   });
 
   // ── Anonymous user CTA shows sign-in ──────────────────────
@@ -389,7 +389,7 @@ test.describe('Conversion Funnel — Account Page', () => {
   test('anonymous user sees sign-in prompt on account page', async ({ page }) => {
     await page.goto('/account');
 
-    await expect(page.getByText('Account Settings')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Account Settings' })).toBeVisible();
     await expect(page.getByText('Sign in to view your account settings')).toBeVisible();
   });
 
@@ -435,7 +435,7 @@ test.describe('Conversion Funnel — Privacy Page', () => {
   test('privacy page is accessible', async ({ page }) => {
     await page.goto('/privacy');
 
-    await expect(page.getByText('Privacy Policy')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
   });
 
   // ── Privacy page documents AI processing ──────────────────
