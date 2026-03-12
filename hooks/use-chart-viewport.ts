@@ -13,24 +13,27 @@ export const ZOOM_PRESETS = [
   { label: '2h', seconds: 7200 },
 ] as const;
 
-export const MIN_VISIBLE_POINTS = 20;
+/** Minimum visible time window in seconds (~20s shows individual breaths) */
+export const MIN_VISIBLE_SECONDS = 20;
 export const PAN_STEP_FRACTION = 0.25;
 export const ZOOM_FACTOR = 0.8;
 
 // ── Types ──────────────────────────────────────────────────────
 
 interface ChartViewportOpts {
-  dataLength: number;
-  bucketSeconds: number;
+  /** Total waveform duration in seconds */
+  durationSeconds: number;
   dateStr: string;
 }
 
-interface ChartViewportReturn {
-  viewStart: number;
-  viewEnd: number;
-  clampedStart: number;
-  clampedEnd: number;
+export interface ChartViewportReturn {
+  viewStartSec: number;
+  viewEndSec: number;
+  clampedStartSec: number;
+  clampedEndSec: number;
+  visibleDurationSec: number;
   isFullView: boolean;
+  durationSeconds: number;
   minimapLeft: number;
   minimapWidth: number;
   panBy: (fraction: number) => void;
@@ -38,21 +41,20 @@ interface ChartViewportReturn {
   zoomOut: (centerFraction?: number) => void;
   resetZoom: () => void;
   zoomToPreset: (seconds: number) => void;
-  setViewStart: React.Dispatch<React.SetStateAction<number>>;
-  setViewEnd: React.Dispatch<React.SetStateAction<number>>;
+  setViewStartSec: React.Dispatch<React.SetStateAction<number>>;
+  setViewEndSec: React.Dispatch<React.SetStateAction<number>>;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   chartRef: (el: HTMLElement | null) => void;
-  bucketSeconds: number;
 }
 
 // ── Hook ───────────────────────────────────────────────────────
 
 export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
-  const { dataLength, bucketSeconds, dateStr } = opts;
+  const { durationSeconds, dateStr } = opts;
 
-  // Viewport state: indices into the data array
-  const [viewStart, setViewStart] = useState(0);
-  const [viewEnd, setViewEnd] = useState(Infinity);
+  // Viewport state: time in seconds
+  const [viewStartSec, setViewStartSec] = useState(0);
+  const [viewEndSec, setViewEndSec] = useState(Infinity);
 
   // Refs for drag-to-pan
   const isDragging = useRef(false);
@@ -76,78 +78,78 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
 
   // Reset viewport when dateStr changes
   useEffect(() => {
-    setViewStart(0);
-    setViewEnd(Infinity);
+    setViewStartSec(0);
+    setViewEndSec(Infinity);
   }, [dateStr]);
 
   // ── Clamping ────────────────────────────────────────────────
 
-  const clampedStart = Math.max(0, Math.min(viewStart, dataLength - MIN_VISIBLE_POINTS));
-  const clampedEnd = Math.min(dataLength, Math.max(viewEnd, clampedStart + MIN_VISIBLE_POINTS));
-  const isFullView = clampedStart === 0 && clampedEnd >= dataLength;
+  const clampedStartSec = Math.max(0, Math.min(viewStartSec, durationSeconds - MIN_VISIBLE_SECONDS));
+  const clampedEndSec = Math.min(durationSeconds, Math.max(viewEndSec, clampedStartSec + MIN_VISIBLE_SECONDS));
+  const visibleDurationSec = clampedEndSec - clampedStartSec;
+  const isFullView = clampedStartSec === 0 && clampedEndSec >= durationSeconds;
 
   // Keep ref in sync
-  clampedRef.current = { start: clampedStart, end: clampedEnd };
+  clampedRef.current = { start: clampedStartSec, end: clampedEndSec };
 
   // ── Minimap ─────────────────────────────────────────────────
 
-  const minimapLeft = dataLength > 0 ? (clampedStart / dataLength) * 100 : 0;
-  const minimapWidth = dataLength > 0 ? ((clampedEnd - clampedStart) / dataLength) * 100 : 100;
+  const minimapLeft = durationSeconds > 0 ? (clampedStartSec / durationSeconds) * 100 : 0;
+  const minimapWidth = durationSeconds > 0 ? (visibleDurationSec / durationSeconds) * 100 : 100;
 
   // ── Navigation helpers ──────────────────────────────────────
 
   const panBy = useCallback((fraction: number) => {
     const cs = clampedRef.current.start;
     const ce = clampedRef.current.end;
-    const visibleCount = ce - cs;
-    const step = Math.max(1, Math.round(visibleCount * fraction));
-    const newStart = Math.max(0, Math.min(cs + step, dataLength - MIN_VISIBLE_POINTS));
-    setViewStart(newStart);
-    setViewEnd(Math.min(dataLength, newStart + visibleCount));
-  }, [dataLength]);
+    const visible = ce - cs;
+    const step = Math.max(1, visible * fraction);
+    const newStart = Math.max(0, Math.min(cs + step, durationSeconds - MIN_VISIBLE_SECONDS));
+    setViewStartSec(newStart);
+    setViewEndSec(Math.min(durationSeconds, newStart + visible));
+  }, [durationSeconds]);
 
   const zoomIn = useCallback((centerFraction = 0.5) => {
     const cs = clampedRef.current.start;
     const ce = clampedRef.current.end;
-    const visibleCount = ce - cs;
-    const newCount = Math.max(MIN_VISIBLE_POINTS, Math.round(visibleCount * ZOOM_FACTOR));
-    const reduction = visibleCount - newCount;
-    const leftReduction = Math.round(reduction * centerFraction);
+    const visible = ce - cs;
+    const newVisible = Math.max(MIN_VISIBLE_SECONDS, visible * ZOOM_FACTOR);
+    const reduction = visible - newVisible;
+    const leftReduction = reduction * centerFraction;
     const rightReduction = reduction - leftReduction;
-    setViewStart(Math.max(0, cs + leftReduction));
-    setViewEnd(Math.min(dataLength, ce - rightReduction));
-  }, [dataLength]);
+    setViewStartSec(Math.max(0, cs + leftReduction));
+    setViewEndSec(Math.min(durationSeconds, ce - rightReduction));
+  }, [durationSeconds]);
 
   const zoomOut = useCallback((centerFraction = 0.5) => {
     const cs = clampedRef.current.start;
     const ce = clampedRef.current.end;
-    const visibleCount = ce - cs;
-    const newCount = Math.min(dataLength, Math.round(visibleCount / ZOOM_FACTOR));
-    const expansion = newCount - visibleCount;
-    const leftExpansion = Math.round(expansion * centerFraction);
+    const visible = ce - cs;
+    const newVisible = Math.min(durationSeconds, visible / ZOOM_FACTOR);
+    const expansion = newVisible - visible;
+    const leftExpansion = expansion * centerFraction;
     const rightExpansion = expansion - leftExpansion;
-    setViewStart(Math.max(0, cs - leftExpansion));
-    setViewEnd(Math.min(dataLength, ce + rightExpansion));
-  }, [dataLength]);
+    setViewStartSec(Math.max(0, cs - leftExpansion));
+    setViewEndSec(Math.min(durationSeconds, ce + rightExpansion));
+  }, [durationSeconds]);
 
   const resetZoom = useCallback(() => {
-    setViewStart(0);
-    setViewEnd(Infinity);
+    setViewStartSec(0);
+    setViewEndSec(Infinity);
   }, []);
 
   const zoomToPreset = useCallback((seconds: number) => {
-    const bs = bucketSeconds > 0 ? bucketSeconds : 2;
-    const pointsNeeded = Math.max(MIN_VISIBLE_POINTS, Math.round(seconds / bs));
+    const targetVisible = Math.max(MIN_VISIBLE_SECONDS, seconds);
     const cs = clampedRef.current.start;
     const ce = clampedRef.current.end;
-    const currentCenter = Math.round((cs + ce) / 2);
-    const halfPoints = Math.round(pointsNeeded / 2);
-    const tentativeStart = Math.max(0, currentCenter - halfPoints);
-    const newEnd = Math.min(dataLength, tentativeStart + pointsNeeded);
-    const newStart = newEnd - pointsNeeded < 0 ? 0 : newEnd - pointsNeeded;
-    setViewStart(newStart);
-    setViewEnd(newEnd);
-  }, [dataLength, bucketSeconds]);
+    const currentCenter = (cs + ce) / 2;
+    const halfVisible = targetVisible / 2;
+    const tentativeStart = Math.max(0, currentCenter - halfVisible);
+    const newEnd = Math.min(durationSeconds, tentativeStart + targetVisible);
+    const newStart = newEnd - targetVisible < 0 ? 0 : newEnd - targetVisible;
+    setViewStartSec(newStart);
+    setViewEndSec(newEnd);
+  }, [durationSeconds]);
 
   // ── Keyboard navigation ─────────────────────────────────────
 
@@ -196,8 +198,8 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
   const panByRef = useRef(panBy);
   panByRef.current = panBy;
 
-  const dataLengthRef = useRef(dataLength);
-  dataLengthRef.current = dataLength;
+  const durationRef = useRef(durationSeconds);
+  durationRef.current = durationSeconds;
 
   const chartRef = useCallback((el: HTMLElement | null) => {
     if (elementRef.current === el) return;
@@ -226,7 +228,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       }
     };
 
-    // Drag to pan
+    // Drag to pan (maps pixel delta to time delta)
     const handleMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       isDragging.current = true;
@@ -243,14 +245,14 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       if (!isDragging.current) return;
       const rect = el.getBoundingClientRect();
       const dx = e.clientX - dragStartX.current;
-      const visibleCount = dragStartView.current.end - dragStartView.current.start;
-      const indexDelta = Math.round((-dx / rect.width) * visibleCount);
+      const visible = dragStartView.current.end - dragStartView.current.start;
+      const timeDelta = (-dx / rect.width) * visible;
       const newStart = Math.max(0, Math.min(
-        dragStartView.current.start + indexDelta,
-        dataLengthRef.current - visibleCount
+        dragStartView.current.start + timeDelta,
+        durationRef.current - visible
       ));
-      setViewStart(newStart);
-      setViewEnd(newStart + visibleCount);
+      setViewStartSec(newStart);
+      setViewEndSec(newStart + visible);
     };
 
     const handleMouseUp = () => {
@@ -266,7 +268,6 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        // Pinch start
         isPinching.current = true;
         isTouchPanning.current = false;
         pinchStartDist.current = getTouchDistance(e.touches[0], e.touches[1]);
@@ -276,7 +277,6 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
         };
         e.preventDefault();
       } else if (e.touches.length === 1) {
-        // Single-finger pan start
         isTouchPanning.current = true;
         isPinching.current = false;
         touchStartX.current = e.touches[0].clientX;
@@ -304,14 +304,14 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
         e.preventDefault();
         const rect = el.getBoundingClientRect();
         const dx = e.touches[0].clientX - touchStartX.current;
-        const visibleCount = touchStartView.current.end - touchStartView.current.start;
-        const indexDelta = Math.round((-dx / rect.width) * visibleCount);
+        const visible = touchStartView.current.end - touchStartView.current.start;
+        const timeDelta = (-dx / rect.width) * visible;
         const newStart = Math.max(0, Math.min(
-          touchStartView.current.start + indexDelta,
-          dataLengthRef.current - visibleCount
+          touchStartView.current.start + timeDelta,
+          durationRef.current - visible
         ));
-        setViewStart(newStart);
-        setViewEnd(newStart + visibleCount);
+        setViewStartSec(newStart);
+        setViewEndSec(newStart + visible);
       }
     };
 
@@ -320,7 +320,6 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
         isTouchPanning.current = false;
         isPinching.current = false;
       } else if (e.touches.length === 1 && isPinching.current) {
-        // Transitioned from pinch to single finger
         isPinching.current = false;
         isTouchPanning.current = true;
         touchStartX.current = e.touches[0].clientX;
@@ -351,11 +350,13 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
   }, [elementVersion]);
 
   return {
-    viewStart,
-    viewEnd,
-    clampedStart,
-    clampedEnd,
+    viewStartSec,
+    viewEndSec,
+    clampedStartSec,
+    clampedEndSec,
+    visibleDurationSec,
     isFullView,
+    durationSeconds,
     minimapLeft,
     minimapWidth,
     panBy,
@@ -363,10 +364,9 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     zoomOut,
     resetZoom,
     zoomToPreset,
-    setViewStart,
-    setViewEnd,
+    setViewStartSec,
+    setViewEndSec,
     handleKeyDown,
     chartRef,
-    bucketSeconds,
   };
 }

@@ -122,6 +122,8 @@ export default async function SharedAnalysisPage({ params }: PageProps) {
   const machineInfo = data.machine_info as MachineSettings | null;
   const nightsCount = data.nights_count as number;
   const expiresAt = data.expires_at as string;
+  const hasFiles = (data.has_files as boolean) ?? false;
+  const filePaths = (data.file_paths as string[]) ?? [];
   const shareUrl =
     `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://airwaylab.app'}/shared/${id}`;
 
@@ -133,14 +135,18 @@ export default async function SharedAnalysisPage({ params }: PageProps) {
         nightsCount={nightsCount}
         expiresAt={expiresAt}
         shareUrl={shareUrl}
+        shareId={id}
+        hasFiles={hasFiles}
+        filePaths={filePaths}
       />
 
       {/* Privacy footer */}
       <div className="border-t border-border/50 bg-card/20">
         <div className="container mx-auto px-4 py-6 sm:px-6">
           <p className="text-center text-xs text-muted-foreground/60">
-            This analysis was shared by the patient. Only processed results are
-            stored — raw therapy data was never uploaded.
+            {hasFiles
+              ? 'This analysis was shared by the patient. Stored data files expire with the share link (30 days).'
+              : 'This analysis was shared by the patient. Only processed results are stored \u2014 raw therapy data was never uploaded.'}
           </p>
         </div>
       </div>

@@ -12,7 +12,7 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from 'recharts';
-import type { WaveformData, WaveformEvent } from '@/lib/waveform-types';
+import type { FlowSample, PressurePoint, WaveformEvent } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
@@ -21,7 +21,12 @@ import { downsampleForChart } from '@/lib/chart-downsample';
 export type EventType = WaveformEvent['type'];
 
 interface Props {
-  waveform: WaveformData;
+  /** Pre-decimated flow samples for the visible range */
+  flow: FlowSample[];
+  /** Pre-sliced pressure data for the visible range (if available) */
+  pressure: PressurePoint[];
+  /** All events for the night */
+  events: WaveformEvent[];
   showPressure?: boolean;
   /** Set of visible event types. If undefined, all events are shown. Empty set = no events. */
   visibleEventTypes?: Set<EventType>;
@@ -85,7 +90,9 @@ function FlowTooltipContent({ active, payload, label }: {
 }
 
 export const FlowWaveform = memo(function FlowWaveform({
-  waveform,
+  flow,
+  pressure,
+  events,
   showPressure = false,
   visibleEventTypes,
 }: Props) {
@@ -95,55 +102,49 @@ export const FlowWaveform = memo(function FlowWaveform({
   const activeTypes: Set<EventType> | null = visibleEventTypes ?? null;
   const anyEventsVisible = activeTypes === null || activeTypes.size > 0;
 
-  // Full data array
+  // Build chart data from pre-decimated flow + pressure
   const allData = useMemo(() => {
     const pressureMap = new Map<number, number>();
     if (showPressure) {
-      for (const p of waveform.pressure) {
+      for (const p of pressure) {
         pressureMap.set(p.t, p.avg);
       }
     }
 
-    return waveform.flow.map((f) => ({
+    return flow.map((f) => ({
       t: f.t,
-      flowMin: f.min,
-      flowMax: f.max,
-      flowAvg: f.avg,
+      flow: f.value,
       pressure: pressureMap.get(f.t) ?? undefined,
     }));
-  }, [waveform.flow, waveform.pressure, showPressure]);
+  }, [flow, pressure, showPressure]);
 
-  // Visible data slice using synced viewport, downsampled to prevent OOM
-  const data = useMemo(() =>
-    downsampleForChart(allData.slice(viewport.clampedStart, viewport.clampedEnd)),
-    [allData, viewport.clampedStart, viewport.clampedEnd]
-  );
+  // Apply downsampleForChart (1,500-point Recharts cap)
+  const data = useMemo(() => downsampleForChart(allData), [allData]);
 
   // Filter events to visible range + active types, capped to prevent SVG OOM
   const MAX_VISIBLE_EVENTS = 100;
   const { visibleEvents, eventsCapped } = useMemo(() => {
-    if (!anyEventsVisible || data.length === 0) return { visibleEvents: [] as typeof waveform.events, eventsCapped: false };
+    if (!anyEventsVisible || data.length === 0) return { visibleEvents: [] as typeof events, eventsCapped: false };
     const startT = data[0].t;
     const endT = data[data.length - 1].t;
-    const filtered = waveform.events.filter(
+    const filtered = events.filter(
       (e) => e.endSec >= startT && e.startSec <= endT && (activeTypes === null || activeTypes.has(e.type))
     );
     if (filtered.length <= MAX_VISIBLE_EVENTS) {
       return { visibleEvents: filtered, eventsCapped: false };
     }
-    // Evenly sample to keep spatial distribution
     const step = filtered.length / MAX_VISIBLE_EVENTS;
     const sampled = Array.from({ length: MAX_VISIBLE_EVENTS }, (_, i) => filtered[Math.round(i * step)]);
     return { visibleEvents: sampled, eventsCapped: true };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waveform.events, anyEventsVisible, activeTypes, data]);
+  }, [events, anyEventsVisible, activeTypes, data]);
 
   // Determine which event types exist in the data (for legend display)
   const presentTypes = useMemo(() => {
     const types = new Set<EventType>();
-    for (const e of waveform.events) types.add(e.type);
+    for (const e of events) types.add(e.type);
     return types;
-  }, [waveform.events]);
+  }, [events]);
 
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
@@ -278,28 +279,17 @@ export const FlowWaveform = memo(function FlowWaveform({
               );
             })}
 
-            {/* Flow envelope */}
+            {/* Flow trace — single line of actual measured values */}
             <Area
               yAxisId="flow"
               type="monotone"
-              dataKey="flowMax"
-              stroke={withAlpha(CHART_COLORS[0], 0.6)}
-              fill={withAlpha(CHART_COLORS[0], 0.15)}
-              strokeWidth={0.5}
+              dataKey="flow"
+              stroke={withAlpha(CHART_COLORS[0], 0.8)}
+              fill={withAlpha(CHART_COLORS[0], 0.1)}
+              strokeWidth={1}
               dot={false}
               isAnimationActive={false}
-              name="Flow Max"
-            />
-            <Area
-              yAxisId="flow"
-              type="monotone"
-              dataKey="flowMin"
-              stroke={withAlpha(CHART_COLORS[0], 0.4)}
-              fill="hsl(217 33% 8%)"
-              strokeWidth={0.5}
-              dot={false}
-              isAnimationActive={false}
-              name="Flow Min"
+              name="Flow"
             />
 
             {showPressure && (

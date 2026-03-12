@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import type { WaveformData } from '@/lib/waveform-types';
+import type { StoredWaveform } from '@/lib/waveform-types';
 
 const FIXTURES = path.resolve(__dirname, '../fixtures/sd-card');
 
@@ -40,12 +40,12 @@ function createMockFile(relativePath: string): File {
   return file;
 }
 
-const fakeWaveform: WaveformData = {
+const fakeWaveform: StoredWaveform = {
   dateStr: '2026-03-09',
   durationSeconds: 100,
-  originalSampleRate: 25,
-  flow: [{ t: 0, min: -10, max: 10, avg: 0 }],
-  pressure: [],
+  sampleRate: 25,
+  flow: new Float32Array([0, 5, 10, -5, -10]),
+  pressure: null,
   leak: [],
   events: [],
   tidalVolume: [],
@@ -61,6 +61,8 @@ const fakeWaveform: WaveformData = {
     leakMax: null,
     leakP95: null,
   },
+  storedAt: Date.now(),
+  engineVersion: '0.7.0',
 };
 
 // Mock Worker as a class so `new Worker(...)` works
@@ -71,11 +73,23 @@ class MockWorker {
   onmessage: ((e: MessageEvent) => void) | null = null;
   onerror: ((e: ErrorEvent) => void) | null = null;
   postMessage = workerPostMessage.mockImplementation(() => {
-    // Auto-respond with a fake result
+    // Auto-respond with a fake raw result
     queueMicrotask(() => {
       if (this.onmessage) {
         this.onmessage(new MessageEvent('message', {
-          data: { type: 'WAVEFORM_RESULT', waveform: fakeWaveform },
+          data: {
+            type: 'RAW_WAVEFORM_RESULT',
+            flow: new Float32Array([0, 5, 10, -5, -10]),
+            pressure: null,
+            sampleRate: 25,
+            durationSeconds: 100,
+            events: [],
+            stats: fakeWaveform.stats,
+            tidalVolume: [],
+            respiratoryRate: [],
+            leak: [],
+            dateStr: '2026-03-09',
+          },
         }));
       }
     });

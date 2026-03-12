@@ -710,7 +710,7 @@ function AnalyzePageInner() {
                   <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
                 </div>
               )}
-              {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} />}
+              {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} sdFiles={sdFilesRef.current} />}
               {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]} />}
               {!isNewUser && <ThresholdSettingsModal />}
               <Button variant="ghost" size="sm" onClick={handleReset}>

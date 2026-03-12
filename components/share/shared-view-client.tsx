@@ -6,6 +6,7 @@ import {
   Copy,
   Check,
   AlertCircle,
+  BarChart,
   BarChart3,
   Activity,
   Waves,
@@ -22,6 +23,7 @@ import { GlasgowTab } from '@/components/dashboard/glasgow-tab';
 import { FlowAnalysisTab } from '@/components/dashboard/flow-analysis-tab';
 import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
+import { SharedGraphsTab } from '@/components/share/shared-graphs-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
@@ -33,6 +35,9 @@ interface Props {
   nightsCount: number;
   expiresAt: string;
   shareUrl: string;
+  shareId: string;
+  hasFiles: boolean;
+  filePaths: string[];
 }
 
 export function SharedViewClient({
@@ -41,6 +46,9 @@ export function SharedViewClient({
   nightsCount,
   expiresAt,
   shareUrl,
+  shareId,
+  hasFiles,
+  filePaths,
 }: Props) {
   const [selectedNight, setSelectedNight] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -85,16 +93,16 @@ export function SharedViewClient({
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-sm font-semibold">
-              Shared Analysis · {nightsCount} night
-              {nightsCount !== 1 ? 's' : ''} · Expires {expiresDate}
+              Shared Analysis &middot; {nightsCount} night
+              {nightsCount !== 1 ? 's' : ''} &middot; Expires {expiresDate}
             </h1>
             {machineInfo && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <HardDrive className="h-3 w-3" />
                 {machineInfo.deviceModel}
-                {machineInfo.papMode ? ` · ${machineInfo.papMode}` : ''}
+                {machineInfo.papMode ? ` \u00b7 ${machineInfo.papMode}` : ''}
                 {machineInfo.epap
-                  ? ` · EPAP ${machineInfo.epap}`
+                  ? ` \u00b7 EPAP ${machineInfo.epap}`
                   : ''}
                 {machineInfo.ipap
                   ? ` / IPAP ${machineInfo.ipap}`
@@ -171,6 +179,13 @@ export function SharedViewClient({
                 <span className="hidden sm:inline">Oximetry</span>
               </TabsTrigger>
             )}
+            {hasFiles && filePaths.length > 0 && (
+              <TabsTrigger value="graphs" className="gap-1.5">
+                <BarChart className="h-3.5 w-3.5" />
+                <span className="text-[11px] sm:hidden">Gra</span>
+                <span className="hidden sm:inline">Graphs</span>
+              </TabsTrigger>
+            )}
             {nights.length > 1 && (
               <TabsTrigger value="trends" className="gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -220,6 +235,18 @@ export function SharedViewClient({
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   nights={nights}
+                />
+              </ErrorBoundary>
+            </TabsContent>
+          )}
+
+          {hasFiles && filePaths.length > 0 && (
+            <TabsContent value="graphs" className="mt-6">
+              <ErrorBoundary context="Graphs">
+                <SharedGraphsTab
+                  shareId={shareId}
+                  filePaths={filePaths}
+                  dateStr={currentNight.dateStr}
                 />
               </ErrorBoundary>
             </TabsContent>
