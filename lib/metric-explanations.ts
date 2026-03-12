@@ -24,7 +24,7 @@ export const METRIC_METHODOLOGIES = {
     'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Tpeak/Ti exceeds 0.40. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
 
   eai:
-    'Estimated by detecting sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). Each spike suggests a micro-awakening that fragments sleep. A 15-second refractory period prevents double-counting. This is a proxy \u2014 true arousals require EEG, but respiratory pattern changes correlate well with cortical arousals.',
+    'Estimated by detecting sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). Each spike may indicate a nervous system response to breathing difficulty. A 15-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG, and research suggests flow limitation itself drives symptoms independently of arousals. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
 
   regularity:
     'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing often indicates a persistently narrowed airway forcing uniform restricted breaths. Lower scores reflect healthy natural breath-to-breath variability.',
@@ -66,12 +66,12 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
   if (value === 0) return '';
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {
-    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is low, indicating few detected recovery breaths after flow-limited sequences. Note: research suggests flow limitation itself can drive symptoms independently of arousals, so check your flow limitation metrics (Glasgow Index, FL Score, NED) as well.`;
+    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is low, indicating few detected recovery breaths after flow-limited sequences. This is a secondary marker \u2014 research suggests flow limitation itself can drive symptoms independently of arousals, so check your flow limitation metrics (Glasgow Index, FL Score, NED) for the primary picture.`;
   }
   if (light === 'warn') {
-    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. Your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Note: this flow-based estimate typically reads higher than an in-lab arousal index measured with EEG.`;
+    return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. This is a secondary marker \u2014 your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Note: this flow-based estimate typically reads higher than an in-lab arousal index.`;
   }
-  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Frequent recovery breaths following flow limitation suggest your nervous system is repeatedly responding to breathing difficulty. Discuss with your clinician — an in-lab study with EEG can measure true cortical arousals directly.`;
+  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. This is a secondary marker \u2014 frequent recovery breaths following flow limitation suggest your nervous system is repeatedly responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Discuss with your clinician \u2014 an in-lab study with EEG can measure true cortical arousals directly.`;
 }
 
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {
@@ -94,9 +94,9 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Your flow limitation composite is low. Your airway appears to be functioning well during therapy.';
   }
   if (light === 'warn') {
-    return 'Moderate flow limitation detected across multiple metrics. This level of FL may be contributing to symptoms. Discuss whether pressure or settings adjustments could help with your clinician.';
+    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss whether pressure or settings adjustments could help with your clinician.';
   }
-  return 'Significant flow limitation detected. Research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
+  return 'Significant flow limitation detected. Individual sensitivity varies, but research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
 }
 
 export function getODIExplanation(odi3: number, threshold: ThresholdDef): string {

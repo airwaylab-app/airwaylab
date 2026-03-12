@@ -100,15 +100,17 @@ describe('NightSummaryHero', () => {
     expect(hero.className).toContain('border-emerald');
   });
 
-  it('renders red border when Glasgow is in red zone', () => {
-    const night = makeNight({ glasgow: 3.5 }); // above amber threshold (2.0) = red
+  it('renders red border when IFL Risk is in red zone', () => {
+    // IFL Risk > 45 = red. Need high FL + NED + low FI + high Glasgow
+    const night = makeNight({ glasgow: 3.5, wat: { flScore: 60 }, ned: { nedMean: 35, fiMean: 0.6 } });
     const { container } = render(<NightSummaryHero night={night} />);
     const hero = container.firstChild as HTMLElement;
     expect(hero.className).toContain('border-red');
   });
 
-  it('renders amber border when any metric is amber but none red', () => {
-    const night = makeNight({ glasgow: 1.5 }); // between green (1.0) and amber (2.0) = warn
+  it('renders amber border when IFL Risk is amber', () => {
+    // IFL Risk 20-45 = amber
+    const night = makeNight({ glasgow: 1.5, wat: { flScore: 35 }, ned: { nedMean: 20 } });
     const { container } = render(<NightSummaryHero night={night} />);
     const hero = container.firstChild as HTMLElement;
     expect(hero.className).toContain('border-amber');
@@ -120,22 +122,22 @@ describe('NightSummaryHero', () => {
     expect(() => render(<NightSummaryHero night={night} />)).not.toThrow();
   });
 
-  it('shows green headline for good therapy', () => {
+  it('shows green headline for low IFL Risk', () => {
     const night = makeNight({ glasgow: 0.5 });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Your therapy looks effective tonight')).toBeInTheDocument();
+    expect(screen.getByText('Low flow limitation tonight')).toBeInTheDocument();
   });
 
-  it('shows red headline for elevated metrics', () => {
-    const night = makeNight({ glasgow: 3.5 });
+  it('shows red headline for high IFL Risk', () => {
+    const night = makeNight({ glasgow: 3.5, wat: { flScore: 60 }, ned: { nedMean: 35, fiMean: 0.6 } });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Your results need attention')).toBeInTheDocument();
+    expect(screen.getByText('Significant flow limitation detected')).toBeInTheDocument();
   });
 
-  it('shows amber headline for watch-zone metrics', () => {
-    const night = makeNight({ glasgow: 1.5 });
+  it('shows amber headline for moderate IFL Risk', () => {
+    const night = makeNight({ glasgow: 1.5, wat: { flScore: 35 }, ned: { nedMean: 20 } });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Some areas to monitor')).toBeInTheDocument();
+    expect(screen.getByText('Moderate flow limitation detected')).toBeInTheDocument();
   });
 
   it('includes medical disclaimer', () => {

@@ -59,11 +59,19 @@ function fmt(n: number, dp = 1): string {
   return n.toFixed(dp);
 }
 
+const RATING_LABELS: Record<number, string> = {
+  1: 'Terrible',
+  2: 'Poor',
+  3: 'OK',
+  4: 'Good',
+  5: 'Great',
+};
+
 /* ------------------------------------------------------------------ */
 /*  Single-night insights                                              */
 /* ------------------------------------------------------------------ */
 
-function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[] {
+function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRating?: number | null): Insight[] {
   const THRESHOLDS = getStoredThresholds();
   const insights: Insight[] = [];
   const gl = getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall);
@@ -77,8 +85,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     insights.push({
       id: 'ifl-risk-high',
       type: 'warning',
-      title: 'Flow limitation is driving significant symptom risk',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% indicates substantial flow limitation across multiple metrics. Research suggests this level of FL can drive fatigue independently of arousals. Discuss pressure optimisation with your clinician.`,
+      title: 'Elevated flow limitation across multiple metrics',
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% indicates substantial flow limitation across multiple metrics. Research suggests this level of FL can drive fatigue independently of arousals, though individual sensitivity varies. Discuss pressure optimisation with your clinician.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -180,8 +188,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
   if (eaiL === 'bad') {
     insights.push({
       id: 'eai-high',
-      type: 'warning',
-      title: 'Elevated respiratory disruption index',
+      type: 'info',
+      title: 'Elevated respiratory disruption markers',
       body: `RDI of ${fmt(eaiVal)}/hr suggests frequent recovery breaths following flow-limited breathing. Areas to investigate: EPR/PS level, positional factors. Get personalised suggestions with AI Analysis.`,
       category: 'ned',
     });
@@ -243,7 +251,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
   if (n.ned.reraIndex >= 10) {
     insights.push({
       id: 'rera-high',
-      type: 'warning',
+      type: 'info',
       title: 'Elevated RERA events',
       body: `RERA index of ${fmt(n.ned.reraIndex)} events/hr is above the clinical threshold. These effort-related arousals fragment sleep. Consider reviewing pressure support, trigger sensitivity, and whether nasal congestion is increasing breathing effort. AI Analysis can provide personalised suggestions based on your full data.`,
       category: 'ned',
@@ -322,6 +330,37 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
       body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr), consistent with REM-related airway laxity. Positional therapy or increased EPAP during REM may help.`,
       category: 'ned',
     });
+  }
+
+  // Symptom rating cross-reference insights
+  if (symptomRating != null && symptomRating !== 3) {
+    const ratingLabel = RATING_LABELS[symptomRating] ?? '';
+
+    if (iflRisk > 45 && symptomRating <= 2) {
+      insights.push({
+        id: 'symptom-fl-correlation',
+        type: 'warning',
+        title: 'Flow limitation may be affecting your sleep quality',
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. This pattern suggests your flow limitation may be contributing to symptoms. Discuss pressure or settings adjustments with your clinician.`,
+        category: 'ned',
+      });
+    } else if (iflRisk > 45 && symptomRating >= 4) {
+      insights.push({
+        id: 'symptom-fl-asymptomatic',
+        type: 'info',
+        title: 'Elevated flow limitation but feeling well',
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated but you rated this night as ${ratingLabel}. Not everyone with elevated FL is symptomatic \u2014 continue monitoring and flag any changes in how you feel.`,
+        category: 'ned',
+      });
+    } else if (iflRisk < 20 && symptomRating <= 2) {
+      insights.push({
+        id: 'symptom-non-fl-cause',
+        type: 'info',
+        title: 'Poor sleep quality despite low flow limitation',
+        body: `You rated this night as ${ratingLabel} despite low flow limitation (${fmt(iflRisk)}%). Other factors may be contributing \u2014 check your night context (congestion, stress, alcohol) for patterns. If poor sleep persists, discuss with your clinician.`,
+        category: 'ned',
+      });
+    }
   }
 
   // Oximetry insights
@@ -485,9 +524,10 @@ export function generateInsights(
   nights: NightResult[],
   selectedNight: NightResult,
   previousNight: NightResult | null,
-  therapyChangeDate: string | null
+  therapyChangeDate: string | null,
+  symptomRating?: number | null
 ): Insight[] {
-  const single = singleNightInsights(selectedNight, previousNight);
+  const single = singleNightInsights(selectedNight, previousNight, symptomRating);
   const trends = trendInsights(nights, therapyChangeDate);
 
   // Combine, de-dupe by id, cap at 6 for readability

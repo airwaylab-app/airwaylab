@@ -84,6 +84,7 @@ export interface NightNotes {
   stress: StressLevel | null;
   exercise: ExerciseLevel | null;
   note: string;
+  symptomRating: number | null;
 }
 
 export interface GlasgowComponents {

@@ -4,6 +4,7 @@
 
 import type { NightResult } from './types';
 import { computeIFLRisk } from './ifl-risk';
+import { loadNightNotes } from './night-notes';
 
 export function exportCSV(nights: NightResult[]): string {
   const headers = [
@@ -60,6 +61,7 @@ export function exportCSV(nights: NightResult[]): string {
     'Amplitude CV (%)',
     'Unstable Epochs (%)',
     'NED-Invisible Events (%)',
+    'Symptom Rating',
   ];
 
   const ox = (n: NightResult, get: (o: NonNullable<NightResult['oximetry']>) => number) =>
@@ -119,6 +121,14 @@ export function exportCSV(nights: NightResult[]): string {
     (n.ned.amplitudeCvOverall ?? 0).toFixed(2),
     (n.ned.unstableEpochPct ?? 0).toFixed(2),
     (n.ned.hypopneaNedInvisiblePct ?? 0).toFixed(2),
+    (() => {
+      try {
+        const notes = loadNightNotes(n.dateStr);
+        return notes.symptomRating !== null ? String(notes.symptomRating) : '';
+      } catch {
+        return '';
+      }
+    })(),
   ]);
 
   // Properly escape fields containing commas, quotes, or newlines (RFC 4180)

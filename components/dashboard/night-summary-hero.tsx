@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import { getTrafficLight, type TrafficLight } from '@/lib/thresholds';
 import type { NightResult } from '@/lib/types';
+import { computeIFLRisk } from '@/lib/ifl-risk';
 import { CheckCircle, AlertCircle, TrendingDown } from 'lucide-react';
 
 interface Props {
@@ -51,7 +52,12 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
   const n = night;
 
   const { worstTier, headline, body } = useMemo(() => {
-    const metrics: MetricCheck[] = [
+    // IFL Risk as primary signal
+    const iflRisk = computeIFLRisk(n);
+    const iflTier = getTrafficLight(iflRisk, THRESHOLDS.iflRisk);
+
+    // Secondary metrics for context
+    const secondaryMetrics: MetricCheck[] = [
       {
         name: 'Glasgow Index',
         value: n.glasgow.overall,
@@ -70,31 +76,31 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
         unit: '%',
         light: getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean),
       },
-      {
-        name: 'RERA Index',
-        value: n.ned.reraIndex,
-        unit: '/hr',
-        light: getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex),
-      },
     ];
 
-    const tierPriority: Record<TrafficLight, number> = { bad: 0, warn: 1, good: 2 };
-    const sorted = [...metrics].sort((a, b) => tierPriority[a.light] - tierPriority[b.light]);
-    const worst = sorted[0];
-    const tier = worst.light;
+    // Use IFL Risk tier as the primary tier
+    const tier = iflTier;
 
     let headlineText: string;
     let bodyText: string;
 
     if (tier === 'good') {
-      headlineText = 'Your therapy looks effective tonight';
-      bodyText = `Glasgow Index of ${fmt(n.glasgow.overall)} indicates minimal flow limitation. Your current settings appear to be working well.`;
+      headlineText = 'Low flow limitation tonight';
+      bodyText = `IFL Symptom Risk of ${fmt(iflRisk)}% indicates your airway is functioning well during therapy. Current settings appear effective.`;
     } else if (tier === 'warn') {
-      headlineText = 'Some areas to monitor';
-      bodyText = `${worst.name} is in the watch zone (${fmt(worst.value)}${worst.unit}). This isn't urgent, but worth tracking over time.`;
+      headlineText = 'Moderate flow limitation detected';
+      const elevated = secondaryMetrics.filter((m) => m.light !== 'good');
+      const detail = elevated.length > 0
+        ? ` Key contributors: ${elevated.map((m) => `${m.name} ${fmt(m.value)}${m.unit}`).join(', ')}.`
+        : '';
+      bodyText = `IFL Symptom Risk of ${fmt(iflRisk)}% suggests some flow limitation is present.${detail} Worth monitoring over time.`;
     } else {
-      headlineText = 'Your results need attention';
-      bodyText = `${worst.name} is elevated (${fmt(worst.value)}${worst.unit}). Consider discussing your settings with your sleep physician.`;
+      headlineText = 'Significant flow limitation detected';
+      const elevated = secondaryMetrics.filter((m) => m.light === 'bad');
+      const detail = elevated.length > 0
+        ? ` Elevated: ${elevated.map((m) => `${m.name} ${fmt(m.value)}${m.unit}`).join(', ')}.`
+        : '';
+      bodyText = `IFL Symptom Risk of ${fmt(iflRisk)}% indicates substantial flow limitation.${detail} Discuss your settings with your sleep physician.`;
     }
 
     return { worstTier: tier, headline: headlineText, body: bodyText };
