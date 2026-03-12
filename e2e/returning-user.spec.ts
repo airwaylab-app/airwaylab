@@ -119,34 +119,28 @@ test.describe('Returning User Flow', () => {
   });
 
   // ── Re-upload works after previous session ──────────────────
-  test('user can re-upload new data after previous session', async ({ page, context }) => {
-    // Two full analyses need extra time on CI
-    test.setTimeout(240_000);
-    // First analysis
-    await page.goto('/analyze');
-    const fileInput = page.locator('input[type="file"][webkitdirectory]');
-    await expect(fileInput).toBeAttached();
-    await fileInput.setInputFiles(FIXTURES_DIR);
+  test('user can re-upload new data after previous session', async ({ page }) => {
+    test.setTimeout(180_000);
 
+    // Use demo mode for the first "session" — instant, avoids double-analysis
+    // resource pressure on CI. The test goal is verifying the New → re-upload
+    // flow, not the analysis itself (covered by upload-and-analyze.spec.ts).
+    await page.goto('/analyze');
+    await page.getByText('See sample data').click();
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
-    ).toBeVisible({ timeout: 90_000 });
+    ).toBeVisible({ timeout: 30_000 });
 
-    // Dismiss any nudge dialog overlay, then click the New button via JS (bypasses overlay interception)
-    const nudgeDialog = page.getByRole('dialog');
-    if (await nudgeDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      const dismiss = nudgeDialog.getByText(/not now|dismiss|skip|maybe later/i);
-      if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
-      else await nudgeDialog.evaluate(el => el.remove());
-    }
-    await page.getByRole('button', { name: 'New', exact: true }).evaluate(el => (el as HTMLElement).click());
+    // Click "Exit Demo" (same button as "New" in real mode) to return to upload form
+    const exitButton = page.getByRole('button', { name: /exit demo/i });
+    await exitButton.evaluate(el => (el as HTMLElement).click());
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
 
-    // Re-upload
-    const fileInput2 = page.locator('input[type="file"][webkitdirectory]');
-    await fileInput2.setInputFiles(FIXTURES_DIR);
+    // Upload real SD card data
+    const fileInput = page.locator('input[type="file"][webkitdirectory]');
+    await fileInput.setInputFiles(FIXTURES_DIR);
 
-    // Should complete analysis again
+    // Should complete analysis
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
     ).toBeVisible({ timeout: 90_000 });
