@@ -130,8 +130,8 @@ test.describe('Returning User Flow', () => {
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
     ).toBeVisible({ timeout: 90_000 });
 
-    // Reset to upload form (avoid matching "What's New" link or other text)
-    await page.locator('button').filter({ hasText: /^New$/ }).first().click();
+    // Reset to upload form (use getByRole for accessible name which normalises whitespace from icon)
+    await page.getByRole('button', { name: 'New', exact: true }).click();
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
 
     // Re-upload

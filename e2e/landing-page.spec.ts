@@ -19,13 +19,14 @@ test.describe('Landing Page', () => {
   });
 
   test('hero Upload CTA navigates to /analyze', async ({ page }) => {
-    // Hero has mobile/desktop variants — click whichever is visible (force handles hidden)
-    await page.locator('a[href="/analyze"]').filter({ hasText: 'Upload Your SD Card' }).first().click({ force: true });
+    // Hero has responsive mobile/desktop variants — use JS click to bypass display:none
+    await page.locator('a[href="/analyze"]').filter({ hasText: 'Upload Your SD Card' }).first().evaluate(el => (el as HTMLElement).click());
     await expect(page).toHaveURL('/analyze');
   });
 
   test('hero Demo CTA navigates to /analyze?demo', async ({ page }) => {
-    await page.locator('a[href="/analyze?demo"]').first().click({ force: true });
+    // Hero has responsive mobile/desktop variants — use JS click to bypass display:none
+    await page.locator('a[href="/analyze?demo"]').first().evaluate(el => (el as HTMLElement).click());
     await expect(page).toHaveURL(/\/analyze\?demo/);
   });
 
@@ -44,9 +45,9 @@ test.describe('Landing Page', () => {
   });
 
   test('renders trust bar with privacy messaging', async ({ page }) => {
-    await expect(page.getByText('100% Client-Side')).toBeVisible();
-    await expect(page.getByText('Open Source')).toBeVisible();
-    await expect(page.getByText('Research-Grade')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Client-Side/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Open Source/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Research-Grade/i })).toBeVisible();
   });
 
   test('bottom CTA links to /analyze', async ({ page }) => {

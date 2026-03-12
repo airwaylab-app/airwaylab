@@ -63,8 +63,8 @@ test.describe('Free User Flow', () => {
 
     await uploadAndWaitForAnalysis(page);
 
-    // Overview is default — already visible
-    await expect(page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })).toHaveAttribute('data-selected', '');
+    // Overview is default — already visible (base-ui uses aria-selected)
+    await expect(page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })).toHaveAttribute('aria-selected', 'true');
 
     // Click through each tab
     const tabs = [
@@ -147,8 +147,8 @@ test.describe('Free User Flow', () => {
   test('reset/new button returns to upload form', async ({ page }) => {
     await uploadAndWaitForAnalysis(page);
 
-    // Click the New/Reset button (avoid matching "What's New" link or other text)
-    await page.locator('button').filter({ hasText: /^New$/ }).first().click();
+    // Click the New/Reset button (use getByRole for accessible name which normalises whitespace from icon)
+    await page.getByRole('button', { name: 'New', exact: true }).click();
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
