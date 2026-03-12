@@ -5,6 +5,31 @@ All notable changes to AirwayLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **InfoTooltip viewport overflow** — tooltip now flips above the trigger when near the bottom of the viewport instead of rendering off-screen (info-tooltip-viewport-overflow)
+
+## [1.1.0] - 2026-03-12
+
+### Added
+
+- **Privacy Policy** (`/privacy`) — full GDPR/CCPA-compliant privacy policy covering data categories, legal basis, retention schedules, 8 third-party processor disclosures, user rights, children's privacy, breach notification, and international transfers
+- **Terms of Service** (`/terms`) — 18+ eligibility, medical device disclaimer (not FDA/CE cleared), subscription billing and 14-day refund policy, ROSCA auto-renewal compliance, acceptable use, HIPAA disclaimer, limitation of liability, indemnification
+- **Accessibility statement** (`/accessibility`) — WCAG 2.1 AA target conformance with known limitations, browser/AT support, and feedback channel
+- **Contact page** (`/contact`) — 6 structured channels (bugs, general, privacy, billing, accessibility, security)
+- **AI consent modal** — explicit consent required before first AI insights API call; explains what data is sent to Claude; persists in localStorage and logs to server audit trail
+- **Consent audit trail** — append-only `consent_audit` Supabase table with RLS, hashed IP, user agent for GDPR compliance
+- **Dashboard loading skeleton** for the analyze page
+- **Footer Legal column** with links to Privacy, Terms, Accessibility, and Contact
+
+### Changed
+
+- **Medical disclaimer strengthened** — now includes "not FDA/CE cleared" language with link to Terms
+- **Footer bottom bar** — added FDA/CE disclaimer and inline Privacy/Terms links
+- **CLAUDE.md** — added 7 compliance conventions (consent steps, audit logging, deletion paths, processor disclosure) and 4 anti-patterns (no integration without privacy update, no health data without retention docs, no AI without consent, no weakening disclaimers)
+
 ## [1.0.0] - 2026-03-12
 
 ### Added
