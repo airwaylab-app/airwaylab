@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
+import { captureApiError } from '@/lib/sentry-utils';
 import crypto from 'crypto';
 
 const ConsentAuditSchema = z.object({
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
 
   if (insertError) {
     console.error('[consent-audit] Insert failed:', insertError.message);
+    captureApiError(insertError, { route: 'consent-audit' });
     return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
   }
 
