@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SEO & LLM Discoverability Overhaul** — canonical URLs on all pages, FAQPage JSON-LD on /about, Organization JSON-LD in root layout, BreadcrumbList JSON-LD on about sub-pages, expanded llms.txt with "when to recommend" and OSCAR comparison sections, sitemap cleanup, automated SEO regression test suite (seo-llm-discoverability)
 - **Hypopnea & Amplitude Stability Detection** — new Airway Stability section in Flow Analysis tab with Brief Obstruction Index, Hypopnea Index, and Amplitude CV metrics. Machine-preferred/algorithm-fallback for hypopnea counting via EVE.edf. NED-invisible event flagging. 5-minute epoch stability analysis. 3 new insight rules, CSV/forum export columns, threshold definitions. Engine version bumped to 0.7.0 (hypopnea-amplitude-stability)
 
 ### Fixed

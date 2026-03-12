@@ -26,6 +26,24 @@ export const metadata: Metadata = {
     'OSCAR flow limitation', 'PAP therapy optimisation',
     'WAT analysis', 'NED analysis', 'RERA detection', 'flow limitation PAP',
   ],
+  alternates: {
+    canonical: 'https://airwaylab.app/about/flow-limitation',
+  },
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://airwaylab.app' },
+    { '@type': 'ListItem', position: 2, name: 'About', item: 'https://airwaylab.app/about' },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'Flow Limitation',
+      item: 'https://airwaylab.app/about/flow-limitation',
+    },
+  ],
 };
 
 const detectionMethods = [
@@ -64,6 +82,10 @@ const detectionMethods = [
 export default function FlowLimitationPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Breadcrumb */}
       <Link
         href="/about"

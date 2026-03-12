@@ -22,6 +22,24 @@ export const metadata: Metadata = {
     'overnight oximetry analysis', 'sleep apnea oximetry',
     'PAP oximetry', 'nocturnal hypoxemia',
   ],
+  alternates: {
+    canonical: 'https://airwaylab.app/about/oximetry-analysis',
+  },
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://airwaylab.app' },
+    { '@type': 'ListItem', position: 2, name: 'About', item: 'https://airwaylab.app/about' },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'Oximetry Analysis',
+      item: 'https://airwaylab.app/about/oximetry-analysis',
+    },
+  ],
 };
 
 const metrics = [
@@ -111,6 +129,10 @@ const metrics = [
 export default function OximetryAnalysisPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Breadcrumb */}
       <Link
         href="/about"

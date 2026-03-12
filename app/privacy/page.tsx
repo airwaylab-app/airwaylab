@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     title: 'Privacy Policy — AirwayLab',
     description: 'How AirwayLab handles your data. Privacy-first, browser-based sleep analysis.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/privacy',
+  },
 };
 
 export default function PrivacyPolicyPage() {
@@ -105,8 +108,9 @@ export default function PrivacyPolicyPage() {
               per-breath data are <strong>never</strong> sent.
             </li>
             <li>
-              <strong>Data Contribution:</strong> Anonymised aggregate metrics and device model.
-              No dates, timestamps, names, or identifiers are included.
+              <strong>Data Contribution:</strong> Anonymised aggregate metrics, device model,
+              and your self-reported sleep quality rating (1–5 scale). Used for community insights,
+              AI model improvement, and research. No dates, timestamps, names, or identifiers are included.
             </li>
             <li>
               <strong>Cloud Storage:</strong> Encrypted raw SD card files stored in EU-region

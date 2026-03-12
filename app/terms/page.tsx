@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     title: 'Terms of Service — AirwayLab',
     description: 'Terms of Service for AirwayLab sleep analysis platform.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/terms',
+  },
 };
 
 export default function TermsPage() {

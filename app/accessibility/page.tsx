@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     title: 'Accessibility — AirwayLab',
     description: 'AirwayLab accessibility statement and WCAG 2.1 conformance information.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/accessibility',
+  },
 };
 
 export default function AccessibilityPage() {
