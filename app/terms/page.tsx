@@ -133,8 +133,8 @@ export default function TermsPage() {
             We offer a <strong>full refund within 14 days</strong> of your first subscription
             payment if you are not satisfied, no questions asked. After 14 days, or for
             subsequent billing periods, refunds are not available — you can cancel to prevent
-            future charges. To request a refund, email{' '}
-            <a href="mailto:billing@airwaylab.app">billing@airwaylab.app</a>.
+            future charges. To request a refund,{' '}
+            <a href="/contact?category=billing">contact us via our contact form</a>.
           </p>
 
           <h3 className="mt-4">6.5 Price Changes</h3>
@@ -274,9 +274,9 @@ export default function TermsPage() {
           <h2>14. Termination</h2>
           <p>
             You may stop using the Service at any time. You can request account deletion via your
-            account settings or by emailing{' '}
-            <a href="mailto:privacy@airwaylab.app">privacy@airwaylab.app</a>. We process
-            deletion requests within 30 days.
+            account settings or via our{' '}
+            <a href="/contact?category=privacy">contact form</a>. We process deletion requests
+            within 30 days.
           </p>
           <p>
             We may terminate or suspend your access for violation of these Terms, with or without
@@ -312,8 +312,8 @@ export default function TermsPage() {
         <section>
           <h2>17. Contact</h2>
           <p>
-            Questions about these Terms? Email{' '}
-            <a href="mailto:legal@airwaylab.app">legal@airwaylab.app</a>.
+            Questions about these Terms?{' '}
+            <a href="/contact">Get in touch via our contact form</a>.
           </p>
         </section>
 

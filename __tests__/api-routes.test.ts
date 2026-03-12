@@ -235,14 +235,14 @@ describe('POST /api/customer-portal', () => {
     mockCustomersRetrieve.mockRejectedValueOnce(new Error('No such customer'));
     const res = await callRoute();
     expect(res.status).toBe(404);
-    expect((await res.json()).error).toContain('support@airwaylab.app');
+    expect((await res.json()).error).toContain('/contact');
   });
 
   it('returns 404 for deleted customer', async () => {
     mockCustomersRetrieve.mockResolvedValueOnce({ id: 'cus_del', deleted: true });
     const res = await callRoute();
     expect(res.status).toBe(404);
-    expect((await res.json()).error).toContain('support@airwaylab.app');
+    expect((await res.json()).error).toContain('/contact');
   });
 });
 

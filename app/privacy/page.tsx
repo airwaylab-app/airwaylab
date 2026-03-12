@@ -39,8 +39,8 @@ export default function PrivacyPolicyPage() {
             regulatory body. It is provided for educational and informational purposes only.
           </p>
           <p>
-            For privacy questions, contact us at{' '}
-            <a href="mailto:privacy@airwaylab.app">privacy@airwaylab.app</a>.
+            For privacy questions,{' '}
+            <a href="/contact?category=privacy">contact us via our contact form</a>.
           </p>
         </section>
 
@@ -316,9 +316,9 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
           <p className="mt-2">
-            To exercise these rights, email{' '}
-            <a href="mailto:privacy@airwaylab.app">privacy@airwaylab.app</a>. We will respond
-            within 30 days.
+            To exercise these rights,{' '}
+            <a href="/contact?category=privacy">contact us via our contact form</a>. We will
+            respond within 30 days.
           </p>
         </section>
 
@@ -329,8 +329,8 @@ export default function PrivacyPolicyPage() {
             AirwayLab is intended for adults aged 18 and over who have been diagnosed with
             sleep-disordered breathing. We do not knowingly collect personal data from children
             under 16 (or 13 in jurisdictions where COPPA applies). If you believe a child has
-            provided us with personal data, please contact us at{' '}
-            <a href="mailto:privacy@airwaylab.app">privacy@airwaylab.app</a> and we will
+            provided us with personal data, please{' '}
+            <a href="/contact?category=privacy">contact us via our contact form</a> and we will
             promptly delete it.
           </p>
         </section>
@@ -350,8 +350,8 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
           <p>
-            To report a security vulnerability, email{' '}
-            <a href="mailto:security@airwaylab.app">security@airwaylab.app</a>.
+            To report a security vulnerability,{' '}
+            <a href="/contact?category=security">use our contact form</a>.
           </p>
         </section>
 
@@ -409,7 +409,8 @@ export default function PrivacyPolicyPage() {
           </p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              Email: <a href="mailto:privacy@airwaylab.app">privacy@airwaylab.app</a>
+              <a href="/contact?category=privacy">Contact form</a> (select
+              &ldquo;Privacy &amp; data request&rdquo;)
             </li>
             <li>
               GitHub:{' '}

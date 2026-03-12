@@ -1,79 +1,87 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { events } from '@/lib/analytics';
 
-const PRACTICE_TYPES = [
-  { value: 'independent_sleep_consultant', label: 'Independent sleep consultant' },
-  { value: 'respiratory_therapist', label: 'Respiratory therapist' },
-  { value: 'sleep_physician', label: 'Sleep physician' },
-  { value: 'other', label: 'Other' },
+const CATEGORIES = [
+  { value: 'general', label: 'General question' },
+  { value: 'privacy', label: 'Privacy & data request' },
+  { value: 'billing', label: 'Billing & subscriptions' },
+  { value: 'accessibility', label: 'Accessibility' },
+  { value: 'security', label: 'Security vulnerability' },
 ] as const;
 
-export function ProviderInterestForm() {
+type CategoryValue = (typeof CATEGORIES)[number]['value'];
+
+function isValidCategory(v: string): v is CategoryValue {
+  return CATEGORIES.some((c) => c.value === v);
+}
+
+export function ContactForm() {
+  const searchParams = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [practiceType, setPracticeType] = useState('');
+  const [category, setCategory] = useState<string>('general');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Pre-select category from query param
+  useEffect(() => {
+    const param = searchParams.get('category');
+    if (param && isValidCategory(param)) {
+      setCategory(param);
+    }
+  }, [searchParams]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const trimmedName = name.trim();
       const trimmedEmail = email.trim().toLowerCase();
-
-      if (trimmedName.length < 2) return;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) return;
+      if (message.trim().length < 10) return;
 
       setStatus('submitting');
       setErrorMessage('');
 
       try {
-        const res = await fetch('/api/provider-interest', {
+        const res = await fetch('/api/contact', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: trimmedName,
+            name: name.trim() || undefined,
             email: trimmedEmail,
-            practiceType: practiceType || undefined,
-            message: message.trim() || undefined,
+            category,
+            message: message.trim(),
           }),
         });
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           setErrorMessage(
-            (data as { error?: string }).error ??
-              'Something went wrong. Please try again or use our contact form at /contact'
+            (data as { error?: string }).error ?? 'Something went wrong. Please try again.'
           );
           setStatus('error');
           return;
         }
 
         setStatus('success');
-        events.providersContactSubmit();
       } catch {
-        setErrorMessage(
-          'Something went wrong. Please try again or use our contact form at /contact'
-        );
+        setErrorMessage('Something went wrong. Please try again.');
         setStatus('error');
       }
     },
-    [name, email, practiceType, message]
+    [name, email, category, message]
   );
 
   if (status === 'success') {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] px-6 py-8 text-center">
         <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-        <p className="text-sm font-medium">
-          Thanks — we&apos;ll be in touch within a few days.
-        </p>
+        <p className="text-sm font-medium">Message sent. We aim to respond within 2 business days.</p>
       </div>
     );
   }
@@ -83,62 +91,59 @@ export function ProviderInterestForm() {
       {/* Name */}
       <div>
         <label
-          htmlFor="provider-name"
+          htmlFor="contact-name"
           className="mb-1.5 block text-xs font-medium text-muted-foreground"
         >
-          Name <span className="text-red-400">*</span>
+          Name
         </label>
         <input
-          id="provider-name"
+          id="contact-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
-          minLength={2}
           maxLength={100}
           className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Your name"
+          placeholder="Your name (optional)"
         />
       </div>
 
       {/* Email */}
       <div>
         <label
-          htmlFor="provider-email"
+          htmlFor="contact-email"
           className="mb-1.5 block text-xs font-medium text-muted-foreground"
         >
           Email <span className="text-red-400">*</span>
         </label>
         <input
-          id="provider-email"
+          id="contact-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           maxLength={254}
           className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="you@practice.com"
+          placeholder="you@example.com"
         />
       </div>
 
-      {/* Practice type */}
+      {/* Category */}
       <div>
         <label
-          htmlFor="provider-practice-type"
+          htmlFor="contact-category"
           className="mb-1.5 block text-xs font-medium text-muted-foreground"
         >
-          Practice type
+          Category
         </label>
         <select
-          id="provider-practice-type"
-          value={practiceType}
-          onChange={(e) => setPracticeType(e.target.value)}
+          id="contact-category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
           className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
-          <option value="">Select...</option>
-          {PRACTICE_TYPES.map((pt) => (
-            <option key={pt.value} value={pt.value}>
-              {pt.label}
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
             </option>
           ))}
         </select>
@@ -147,29 +152,32 @@ export function ProviderInterestForm() {
       {/* Message */}
       <div>
         <label
-          htmlFor="provider-message"
+          htmlFor="contact-message"
           className="mb-1.5 block text-xs font-medium text-muted-foreground"
         >
-          Tell us about your workflow
+          Message <span className="text-red-400">*</span>
         </label>
         <textarea
-          id="provider-message"
+          id="contact-message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          required
+          minLength={10}
           maxLength={2000}
-          rows={4}
+          rows={5}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="What tools do you use today? What's painful about your current workflow?"
+          placeholder="How can we help?"
         />
+        <p className="mt-1 text-right text-[11px] text-muted-foreground/50">
+          {message.length}/2000
+        </p>
       </div>
 
-      {errorMessage && (
-        <p className="text-xs text-red-400">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-xs text-red-400">{errorMessage}</p>}
 
       <Button
         type="submit"
-        disabled={status === 'submitting' || name.trim().length < 2 || !email.trim()}
+        disabled={status === 'submitting' || !email.trim() || message.trim().length < 10}
       >
         {status === 'submitting' ? (
           <>
@@ -177,7 +185,7 @@ export function ProviderInterestForm() {
             Sending...
           </>
         ) : (
-          'Get in Touch'
+          'Send Message'
         )}
       </Button>
     </form>

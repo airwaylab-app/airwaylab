@@ -92,8 +92,8 @@ export default function AccessibilityPage() {
           </p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              Email:{' '}
-              <a href="mailto:accessibility@airwaylab.app">accessibility@airwaylab.app</a>
+              <a href="/contact?category=accessibility">Contact form</a> (select
+              &ldquo;Accessibility&rdquo;)
             </li>
             <li>
               GitHub:{' '}
