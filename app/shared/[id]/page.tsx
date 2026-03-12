@@ -18,32 +18,23 @@ export const metadata: Metadata = {
  * Rehydrate Date objects from JSONB serialisation.
  * Matches the pattern in lib/persistence.ts.
  */
+function rehydrateNight(night: Record<string, unknown>): NightResult {
+  const ned = night.ned as Record<string, unknown> | undefined;
+  return {
+    ...night,
+    date: new Date(night.date as string),
+    ned: {
+      ...(ned ?? {}),
+      estimatedArousalIndex: ned?.estimatedArousalIndex ?? 0,
+    },
+  } as NightResult;
+}
+
 function rehydrateNights(raw: unknown): NightResult[] {
   if (!Array.isArray(raw)) {
-    // Single night stored as object — wrap in array
-    const night = raw as Record<string, unknown>;
-    return [
-      {
-        ...night,
-        date: new Date(night.date as string),
-        ned: {
-          ...(night.ned as Record<string, unknown>),
-          estimatedArousalIndex:
-            (night.ned as Record<string, unknown>).estimatedArousalIndex ?? 0,
-        },
-      } as NightResult,
-    ];
+    return [rehydrateNight(raw as Record<string, unknown>)];
   }
-
-  return raw.map((n: Record<string, unknown>) => ({
-    ...n,
-    date: new Date(n.date as string),
-    ned: {
-      ...(n.ned as Record<string, unknown>),
-      estimatedArousalIndex:
-        (n.ned as Record<string, unknown>).estimatedArousalIndex ?? 0,
-    },
-  })) as NightResult[];
+  return raw.map((n: Record<string, unknown>) => rehydrateNight(n));
 }
 
 interface PageProps {
