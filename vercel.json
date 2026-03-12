@@ -1,4 +1,8 @@
 {
+  "github": {
+    "silent": true
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app/ components/ lib/ workers/ public/ package.json",
   "crons": [
     {
       "path": "/api/cron/cleanup",
