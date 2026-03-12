@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -7,7 +7,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
-const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 500 });
+const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 2000 });
 
 const presignSchema = z.object({
   filePath: z.string().min(1).max(500),
@@ -78,7 +78,20 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      return NextResponse.json({ skipped: true, fileId: existing.id });
+      // Verify the file actually exists in storage (guards against orphaned rows
+      // from interrupted uploads where presign succeeded but PUT didn't)
+      const { data: storageFile } = await serviceRole.storage
+        .from(STORAGE_BUCKET)
+        .list(existing.storage_path.split('/').slice(0, -1).join('/'), {
+          search: existing.storage_path.split('/').pop(),
+        });
+
+      if (storageFile && storageFile.length > 0) {
+        return NextResponse.json({ skipped: true, fileId: existing.id });
+      }
+
+      // Orphaned row — delete it and proceed with fresh presign
+      await serviceRole.from('user_files').delete().eq('id', existing.id);
     }
 
     // Build storage path: {user_id}/{nightDate or __shared__}/{fileName}
@@ -133,7 +146,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('[files/presign] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/presign' } });
+    captureApiError(err, { route: 'files/presign' });
     return NextResponse.json({ error: 'Failed to prepare upload' }, { status: 500 });
   }
 }

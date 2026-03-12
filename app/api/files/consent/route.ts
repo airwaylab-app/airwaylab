@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ consent });
   } catch (err) {
     console.error('[files/consent] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/consent' } });
+    captureApiError(err, { route: 'files/consent' });
     return NextResponse.json({ error: 'Failed to update consent' }, { status: 500 });
   }
 }

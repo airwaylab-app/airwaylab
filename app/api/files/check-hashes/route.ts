@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ existing });
   } catch (err) {
     console.error('[files/check-hashes] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/check-hashes' } });
+    captureApiError(err, { route: 'files/check-hashes' });
     return NextResponse.json({ error: 'Failed to check hashes' }, { status: 500 });
   }
 }
