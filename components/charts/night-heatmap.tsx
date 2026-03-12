@@ -86,9 +86,9 @@ const METRICS: MetricDef[] = [
   },
   {
     key: 'eai',
-    label: 'Est. AI',
+    label: 'Resp. DI',
     get: (n) => n.ned.estimatedArousalIndex ?? 0,
-    thresholds: [15, 30, 50],
+    thresholds: [5, 10, 20],
     unit: '/hr',
   },
 ];

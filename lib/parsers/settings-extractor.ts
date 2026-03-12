@@ -30,23 +30,44 @@ const SENSITIVITY_MAP: Record<number, string> = {
   0: 'very low',
 };
 
+const MASK_MAP: Record<number, string> = {
+  0: 'Pillows',
+  1: 'Full Face',
+  2: 'Nasal',
+};
+
 function sensitivityLabel(value: number | undefined): string {
   if (value === undefined || value === null) return 'N/A';
   return SENSITIVITY_MAP[value] ?? String(value);
 }
 
+/** Signals already handled by typed fields — excluded from extendedSettings */
+const TYPED_SIGNAL_LABELS = new Set([
+  'TgtIPAP.50', 'TgtEPAP.50', 'Mode', 'Date',
+  'S.RiseTime', 'S.Trigger', 'S.Cycle', 'S.EasyBreathe',
+  'S.EPR.Level', 'S.EPR.EPREnable', 'S.C.Press',
+  'S.RampEnable', 'S.RampTime', 'S.RampPress',
+  'S.Humid.Level', 'S.HumidLevel', 'S.ClimateControl', 'S.Humid.Status',
+  'S.TubeTemp', 'S.Tube.Temp', 'S.Mask', 'S.SmartStart',
+]);
+
 /**
  * Extract daily machine settings from an STR.edf buffer.
  * Returns a map of date string (YYYY-MM-DD) → MachineSettings.
+ * Captures all S.* prefix signals into extendedSettings alongside typed fields.
  */
 export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): DailySettings {
   const { signals, startDateTime } = parseSTR(strBuffer);
   const dailySettings: DailySettings = {};
 
-  // Find signals by label
+  // Log all signal labels for discovery
+  const allLabels = signals.map((s) => s.label);
+  console.error(`[settings] STR.edf signals (${allLabels.length}): ${allLabels.join(', ')}`);
+
   const findSignal = (substring: string) =>
     signals.find((s) => s.label.includes(substring));
 
+  // Core pressure signals
   const targetIPAP = findSignal('TgtIPAP.50');
   const targetEPAP = findSignal('TgtEPAP.50');
   const modeSignal = findSignal('Mode');
@@ -58,6 +79,21 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const eprLevelSignal = findSignal('S.EPR.Level');
   const eprEnableSignal = findSignal('S.EPR.EPREnable');
   const cpapPressSignal = findSignal('S.C.Press');
+
+  // Comfort/environment signals
+  const rampEnableSignal = findSignal('S.RampEnable');
+  const rampTimeSignal = findSignal('S.RampTime');
+  const rampPressSignal = findSignal('S.RampPress');
+  const humidLevelSignal = findSignal('S.Humid.Level') ?? findSignal('S.HumidLevel');
+  const climateControlSignal = findSignal('S.ClimateControl') ?? findSignal('S.Humid.Status');
+  const tubeTempSignal = findSignal('S.TubeTemp') ?? findSignal('S.Tube.Temp');
+  const maskSignal = findSignal('S.Mask');
+  const smartStartSignal = findSignal('S.SmartStart');
+
+  // All remaining S.* signals for extendedSettings
+  const extendedSignals = signals.filter(
+    (s) => s.label.startsWith('S.') && !TYPED_SIGNAL_LABELS.has(s.label)
+  );
 
   if (!dateSignal) return dailySettings;
 
@@ -122,6 +158,25 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     const triggerRaw = triggerValues[i];
     const cycleRaw = cycleValues[i];
 
+    // Comfort/environment values for this day
+    const rampEnableRaw = rampEnableSignal?.physicalValues[i];
+    const rampTimeRaw = rampTimeSignal?.physicalValues[i];
+    const rampPressRaw = rampPressSignal?.physicalValues[i];
+    const humidLevelRaw = humidLevelSignal?.physicalValues[i];
+    const climateControlRaw = climateControlSignal?.physicalValues[i];
+    const tubeTempRaw = tubeTempSignal?.physicalValues[i];
+    const maskRaw = maskSignal?.physicalValues[i];
+    const smartStartRaw = smartStartSignal?.physicalValues[i];
+
+    // Catch-all for remaining S.* signals
+    const extended: Record<string, number> = {};
+    for (const sig of extendedSignals) {
+      const val = sig.physicalValues[i];
+      if (val !== undefined && !isNaN(val)) {
+        extended[sig.label] = Math.round(val * 100) / 100;
+      }
+    }
+
     dailySettings[dateStr] = {
       deviceModel,
       epap,
@@ -132,6 +187,15 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined),
       cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined),
       easyBreathe: easyBreatheOn,
+      rampEnabled: rampEnableRaw !== undefined ? Math.round(rampEnableRaw) !== 0 : null,
+      rampTime: rampTimeRaw !== undefined ? Math.round(rampTimeRaw) : null,
+      rampPressure: rampPressRaw !== undefined ? Math.round(rampPressRaw * 10) / 10 : null,
+      humidifierLevel: humidLevelRaw !== undefined ? Math.round(humidLevelRaw) : null,
+      climateControlAuto: climateControlRaw !== undefined ? Math.round(climateControlRaw) !== 0 : null,
+      tubeTempSetting: tubeTempRaw !== undefined ? Math.round(tubeTempRaw) : null,
+      maskType: maskRaw !== undefined ? (MASK_MAP[Math.round(maskRaw)] ?? `Type ${Math.round(maskRaw)}`) : null,
+      smartStart: smartStartRaw !== undefined ? Math.round(smartStartRaw) !== 0 : null,
+      extendedSettings: Object.keys(extended).length > 0 ? extended : undefined,
     };
   }
 

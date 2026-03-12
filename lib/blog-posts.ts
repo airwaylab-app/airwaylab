@@ -10,6 +10,39 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'flow-limitation-and-sleepiness',
+    title: 'Does Flow Limitation Drive Sleepiness? What the Evidence Shows',
+    description:
+      'Your AHI is 2, your arousal index is low, but you\'re exhausted. A growing body of research shows flow limitation itself may drive daytime sleepiness — independent of arousals.',
+    date: '2026-03-12',
+    readTime: '9 min read',
+    tags: ['Flow Limitation', 'Research', 'UARS', 'Sleepiness'],
+    ogDescription:
+      'Research shows inspiratory flow limitation predicts sleepiness independent of arousals and AHI. Learn what this means for tracking your PAP therapy.',
+  },
+  {
+    slug: 'arousals-vs-flow-limitation',
+    title: 'Arousals Don\'t Tell the Whole Story: Why Flow Limitation May Matter More',
+    description:
+      'Sleep medicine assumed arousals fragment sleep and cause symptoms. But research from Dr. Avram Gold and others suggests the stress response to flow limitation itself is the primary driver.',
+    date: '2026-03-12',
+    readTime: '9 min read',
+    tags: ['Arousals', 'Flow Limitation', 'UARS', 'Research'],
+    ogDescription:
+      'Arousals may not be the primary driver of sleep-disordered breathing symptoms. Dr. Gold\'s limbic stress response model offers a compelling alternative.',
+  },
+  {
+    slug: 'epworth-sleepiness-scale',
+    title: 'Is the Epworth Sleepiness Scale Measuring What You Think?',
+    description:
+      'You scored normal on the ESS but feel terrible. Recent research by Drs. Gold and Stoohs shows the ESS conflates sleepiness and fatigue — and may be screening out the patients who need help most.',
+    date: '2026-03-12',
+    readTime: '8 min read',
+    tags: ['ESS', 'Fatigue', 'UARS', 'Research'],
+    ogDescription:
+      'The Epworth Sleepiness Scale conflates sleepiness and fatigue. If your main symptom is exhaustion rather than drowsiness, the ESS may miss your problem entirely.',
+  },
+  {
     slug: 'what-is-cns-sensitization',
     title: 'Why Your Brain Might Matter More Than Your Airway: Understanding CNS Sensitization in Sleep-Disordered Breathing',
     description:

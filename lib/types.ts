@@ -49,6 +49,41 @@ export interface MachineSettings {
   trigger: string;
   cycle: string;
   easyBreathe: boolean;
+  /** Ramp enabled (from S.RampEnable). Optional — not all devices expose this. */
+  rampEnabled?: boolean | null;
+  /** Ramp time in minutes (from S.RampTime) */
+  rampTime?: number | null;
+  /** Ramp start pressure (from S.RampPress) */
+  rampPressure?: number | null;
+  /** Humidifier level (from S.Humid.Level) */
+  humidifierLevel?: number | null;
+  /** Climate control auto mode (from S.ClimateControl) */
+  climateControlAuto?: boolean | null;
+  /** Heated tube temperature (from S.TubeTemp) */
+  tubeTempSetting?: number | null;
+  /** Mask type (from S.Mask) */
+  maskType?: string | null;
+  /** Smart start enabled (from S.SmartStart) */
+  smartStart?: boolean | null;
+  /** All additional S.* signals not captured in typed fields above. */
+  extendedSettings?: Record<string, number>;
+}
+
+export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';
+export type AlcoholLevel = 'none' | '1-2' | '3+';
+export type CongestionLevel = 'none' | 'mild' | 'severe';
+export type SleepPosition = 'back' | 'side' | 'stomach' | 'mixed';
+export type StressLevel = 'low' | 'moderate' | 'high';
+export type ExerciseLevel = 'none' | 'light' | 'intense';
+
+export interface NightNotes {
+  caffeine: CaffeineLevel | null;
+  alcohol: AlcoholLevel | null;
+  congestion: CongestionLevel | null;
+  position: SleepPosition | null;
+  stress: StressLevel | null;
+  exercise: ExerciseLevel | null;
+  note: string;
 }
 
 export interface GlasgowComponents {
@@ -187,6 +222,8 @@ export interface AnalysisState {
   therapyChangeDate: string | null;
   /** Non-fatal warning (e.g. oximetry CSV uploaded but no nights matched) */
   warning: string | null;
+  /** Warning from persistence layer (e.g. oldest nights dropped due to storage cap) */
+  persistenceWarning: string | null;
 }
 
 export interface WorkerAnalyzeMessage {
