@@ -53,7 +53,7 @@ export function AILockedTeasers({ nightCount, isReturning, onRegister }: Props) 
               </div>
             </div>
             <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[2px]">
-              <Lock className="h-4 w-4 text-muted-foreground/40" />
+              <Lock className="h-4 w-4 text-muted-foreground/80" />
             </div>
           </div>
         ))}
@@ -70,7 +70,7 @@ export function AILockedTeasers({ nightCount, isReturning, onRegister }: Props) 
           <Sparkles className="h-3.5 w-3.5" />
           Create a free account for AI insights
         </Button>
-        <p className="text-center text-[11px] text-muted-foreground/60">
+        <p className="text-center text-[11px] text-muted-foreground/80">
           Also: never re-upload your SD card again. Free, no credit card required.
         </p>
       </div>

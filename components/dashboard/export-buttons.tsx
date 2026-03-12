@@ -182,7 +182,7 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
             <TooltipTrigger
               render={<Link href="/pricing" />}
               aria-label="PDF reports available for supporters"
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input/50 bg-background px-3 text-xs font-medium text-muted-foreground/60 transition-colors hover:border-input hover:text-muted-foreground"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input/50 bg-background px-3 text-xs font-medium text-muted-foreground/80 transition-colors hover:border-input hover:text-muted-foreground"
             >
               <Lock className="h-3 w-3" />
               <span className="hidden sm:inline">Report </span>PDF

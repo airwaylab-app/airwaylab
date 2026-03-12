@@ -84,7 +84,7 @@ export function ComparisonRow({
             {delta > 0 ? '+' : ''}{fmtVal(delta, format)}
           </span>
         ) : (
-          <span className="text-muted-foreground/30">—</span>
+          <span className="text-muted-foreground/70">—</span>
         )}
       </div>
     </div>

@@ -68,7 +68,7 @@ export const DevicePressureChart = memo(function DevicePressureChart({
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
-        <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+        <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
         <ResponsiveContainer width="100%" height="100%">

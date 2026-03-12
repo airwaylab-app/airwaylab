@@ -59,7 +59,7 @@ export function ChartInteractionHint() {
       </span>
       <button
         onClick={dismiss}
-        className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+        className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-foreground"
         aria-label="Dismiss chart controls hint"
       >
         <X className="h-3 w-3" />

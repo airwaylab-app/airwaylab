@@ -112,7 +112,7 @@ export function SharePrompts({ nights, selectedNight, open, onClose }: Props) {
                     )}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground/50">
+                <p className="text-[10px] text-muted-foreground/70">
                   Results are anonymised — only metrics are shared, never raw data.
                 </p>
               </div>
@@ -144,7 +144,7 @@ export function SharePrompts({ nights, selectedNight, open, onClose }: Props) {
                     PDF reports are available on the Supporter plan.
                   </p>
                 )}
-                <p className="text-[10px] text-muted-foreground/50">
+                <p className="text-[10px] text-muted-foreground/70">
                   The report includes key metrics, traffic-light indicators, and a medical disclaimer.
                 </p>
               </div>

@@ -372,12 +372,12 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                       </span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-[9px] text-muted-foreground/60">{c.short}</div>
+                  <div className="mt-0.5 text-[9px] text-muted-foreground/80">{c.short}</div>
                 </div>
               );
             })}
           </div>
-          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground/50">
+          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground/70">
             Individual components are scored per breath and averaged. Lower values indicate more normal patterns.
             See the Glasgow tab for the full radar chart and detailed analysis.
           </p>
@@ -527,7 +527,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             } : undefined}
           >
             <CardContent className="flex items-center gap-3 py-6">
-              <HeartPulse className="h-5 w-5 text-muted-foreground/50" />
+              <HeartPulse className="h-5 w-5 text-muted-foreground/70" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">No Oximetry Data</p>
                 <p className="text-xs text-muted-foreground/70">
@@ -539,7 +539,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 </p>
               </div>
               {clickHandler && (
-                <Upload className="ml-auto h-4 w-4 text-muted-foreground/40" />
+                <Upload className="ml-auto h-4 w-4 text-muted-foreground/80" />
               )}
             </CardContent>
           </Card>

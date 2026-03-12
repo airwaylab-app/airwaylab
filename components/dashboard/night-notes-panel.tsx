@@ -151,14 +151,14 @@ export function NightNotesPanel({ dateStr, isPaid = false }: NightNotesPanelProp
           </span>
         )}
         {!isPaid && (
-          <span className="ml-auto text-[10px] font-normal text-muted-foreground/50">
+          <span className="ml-auto text-[10px] font-normal text-muted-foreground/70">
             Improves AI suggestions
           </span>
         )}
       </summary>
 
       <div className="border-t border-border/30 px-4 pb-4 pt-3">
-        <p className="mb-3 text-[10px] leading-relaxed text-muted-foreground/60">
+        <p className="mb-3 text-[10px] leading-relaxed text-muted-foreground/80">
           Log factors that may affect your sleep. This data stays in your browser and helps personalise insights.
         </p>
 
@@ -209,9 +209,9 @@ export function NightNotesPanel({ dateStr, isPaid = false }: NightNotesPanelProp
             placeholder="Anything else? (mask change, medication, travel...)"
             maxLength={200}
             rows={2}
-            className="mt-1 w-full resize-none rounded-md border border-border/40 bg-card/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-primary/40 focus:outline-none"
+            className="mt-1 w-full resize-none rounded-md border border-border/40 bg-card/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
           />
-          <div className="text-right text-[9px] text-muted-foreground/40">
+          <div className="text-right text-[9px] text-muted-foreground/80">
             {notes.note.length}/200
           </div>
         </div>

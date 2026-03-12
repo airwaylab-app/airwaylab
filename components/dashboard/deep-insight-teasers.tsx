@@ -27,7 +27,7 @@ export function DeepInsightTeasers() {
     <div className="relative flex flex-col gap-3 rounded-xl border border-primary/10 bg-primary/[0.02] px-4 pb-4 pt-3">
       <button
         onClick={() => setDismissed(true)}
-        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground"
+        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
         aria-label="Dismiss"
       >
         <X className="h-3 w-3" />
@@ -51,7 +51,7 @@ export function DeepInsightTeasers() {
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary/30" />
             <div>
               <p className="text-sm font-medium text-foreground/60">Breath Pattern Classification</p>
-              <p className="mt-0.5 text-xs text-muted-foreground/50">
+              <p className="mt-0.5 text-xs text-muted-foreground/70">
                 Individual breath shapes analysed for obstruction type...
               </p>
             </div>
@@ -62,7 +62,7 @@ export function DeepInsightTeasers() {
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary/30" />
             <div>
               <p className="text-sm font-medium text-foreground/60">Temporal FL Clustering</p>
-              <p className="mt-0.5 text-xs text-muted-foreground/50">
+              <p className="mt-0.5 text-xs text-muted-foreground/70">
                 When flow limitation episodes cluster during the night...
               </p>
             </div>

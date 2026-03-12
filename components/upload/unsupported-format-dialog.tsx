@@ -131,7 +131,7 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
               </button>
             </div>
 
-            <p className="mt-3 text-[10px] text-muted-foreground/60">
+            <p className="mt-3 text-[10px] text-muted-foreground/80">
               Only the first 5 lines of your file (column headers) will be sent — no personal health data is included.
             </p>
           </>

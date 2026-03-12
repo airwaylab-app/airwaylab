@@ -77,7 +77,7 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
                 className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                   visible[m.key]
                     ? 'border-border bg-card text-foreground'
-                    : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
                 }`}
               >
                 <div
@@ -96,7 +96,7 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
           role="img"
           aria-label={`Multi-night trend chart showing ${data.length} nights. Metrics displayed: ${METRICS.filter((m) => visible[m.key]).map((m) => m.label).join(', ')}.`}
         >
-          <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+          <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
             airwaylab.app
           </span>
           <ResponsiveContainer width="100%" height="100%">

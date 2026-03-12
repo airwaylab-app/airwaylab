@@ -20,6 +20,22 @@ import {
 import { events } from '@/lib/analytics';
 import type { NightResult } from '@/lib/types';
 
+/**
+ * Strip bulky per-breath arrays and oximetry traces before sharing.
+ * Same logic as stripBulkData in persistence.ts — these fields can be
+ * tens of MB for multi-night shares but are not needed for the shared view.
+ */
+function stripForShare(nights: NightResult[]): NightResult[] {
+  return nights.map((n) => ({
+    ...n,
+    ned: {
+      ...n.ned,
+      breaths: [],
+    },
+    oximetryTrace: null,
+  }));
+}
+
 interface Props {
   nights: NightResult[];
   selectedNight: NightResult;
@@ -46,8 +62,10 @@ export const ShareButton = memo(function ShareButton({
     async (scope: 'single' | 'all') => {
       setState({ step: 'loading' });
 
-      const analysisData =
-        scope === 'single' ? selectedNight : nights;
+      const rawData =
+        scope === 'single' ? [selectedNight] : nights;
+      const stripped = stripForShare(rawData);
+      const analysisData = scope === 'single' ? stripped[0] : stripped;
       const nightsCount =
         scope === 'single' ? 1 : nights.length;
       const machineInfo = selectedNight.settings ?? null;
@@ -275,7 +293,7 @@ export const ShareButton = memo(function ShareButton({
                 {/* Change preferences */}
                 <button
                   onClick={handleChangePreferences}
-                  className="text-left text-[11px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                  className="text-left text-[11px] text-muted-foreground/70 transition-colors hover:text-muted-foreground"
                 >
                   Change sharing preferences
                 </button>

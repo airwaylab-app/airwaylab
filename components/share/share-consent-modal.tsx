@@ -200,9 +200,9 @@ export function ShareConsentModal({
         {/* Privacy footer */}
         {!simplified && (
           <div className="mt-4 flex items-center gap-2 rounded-md bg-muted/30 px-3 py-2">
-            <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-            <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-            <p className="text-[11px] text-muted-foreground/60">
+            <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
+            <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
+            <p className="text-[11px] text-muted-foreground/80">
               EU servers · Encrypted · Expires in 30 days
             </p>
           </div>

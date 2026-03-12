@@ -118,7 +118,7 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             {' – '}
             {formatElapsedTimeShort(visibleEnd)}
           </span>
-          <span className="ml-2 text-muted-foreground/60">
+          <span className="ml-2 text-muted-foreground/80">
             {formatElapsedTimeShort(visibleDuration)} of {formatElapsedTimeShort(durationSeconds)}
           </span>
         </div>

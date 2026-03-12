@@ -232,7 +232,7 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
                 className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                   visibleMetrics.has(m.key)
                     ? 'border-border bg-card text-foreground'
-                    : 'border-transparent text-muted-foreground/40 line-through'
+                    : 'border-transparent text-muted-foreground/80 line-through'
                 }`}
               >
                 {m.label}
@@ -260,7 +260,7 @@ export const NightHeatmap = memo(function NightHeatmap({ nights, therapyChangeDa
             role="region"
             aria-label="Night-by-night heatmap of sleep metrics"
           >
-            <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+            <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
               airwaylab.app
             </span>
             <table

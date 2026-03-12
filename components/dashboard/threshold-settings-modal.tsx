@@ -102,13 +102,13 @@ function ThresholdRow({
           aria-label={`${label} amber threshold`}
         />
       </div>
-      <span className="text-[10px] text-muted-foreground/50 w-6 text-center shrink-0">
+      <span className="text-[10px] text-muted-foreground/70 w-6 text-center shrink-0">
         {current.lowerIsBetter ? '\u2193' : '\u2191'}
       </span>
       {isCustom && (
         <button
           onClick={() => onReset(metricKey)}
-          className="text-muted-foreground/50 hover:text-foreground transition-colors"
+          className="text-muted-foreground/70 hover:text-foreground transition-colors"
           title={`Reset to default (${defaultDef.green}/${defaultDef.amber})`}
           aria-label={`Reset ${label} to default`}
         >
@@ -166,7 +166,7 @@ export function ThresholdSettingsModal() {
 
         <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
           <div className="flex items-start justify-between gap-2 mb-3">
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-[11px] text-muted-foreground/80">
               Customise the green/amber thresholds for traffic light indicators.
               Values beyond amber are shown as red.
             </p>
@@ -176,7 +176,7 @@ export function ThresholdSettingsModal() {
               className={`shrink-0 text-[11px] whitespace-nowrap transition-colors ${
                 hasAnyCustom
                   ? 'text-muted-foreground hover:text-foreground cursor-pointer'
-                  : 'text-muted-foreground/30 cursor-default'
+                  : 'text-muted-foreground/70 cursor-default'
               }`}
               title={hasAnyCustom ? 'Reset all thresholds to their default values' : undefined}
               aria-label="Reset to defaults"

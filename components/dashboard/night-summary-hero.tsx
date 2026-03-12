@@ -131,7 +131,7 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
                 What does this mean?
               </button>
             )}
-            <span className="text-[10px] text-muted-foreground/50">
+            <span className="text-[10px] text-muted-foreground/70">
               Always discuss results with your sleep physician before making therapy changes.
             </span>
           </div>

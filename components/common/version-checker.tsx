@@ -63,7 +63,7 @@ export function VersionChecker() {
         </Button>
         <button
           onClick={() => setUpdateAvailable(false)}
-          className="ml-1 rounded p-1 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+          className="ml-1 rounded p-1 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
           aria-label="Dismiss update notification"
         >
           <X className="h-3.5 w-3.5" />

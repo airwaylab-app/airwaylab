@@ -65,7 +65,7 @@ export function ReturningUserNudge({ previousNights, onRegister }: Props) {
         </Button>
         <button
           onClick={handleDismiss}
-          className="shrink-0 rounded p-1 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+          className="shrink-0 rounded p-1 text-muted-foreground/80 transition-colors hover:text-muted-foreground"
           aria-label="Dismiss"
         >
           <X className="h-3.5 w-3.5" />

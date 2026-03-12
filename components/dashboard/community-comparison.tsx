@@ -71,7 +71,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
   if (!isContributeConsented) {
     return (
       <div className="rounded-xl border border-border/50 bg-card/30 px-4 py-3">
-        <div className="flex items-center gap-2 text-muted-foreground/60">
+        <div className="flex items-center gap-2 text-muted-foreground/80">
           <Lock className="h-4 w-4 shrink-0" />
           <div>
             <p className="text-xs font-medium text-muted-foreground/70">Community Comparison</p>
@@ -88,7 +88,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
   if (insufficient) {
     return (
       <div className="rounded-xl border border-border/50 bg-card/30 px-4 py-3">
-        <div className="flex items-center gap-2 text-muted-foreground/60">
+        <div className="flex items-center gap-2 text-muted-foreground/80">
           <BarChart3 className="h-4 w-4 shrink-0" />
           <div>
             <p className="text-xs font-medium text-muted-foreground/70">Community Comparison</p>
@@ -105,9 +105,9 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
   if (loading || !stats) {
     return (
       <div className="rounded-xl border border-border/50 bg-card/30 px-4 py-3">
-        <div className="flex items-center gap-2 text-muted-foreground/60">
+        <div className="flex items-center gap-2 text-muted-foreground/80">
           <Users className="h-4 w-4 shrink-0 animate-pulse" />
-          <p className="text-xs text-muted-foreground/50">Loading community data...</p>
+          <p className="text-xs text-muted-foreground/70">Loading community data...</p>
         </div>
       </div>
     );
@@ -121,20 +121,20 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted-foreground">
             Community Comparison
-            <span className="ml-1.5 text-[10px] font-normal text-muted-foreground/50">
+            <span className="ml-1.5 text-[10px] font-normal text-muted-foreground/70">
               ({stats.totalRatings.toLocaleString()} ratings)
             </span>
           </p>
           <div className="mt-1.5 grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] text-muted-foreground/60">Community avg. rating</p>
+              <p className="text-[10px] text-muted-foreground/80">Community avg. rating</p>
               <p className="font-mono text-sm font-semibold tabular-nums">
                 {stats.avgRating.toFixed(1)}/5
               </p>
             </div>
             {symptomRating !== null && (
               <div>
-                <p className="text-[10px] text-muted-foreground/60">Your rating</p>
+                <p className="text-[10px] text-muted-foreground/80">Your rating</p>
                 <p className="font-mono text-sm font-semibold tabular-nums">
                   {symptomRating}/5
                   {symptomRating > stats.avgRating && (
@@ -148,7 +148,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
             )}
           </div>
           {stats.sameBucketAvgRating !== null && stats.sameBucketCount >= 5 && (
-            <p className="mt-1.5 text-[10px] text-muted-foreground/50">
+            <p className="mt-1.5 text-[10px] text-muted-foreground/70">
               Users with similar IFL Risk rate their sleep {stats.sameBucketAvgRating.toFixed(1)}/5 on average
               ({stats.sameBucketCount} ratings)
             </p>
