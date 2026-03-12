@@ -175,6 +175,64 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - Account deletion requests must be fulfillable within 30 days — any new data store must have a documented deletion path
 - Any new third-party integration must be added to the Privacy Policy's processor list before deployment
 
+## Development Workflow
+
+**This workflow is mandatory. Every feature and fix must follow it. No exceptions.**
+
+The root failure mode is: AI-generated code passes automated checks but introduces subtle UI, integration, and logic bugs that compound across features. The fix is friction between "code generated" and "code in production."
+
+### Pipeline: spec → build → verify → review → merge
+
+**1. Spec** (`/spec`)
+- Define the problem and simplest solution
+- List **failure modes and edge cases** explicitly — not just the happy path
+- List **affected existing components** (blast radius analysis)
+- Include a **manual test checklist** — specific things to click/verify on the preview deploy
+- Wait for approval before proceeding to build
+
+**2. Build** (`/build`)
+- Implement the spec. One concern per PR — never bundle unrelated changes.
+- Must pass full pipeline: `npm run lint` → `npx tsc --noEmit` → `npm test` → `npm run build`
+- Must include tests for the specific edge cases identified in the spec
+- E2e tests must pass locally (`npx playwright test`) for any UI-facing change
+
+**3. Verify** (new gate — before requesting merge)
+- Push to branch. Vercel creates a preview deploy automatically.
+- Report the preview URL and the manual test checklist from the spec.
+- **Demian verifies on the preview.** No merge without this step.
+- If verification fails → fix on the same branch, re-verify.
+
+**4. Review** (self-review of diff against spec)
+- Check: does the diff introduce regressions in existing components?
+- Check: null checks, loading states, error states for all new UI
+- Check: display formatting with real data, not just synthetic test data
+- Check: no hardcoded values, no bundled unrelated changes
+- Check: e2e selectors match actual rendered DOM
+
+**5. Merge**
+- Only after verify + review pass
+- Squash merge to main
+- Monitor Vercel deploy + Sentry for 5 minutes post-deploy
+
+### PR Discipline
+
+- **One concern per PR.** A feature is one PR. A bug fix is one PR. Never combine.
+- **Max 3 feature PRs per session.** Prevents avalanche deployments where bugs compound.
+- **Fix-on-fix = red flag.** If a fix needs a follow-up fix, the original spec missed edge cases. Stop and re-spec before continuing.
+- **No orphan e2e tests.** E2e tests ship in the same PR as the feature they test, not in separate PRs and not bundled into unrelated PRs.
+- **Green CI before merge.** All pipeline stages must pass. If e2e is flaky, fix the flake — don't merge around it.
+
+### Pre-Merge Checklist (copy into every PR)
+
+```markdown
+- [ ] Full pipeline passes (lint, typecheck, test, build)
+- [ ] E2e tests pass locally for UI changes
+- [ ] Vercel preview deploy verified by Demian
+- [ ] Self-review: no regressions in existing components
+- [ ] Self-review: loading, error, and empty states handled
+- [ ] PR contains one concern only — no bundled changes
+```
+
 ## Anti-Patterns
 
 - **Never send health data without consent.** No analytics on waveform data, no silent uploads, no background syncing. If data leaves the browser, the user must have opted in.
@@ -191,6 +249,9 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - **Never store health data server-side without documenting retention period and deletion mechanism.** Every table with health-related data must have a documented retention schedule and a path to deletion for DSAR requests.
 - **Never add automated decision-making (AI/ML) features without an explicit user consent step.** GDPR requires informed consent for automated processing of health data. Use the `AIConsentModal` pattern or similar.
 - **Never remove or weaken medical disclaimers from any output.** All exports (CSV, JSON, PDF, forum), reports, AI insights, and chart images must include the standard disclaimer language.
+- **Never merge without Vercel preview verification.** Passing CI is necessary but not sufficient. Demian must verify the preview deploy before merge.
+- **Never bundle unrelated changes in one PR.** Each PR addresses exactly one concern. A feature + unrelated e2e tests = two PRs. A bug fix + a refactor = two PRs.
+- **Never ship more than 3 feature PRs in a single session.** If bugs compound across features, the cost of debugging exceeds the value of shipping fast.
 
 ## Common Gotchas
 
