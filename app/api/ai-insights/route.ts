@@ -324,7 +324,20 @@ export async function POST(request: NextRequest) {
     // Parse insights from JSON response
     let insights: Insight[];
     try {
-      insights = JSON.parse(textBlock.text);
+      // Strip markdown code fences and extract JSON array
+      let jsonText = textBlock.text.trim();
+      // Remove ```json ... ``` or ``` ... ``` wrappers
+      const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) {
+        jsonText = fenceMatch[1].trim();
+      }
+      // If model included preamble text, extract the JSON array
+      const arrayStart = jsonText.indexOf('[');
+      const arrayEnd = jsonText.lastIndexOf(']');
+      if (arrayStart !== -1 && arrayEnd > arrayStart) {
+        jsonText = jsonText.slice(arrayStart, arrayEnd + 1);
+      }
+      insights = JSON.parse(jsonText);
     } catch {
       Sentry.captureMessage('AI insights: JSON parse failed on AI response', {
         level: 'error',
