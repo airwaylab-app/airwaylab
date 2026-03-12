@@ -194,15 +194,18 @@ function detectEventsFromFlow(
 // ── Tests ────────────────────────────────────────────────────
 
 describe('Tidal Volume computation', () => {
-  it('returns positive values in expected mL range for normal breathing', () => {
+  it('returns per-breath tidal volumes in physiological range for normal breathing', () => {
     // 15 breaths/min, 25 Hz, 60 seconds → amplitude 30 L/min
+    // Expected TV for a sine wave: integral of positive half ≈ 636 mL
     const flow = makeSineFlow(25, 60, 15, 30);
     const tv = computeTidalVolume(flow, 25, 2);
 
     expect(tv.length).toBeGreaterThan(0);
-    const avgTV = tv.reduce((s: number, p: { avg: number }) => s + p.avg, 0) / tv.length;
-    // With 30 L/min amplitude sine wave, inspiratory volume per bucket should be positive
-    expect(avgTV).toBeGreaterThan(0);
+    const nonZero = tv.filter((p: { avg: number }) => p.avg > 0);
+    const avgTV = nonZero.reduce((s: number, p: { avg: number }) => s + p.avg, 0) / nonZero.length;
+    // Per-breath tidal volume should be in physiological range (200-800 mL)
+    expect(avgTV).toBeGreaterThan(200);
+    expect(avgTV).toBeLessThan(800);
     // Each point should have a time value
     expect(tv[0].t).toBe(0);
   });

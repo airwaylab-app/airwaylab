@@ -166,7 +166,8 @@ export function computeFlowStats(
 
 /**
  * Compute estimated tidal volume from raw flow data.
- * Integrates positive flow (inspiration) per breath cycle.
+ * Detects individual breaths via zero-crossings, integrates inspiratory
+ * flow per breath, then maps per-breath TV onto the output time grid.
  */
 export function computeTidalVolume(
   data: Float32Array,
@@ -175,29 +176,75 @@ export function computeTidalVolume(
 ): TidalVolumePoint[] {
   if (data.length === 0 || sampleRate <= 0) return [];
 
+  const dt = 1 / sampleRate; // seconds per sample
   const samplesPerBucket = Math.max(1, Math.round(sampleRate * bucketSeconds));
   const totalBuckets = Math.ceil(data.length / samplesPerBucket);
-  const points: TidalVolumePoint[] = [];
 
+  // Accumulators: sum of TV values and count of breaths per bucket
+  const bucketSum = new Float64Array(totalBuckets);
+  const bucketCount = new Uint16Array(totalBuckets);
+
+  // Detect breaths via negative→positive zero-crossings (start of inspiration)
+  const minBreathSamples = Math.round(sampleRate * 1.5); // min ~1.5s breath
+  const maxBreathSamples = Math.round(sampleRate * 15);  // max ~15s breath
+
+  let breathStart = 0;
+  let prevPositive = data[0] >= 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const positive = data[i] >= 0;
+
+    // Negative→positive crossing = start of new breath
+    if (!prevPositive && positive) {
+      const breathLen = i - breathStart;
+      if (breathLen >= minBreathSamples && breathLen <= maxBreathSamples) {
+        // Integrate positive flow (inspiration) for this breath
+        let positiveSum = 0;
+        for (let j = breathStart; j < i; j++) {
+          if (data[j] > 0) positiveSum += data[j];
+        }
+
+        // Convert: flow (L/min) × dt (s) × (1 min / 60 s) × 1000 mL/L
+        const volumeML = positiveSum * dt * (1000 / 60);
+
+        if (volumeML > 30) { // filter noise-only sub-breaths
+          const breathMid = (breathStart + i) / 2;
+          const bucket = Math.min(
+            Math.floor(breathMid / samplesPerBucket),
+            totalBuckets - 1
+          );
+          bucketSum[bucket] += volumeML;
+          bucketCount[bucket]++;
+        }
+      }
+      breathStart = i;
+    }
+    prevPositive = positive;
+  }
+
+  // Build output: average TV per bucket
+  const points: TidalVolumePoint[] = new Array(totalBuckets);
   for (let b = 0; b < totalBuckets; b++) {
-    const start = b * samplesPerBucket;
-    const end = Math.min(start + samplesPerBucket, data.length);
+    points[b] = {
+      t: +((b * samplesPerBucket) / sampleRate).toFixed(1),
+      avg: bucketCount[b] > 0 ? +(bucketSum[b] / bucketCount[b]).toFixed(0) : 0,
+    };
+  }
 
-    // Integrate positive flow as inspiratory volume (L/min → mL)
-    let positiveSum = 0;
-    for (let i = start; i < end; i++) {
-      if (data[i] > 0) {
-        positiveSum += data[i];
+  // Fill empty buckets with nearest neighbour (breaths don't land in every 2s bucket)
+  for (let i = 0; i < points.length; i++) {
+    if (points[i].avg === 0) {
+      for (let d = 1; d < points.length; d++) {
+        if (i - d >= 0 && points[i - d].avg > 0) {
+          points[i].avg = points[i - d].avg;
+          break;
+        }
+        if (i + d < points.length && points[i + d].avg > 0) {
+          points[i].avg = points[i + d].avg;
+          break;
+        }
       }
     }
-
-    // Convert: flow (L/min) * time (1/sampleRate s) * (1 min / 60 s) * 1000 mL/L
-    const volumeML = (positiveSum / sampleRate) * (1000 / 60);
-
-    points.push({
-      t: +(start / sampleRate).toFixed(1),
-      avg: +volumeML.toFixed(0),
-    });
   }
 
   return points;
