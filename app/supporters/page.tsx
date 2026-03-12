@@ -1,5 +1,20 @@
+import type { Metadata } from 'next';
 import { Crown } from 'lucide-react';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Supporters — AirwayLab',
+  description:
+    'The people who fund AirwayLab\u2019s continued development. Their contributions keep the tool free and open-source for everyone.',
+  openGraph: {
+    title: 'Supporters — AirwayLab',
+    description:
+      'The people who keep AirwayLab free and open-source.',
+  },
+  alternates: {
+    canonical: 'https://airwaylab.app/supporters',
+  },
+};
 
 export const revalidate = 3600; // revalidate every hour
 

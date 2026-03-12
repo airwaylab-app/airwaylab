@@ -28,6 +28,84 @@ export const metadata: Metadata = {
     description:
       'Learn how AirwayLab analyses PAP flow limitation using four research-grade engines. Open-source, browser-based, free.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/about',
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  FAQ data (used for both JSON-LD schema and rendered UI)            */
+/* ------------------------------------------------------------------ */
+
+const faqData = [
+  {
+    question: 'What PAP devices are supported?',
+    answer:
+      "AirwayLab currently supports ResMed AirSense 10 and AirCurve 10 series machines (CPAP, AutoSet, VPAP, ASV). These machines store detailed flow waveform data in EDF format on the SD card. AirSense 11 / AirCurve 11: ResMed's newer generation machines use an updated EDF format with different signal names. AirwayLab may partially work with AirSense 11 data, but full support is in development and results are not yet validated. Philips Respironics and other manufacturers use different data formats and are not currently supported.",
+  },
+  {
+    question: 'How do I get the data from my SD card?',
+    answer:
+      'Remove the SD card from your ResMed machine and insert it into your computer (you may need an SD card reader). When uploading to AirwayLab, select the DATALOG folder \u2014 this contains the EDF files with your flow waveform data. AirwayLab automatically finds and groups the relevant files by night.',
+  },
+  {
+    question: 'Is my data safe?',
+    answer:
+      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data never leaves your device by default. No cookies are used. We use Plausible for privacy-first, cookie-free page-view analytics that collect zero personal data. Optional features like AI-powered insights or cloud storage require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
+  },
+  {
+    question: 'What pulse oximeters are supported?',
+    answer:
+      'AirwayLab supports CSV exports from the Viatom/Checkme O2 Max wrist pulse oximeter. The CSV should contain SpO\u2082 and heart rate columns with timestamps. Oximetry data is optional \u2014 all four analysis engines work with SD card data alone, and the oximetry pipeline activates only when oximetry CSVs are provided.',
+  },
+  {
+    question: 'How do I interpret the Glasgow Index?',
+    answer:
+      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is considered good therapy, 2.0\u20133.0 suggests moderate flow limitation worth discussing with your clinician, and above 3.0 indicates significant flow limitation that may warrant pressure or settings adjustment.',
+  },
+  {
+    question: 'What is the difference between Glasgow, WAT, and NED?',
+    answer:
+      'These are three independent methods of detecting flow limitation, each with different strengths. Glasgow scores breath shapes holistically (9 descriptors). WAT analyzes population-level patterns (regularity, periodicity). NED measures the specific ratio of peak-to-mid flow that indicates airway narrowing, plus automated RERA event detection. Using all three together gives a more complete picture than any single metric.',
+  },
+  {
+    question: 'Why can Glasgow and NED be low but FL Score high (or vice versa)?',
+    answer:
+      "Each metric detects flow limitation using a different method. Glasgow Index scores 9 breath-shape characteristics (skew, spikes, flat tops, multi-peaks, etc.). FL Score (WAT engine) measures how much of the tidal volume variance is concentrated at the flow peaks across all breaths. NED Mean measures the per-breath ratio of peak flow to mid-inspiratory flow. A high FL Score with low Glasgow can happen when breaths are moderately flat-topped but don't show the specific shape distortions Glasgow targets. A low NED with high Glasgow can occur when breath shapes are abnormal in ways that don't affect the peak-to-mid flow ratio.",
+  },
+  {
+    question: 'What is the Estimated Arousal Index (EAI) and how is it calculated?',
+    answer:
+      'The Estimated Arousal Index (EAI) estimates how many times per hour your brain briefly wakes up during sleep, based on breathing pattern changes. True arousals can only be measured with EEG (brain wave monitoring), but respiratory pattern changes correlate well with cortical arousals. AirwayLab detects arousals by looking for sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). A 15-second refractory period prevents double-counting. An EAI below 10/hr is generally considered normal. Above 15/hr suggests significant sleep fragmentation worth discussing with your clinician.',
+  },
+  {
+    question: 'How is the FL Score calculated?',
+    answer:
+      'The FL Score is computed by the WAT (Wobble Analysis Tool) engine. For each window of breaths, it calculates the ratio of tidal volume variance in the top half of the signal versus the total variance. In normal breathing, airflow ramps up smoothly \u2014 the variance is distributed across the full waveform. In flow-limited breathing, the airflow hits a ceiling, creating a flat-topped pattern where most of the variance is concentrated at the peaks. A higher FL Score means more of your breaths show this flat-topped pattern, reported as a percentage.',
+  },
+  {
+    question: 'Can I share results with my sleep doctor?',
+    answer:
+      'Yes. Use the export buttons in the dashboard to download your results as CSV (for spreadsheets), JSON (raw data), or open a print-ready PDF report you can save and share. You can also copy a forum-formatted summary for posting on ApneaBoard or Reddit. Many users share their AirwayLab results alongside OSCAR data when consulting with sleep physicians.',
+  },
+  {
+    question: 'How does AirwayLab compare to OSCAR?',
+    answer:
+      'OSCAR is an excellent tool for detailed session-by-session review with interactive waveform browsing. AirwayLab complements OSCAR by providing automated flow limitation analysis (Glasgow Index, WAT, NED) that OSCAR does not compute. AirwayLab is also browser-based (no installation needed) and privacy-first (no data leaves your browser). Many users benefit from using both tools together.',
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqData.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
 };
 
 /* ------------------------------------------------------------------ */
@@ -116,6 +194,10 @@ const engines = [
 export default function AboutPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Page Header */}
       <div className="mb-10 sm:mb-14">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">

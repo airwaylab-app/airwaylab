@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       'Upload PAP SD card data for research-grade flow limitation analysis. 100% client-side processing.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/analyze',
+  },
 };
 
 export default function AnalyzeLayout({

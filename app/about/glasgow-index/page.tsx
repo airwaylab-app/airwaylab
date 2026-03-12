@@ -22,6 +22,24 @@ export const metadata: Metadata = {
     'ResMed flow analysis', 'breath shape analysis', 'PAP therapy optimisation',
     'sleep apnea flow limitation', 'PAP pressure adjustment',
   ],
+  alternates: {
+    canonical: 'https://airwaylab.app/about/glasgow-index',
+  },
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://airwaylab.app' },
+    { '@type': 'ListItem', position: 2, name: 'About', item: 'https://airwaylab.app/about' },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'Glasgow Index',
+      item: 'https://airwaylab.app/about/glasgow-index',
+    },
+  ],
 };
 
 const components = [
@@ -75,6 +93,10 @@ const components = [
 export default function GlasgowIndexPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Breadcrumb */}
       <Link
         href="/about"

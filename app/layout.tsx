@@ -75,6 +75,17 @@ const jsonLd = {
   isAccessibleForFree: true,
 };
 
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'AirwayLab',
+  url: 'https://airwaylab.app',
+  logo: 'https://airwaylab.app/og-image.png',
+  sameAs: ['https://github.com/airwaylab-app/airwaylab'],
+  description:
+    'Free, open-source PAP flow limitation analysis that runs entirely in your browser.',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -90,6 +101,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
         {plausibleDomain && (
           <Script

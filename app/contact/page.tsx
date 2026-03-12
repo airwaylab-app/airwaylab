@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     title: 'Contact — AirwayLab',
     description: 'Get in touch with AirwayLab for support, privacy, or accessibility concerns.',
   },
+  alternates: {
+    canonical: 'https://airwaylab.app/contact',
+  },
 };
 
 export default function ContactPage() {

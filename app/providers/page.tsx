@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   title: 'For Sleep Consultants & Providers | AirwayLab',
   description:
     'Instant PAP analysis for remote sleep consults. Patients share a link, you see Glasgow Index scores, flow limitation patterns, and oximetry insights — right in your browser.',
+  alternates: {
+    canonical: 'https://airwaylab.app/providers',
+  },
 };
 
 const engines = [
