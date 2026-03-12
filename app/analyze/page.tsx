@@ -226,6 +226,7 @@ function AnalyzePageInner() {
           // Only show nudge if user has never contributed before
           pendingNightsRef.current = newState.nights;
           setShowContributeNudge(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Cloud storage: auto-upload raw files if consented
