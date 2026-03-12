@@ -46,12 +46,12 @@ export function SymptomRating({ night, value, onChange, isContributeConsented }:
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-foreground">How did you sleep?</p>
-          <p className="text-[10px] text-muted-foreground/60">
+          <p className="text-[10px] text-muted-foreground/80">
             Rate this night to personalise your insights
           </p>
         </div>
         {saving && (
-          <span className="text-[10px] text-muted-foreground/40 animate-pulse">Saving...</span>
+          <span className="text-[10px] text-muted-foreground/80 animate-pulse">Saving...</span>
         )}
       </div>
       <div className="mt-2 flex gap-1.5">

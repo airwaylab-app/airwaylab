@@ -40,7 +40,7 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Extracting device data...</p>
-          <p className="text-[11px] text-muted-foreground/60">Parsing EDF files for {selectedNight.dateStr}</p>
+          <p className="text-[11px] text-muted-foreground/80">Parsing EDF files for {selectedNight.dateStr}</p>
         </CardContent>
       </Card>
     );
@@ -62,9 +62,9 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-          <Gauge className="h-6 w-6 text-muted-foreground/50" />
+          <Gauge className="h-6 w-6 text-muted-foreground/70" />
           <p className="text-sm text-muted-foreground">No pressure or leak data available for this night.</p>
-          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/60">
+          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
             This data comes from your ResMed SD card&apos;s BRP.edf files.
           </p>
           {onReUpload && (
@@ -83,9 +83,9 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-          <Gauge className="h-6 w-6 text-muted-foreground/50" />
+          <Gauge className="h-6 w-6 text-muted-foreground/70" />
           <p className="text-sm text-muted-foreground">No pressure or leak data available for this night.</p>
-          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/60">
+          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
             This data comes from your ResMed SD card&apos;s BRP.edf files.
           </p>
         </CardContent>

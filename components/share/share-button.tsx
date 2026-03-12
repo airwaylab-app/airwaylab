@@ -275,7 +275,7 @@ export const ShareButton = memo(function ShareButton({
                 {/* Change preferences */}
                 <button
                   onClick={handleChangePreferences}
-                  className="text-left text-[11px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                  className="text-left text-[11px] text-muted-foreground/70 transition-colors hover:text-muted-foreground"
                 >
                   Change sharing preferences
                 </button>

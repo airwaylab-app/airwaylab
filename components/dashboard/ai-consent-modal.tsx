@@ -76,7 +76,7 @@ export function AIConsentModal({ open, onConsent, onDecline }: AIConsentModalPro
       <div className="relative w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         <button
           onClick={handleDecline}
-          className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+          className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
           aria-label="Close"
         >
           <X className="h-4 w-4" />

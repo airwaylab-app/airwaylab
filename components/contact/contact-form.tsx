@@ -168,7 +168,7 @@ export function ContactForm() {
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
           placeholder="How can we help?"
         />
-        <p className="mt-1 text-right text-[11px] text-muted-foreground/50">
+        <p className="mt-1 text-right text-[11px] text-muted-foreground/70">
           {message.length}/2000
         </p>
       </div>

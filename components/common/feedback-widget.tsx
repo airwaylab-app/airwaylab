@@ -91,7 +91,7 @@ export function FeedbackWidget() {
           <h3 className="text-sm font-medium">Send feedback</h3>
           <button
             onClick={handleClose}
-            className="rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+            className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -148,7 +148,7 @@ export function FeedbackWidget() {
 
           {/* Character hint */}
           {message.length > 0 && message.trim().length < 5 && (
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-[10px] text-muted-foreground/80">
               Please write at least 5 characters ({5 - message.trim().length} more)
             </p>
           )}
@@ -177,7 +177,7 @@ export function FeedbackWidget() {
             </p>
           )}
 
-          <p className="text-center text-[10px] text-muted-foreground/40">
+          <p className="text-center text-[10px] text-muted-foreground/80">
             You can also{' '}
             <a
               href="https://github.com/airwaylab-app/airwaylab/issues"

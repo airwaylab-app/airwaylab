@@ -75,7 +75,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
       <div className="flex items-center justify-between px-1">
         <h3 className="text-xs font-medium text-muted-foreground">
           Leak Rate
-          <span className="ml-2 text-[10px] font-normal text-muted-foreground/60">
+          <span className="ml-2 text-[10px] font-normal text-muted-foreground/80">
             &gt;{LEAK_THRESHOLD_LMIN}: {timeAboveThreshold.minutes}min ({timeAboveThreshold.pct}%)
           </span>
         </h3>
@@ -88,7 +88,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
-        <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
+        <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
         <ResponsiveContainer width="100%" height="100%">

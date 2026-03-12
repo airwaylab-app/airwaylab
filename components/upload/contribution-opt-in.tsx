@@ -60,7 +60,7 @@ export function ContributionOptIn({
           <span className="text-sm font-medium text-foreground">
             {checked ? 'Contributing data, thank you' : 'Not contributing'}
           </span>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
             <Shield className="h-3 w-3 shrink-0" />
             <span>Fully anonymous · cannot be traced back to you</span>
           </div>
@@ -68,7 +68,7 @@ export function ContributionOptIn({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="shrink-0 rounded px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground hover:bg-muted/30"
+          className="shrink-0 rounded px-2 py-1.5 text-xs text-muted-foreground/80 transition-colors hover:text-muted-foreground hover:bg-muted/30"
         >
           {checked ? 'Manage' : 'Change'}
         </button>
@@ -127,7 +127,7 @@ export function ContributionOptIn({
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="rounded px-2 py-1 text-[11px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+            className="rounded px-2 py-1 text-[11px] text-muted-foreground/70 transition-colors hover:text-muted-foreground"
           >
             Done
           </button>

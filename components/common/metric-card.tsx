@@ -75,7 +75,7 @@ function InfoTooltip({ text, methodology }: { text: string; methodology?: string
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+        className="text-muted-foreground/80 transition-colors hover:text-muted-foreground"
         aria-label="More info"
       >
         <Info className="h-3 w-3" />

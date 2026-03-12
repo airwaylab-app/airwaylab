@@ -85,7 +85,7 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
 
       <button
         onClick={() => setDismissed(true)}
-        className="shrink-0 rounded p-0.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground"
+        className="shrink-0 rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
         aria-label="Dismiss"
       >
         <X className="h-3 w-3" />

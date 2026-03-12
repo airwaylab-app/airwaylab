@@ -131,7 +131,7 @@ export function GraphsTab({
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Extracting flow waveform...</p>
-            <p className="text-[11px] text-muted-foreground/60">Parsing EDF files for {selectedNight.dateStr}</p>
+            <p className="text-[11px] text-muted-foreground/80">Parsing EDF files for {selectedNight.dateStr}</p>
           </CardContent>
         </Card>
       )}
@@ -151,11 +151,11 @@ export function GraphsTab({
         !isDemo && sdFiles.length === 0 && (cloudAttempted || !cloudLoading) ? (
           <Card className="border-border/50">
             <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-              <Waves className="h-6 w-6 text-muted-foreground/50" />
+              <Waves className="h-6 w-6 text-muted-foreground/70" />
               <p className="text-sm text-muted-foreground">
                 Waveform data requires your SD card files
               </p>
-              <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/60">
+              <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
                 Waveforms are extracted directly from your ResMed EDF files and aren&apos;t
                 stored between sessions. Re-upload your SD card to browse the flow data.
               </p>
@@ -167,7 +167,7 @@ export function GraphsTab({
         ) : !waveform ? (
           <Card className="border-border/50">
             <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
-              <Waves className="h-6 w-6 text-muted-foreground/50" />
+              <Waves className="h-6 w-6 text-muted-foreground/70" />
               <p className="text-sm text-muted-foreground">No flow data available</p>
             </CardContent>
           </Card>
@@ -213,7 +213,7 @@ export function GraphsTab({
               <div className="mx-1 h-4 w-px bg-border/50" />
 
               {/* Machine event toggles */}
-              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">Machine</span>
+              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">Machine</span>
               {MACHINE_EVENT_DEFS.map((def) => {
                 const count = eventCounts.get(def.type) ?? 0;
                 const isOn = visibleTypes.has(def.type);
@@ -226,10 +226,10 @@ export function GraphsTab({
                     aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                       count === 0
-                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/70'
                         : isOn
                           ? 'border-border bg-card text-foreground'
-                          : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                          : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
                     }`}
                   >
                     <div
@@ -244,7 +244,7 @@ export function GraphsTab({
               <div className="mx-1 h-4 w-px bg-border/50" />
 
               {/* Algorithm event toggles */}
-              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">AirwayLab</span>
+              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">AirwayLab</span>
               {ALGORITHM_EVENT_DEFS.map((def) => {
                 const count = eventCounts.get(def.type) ?? 0;
                 const isOn = visibleTypes.has(def.type);
@@ -257,10 +257,10 @@ export function GraphsTab({
                     aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                       count === 0
-                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                        ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/70'
                         : isOn
                           ? 'border-border bg-card text-foreground'
-                          : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                          : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
                     }`}
                   >
                     <div
@@ -276,7 +276,7 @@ export function GraphsTab({
               {oxTrace && (
                 <>
                   <div className="mx-1 h-4 w-px bg-border/50" />
-                  <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">SpO₂</span>
+                  <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">SpO₂</span>
                   <button
                     onClick={() => setShowODIEvents(!showODIEvents)}
                     aria-pressed={showODIEvents}
@@ -284,7 +284,7 @@ export function GraphsTab({
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                       showODIEvents
                         ? 'border-border bg-card text-foreground'
-                        : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                        : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
                     }`}
                   >
                     <div
@@ -300,7 +300,7 @@ export function GraphsTab({
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                       showHR
                         ? 'border-border bg-card text-foreground'
-                        : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                        : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
                     }`}
                   >
                     <div
@@ -330,7 +330,7 @@ export function GraphsTab({
                   <TidalVolumeChart tidalVolume={waveform.tidalVolume!} />
                 </ErrorBoundary>
               ) : (
-                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
+                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
                   Requires flow data — upload your SD card.
                 </div>
               )}
@@ -341,7 +341,7 @@ export function GraphsTab({
                   <RespiratoryRateChart respiratoryRate={waveform.respiratoryRate!} />
                 </ErrorBoundary>
               ) : (
-                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
+                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
                   Requires flow data — upload your SD card.
                 </div>
               )}
@@ -355,7 +355,7 @@ export function GraphsTab({
                   />
                 </ErrorBoundary>
               ) : (
-                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
+                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
                   No pressure data in this recording.
                 </div>
               )}
@@ -366,7 +366,7 @@ export function GraphsTab({
                   <DeviceLeakChart leak={waveform.leak} />
                 </ErrorBoundary>
               ) : (
-                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/60">
+                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
                   No leak data in this recording.
                 </div>
               )}
@@ -378,9 +378,9 @@ export function GraphsTab({
                 </ErrorBoundary>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 py-6">
-                  <HeartPulse className="h-5 w-5 text-muted-foreground/40" />
+                  <HeartPulse className="h-5 w-5 text-muted-foreground/80" />
                   <p className="text-xs text-muted-foreground">No oximetry trace available</p>
-                  <p className="max-w-sm text-center text-[10px] leading-relaxed text-muted-foreground/50">
+                  <p className="max-w-sm text-center text-[10px] leading-relaxed text-muted-foreground/70">
                     Upload a Viatom or Checkme O2 Max CSV to see SpO₂ and heart rate traces alongside your flow data.
                   </p>
                   {onUploadOximetry && (
@@ -408,7 +408,7 @@ export function GraphsTab({
             </div>
 
             {/* Disclaimer */}
-            <p className="text-[10px] leading-relaxed text-muted-foreground/50">
+            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
               Flow waveforms are downsampled for display. Tidal volume and respiratory rate are approximate.
               Event detection on this view is approximate — refer to the Flow Analysis tab for authoritative engine results.
             </p>
@@ -419,9 +419,9 @@ export function GraphsTab({
       {/* SpO2 section when no waveform data — always visible */}
       {!cloudLoading && (!waveform || !hasFlowData) && (
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border/50 bg-card/20 py-8">
-          <HeartPulse className="h-5 w-5 text-muted-foreground/40" />
+          <HeartPulse className="h-5 w-5 text-muted-foreground/80" />
           <p className="text-xs text-muted-foreground">No oximetry trace available</p>
-          <p className="max-w-sm text-center text-[10px] leading-relaxed text-muted-foreground/50">
+          <p className="max-w-sm text-center text-[10px] leading-relaxed text-muted-foreground/70">
             Upload a Viatom or Checkme O2 Max CSV to see SpO₂ and heart rate traces alongside your flow data.
           </p>
           {onUploadOximetry && (

@@ -49,7 +49,7 @@ export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: P
     <div className="relative rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
       <button
         onClick={() => setDismissed(true)}
-        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-muted-foreground"
         aria-label="Dismiss"
       >
         <X className="h-3 w-3" />
@@ -62,13 +62,13 @@ export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: P
           </p>
 
           {user && aiRemaining > 0 && (
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
               <Sparkles className="h-2.5 w-2.5" />
               {aiRemaining} free AI {aiRemaining === 1 ? 'analysis' : 'analyses'} remaining this month
             </div>
           )}
 
-          <p className="text-[10px] leading-snug text-muted-foreground/60">
+          <p className="text-[10px] leading-snug text-muted-foreground/80">
             Supporter contributions fund AirwayLab&apos;s continued development as a free, open-source tool.{' '}
             <Link
               href="/pricing"

@@ -213,7 +213,7 @@ export function DataContribution({
               {nights.length} night{nights.length !== 1 ? 's' : ''} of anonymised data submitted.
               You&apos;re helping build the largest PAP flow limitation dataset.
             </p>
-            <p className="mt-1 text-[10px] text-muted-foreground/50">
+            <p className="mt-1 text-[10px] text-muted-foreground/70">
               Upload more data anytime to contribute additional nights.
             </p>
           </div>
@@ -229,7 +229,7 @@ export function DataContribution({
     <div className="relative rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 animate-fade-in-up">
       <button
         onClick={handleDismiss}
-        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-muted-foreground"
         aria-label="Dismiss"
       >
         <X className="h-3 w-3" />
@@ -323,7 +323,7 @@ export function DataContribution({
             )}
           </div>
 
-          <p className="text-[10px] text-muted-foreground/50">
+          <p className="text-[10px] text-muted-foreground/70">
             One click · No account needed · Cannot be traced back to you
           </p>
         </div>

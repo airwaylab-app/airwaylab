@@ -100,7 +100,7 @@ export function AuthModal({ open, onClose }: Props) {
               We sent a magic link to <span className="font-medium text-foreground">{email}</span>.
               Click the link to sign in.
             </p>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground/80">
               Didn&apos;t receive it? Check your spam folder or try again.
             </p>
             <Button variant="ghost" size="sm" onClick={handleClose} className="mt-2">
@@ -165,8 +165,8 @@ export function AuthModal({ open, onClose }: Props) {
             </form>
 
             <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2.5">
-              <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-              <p className="text-[11px] leading-snug text-muted-foreground/60">
+              <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
+              <p className="text-[11px] leading-snug text-muted-foreground/80">
                 Your analysis runs in your browser. Registered accounts get cloud storage and AI insights. All data can be deleted anytime from Account Settings.
               </p>
             </div>

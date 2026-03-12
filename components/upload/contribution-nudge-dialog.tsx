@@ -55,7 +55,7 @@ export function ContributionNudgeDialog({
       <div ref={focusTrapRef} className="relative mx-4 flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-primary/20 bg-card p-8 text-center shadow-2xl">
         <button
           onClick={onDismiss}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
+          className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground/80 transition-colors hover:bg-muted hover:text-muted-foreground"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -115,7 +115,7 @@ export function ContributionNudgeDialog({
           </Button>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
           <Shield className="h-3 w-3" />
           <span>Fully anonymous · No raw data · Cannot be traced to you</span>
         </div>

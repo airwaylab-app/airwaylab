@@ -234,7 +234,7 @@ export function AIInsightsGate({
               <p className="text-sm text-muted-foreground">
                 3 free analyses used this month.
               </p>
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-xs text-muted-foreground/80">
                 Resets next month.{' '}
                 <Link href="/pricing" className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary">
                   Become a Supporter
@@ -252,7 +252,7 @@ export function AIInsightsGate({
                 <Sparkles className="h-3.5 w-3.5" />
                 {isDeepAccess ? 'Generate Deep AI Insights' : 'Generate AI Insights'}
               </Button>
-              <p className="text-[11px] text-muted-foreground/60">
+              <p className="text-[11px] text-muted-foreground/80">
                 {isDeepAccess
                   ? 'Analyses waveform patterns, per-breath metrics, and cross-engine correlations.'
                   : `${aiRemaining} free this month`

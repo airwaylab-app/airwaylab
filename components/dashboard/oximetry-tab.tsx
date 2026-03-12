@@ -70,7 +70,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               Re-upload SD Card with Oximetry
             </button>
           ) : (
-            <p className="mt-1 text-[11px] text-muted-foreground/60">
+            <p className="mt-1 text-[11px] text-muted-foreground/80">
               To add oximetry, re-upload your SD card data together with your oximetry CSV.
             </p>
           )}
@@ -87,7 +87,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
       {trace && (
         <>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50">SpO₂</span>
+            <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">SpO₂</span>
             <button
               onClick={() => setShowODIEvents(!showODIEvents)}
               aria-pressed={showODIEvents}
@@ -95,7 +95,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                 showODIEvents
                   ? 'border-border bg-card text-foreground'
-                  : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                  : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
               }`}
             >
               <div
@@ -111,7 +111,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                 showHR
                   ? 'border-border bg-card text-foreground'
-                  : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                  : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
               }`}
             >
               <div

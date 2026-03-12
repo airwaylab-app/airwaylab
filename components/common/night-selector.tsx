@@ -95,7 +95,7 @@ export function NightSelector({ dates, selectedIndex, onChange }: NightSelectorP
       <span className="ml-1 text-xs text-muted-foreground">
         {selectedIndex + 1}/{dates.length}
       </span>
-      <span className="ml-1 hidden text-[10px] text-muted-foreground/50 lg:inline" aria-hidden>
+      <span className="ml-1 hidden text-[10px] text-muted-foreground/70 lg:inline" aria-hidden>
         ← → keys
       </span>
     </div>

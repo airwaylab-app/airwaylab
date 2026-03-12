@@ -26,7 +26,7 @@ export function ProTease({ feature, source }: Props) {
     <div className="relative rounded-lg border border-primary/10 bg-primary/[0.03] px-4 py-3">
       <button
         onClick={() => setDismissed(true)}
-        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+        className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-muted-foreground"
         aria-label="Dismiss"
       >
         <X className="h-3 w-3" />
@@ -38,7 +38,7 @@ export function ProTease({ feature, source }: Props) {
             <span className="font-medium text-foreground/80">Coming soon:</span>{' '}
             {feature}
           </p>
-          <p className="text-[10px] leading-snug text-muted-foreground/60">
+          <p className="text-[10px] leading-snug text-muted-foreground/80">
             Premium features fund AirwayLab&apos;s continued development as a free, open-source tool.{' '}
             <Link href="/about#our-approach" className="text-primary/60 underline underline-offset-2 hover:text-primary">
               Learn more

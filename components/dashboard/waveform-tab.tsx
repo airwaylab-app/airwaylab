@@ -153,7 +153,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
           <Loader2 className="h-6 w-6 animate-spin text-sky-400" />
           <p className="text-sm text-muted-foreground">Loading waveform from cloud...</p>
-          <p className="text-[11px] text-muted-foreground/60">
+          <p className="text-[11px] text-muted-foreground/80">
             Fetching stored files for {selectedNight.dateStr}
           </p>
         </CardContent>
@@ -167,7 +167,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Extracting flow waveform...</p>
-          <p className="text-[11px] text-muted-foreground/60">
+          <p className="text-[11px] text-muted-foreground/80">
             Parsing EDF files for {selectedNight.dateStr}
           </p>
         </CardContent>
@@ -193,13 +193,13 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-          <Waves className="h-6 w-6 text-muted-foreground/50" />
+          <Waves className="h-6 w-6 text-muted-foreground/70" />
           <p className="text-sm text-muted-foreground">
             {cloudAttempted && user
               ? 'No stored waveform data found for this night'
               : 'Waveform data requires your SD card files'}
           </p>
-          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/60">
+          <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
             {cloudAttempted && user ? (
               <>
                 Enable &quot;Store my SD card data&quot; on your next upload to access
@@ -226,7 +226,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
-          <Waves className="h-6 w-6 text-muted-foreground/50" />
+          <Waves className="h-6 w-6 text-muted-foreground/70" />
           <p className="text-sm text-muted-foreground">No flow data available</p>
         </CardContent>
       </Card>
@@ -261,7 +261,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         <div className="mx-1 h-4 w-px bg-border/50" />
 
         {/* Machine event toggles */}
-        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">Machine</span>
+        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">Machine</span>
         {MACHINE_EVENT_DEFS.map((def) => {
           const count = eventCounts.get(def.type) ?? 0;
           const isOn = visibleTypes.has(def.type);
@@ -274,10 +274,10 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
               aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                 count === 0
-                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/70'
                   : isOn
                     ? 'border-border bg-card text-foreground'
-                    : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
               }`}
             >
               <div
@@ -292,7 +292,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         <div className="mx-1 h-4 w-px bg-border/50" />
 
         {/* Algorithm event toggles */}
-        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/50 sm:inline">AirwayLab</span>
+        <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">AirwayLab</span>
         {ALGORITHM_EVENT_DEFS.map((def) => {
           const count = eventCounts.get(def.type) ?? 0;
           const isOn = visibleTypes.has(def.type);
@@ -305,10 +305,10 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
               aria-label={`${def.label}: ${isOn ? 'visible' : 'hidden'} (${count})`}
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
                 count === 0
-                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/30'
+                  ? 'cursor-not-allowed border-transparent bg-transparent text-muted-foreground/70'
                   : isOn
                     ? 'border-border bg-card text-foreground'
-                    : 'border-transparent bg-transparent text-muted-foreground/50 line-through'
+                    : 'border-transparent bg-transparent text-muted-foreground/70 line-through'
               }`}
             >
               <div
@@ -353,7 +353,7 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
       </div>
 
       {/* Disclaimer */}
-      <p className="text-[10px] leading-relaxed text-muted-foreground/50">
+      <p className="text-[10px] leading-relaxed text-muted-foreground/70">
         Flow waveforms are downsampled for display. Event detection on this view is approximate —
         refer to the Flow Analysis tab for authoritative engine results.
       </p>
