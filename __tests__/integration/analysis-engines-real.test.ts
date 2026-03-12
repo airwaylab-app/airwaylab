@@ -30,7 +30,7 @@ const singleSessionEdf = () => parseFixture('DATALOG/20260309/20260310_000159_BR
 // ── Test Case 4: Glasgow Index on real flow data ──────────────
 
 describe('Glasgow Index — real data', () => {
-  it('produces overall score in [0, 8] with all 9 components in [0, 1]', () => {
+  it('produces overall score in [0, 9] with all 9 components in [0, 1]', () => {
     const edf = singleSessionEdf();
     const glasgow = computeGlasgowIndex(edf.flowData, edf.samplingRate);
 

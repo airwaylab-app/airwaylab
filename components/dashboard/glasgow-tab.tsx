@@ -59,7 +59,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
-          tooltip="Sum of 8 breath-shape components (excluding Top Heavy). Typical scores range from 0 to about 3 — lower is better. Based on the original Glasgow Index by DaveSkvn."
+          tooltip="Sum of all 9 breath-shape components (0–9 scale). Typical scores range from 0 to about 3 — lower is better. Based on the original Glasgow Index by DaveSkvn."
           onClick={clickable ? () => openMetric('Glasgow Overall', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' }) : undefined}
         />
         <div className="sm:col-span-2">
@@ -68,7 +68,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
               <p className="text-xs leading-relaxed text-muted-foreground">
                 The Glasgow Index quantifies flow limitation across 9 breath-shape
                 components. Each component is scored per breath and averaged across the
-                session. The overall index sums 8 components (excluding Top Heavy).
+                session. The overall index sums all 9 components (0–9 scale).
                 Lower values indicate more normal breathing patterns.
               </p>
             </CardContent>

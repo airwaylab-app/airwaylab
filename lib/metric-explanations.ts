@@ -12,7 +12,7 @@ function fmt(n: number, dp = 1): string {
 
 export const METRIC_METHODOLOGIES = {
   glasgowIndex:
-    'Each breath is scored against 9 shape characteristics (skew, spike, flat top, top heavy, multi-peak, no pause, inspiratory rate, multi-breath, variable amplitude). Each component represents the proportion of breaths exhibiting that characteristic (0\u20131). The overall Glasgow Index sums 8 components (excluding Top Heavy). Typical scores range from 0 to about 3 \u2014 scores above 3 are rare and indicate very significant problems. It\u2019s a holistic breath-shape score that catches many types of abnormality, not just classic flow limitation.',
+    'Each breath is scored against 9 shape characteristics (skew, spike, flat top, top heavy, multi-peak, no pause, inspiratory rate, multi-breath, variable amplitude). Each component represents the proportion of breaths exhibiting that characteristic (0\u20131). The overall Glasgow Index sums all 9 components (0\u20139 scale). Typical scores range from 0 to about 3 \u2014 scores above 3 are rare and indicate very significant problems. It\u2019s a holistic breath-shape score that catches many types of abnormality, not just classic flow limitation.',
 
   flScore:
     'Computed by the WAT (Wobble Analysis Tool) engine. For each breath window, it measures the ratio of tidal volume variance in the top half vs the full signal. A higher ratio means more variation is concentrated at the flow peaks, indicating flat-topped (flow-limited) breathing. This is a population-level metric \u2014 it looks at the overall distribution of breath shapes, not individual breaths.',
