@@ -64,7 +64,10 @@ export function StorageProgressBanner() {
       {/* Message */}
       <div className="flex-1 min-w-0">
         {state.status === 'hashing' && (
-          <span>Preparing files... ({progress.current}/{progress.total})</span>
+          <span>
+            Preparing files... ({progress.current}/{progress.total})
+            <span className="hidden sm:inline text-sky-400/60"> — please don&apos;t close this page</span>
+          </span>
         )}
         {state.status === 'checking' && (
           <span>Checking for duplicates...</span>
@@ -73,6 +76,7 @@ export function StorageProgressBanner() {
           <span>
             Syncing to cloud... {progress.current}/{progress.total} files
             ({formatBytes(progress.bytesUploaded)} / {formatBytes(progress.bytesTotal)})
+            <span className="hidden sm:inline text-sky-400/60"> — please don&apos;t close this page</span>
           </span>
         )}
         {state.status === 'complete' && result && (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deleted: files.length });
   } catch (err) {
     console.error('[files/delete] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/delete' } });
+    captureApiError(err, { route: 'files/delete' });
     return NextResponse.json({ error: 'Failed to delete files' }, { status: 500 });
   }
 }

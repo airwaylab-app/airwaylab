@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { STORAGE_BUCKET } from '@/lib/storage/types';
 
-const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 500 });
+const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 2000 });
 
 const confirmSchema = z.object({
   fileId: z.string().uuid(),
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ confirmed: true });
   } catch (err) {
     console.error('[files/confirm] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/confirm' } });
+    captureApiError(err, { route: 'files/confirm' });
     return NextResponse.json({ error: 'Failed to confirm upload' }, { status: 500 });
   }
 }

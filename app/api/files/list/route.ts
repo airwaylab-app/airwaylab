@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { getUserTier, getStorageUsage } from '@/lib/storage/quota';
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ files: mapped, usage });
   } catch (err) {
     console.error('[files/list] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/list' } });
+    captureApiError(err, { route: 'files/list' });
     return NextResponse.json({ error: 'Failed to list files' }, { status: 500 });
   }
 }

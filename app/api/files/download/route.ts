@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+import { captureApiError } from '@/lib/sentry-utils';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { STORAGE_BUCKET } from '@/lib/storage/types';
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ url: signedUrl.signedUrl, fileName: fileRow.file_name });
   } catch (err) {
     console.error('[files/download] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'files/download' } });
+    captureApiError(err, { route: 'files/download' });
     return NextResponse.json({ error: 'Failed to generate download URL' }, { status: 500 });
   }
 }

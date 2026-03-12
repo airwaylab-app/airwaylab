@@ -10,7 +10,7 @@ import type { WorkerMessage } from './hash-worker';
 
 type UploadListener = (state: UploadState) => void;
 
-const CONCURRENCY = 3;
+const CONCURRENCY = 10;
 const RETRY_DELAY_MS = 2000;
 
 function getFilePath(file: File): string {
@@ -27,6 +27,21 @@ class UploadOrchestrator {
   private listeners = new Set<UploadListener>();
   private abortController: AbortController | null = null;
   private hashWorker: Worker | null = null;
+  private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
+
+  private guardPageExit(): void {
+    if (typeof window === 'undefined' || this.beforeUnloadHandler) return;
+    this.beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
+  }
+
+  private releasePageExit(): void {
+    if (typeof window === 'undefined' || !this.beforeUnloadHandler) return;
+    window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+    this.beforeUnloadHandler = null;
+  }
 
   subscribe(listener: UploadListener): () => void {
     this.listeners.add(listener);
@@ -47,6 +62,7 @@ class UploadOrchestrator {
     this.abortController?.abort();
     this.hashWorker?.terminate();
     this.hashWorker = null;
+    this.releasePageExit();
     this.setState({ status: 'idle', error: 'Upload cancelled' });
   }
 
@@ -60,6 +76,7 @@ class UploadOrchestrator {
 
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
+    this.guardPageExit();
 
     const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
     this.setState({
@@ -101,6 +118,7 @@ class UploadOrchestrator {
       const result = await this.uploadFiles(toUpload, fileHashes, files, signal);
       result.skipped = skipped;
 
+      this.releasePageExit();
       this.setState({
         status: 'complete',
         progress: { ...this.state.progress, stage: 'complete' },
@@ -109,6 +127,7 @@ class UploadOrchestrator {
 
       return result;
     } catch (err) {
+      this.releasePageExit();
       const error = err instanceof Error ? err.message : String(err);
       if (error !== 'Cancelled') {
         console.error('[upload-orchestrator] Upload failed:', error);
