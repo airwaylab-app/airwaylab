@@ -4,10 +4,10 @@ import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
-/** Rate limit: 30 requests per minute per IP */
+/** Rate limit: 10 requests per minute per IP */
 const communityRateLimiter = new RateLimiter({
   windowMs: 60_000,
-  max: 30,
+  max: 10,
 });
 
 export async function GET(request: NextRequest) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { NightResult } from '@/lib/types';
 
@@ -100,7 +100,7 @@ describe('DataContribution', () => {
   });
 
   // Test 1: Opted-in user with new data sees auto-confirmation, not manual button
-  it('renders auto-confirmation when opted in and autoSubmitStatus is "success"', () => {
+  it('renders auto-confirmation when opted in and autoSubmitStatus is "success"', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -114,22 +114,26 @@ describe('DataContribution', () => {
       />
     );
 
-    // Should show auto-contribution success message
-    expect(screen.getByText(/1 new night contributed automatically/)).toBeInTheDocument();
+    await waitFor(() => {
+      // Should show auto-contribution success message
+      expect(screen.getByText(/1 new night contributed automatically/)).toBeInTheDocument();
+    });
     // Should NOT show the manual contribute button
     expect(screen.queryByRole('button', { name: /contribute.*anonymously/i })).not.toBeInTheDocument();
   });
 
   // Test 2: First-time / opted-out users see the manual button
-  it('renders manual button when consent is absent', () => {
+  it('renders manual button when consent is absent', async () => {
     const nights = [makeNight('2025-01-01')];
 
     render(<DataContribution nights={nights} />);
 
-    expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
+    });
   });
 
-  it('renders manual button when consent is "0"', () => {
+  it('renders manual button when consent is "0"', async () => {
     storage.set('airwaylab_contribute_optin', '0');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -137,11 +141,13 @@ describe('DataContribution', () => {
 
     render(<DataContribution nights={nights} />);
 
-    expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
+    });
   });
 
   // Test 3: Nothing renders when opted in, no new data
-  it('renders nothing when opted in, no new data, and has contributed before', () => {
+  it('renders nothing when opted in, no new data, and has contributed before', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -151,11 +157,13 @@ describe('DataContribution', () => {
       <DataContribution nights={nights} autoSubmitStatus="idle" />
     );
 
-    expect(container.innerHTML).toBe('');
+    await waitFor(() => {
+      expect(container.innerHTML).toBe('');
+    });
   });
 
   // Test 6: Auto-submit error falls back to manual button for opted-in users
-  it('falls back to manual button when auto-submit fails for opted-in users', () => {
+  it('falls back to manual button when auto-submit fails for opted-in users', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -169,22 +177,26 @@ describe('DataContribution', () => {
       />
     );
 
-    // Should show error state with retry
-    expect(screen.getByText(/auto-contribution failed/i)).toBeInTheDocument();
+    await waitFor(() => {
+      // Should show error state with retry
+      expect(screen.getByText(/auto-contribution failed/i)).toBeInTheDocument();
+    });
   });
 
   // Test 7: Demo mode unchanged
-  it('renders demo teaser regardless of consent state', () => {
+  it('renders demo teaser regardless of consent state', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     const nights = [makeNight('2025-01-01')];
 
     render(<DataContribution nights={nights} isDemo />);
 
-    expect(screen.getByText(/help build the largest pap therapy dataset/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/help build the largest pap therapy dataset/i)).toBeInTheDocument();
+    });
   });
 
   // Test 8: Shows "Contributing..." while in flight
-  it('shows in-flight message when autoSubmitStatus is "sending"', () => {
+  it('shows in-flight message when autoSubmitStatus is "sending"', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -198,11 +210,13 @@ describe('DataContribution', () => {
       />
     );
 
-    expect(screen.getByText(/contributing new data/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/contributing new data/i)).toBeInTheDocument();
+    });
   });
 
   // Test: N nights pluralization
-  it('pluralizes correctly for multiple new nights', () => {
+  it('pluralizes correctly for multiple new nights', async () => {
     storage.set('airwaylab_contribute_optin', '1');
     storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
 
@@ -220,6 +234,8 @@ describe('DataContribution', () => {
       />
     );
 
-    expect(screen.getByText(/2 new nights contributed automatically/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/2 new nights contributed automatically/)).toBeInTheDocument();
+    });
   });
 });

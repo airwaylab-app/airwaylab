@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, Shield, ExternalLink, X } from 'lucide-react';
+import { safeGetItem, safeSetItem } from '@/lib/safe-local-storage';
 
 const CONSENT_KEY = 'airwaylab_ai_insights_consent';
 
@@ -11,14 +12,14 @@ const CONSENT_KEY = 'airwaylab_ai_insights_consent';
  */
 export function hasAIInsightsConsent(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(CONSENT_KEY) === 'granted';
+  return safeGetItem(CONSENT_KEY) === 'granted';
 }
 
 /**
  * Saves the AI insights consent state.
  */
 export function setAIInsightsConsent(granted: boolean): void {
-  localStorage.setItem(CONSENT_KEY, granted ? 'granted' : 'denied');
+  safeSetItem(CONSENT_KEY, granted ? 'granted' : 'denied');
 }
 
 interface AIConsentModalProps {

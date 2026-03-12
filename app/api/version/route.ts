@@ -1,8 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import packageJson from '../../../package.json';
 
 // Force dynamic so this endpoint always returns the deployed version
 export const dynamic = 'force-dynamic';
+
+/** Rate limit: 60 requests per minute per IP */
+const versionRateLimiter = new RateLimiter({
+  windowMs: 60_000,
+  max: 60,
+});
 
 /**
  * GET /api/version
@@ -12,7 +19,12 @@ export const dynamic = 'force-dynamic';
  * Used by the client-side version checker to detect stale deployments.
  * Short cache (60s) so CDN doesn't serve stale versions too long.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const ip = getRateLimitKey(request);
+  if (versionRateLimiter.isLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
+  }
+
   return NextResponse.json(
     {
       version: packageJson.version,
