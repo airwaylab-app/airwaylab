@@ -10,6 +10,17 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'ifl-symptom-sensitivity',
+    title: 'Not Everyone With High Flow Limitation Feels Bad — Here\'s How to Find Out If Yours Matters',
+    description:
+      'Two people with the same FL% can feel completely different. Individual sensitivity to flow limitation explains the gap. AirwayLab\'s symptom self-report helps you find your own correlation.',
+    date: '2026-03-12',
+    readTime: '7 min read',
+    tags: ['Flow Limitation', 'Symptoms', 'IFL Sensitivity', 'Self-Report'],
+    ogDescription:
+      'High flow limitation doesn\'t always cause symptoms. Track your own IFL sensitivity with AirwayLab\'s symptom self-report to find out if your FL is driving how you feel.',
+  },
+  {
     slug: 'hidden-respiratory-events',
     title: 'The Hidden Respiratory Events Your Flow Data Isn\'t Showing You',
     description:
