@@ -213,6 +213,25 @@ export function loadPersistedResults(): {
       if (night.ned && night.ned.estimatedArousalIndex === undefined) {
         night.ned.estimatedArousalIndex = 0;
       }
+      // Migrate: hypopnea & amplitude stability fields added in v0.7.0
+      if (night.ned && night.ned.briefObstructionIndex === undefined) {
+        night.ned.hypopneaCount = 0;
+        night.ned.hypopneaIndex = 0;
+        night.ned.hypopneaSource = 'algorithm';
+        night.ned.hypopneaNedInvisibleCount = 0;
+        night.ned.hypopneaNedInvisiblePct = 0;
+        night.ned.hypopneaMeanDropPct = 0;
+        night.ned.hypopneaMeanDurationS = 0;
+        night.ned.hypopneaH1Index = 0;
+        night.ned.hypopneaH2Index = 0;
+        night.ned.briefObstructionCount = 0;
+        night.ned.briefObstructionIndex = 0;
+        night.ned.briefObstructionH1Index = 0;
+        night.ned.briefObstructionH2Index = 0;
+        night.ned.amplitudeCvOverall = 0;
+        night.ned.amplitudeCvMedianEpoch = 0;
+        night.ned.unstableEpochPct = 0;
+      }
     }
 
     return {

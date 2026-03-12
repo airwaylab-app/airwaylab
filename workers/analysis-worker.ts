@@ -4,10 +4,11 @@
 // ============================================================
 
 import { parseEDF } from '../lib/parsers/edf-parser';
-import { groupByNight, filterBRPFiles, filterSA2Files, findSTRFile, findIdentificationFile } from '../lib/parsers/night-grouper';
+import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate } from '../lib/parsers/settings-extractor';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
+import { parseEVE } from '../lib/parsers/eve-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
@@ -21,6 +22,7 @@ import type {
   NightResult,
   EDFFile,
   MachineSettings,
+  MachineHypopneaSummary,
   OximetryResults,
 } from '../lib/types';
 
@@ -144,6 +146,29 @@ async function processFiles(
     throw new Error('No valid BRP.edf files could be parsed');
   }
 
+  // Step 3.5: Parse EVE.edf files and group events by night date
+  const eveFileInfos = filterEVEFiles(fileList);
+  const eveEventsByDate = new Map<string, MachineHypopneaSummary[]>();
+  for (const eveInfo of eveFileInfos) {
+    const fileData = files.find((f) => f.path === eveInfo.path);
+    if (!fileData) continue;
+    try {
+      const events = parseEVE(fileData.buffer);
+      const nightDate = extractFolderDate(eveInfo.path);
+      if (!nightDate) continue;
+      const hypopneas = events
+        .filter((e) => e.type === 'hypopnea')
+        .map((e) => ({ onsetSec: e.onsetSec, durationSec: e.durationSec }));
+      if (hypopneas.length > 0) {
+        const existing = eveEventsByDate.get(nightDate) ?? [];
+        existing.push(...hypopneas);
+        eveEventsByDate.set(nightDate, existing);
+      }
+    } catch {
+      // EVE parsing failed — continue without machine events
+    }
+  }
+
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
 
@@ -257,7 +282,10 @@ async function processFiles(
     avgSamplingRate /= group.sessions.length;
 
     const wat = computeWAT(combinedFlow, avgSamplingRate);
-    const ned = computeNED(combinedFlow, avgSamplingRate);
+
+    // Machine hypopnea events for this night (from EVE.edf)
+    const machineHypopneas = eveEventsByDate.get(group.nightDate);
+    const ned = computeNED(combinedFlow, avgSamplingRate, machineHypopneas);
 
     // Recording date from first session
     const recordingDate = group.sessions[0].recordingDate;

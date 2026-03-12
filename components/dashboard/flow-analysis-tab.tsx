@@ -225,6 +225,74 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
         </CardContent>
       </Card>
 
+      {/* Airway Stability */}
+      <div>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+          Airway Stability
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <MetricCard
+            label="Brief Obstruction Index"
+            value={n.ned.briefObstructionIndex ?? 0}
+            unit="/hr"
+            threshold={THRESHOLDS.briefObstructionIndex}
+            previousValue={p?.ned.briefObstructionIndex}
+            tooltip="Counts brief airway narrowing events (1-2 breaths, >40% flow drop) per hour. These events are too short for standard detection but may cause micro-arousals. Lower is better."
+            methodology={METRIC_METHODOLOGIES.briefObstructionIndex}
+            onClick={clickable ? () => openMetric('Brief Obstruction Index', (x) => x.ned.briefObstructionIndex, { unit: '/hr', threshold: THRESHOLDS.briefObstructionIndex }) : undefined}
+          />
+          <MetricCard
+            label="Hypopnea Index"
+            value={n.ned.hypopneaIndex ?? 0}
+            unit="/hr"
+            threshold={THRESHOLDS.hypopneaIndex}
+            previousValue={p?.ned.hypopneaIndex}
+            tooltip="Sustained reductions in airflow (>=30%, lasting >=10 seconds) per hour. When your machine reports these events, AirwayLab uses the machine count; otherwise it detects them from the flow signal. Lower is better."
+            methodology={METRIC_METHODOLOGIES.hypopneaIndex}
+            onClick={clickable ? () => openMetric('Hypopnea Index', (x) => x.ned.hypopneaIndex, { unit: '/hr', threshold: THRESHOLDS.hypopneaIndex }) : undefined}
+          />
+          <MetricCard
+            label="Amplitude CV"
+            value={n.ned.amplitudeCvOverall ?? 0}
+            unit="%"
+            format="pct"
+            threshold={THRESHOLDS.amplitudeCv}
+            previousValue={p?.ned.amplitudeCvOverall}
+            tooltip="Coefficient of variation of peak inspiratory flow across the night. Higher values indicate more variable breath amplitude, which can suggest intermittent airway compromise. Lower is better."
+            methodology={METRIC_METHODOLOGIES.amplitudeCv}
+            onClick={clickable ? () => openMetric('Amplitude CV', (x) => x.ned.amplitudeCvOverall, { unit: '%', threshold: THRESHOLDS.amplitudeCv }) : undefined}
+          />
+        </div>
+        <Card className="mt-3 border-border/50">
+          <CardContent className="py-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex items-center justify-between rounded-lg bg-card/50 px-3 py-2">
+                <span className="text-xs text-muted-foreground">NED-Invisible Events</span>
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {n.ned.hypopneaNedInvisibleCount ?? 0} ({(n.ned.hypopneaNedInvisiblePct ?? 0).toFixed(0)}%)
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-card/50 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Unstable Epochs</span>
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {(n.ned.unstableEpochPct ?? 0).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-card/50 px-3 py-2">
+                <span className="text-xs text-muted-foreground">H1 vs H2 BOI</span>
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {(n.ned.briefObstructionH1Index ?? 0).toFixed(1)} / {(n.ned.briefObstructionH2Index ?? 0).toFixed(1)}
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
+              Brief obstructions are 1-2 breath events where flow drops &gt;40% from the rolling baseline.
+              They are too short for standard RERA or hypopnea detection but can fragment sleep through micro-arousals.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* H1/H2 Comparison */}
       <Card className="border-border/50">
         <CardHeader className="pb-3">

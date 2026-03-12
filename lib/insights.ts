@@ -285,6 +285,45 @@ function singleNightInsights(n: NightResult, prev: NightResult | null): Insight[
     }
   }
 
+  // Brief Obstruction Index
+  const boiVal = n.ned.briefObstructionIndex ?? 0;
+  if (boiVal > 5) {
+    const interval = Math.round(60 / boiVal);
+    insights.push({
+      id: 'boi-high',
+      type: 'warning',
+      title: 'High brief obstruction rate',
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may cause micro-arousals. Higher EPAP may help — discuss with your clinician.`,
+      category: 'ned',
+    });
+  }
+
+  // NED-invisible dominance
+  const nedInvisiblePct = n.ned.hypopneaNedInvisiblePct ?? 0;
+  const hypCount = n.ned.hypopneaCount ?? 0;
+  if (nedInvisiblePct > 50 && hypCount >= 3) {
+    insights.push({
+      id: 'ned-invisible-high',
+      type: 'info',
+      title: 'Most amplitude events have normal NED shape',
+      body: `${fmt(nedInvisiblePct, 0)}% of amplitude-drop events had normal NED shape, suggesting brief airway collapses rather than progressive flow limitation. These events are invisible to shape-based flow analysis.`,
+      category: 'ned',
+    });
+  }
+
+  // H2>H1 brief obstructions
+  const boiH1 = n.ned.briefObstructionH1Index ?? 0;
+  const boiH2 = n.ned.briefObstructionH2Index ?? 0;
+  if (boiH2 > boiH1 * 1.5 && boiH2 > 3) {
+    insights.push({
+      id: 'boi-h2-gt-h1',
+      type: 'info',
+      title: 'Brief obstructions increase in the second half',
+      body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr), consistent with REM-related airway laxity. Positional therapy or increased EPAP during REM may help.`,
+      category: 'ned',
+    });
+  }
+
   // Oximetry insights
   if (n.oximetry) {
     const ox = n.oximetry;

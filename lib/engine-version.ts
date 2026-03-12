@@ -12,4 +12,4 @@
  * - lib/analyzers/oximetry-engine.ts
  * - lib/parsers/night-grouper.ts (affects which data goes to which night)
  */
-export const ENGINE_VERSION = '0.6.0';
+export const ENGINE_VERSION = '0.7.0';
