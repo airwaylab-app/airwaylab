@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Clock, Tag } from 'lucide-react';
 import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 
 // Lazy-load post components
+import IFLSymptomSensitivity from '../posts/ifl-symptom-sensitivity';
 import HiddenRespiratoryEvents from '../posts/hidden-respiratory-events';
 import FlowLimitationAndSleepiness from '../posts/flow-limitation-and-sleepiness';
 import ArousalsVsFlowLimitation from '../posts/arousals-vs-flow-limitation';
@@ -15,6 +16,7 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'ifl-symptom-sensitivity': IFLSymptomSensitivity,
   'hidden-respiratory-events': HiddenRespiratoryEvents,
   'flow-limitation-and-sleepiness': FlowLimitationAndSleepiness,
   'arousals-vs-flow-limitation': ArousalsVsFlowLimitation,
