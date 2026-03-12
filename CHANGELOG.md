@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Glossary Page** — 38-term sleep and PAP therapy glossary with DefinedTermSet JSON-LD, A-Z quick-nav, category badges, anchor links, and medical disclaimer. SEO-optimised for featured snippets and LLM discoverability (glossary-page)
 - **IFL Symptom Self-Report** — 5-point per-night symptom rating (1=Terrible to 5=Great) with cross-reference insights against IFL Risk. Community comparison card with aggregated distribution when data contribution is consented. Fire-and-forget contribution API with SHA-256 hashing and GDPR-safe anonymisation (ifl-symptom-self-report)
 - **Community Insights** — aggregated symptom distributions for similar IFL profiles, gated behind data contribution consent, with minimum 20-rating threshold for privacy (ifl-symptom-self-report)
 - **AI Prompt Enrichment** — aggregate community stats injected into Claude Haiku system prompt when ≥100 ratings exist, enabling population-level context in AI insights (ifl-symptom-self-report)
@@ -21,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New-user guidance** — updated to "Start with IFL Symptom Risk" instead of "Start with Glasgow Index" (ifl-symptom-self-report)
 - **Contribution consent modal** — updated copy with "Help improve sleep analysis for everyone" framing and benefit bullets (ifl-symptom-self-report)
 - **Exports** — symptom rating added to CSV and forum export formats (ifl-symptom-self-report)
-
 ## [1.2.0] - 2026-03-12
 
 ### Added
