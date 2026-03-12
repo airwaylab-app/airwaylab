@@ -442,8 +442,8 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
   if (breathData.length < 10) return 0;
 
   const BASELINE_WINDOW = 120; // seconds
-  const RATE_THRESHOLD = 0.25; // 25% rate increase
-  const VOLUME_THRESHOLD = 0.40; // 40% volume increase
+  const RATE_THRESHOLD = 0.35; // 35% rate increase (raised to reduce over-detection vs PSG)
+  const VOLUME_THRESHOLD = 0.50; // 50% volume increase (raised to reduce over-detection vs PSG)
   const REFRACTORY = 30; // seconds between events
   const MIN_FL_PRECEDING = 2; // minimum flow-limited breaths before spike
 

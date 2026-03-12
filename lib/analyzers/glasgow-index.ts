@@ -34,7 +34,7 @@ interface Inspiration {
 
 /**
  * Compute the Glasgow Index for a single EDF session.
- * Returns 9 component scores (each 0-1) and an overall score (0-8).
+ * Returns 9 component scores (each 0-1) and an overall score (0-9).
  */
 export function computeGlasgowIndex(flowData: Float32Array, _samplingRate: number): GlasgowComponents {
   const len = flowData.length;
@@ -120,11 +120,12 @@ export function computeNightGlasgow(sessions: EDFFile[]): GlasgowComponents {
   weighted.multiBreath = round2(weighted.multiBreath);
   weighted.variableAmp = round2(weighted.variableAmp);
 
-  // Overall = sum of 8 components (excludes topHeavy)
+  // Overall = sum of all 9 components (matches original Glasgow Index methodology)
   weighted.overall = round2(
     weighted.skew +
       weighted.flatTop +
       weighted.spike +
+      weighted.topHeavy +
       weighted.multiPeak +
       weighted.noPause +
       weighted.inspirRate +
@@ -470,9 +471,9 @@ function prepIndices(inspirations: Inspiration[]): GlasgowComponents {
   const multiBreath = round2(multiBreathCount / total);
   const variableAmp = round2(ampVarCount / total);
 
-  // Overall = sum of 8 (excludes topHeavy)
+  // Overall = sum of all 9 components (matches original Glasgow Index methodology)
   const overall = round2(
-    skew + flatTop + spike + multiPeak + noPause + inspirRate + multiBreath + variableAmp
+    skew + flatTop + spike + topHeavy + multiPeak + noPause + inspirRate + multiBreath + variableAmp
   );
 
   return {

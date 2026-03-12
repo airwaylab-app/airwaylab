@@ -327,12 +327,12 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             const flNorm = n.wat.flScore;
             const nedNorm = n.ned.nedMean;
             const fiNorm = (1 - n.ned.fiMean) * 100;
-            const glNorm = (n.glasgow.overall / 8) * 100;
+            const glNorm = (n.glasgow.overall / 9) * 100;
             const components = [
               { label: 'FL Score', value: n.wat.flScore, unit: '%', norm: flNorm, weight: 0.35, contribution: flNorm * 0.35 },
               { label: 'NED Mean', value: n.ned.nedMean, unit: '%', norm: nedNorm, weight: 0.30, contribution: nedNorm * 0.30 },
               { label: 'Flatness Index', value: n.ned.fiMean, unit: '', norm: fiNorm, weight: 0.20, contribution: fiNorm * 0.20 },
-              { label: 'Glasgow Index', value: n.glasgow.overall, unit: '/8', norm: glNorm, weight: 0.15, contribution: glNorm * 0.15 },
+              { label: 'Glasgow Index', value: n.glasgow.overall, unit: '/9', norm: glNorm, weight: 0.15, contribution: glNorm * 0.15 },
             ];
             return (
               <div className="overflow-x-auto">

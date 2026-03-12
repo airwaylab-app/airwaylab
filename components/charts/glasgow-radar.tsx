@@ -72,7 +72,7 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
         <div
           className="relative h-[300px] w-full sm:h-[380px]"
           role="img"
-          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 8. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`}
+          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 9. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`}
         >
           <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/30">
             airwaylab.app

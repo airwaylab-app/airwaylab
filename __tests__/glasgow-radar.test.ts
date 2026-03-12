@@ -118,7 +118,7 @@ describe('GlasgowRadar data contract', () => {
     const glasgow = makeGlasgow({ skew: 0.35, spike: 0.20 });
     const data = buildRadarData(glasgow, EXPECTED_REFERENCE_VALUES);
     // Replicate the ARIA label logic from the component
-    const ariaLabel = `Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 8. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`;
+    const ariaLabel = `Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 9. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`;
     expect(ariaLabel).toContain('Skew: 0.35');
     expect(ariaLabel).toContain('Spike: 0.20');
     expect(ariaLabel).not.toContain('Skew: 35');
