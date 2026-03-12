@@ -36,7 +36,7 @@ const detectionMethods = [
     borderColor: 'border-blue-500/20',
     bgColor: 'bg-blue-500/5',
     approach:
-      'Scores each breath on 9 shape descriptors (skew, flat top, spike, etc.) to produce a composite 0–8 flow limitation score. Best for overall therapy quality assessment.',
+      'Scores each breath on 9 shape descriptors (skew, flat top, spike, etc.) to produce a composite flow limitation score. Typical scores range from 0 to about 3. Best for overall therapy quality assessment.',
     link: '/about/glasgow-index',
   },
   {

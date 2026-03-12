@@ -3,12 +3,20 @@
 // Saves/loads analysis results so users can revisit them.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
 import { ENGINE_VERSION } from './engine-version';
 
 const STORAGE_KEY = 'airwaylab_results';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const MAX_STORAGE_BYTES = 4 * 1024 * 1024; // 4 MB safety margin (most browsers allow 5-10 MB)
+
+export interface PersistResult {
+  saved: boolean;
+  nightsSaved: number;
+  nightsDropped: number;
+  reason?: string;
+}
 
 interface PersistedData {
   nights: NightResult[];
@@ -35,36 +43,115 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
 }
 
 /**
+ * Try to serialise nights into JSON that fits within the storage cap.
+ * Returns the JSON string, or null if even a single night doesn't fit.
+ */
+function trySerialise(
+  nights: NightResult[],
+  therapyChangeDate: string | null
+): { json: string; nightCount: number } | null {
+  const stripped = stripBulkData(nights);
+
+  const data: PersistedData = {
+    nights: stripped,
+    therapyChangeDate,
+    savedAt: Date.now(),
+    engineVersion: ENGINE_VERSION,
+  };
+  const json = JSON.stringify(data);
+
+  if (json.length * 2 <= MAX_STORAGE_BYTES) {
+    return { json, nightCount: nights.length };
+  }
+  return null;
+}
+
+/**
  * Save analysis results to localStorage.
- * Strips bulk data to stay within quota. Returns false if save fails.
+ * Strips bulk data to stay within quota. If the full dataset exceeds
+ * 4 MB, progressively drops the oldest nights until it fits.
+ * Returns details about what was saved so the UI can warn the user.
  */
 export function persistResults(
   nights: NightResult[],
   therapyChangeDate: string | null
-): boolean {
+): PersistResult {
   try {
-    const data: PersistedData = {
-      nights: stripBulkData(nights),
-      therapyChangeDate,
-      savedAt: Date.now(),
-      engineVersion: ENGINE_VERSION,
-    };
-    const json = JSON.stringify(data);
-
-    // Pre-flight size check (each char ≈ 2 bytes in UTF-16)
-    if (json.length * 2 > MAX_STORAGE_BYTES) {
-      console.warn(
-        `[persistence] Data too large (${(json.length * 2 / 1024 / 1024).toFixed(1)} MB). Skipping save.`
-      );
-      return false;
+    // Try full dataset first
+    const full = trySerialise(nights, therapyChangeDate);
+    if (full) {
+      localStorage.setItem(STORAGE_KEY, full.json);
+      return { saved: true, nightsSaved: nights.length, nightsDropped: 0 };
     }
 
-    localStorage.setItem(STORAGE_KEY, json);
-    return true;
+    // Progressive: drop oldest nights (sorted most-recent-first already)
+    // until it fits. Binary search for the max count that fits.
+    let lo = 1;
+    let hi = nights.length - 1;
+    let bestFit: { json: string; count: number } | null = null;
+
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const attempt = trySerialise(nights.slice(0, mid), therapyChangeDate);
+      if (attempt) {
+        bestFit = { json: attempt.json, count: mid };
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+
+    if (bestFit) {
+      localStorage.setItem(STORAGE_KEY, bestFit.json);
+      const dropped = nights.length - bestFit.count;
+
+      console.error(
+        `[persistence] Data too large for ${nights.length} nights. Saved ${bestFit.count} most recent, dropped ${dropped} oldest.`
+      );
+      Sentry.captureMessage('Persistence: progressive save — oldest nights dropped', {
+        level: 'warning',
+        extra: {
+          totalNights: nights.length,
+          nightsSaved: bestFit.count,
+          nightsDropped: dropped,
+          dataSizeMB: (bestFit.json.length * 2 / 1024 / 1024).toFixed(1),
+        },
+      });
+
+      return {
+        saved: true,
+        nightsSaved: bestFit.count,
+        nightsDropped: dropped,
+        reason: `Only the ${bestFit.count} most recent nights could be saved. ${dropped} older night${dropped !== 1 ? 's' : ''} will need to be re-uploaded next time.`,
+      };
+    }
+
+    // Even a single night doesn't fit — total failure
+    console.error('[persistence] Cannot save even 1 night — data too large.');
+    Sentry.captureMessage('Persistence: total failure — cannot save any nights', {
+      level: 'error',
+      extra: { totalNights: nights.length },
+    });
+
+    return {
+      saved: false,
+      nightsSaved: 0,
+      nightsDropped: nights.length,
+      reason: 'Your results are too large to save in this browser. They will be available until you close the tab, but you\'ll need to re-upload next time.',
+    };
   } catch (err) {
     // QuotaExceededError or SecurityError
-    console.warn('[persistence] Save failed:', err);
-    return false;
+    console.error('[persistence] Save failed:', err);
+    Sentry.captureException(err, {
+      extra: { context: 'persistResults', totalNights: nights.length },
+    });
+
+    return {
+      saved: false,
+      nightsSaved: 0,
+      nightsDropped: nights.length,
+      reason: 'Could not save results to browser storage. They will be available until you close the tab.',
+    };
   }
 }
 

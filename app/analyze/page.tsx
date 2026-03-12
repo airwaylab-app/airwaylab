@@ -29,10 +29,11 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults, persistResults } from '@/lib/persistence';
+import { loadPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
+import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
   Shield,
@@ -50,6 +51,7 @@ import {
   CheckCircle2,
   X,
   BarChart,
+  HardDrive,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -164,6 +166,14 @@ function AnalyzePageInner() {
     } else if (state.status === 'idle') {
       const saved = loadPersistedResults();
       if (saved) {
+        if (saved.nights.length === 0) {
+          // Persisted data existed but contained 0 nights — data loss
+          console.error('[persistence] Restored session has 0 nights — serving empty dashboard');
+          Sentry.captureMessage('Persistence: restored session has 0 nights', {
+            level: 'warning',
+            extra: { therapyChangeDate: saved.therapyChangeDate },
+          });
+        }
         setPersistedData(saved);
         hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
       }
@@ -177,7 +187,8 @@ function AnalyzePageInner() {
       // Persist results when analysis completes
       if (newState.status === 'complete' && newState.nights.length > 0) {
         events.analysisComplete(newState.nights.length);
-        persistResults(newState.nights, newState.therapyChangeDate);
+        // Orchestrator already calls persistResults internally — don't double-persist.
+        // The persistenceWarning from the orchestrator state will surface any issues.
         setPersistedData(null);
 
         // Detect oximetry just added (show confirmation banner)
@@ -347,7 +358,7 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
-  const { status, progress, error, warning } = state;
+  const { status, progress, error, warning, persistenceWarning } = state;
 
   // Memoize derived data to stabilize references across renders
   const nights = useMemo<NightResult[]>(() =>
@@ -577,6 +588,33 @@ function AnalyzePageInner() {
               <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 self-start sm:self-auto">
                 <Upload className="h-3 w-3" /> New Analysis
               </Button>
+            </div>
+          )}
+
+          {/* Fresh analysis summary — night count + date range */}
+          {!isDemo && !persistedData && status === 'complete' && nights.length > 0 && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Analysis complete</span>
+                {' '}&mdash; {nights.length} night{nights.length !== 1 ? 's' : ''} analyzed
+                {nights.length >= 2 && (() => {
+                  const sorted = [...nights].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                  return ` (${sorted[0].dateStr} to ${sorted[sorted.length - 1].dateStr})`;
+                })()}
+                .
+              </p>
+            </div>
+          )}
+
+          {/* Persistence warning — nights dropped or save failed */}
+          {!isDemo && persistenceWarning && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
+              <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Storage limit reached</span>
+                {' '}&mdash; {persistenceWarning}
+              </p>
             </div>
           )}
 
