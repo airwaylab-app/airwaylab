@@ -127,4 +127,73 @@ export const events = {
 
   /** Provider interest form submitted */
   providersContactSubmit: () => trackEvent('providers_contact_submit'),
+
+  // ── AI Insights Conversion Funnel ──────────────────────────
+  /** Locked AI insight cards rendered for anonymous user */
+  aiTeaserShown: (nightCount: number, isReturning: boolean) =>
+    trackEvent('AI Teaser Shown', { night_count: nightCount, is_returning: isReturning }),
+
+  /** Anonymous user clicks "Create account" on AI teaser */
+  aiTeaserCtaClicked: () =>
+    trackEvent('AI Teaser CTA Clicked', { source: 'ai_teaser' }),
+
+  /** Return-visit banner shown above upload */
+  returningUserNudgeShown: (previousNights: number) =>
+    trackEvent('Returning User Nudge Shown', { previous_nights: previousNights }),
+
+  /** Return-visit banner CTA clicked */
+  returningUserNudgeClicked: () =>
+    trackEvent('Returning User Nudge Clicked'),
+
+  /** User checks consent checkbox in AuthModal */
+  authConsentChecked: () =>
+    trackEvent('Auth Consent Checked'),
+
+  /** Background EDF upload begins after analysis */
+  edfAutoUploadStarted: (fileCount: number, totalMb: number) =>
+    trackEvent('EDF Auto Upload Started', { file_count: fileCount, total_mb: totalMb }),
+
+  /** Background EDF upload finished */
+  edfAutoUploadCompleted: (fileCount: number, totalMb: number, durationMs: number) =>
+    trackEvent('EDF Auto Upload Completed', { file_count: fileCount, total_mb: totalMb, duration_ms: durationMs }),
+
+  /** Background EDF upload failed */
+  edfAutoUploadFailed: (errorType: string) =>
+    trackEvent('EDF Auto Upload Failed', { error_type: errorType }),
+
+  /** Per-breath + aggregate data stored to analysis_data */
+  analysisDataStored: (nightCount: number, breathCount: number) =>
+    trackEvent('Analysis Data Stored', { night_count: nightCount, breath_count: breathCount }),
+
+  /** User clicks "Generate AI Insights" button */
+  aiInsightsButtonClicked: (tier: string, creditsRemaining: number) =>
+    trackEvent('AI Insights Button Clicked', { tier, credits_remaining: creditsRemaining }),
+
+  /** AI insights successfully returned and displayed */
+  aiInsightsGenerated: (tier: string, insightCount: number, isDeep: boolean) =>
+    trackEvent('AI Insights Generated', { tier, insight_count: insightCount, is_deep: isDeep }),
+
+  /** AI insight request failed */
+  aiInsightsFailed: (tier: string, errorType: string) =>
+    trackEvent('AI Insights Failed', { tier, error_type: errorType }),
+
+  /** Free user hits 3/month limit */
+  aiCreditsExhausted: () =>
+    trackEvent('AI Credits Exhausted'),
+
+  /** Upgrade teaser cards shown to free user after AI insights */
+  deepTeaserShown: () =>
+    trackEvent('Deep Teaser Shown'),
+
+  /** Free user clicks upgrade CTA on deep teaser */
+  deepTeaserCtaClicked: () =>
+    trackEvent('Deep Teaser CTA Clicked'),
+
+  /** User clicks "Delete my data" in account settings */
+  dataDeletionRequested: (fileCount: number, nightCount: number) =>
+    trackEvent('Data Deletion Requested', { file_count: fileCount, night_count: nightCount }),
+
+  /** Server-side data deletion successful */
+  dataDeletionCompleted: () =>
+    trackEvent('Data Deletion Completed'),
 } as const;

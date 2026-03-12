@@ -6,8 +6,11 @@ import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
 import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
-import { StorageConsent } from '@/components/upload/storage-consent';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
+import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
+import { AuthModal } from '@/components/auth/auth-modal';
+import { useAuth } from '@/lib/auth/auth-context';
+import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
@@ -102,6 +105,9 @@ function AnalyzePageInner() {
   const [lifetimeNights, setLifetimeNights] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
+  const { user } = useAuth();
+  const hasTriggeredAutoUpload = useRef(false);
 
   // Track session count for new-user UX (beginner vs returning user)
   useEffect(() => {
@@ -142,6 +148,25 @@ function AnalyzePageInner() {
       if (stored > 0) setLifetimeNights(stored);
     } catch { /* noop */ }
   }, []);
+
+  // Auto-upload + store analysis data when user authenticates with loaded results
+  useEffect(() => {
+    if (!user || hasTriggeredAutoUpload.current || isDemo) return;
+    const currentNights = state.nights.length > 0 ? state.nights : persistedData?.nights ?? [];
+    if (currentNights.length === 0) return;
+
+    hasTriggeredAutoUpload.current = true;
+
+    // Auto-upload EDF files if available (registration consent covers storage)
+    if (sdFilesRef.current.length > 0) {
+      events.cloudSyncUsed();
+      const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+      uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
+    }
+
+    // Store aggregate analysis data
+    storeAnalysisData(currentNights).catch(() => { /* logged in client */ });
+  }, [user, isDemo, state.nights, persistedData?.nights]);
 
   // Show GitHub star prompt after 30s in demo mode (once per session)
   useEffect(() => {
@@ -228,8 +253,16 @@ function AnalyzePageInner() {
           setShowContributeNudge(true);
         }
 
-        // Cloud storage: auto-upload raw files if consented
-        if (storageConsentRef.current && sdFilesRef.current.length > 0) {
+        // Cloud storage: auto-upload raw files for authenticated users
+        // Registration consent covers storage — no separate consent needed
+        if (user && sdFilesRef.current.length > 0) {
+          events.cloudSyncUsed();
+          const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+          uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
+          // Store aggregate analysis data
+          storeAnalysisData(newState.nights).catch(() => { /* logged in client */ });
+        } else if (storageConsentRef.current && sdFilesRef.current.length > 0) {
+          // Legacy path for existing consented users
           events.cloudSyncUsed();
           const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
           uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
@@ -455,6 +488,16 @@ function AnalyzePageInner() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Returning user nudge — anonymous users with past results */}
+      {!user && lifetimeNights > 0 && status === 'idle' && !isDemo && (
+        <div className="mx-auto max-w-lg mb-4">
+          <ReturningUserNudge
+            previousNights={lifetimeNights}
+            onRegister={() => setAnalyzeAuthModalOpen(true)}
+          />
         </div>
       )}
 
@@ -684,10 +727,7 @@ function AnalyzePageInner() {
             </div>
           </div>
 
-          {/* Cloud storage consent — shown post-analysis for non-demo users */}
-          {!isDemo && (
-            <StorageConsent onChange={(v) => { storageConsentRef.current = v; }} />
-          )}
+          {/* StorageConsent removed — registration consent covers storage */}
 
           {/* Tabbed Views */}
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
@@ -744,6 +784,7 @@ function AnalyzePageInner() {
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
                   isNewUser={isNewUser}
+                  onOpenAuth={() => setAnalyzeAuthModalOpen(true)}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
@@ -848,6 +889,12 @@ function AnalyzePageInner() {
         accept=".csv"
         multiple
         onChange={handleOximetryChange}
+      />
+
+      {/* Auth modal for registration CTAs within the analyze page */}
+      <AuthModal
+        open={analyzeAuthModalOpen}
+        onClose={() => setAnalyzeAuthModalOpen(false)}
       />
     </div>
   );

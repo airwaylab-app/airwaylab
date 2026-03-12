@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AI Insights Conversion Funnel** — registration-gated AI insights with locked teasers for anonymous users, "Generate AI Insights" button for free users (3/month), and deep waveform-level insights for paid users (ai-insights-conversion-funnel)
+- **Account Settings Page** — `/account` with profile, subscription management, data usage stats, and comprehensive server-side data deletion (ai-insights-conversion-funnel)
+- **Returning User Nudge** — banner for anonymous returning users encouraging registration with night count context (ai-insights-conversion-funnel)
+- **Analysis Data Pipeline** — automatic storage of aggregate analysis scores for registered users, with per-breath summaries stored as JSON files in Supabase Storage (ai-insights-conversion-funnel)
+- **17 new analytics events** — full funnel tracking from upload through teaser shown, registration, AI generation, to upgrade (ai-insights-conversion-funnel)
+
+### Changed
+
+- **AI insights require explicit button click** — removed auto-fetch, replaced with manual "Generate AI Insights" button. No more AIConsentModal (ai-insights-conversion-funnel)
+- **Cloud storage unlimited for all registered users** — removed tier gates and quota enforcement on file storage. Registration consent covers all data processing (ai-insights-conversion-funnel)
+- **Single registration consent** — AuthModal now includes a consent checkbox covering EDF storage, AI processing, and per-breath data storage. StorageConsent component no longer shown (ai-insights-conversion-funnel)
+- **Feature gate updates** — `raw_storage` and `cloud_sync` now available for community tier; added `deep_ai_insights` feature for supporter/champion (ai-insights-conversion-funnel)
+
+### Removed
+
+- **AIConsentModal** — replaced by single registration consent checkbox (ai-insights-conversion-funnel)
+- **StorageConsent post-analysis UI** — registration consent covers storage (ai-insights-conversion-funnel)
+- **Storage quota enforcement** — unlimited for all registered users (ai-insights-conversion-funnel)
+
 - **Glossary Page** — 38-term sleep and PAP therapy glossary with DefinedTermSet JSON-LD, A-Z quick-nav, category badges, anchor links, and medical disclaimer. SEO-optimised for featured snippets and LLM discoverability (glossary-page)
 - **IFL Symptom Self-Report** — 5-point per-night symptom rating (1=Terrible to 5=Great) with cross-reference insights against IFL Risk. Community comparison card with aggregated distribution when data contribution is consented. Fire-and-forget contribution API with SHA-256 hashing and GDPR-safe anonymisation (ifl-symptom-self-report)
 - **Community Insights** — aggregated symptom distributions for similar IFL profiles, gated behind data contribution consent, with minimum 20-rating threshold for privacy (ifl-symptom-self-report)

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth, type Tier } from '@/lib/auth/auth-context';
-import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2 } from 'lucide-react';
+import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2, Settings } from 'lucide-react';
 
 const TIER_CONFIG: Record<Tier, { label: string; color: string; icon: typeof Heart }> = {
   community: { label: 'Community', color: 'text-muted-foreground', icon: User },
@@ -135,6 +135,16 @@ export function UserMenu() {
 
           {/* Menu items */}
           <div className="py-1">
+            <Link
+              href="/account"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Account Settings
+            </Link>
+
             {tier === 'community' && (
               <Link
                 href="/pricing"

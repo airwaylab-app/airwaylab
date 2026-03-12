@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Tooltip,
   TooltipContent,
@@ -188,7 +189,7 @@ export const ShareButton = memo(function ShareButton({
       {/* Loading / Success / Error dialog */}
       {(state.step === 'loading' ||
         state.step === 'success' ||
-        state.step === 'error') && (
+        state.step === 'error') && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={handleClose}
@@ -297,7 +298,8 @@ export const ShareButton = memo(function ShareButton({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </TooltipProvider>
   );

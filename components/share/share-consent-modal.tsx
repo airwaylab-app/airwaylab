@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Shield, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
@@ -46,7 +47,7 @@ export function ShareConsentModal({
     onConfirm(scope, remember);
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}
@@ -207,6 +208,7 @@ export function ShareConsentModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

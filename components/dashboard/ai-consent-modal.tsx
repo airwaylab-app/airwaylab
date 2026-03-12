@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, Shield, ExternalLink, X } from 'lucide-react';
 
 const CONSENT_KEY = 'airwaylab_ai_insights_consent';
@@ -63,7 +64,7 @@ export function AIConsentModal({ open, onConsent, onDecline }: AIConsentModalPro
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 transition-opacity ${
         visible ? 'opacity-100' : 'opacity-0'
@@ -155,6 +156,7 @@ export function AIConsentModal({ open, onConsent, onDecline }: AIConsentModalPro
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

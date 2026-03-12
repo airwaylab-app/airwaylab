@@ -7,11 +7,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Tier } from '@/lib/auth/auth-context';
 import type { StorageUsage } from './types';
 
-/** Storage quotas per tier in bytes */
+/** Storage quotas per tier in bytes — unlimited for all registered users */
 export const STORAGE_QUOTAS: Record<Tier, number> = {
-  community: 0,                      // No cloud storage for free tier
-  supporter: 2 * 1024 * 1024 * 1024, // 2 GB
-  champion: 10 * 1024 * 1024 * 1024, // 10 GB
+  community: Number.MAX_SAFE_INTEGER, // Unlimited — data is valuable for AI training
+  supporter: Number.MAX_SAFE_INTEGER, // Unlimited
+  champion: Number.MAX_SAFE_INTEGER,  // Unlimited
 };
 
 /**
