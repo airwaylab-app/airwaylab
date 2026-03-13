@@ -327,14 +327,15 @@ export function GraphsTab({
             <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
               <Waves className="h-6 w-6 text-muted-foreground/70" />
               <p className="text-sm text-muted-foreground">
-                Waveform data requires your SD card files
+                Re-upload your SD card to view flow waveforms
               </p>
               <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
-                Waveforms are extracted directly from your ResMed EDF files.
-                Once extracted, they&apos;re cached locally for instant loading on return visits.
+                Your analysis metrics were restored from a previous session, but waveform graphs
+                need the original EDF files. Re-upload your SD card folder and they&apos;ll be
+                cached for future visits.
               </p>
               {onReUpload && (
-                <Button variant="outline" size="sm" onClick={onReUpload} className="mt-1">Upload SD card</Button>
+                <Button variant="outline" size="sm" onClick={onReUpload} className="mt-1">Re-upload SD card</Button>
               )}
             </CardContent>
           </Card>
