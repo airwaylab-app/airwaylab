@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
+
 ### Added
 
 - **Clinician Questions Generator** — rule-based engine that translates amber/red metric patterns into 2–4 targeted questions users can bring to their sleep clinic appointment. Collapsed "Prepare for Your Appointment" section with copy-to-clipboard, traffic light urgency, and medical disclaimer. Education-first design: questions, not recommendations. (clinician-questions-generator)

@@ -35,6 +35,8 @@ export interface UploadProgress {
   bytesUploaded: number;
   bytesTotal: number;
   stage: 'hashing' | 'checking' | 'uploading' | 'complete';
+  /** Number of files already stored from a previous upload (resume context) */
+  skippedExisting: number;
 }
 
 export interface UploadResult {
