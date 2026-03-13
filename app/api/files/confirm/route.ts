@@ -78,6 +78,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Upload not found in storage. Metadata cleaned up.' }, { status: 404 });
     }
 
+    // Mark upload as confirmed — only confirmed rows are returned by check-hashes
+    await serviceRole
+      .from('user_files')
+      .update({ upload_confirmed: true })
+      .eq('id', fileId);
+
     return NextResponse.json({ confirmed: true });
   } catch (err) {
     console.error('[files/confirm] Error:', err);

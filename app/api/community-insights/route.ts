@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
-import { validateOrigin } from '@/lib/csrf';
 
 /** Rate limit: 10 requests per minute per IP */
 const communityRateLimiter = new RateLimiter({
@@ -11,11 +10,6 @@ const communityRateLimiter = new RateLimiter({
 });
 
 export async function GET(request: NextRequest) {
-  // CSRF protection
-  if (!validateOrigin(request)) {
-    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
-  }
-
   // Rate limiting
   const ip = getRateLimitKey(request);
   if (communityRateLimiter.isLimited(ip)) {

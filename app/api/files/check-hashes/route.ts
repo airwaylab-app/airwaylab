@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Chunk .in() queries to avoid PostgREST URL length limits
+    // Only return confirmed files — unconfirmed rows are orphaned presign attempts
     const hashValues = hashes.map((h: { filePath: string; fileHash: string }) => h.fileHash);
     const CHUNK_SIZE = 200;
     const allExistingFiles: { file_hash: string; file_path: string }[] = [];
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
         .from('user_files')
         .select('file_hash, file_path')
         .eq('user_id', user.id)
+        .eq('upload_confirmed', true)
         .in('file_hash', chunk);
 
       if (error) throw error;
