@@ -19,6 +19,7 @@ import type {
   WorkerMessage,
   WorkerProgress,
   WorkerResult,
+  WorkerNightResult,
   WorkerOximetryResult,
   WorkerError,
   NightResult,
@@ -328,6 +329,15 @@ async function processFiles(
       oximetryTrace,
       settingsMetrics: settingsMetricsResult,
     });
+
+    // Emit incremental result so the orchestrator can persist progress
+    const nightMsg: WorkerNightResult = {
+      type: 'NIGHT_RESULT',
+      night: nights[nights.length - 1],
+      nightIndex: i,
+      totalNights: nightGroups.length,
+    };
+    self.postMessage(nightMsg);
   }
 
   // Sort by date (most recent first)

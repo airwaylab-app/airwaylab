@@ -12,11 +12,13 @@ import type {
   OximetryTraceData,
   WorkerResponse,
 } from './types';
-import { loadPersistedResults, persistResults } from './persistence';
+import { loadPersistedResults, persistResults, persistNightsIncremental } from './persistence';
 import {
   extractNightDate,
   buildManifest,
   saveManifest,
+  loadManifest,
+  diffAgainstManifest,
 } from './file-manifest';
 import { storeOximetryTrace, loadOximetryTrace } from './oximetry-trace-idb';
 
@@ -36,6 +38,9 @@ export class AnalysisOrchestrator {
   private worker: Worker | null = null;
   private state: AnalysisState = { ...initialState };
   private listeners: Set<StateListener> = new Set();
+  private incrementalNights: NightResult[] = [];
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  private boundBeforeUnload: (() => void) | null = null;
 
   subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
@@ -69,63 +74,96 @@ export class AnalysisOrchestrator {
     });
 
     try {
-      // ── Incremental check: skip nights already in cache ──
+      // ── Incremental check: use manifest diffing for smarter dedup ──
       const cached = loadPersistedResults();
       const cachedNights = cached?.nights ?? [];
       const cachedDateSet = new Set(cachedNights.map((n) => n.dateStr));
-
-      // Determine which dates in this upload are new (not yet cached)
-      const uploadDates = new Set<string>();
-      for (const file of sdArr) {
-        const path =
-          (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
-        const date = extractNightDate(path);
-        if (date) uploadDates.add(date);
-      }
-
-      const newDates = new Set(
-        Array.from(uploadDates).filter((d) => !cachedDateSet.has(d))
-      );
       const hasNewOximetry = oximetryFiles && oximetryFiles.length > 0;
-      const skippedCount = uploadDates.size - newDates.size;
 
-      // All uploaded nights already cached — instant restore or oximetry-only
-      if (newDates.size === 0 && cachedNights.length > 0) {
-        if (hasNewOximetry) {
-          // No new SD nights but new oximetry — delegate to oximetry-only path
-          return this.analyzeOximetryOnly(oximetryFiles!);
-        }
-        await restoreOximetryTraces(cachedNights);
-        const therapyChangeDate = detectTherapyChange(cachedNights);
-        this.setState({
-          status: 'complete',
-          nights: cachedNights,
-          therapyChangeDate,
-          progress: { current: 1, total: 1, stage: `All ${skippedCount} nights cached` },
-        });
-        saveManifest(buildManifest(sdArr));
-        return cachedNights;
-      }
-
-      // Filter files: only new-date files + non-date files (STR.edf, Identification, etc.)
+      // Try manifest-based diffing first; fall back to date-based dedup
+      const manifest = loadManifest();
+      let unchangedDates: string[] = [];
       let filesToProcess: File[];
-      if (newDates.size > 0 && skippedCount > 0) {
-        filesToProcess = sdArr.filter((file) => {
+
+      if (manifest) {
+        const diff = diffAgainstManifest(sdArr, manifest);
+        // Only trust "unchanged" if we actually have cached results for them
+        unchangedDates = diff.unchanged.filter((d) => cachedDateSet.has(d));
+        const changedNights = diff.changedNights;
+
+        if (unchangedDates.length > 0 && changedNights.size === 0) {
+          // Everything unchanged — instant restore or oximetry-only
+          if (hasNewOximetry) {
+            return this.analyzeOximetryOnly(oximetryFiles!);
+          }
+          await restoreOximetryTraces(cachedNights);
+          const therapyChangeDate = detectTherapyChange(cachedNights);
+          this.setState({
+            status: 'complete',
+            nights: cachedNights,
+            therapyChangeDate,
+            progress: { current: 1, total: 1, stage: `All ${unchangedDates.length} nights cached` },
+          });
+          return cachedNights;
+        }
+
+        filesToProcess = changedNights.size > 0 ? diff.changedFiles : sdArr;
+      } else {
+        // No manifest — fall back to date-based dedup
+        const uploadDates = new Set<string>();
+        for (const file of sdArr) {
           const path =
             (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
           const date = extractNightDate(path);
-          return date === null || newDates.has(date);
-        });
+          if (date) uploadDates.add(date);
+        }
+
+        const newDates = new Set(
+          Array.from(uploadDates).filter((d) => !cachedDateSet.has(d))
+        );
+        unchangedDates = Array.from(uploadDates).filter((d) => cachedDateSet.has(d));
+
+        if (newDates.size === 0 && cachedNights.length > 0) {
+          if (hasNewOximetry) {
+            return this.analyzeOximetryOnly(oximetryFiles!);
+          }
+          await restoreOximetryTraces(cachedNights);
+          const therapyChangeDate = detectTherapyChange(cachedNights);
+          this.setState({
+            status: 'complete',
+            nights: cachedNights,
+            therapyChangeDate,
+            progress: { current: 1, total: 1, stage: `All ${unchangedDates.length} nights cached` },
+          });
+          return cachedNights;
+        }
+
+        if (newDates.size > 0 && unchangedDates.length > 0) {
+          filesToProcess = sdArr.filter((file) => {
+            const path =
+              (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+            const date = extractNightDate(path);
+            return date === null || newDates.has(date);
+          });
+        } else {
+          filesToProcess = sdArr;
+        }
+      }
+
+      const skippedCount = unchangedDates.length;
+
+      if (skippedCount > 0) {
         this.setState({
           progress: {
             current: 0,
             total: filesToProcess.length,
-            stage: `${skippedCount} night${skippedCount !== 1 ? 's' : ''} cached, processing ${newDates.size} new...`,
+            stage: `${skippedCount} night${skippedCount !== 1 ? 's' : ''} cached, processing new...`,
           },
         });
-      } else {
-        filesToProcess = sdArr;
       }
+
+      // ── Save manifest early so mid-analysis refresh can diff on re-upload ──
+      saveManifest(buildManifest(sdArr));
 
       // ── Read files into ArrayBuffers ──
       const totalFiles = filesToProcess.length;
@@ -169,7 +207,17 @@ export class AnalysisOrchestrator {
         },
       });
 
-      const newNights = await this.runWorker(files, oximetryCSVs);
+      // ── Set up incremental persistence ──
+      this.incrementalNights = [];
+      this.installBeforeUnload();
+
+      const newNights = await this.runWorker(files, oximetryCSVs, (night) => {
+        this.incrementalNights.push(night);
+        this.debouncedPersist();
+      });
+
+      // ── Clean up incremental state ──
+      this.clearIncrementalState();
 
       // ── Merge cached + new ──
       const merged = mergeNights(cachedNights, newNights);
@@ -186,8 +234,7 @@ export class AnalysisOrchestrator {
         }
       }
 
-      // ── Save manifest + results ──
-      saveManifest(buildManifest(sdArr));
+      // ── Authoritative save of final results ──
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
@@ -202,6 +249,15 @@ export class AnalysisOrchestrator {
 
       return merged;
     } catch (err) {
+      // Best-effort persist of whatever we have so far
+      if (this.incrementalNights.length > 0) {
+        try {
+          persistNightsIncremental(this.incrementalNights);
+        } catch {
+          // Non-critical — don't mask the original error
+        }
+      }
+      this.clearIncrementalState();
       const error = err instanceof Error ? err.message : String(err);
       this.setState({ status: 'error', error });
       throw err;
@@ -210,7 +266,8 @@ export class AnalysisOrchestrator {
 
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
-    oximetryCSVs?: string[]
+    oximetryCSVs?: string[],
+    onNightComplete?: (night: NightResult) => void
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
       // Safety timeout — 10 minutes to handle multi-year SD cards (800+ files)
@@ -245,6 +302,9 @@ export class AnalysisOrchestrator {
                 stage: msg.stage,
               },
             });
+            break;
+          case 'NIGHT_RESULT':
+            onNightComplete?.(msg.night);
             break;
           case 'RESULTS':
             settle();
@@ -413,7 +473,49 @@ export class AnalysisOrchestrator {
     });
   }
 
+  private debouncedPersist(): void {
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => {
+      if (this.incrementalNights.length > 0) {
+        persistNightsIncremental(this.incrementalNights);
+      }
+    }, 2000);
+  }
+
+  private clearIncrementalState(): void {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+    this.incrementalNights = [];
+    this.removeBeforeUnload();
+  }
+
+  private installBeforeUnload(): void {
+    this.removeBeforeUnload();
+    this.boundBeforeUnload = () => {
+      if (this.incrementalNights.length > 0) {
+        try {
+          persistNightsIncremental(this.incrementalNights);
+        } catch {
+          // Best effort — page is closing
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', this.boundBeforeUnload);
+    }
+  }
+
+  private removeBeforeUnload(): void {
+    if (this.boundBeforeUnload && typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', this.boundBeforeUnload);
+      this.boundBeforeUnload = null;
+    }
+  }
+
   terminate(): void {
+    this.clearIncrementalState();
     if (this.worker) {
       this.worker.terminate();
       this.worker = null;
