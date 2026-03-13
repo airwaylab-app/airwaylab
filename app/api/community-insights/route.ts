@@ -39,14 +39,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch community data' }, { status: 500 });
     }
 
-    // Return null/insufficient if fewer than 20 ratings
-    if (!data || data.total_ratings < 20) {
-      return NextResponse.json({ insufficient: true, totalRatings: data?.total_ratings ?? 0 });
+    // Return insufficient if missing data or fewer than 20 ratings
+    const totalRatings = typeof data?.total_ratings === 'number' ? data.total_ratings : 0;
+    if (!data || totalRatings < 20) {
+      return NextResponse.json({ insufficient: true, totalRatings });
     }
 
     return NextResponse.json({
-      avgRating: Number(data.avg_rating),
-      totalRatings: data.total_ratings,
+      avgRating: Number(data.avg_rating) || 0,
+      totalRatings,
       sameBucketAvgRating: data.same_bucket_avg_rating !== null ? Number(data.same_bucket_avg_rating) : null,
       sameBucketCount: data.same_bucket_count ?? 0,
     });
