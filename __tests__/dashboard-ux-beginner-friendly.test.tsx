@@ -101,12 +101,12 @@ describe('NightSummaryHero', () => {
     expect(hero.className).toContain('border-emerald');
   });
 
-  it('renders red border when IFL Risk is in red zone', () => {
-    // IFL Risk > 45 = red. Need high FL + NED + low FI + high Glasgow
+  it('renders amber border with dual framing when events good but IFL Risk is red', () => {
+    // IFL Risk > 45 = red, but RERA 2 (green) → dual framing → amber, not red
     const night = makeNight({ glasgow: 3.5, wat: { flScore: 60 }, ned: { nedMean: 35, fiMean: 0.6 } });
     const { container } = render(<NightSummaryHero night={night} />);
     const hero = container.firstChild as HTMLElement;
-    expect(hero.className).toContain('border-red');
+    expect(hero.className).toContain('border-amber');
   });
 
   it('renders amber border when IFL Risk is amber', () => {
@@ -123,22 +123,23 @@ describe('NightSummaryHero', () => {
     expect(() => render(<NightSummaryHero night={night} />)).not.toThrow();
   });
 
-  it('shows green headline for low IFL Risk', () => {
+  it('shows green headline for low IFL Risk with good events', () => {
     const night = makeNight({ glasgow: 0.5 });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Low flow limitation tonight')).toBeInTheDocument();
+    expect(screen.getByText('Your therapy looks effective tonight')).toBeInTheDocument();
   });
 
-  it('shows red headline for high IFL Risk', () => {
+  it('shows dual framing headline when events good but IFL Risk is red', () => {
+    // RERA 2 (green) + IFL Risk red → dual framing, not "significant FL detected"
     const night = makeNight({ glasgow: 3.5, wat: { flScore: 60 }, ned: { nedMean: 35, fiMean: 0.6 } });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Significant flow limitation detected')).toBeInTheDocument();
+    expect(screen.getByText(/good event control/i)).toBeInTheDocument();
   });
 
-  it('shows amber headline for moderate IFL Risk', () => {
+  it('shows dual framing headline for moderate IFL Risk with good events', () => {
     const night = makeNight({ glasgow: 1.5, wat: { flScore: 35 }, ned: { nedMean: 20 } });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Moderate flow limitation detected')).toBeInTheDocument();
+    expect(screen.getByText(/good event control/i)).toBeInTheDocument();
   });
 
   it('includes medical disclaimer', () => {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Hero card treatment context framing** — Night summary hero now uses dual framing: acknowledges good event control (RERA/hypopnea) before presenting flow limitation metrics, so users with effective CPAP treatment don't misinterpret red FL metrics as treatment failure. Users with good event control never see a red hero card. (hero-treatment-context-framing)
+
 ### Fixed
 
 - **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AI insights error handling** — replaced generic "AI service error (502)" catch-all with specific error messages for each Anthropic SDK error type (auth, connection, timeout, bad request, model not found, server error), with distinct Sentry tags for filtering (ai-insights-error-handling)
 - **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
 - **PDF report empty-array guard** — `openPDFReport([])` now returns silently instead of crashing on `nights[0]` access (codebase-audit-hardening)
 - **API schema leak** — Removed Zod validation error details from `/api/store-analysis-data` 400 response; details now logged server-side only (codebase-audit-hardening)
