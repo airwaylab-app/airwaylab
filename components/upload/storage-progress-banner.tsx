@@ -110,15 +110,25 @@ export function StorageProgressBanner() {
           <span>
             Syncing to cloud... {progress.current}/{progress.total} files
             ({formatBytes(progress.bytesUploaded)} / {formatBytes(progress.bytesTotal)})
-            <span className="hidden sm:inline text-sky-400/60"> — please don&apos;t close this page</span>
+            {progress.skippedExisting > 0 && (
+              <span className="hidden sm:inline text-sky-400/60"> — {progress.skippedExisting} already stored</span>
+            )}
+            {progress.skippedExisting === 0 && (
+              <span className="hidden sm:inline text-sky-400/60"> — please don&apos;t close this page</span>
+            )}
           </span>
         )}
         {state.status === 'complete' && result && (
           <span>
             <Cloud className="inline h-3 w-3 mr-1" />
-            {result.uploaded > 0 && `${result.uploaded} files synced. `}
-            {result.skipped > 0 && `${result.skipped} already stored. `}
-            {result.failed > 0 && `${result.failed} failed. `}
+            {result.uploaded === 0 && result.skipped > 0 && result.failed === 0
+              ? `All ${result.skipped} files already stored.`
+              : <>
+                  {result.uploaded > 0 && `${result.uploaded} files synced. `}
+                  {result.skipped > 0 && `${result.skipped} already stored. `}
+                  {result.failed > 0 && `${result.failed} failed. `}
+                </>
+            }
           </span>
         )}
         {state.status === 'error' && (
