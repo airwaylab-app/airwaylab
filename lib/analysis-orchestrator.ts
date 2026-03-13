@@ -9,6 +9,7 @@ import type {
   AnalysisState,
   NightResult,
   OximetryResults,
+  OximetryTraceData,
   WorkerResponse,
 } from './types';
 import { loadPersistedResults, persistResults } from './persistence';
@@ -308,13 +309,14 @@ export class AnalysisOrchestrator {
       });
 
       // Run worker for oximetry-only processing
-      const oximetryByDate = await this.runOximetryWorker(oximetryCSVs);
+      const { oximetryByDate, oximetryTraceByDate } = await this.runOximetryWorker(oximetryCSVs);
 
       // Merge oximetry into cached nights
       const merged = cached.nights.map((night) => {
         const ox = oximetryByDate[night.dateStr];
+        const trace = oximetryTraceByDate[night.dateStr];
         if (ox) {
-          return { ...night, oximetry: ox };
+          return { ...night, oximetry: ox, oximetryTrace: trace ?? null };
         }
         return night;
       });
@@ -352,7 +354,7 @@ export class AnalysisOrchestrator {
 
   private runOximetryWorker(
     oximetryCSVs: string[]
-  ): Promise<Record<string, OximetryResults>> {
+  ): Promise<{ oximetryByDate: Record<string, OximetryResults>; oximetryTraceByDate: Record<string, OximetryTraceData> }> {
     return new Promise((resolve, reject) => {
       const WORKER_TIMEOUT_MS = 60 * 1000; // 1 minute — oximetry is fast
       let settled = false;
@@ -380,7 +382,7 @@ export class AnalysisOrchestrator {
           case 'OXIMETRY_RESULTS':
             settle();
             this.terminate();
-            resolve(msg.oximetryByDate);
+            resolve({ oximetryByDate: msg.oximetryByDate, oximetryTraceByDate: msg.oximetryTraceByDate });
             break;
           case 'ERROR':
             settle();
@@ -479,7 +481,7 @@ function mergeNights(
   for (const n of cached) {
     const freshVersion = map.get(n.dateStr);
     if (freshVersion && !n.oximetry && freshVersion.oximetry) {
-      map.set(n.dateStr, { ...n, oximetry: freshVersion.oximetry });
+      map.set(n.dateStr, { ...n, oximetry: freshVersion.oximetry, oximetryTrace: freshVersion.oximetryTrace });
     } else {
       map.set(n.dateStr, n);
     }

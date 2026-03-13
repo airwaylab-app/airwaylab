@@ -14,6 +14,7 @@ import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
 import { computeOximetry } from '../lib/analyzers/oximetry-engine';
 import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
+import { buildOximetryTrace } from '../lib/oximetry-trace';
 import type {
   WorkerMessage,
   WorkerProgress,
@@ -25,6 +26,7 @@ import type {
   MachineSettings,
   MachineHypopneaSummary,
   OximetryResults,
+  OximetryTraceData,
 } from '../lib/types';
 
 // Global error handler — catches uncaught errors and sends them as
@@ -42,8 +44,8 @@ self.addEventListener('error', (e: ErrorEvent) => {
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     if (e.data.type === 'ANALYZE_OXIMETRY') {
-      const results = processOximetryOnly(e.data.oximetryCSVs);
-      const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: results, oximetryTraceByDate: {} };
+      const { metrics, traces } = processOximetryOnly(e.data.oximetryCSVs);
+      const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: metrics, oximetryTraceByDate: traces };
       self.postMessage(response);
     } else {
       const { files, oximetryCSVs } = e.data;
@@ -311,6 +313,7 @@ async function processFiles(
     // Oximetry: match by night date
     const oxData = oximetryByDate.get(group.nightDate);
     const oximetry = oxData ? computeOximetry(oxData.samples) : null;
+    const oximetryTrace = oxData ? buildOximetryTrace(oxData.samples) : null;
 
     nights.push({
       date: recordingDate,
@@ -322,7 +325,7 @@ async function processFiles(
       wat,
       ned,
       oximetry,
-      oximetryTrace: null,
+      oximetryTrace,
       settingsMetrics: settingsMetricsResult,
     });
   }
@@ -337,18 +340,25 @@ async function processFiles(
  * Process oximetry CSVs only — no EDF parsing, no engine computation.
  * Returns computed OximetryResults keyed by date string.
  */
-function processOximetryOnly(oximetryCSVs: string[]): Record<string, OximetryResults> {
-  const results: Record<string, OximetryResults> = {};
+function processOximetryOnly(oximetryCSVs: string[]): {
+  metrics: Record<string, OximetryResults>;
+  traces: Record<string, OximetryTraceData>;
+} {
+  const metrics: Record<string, OximetryResults> = {};
+  const traces: Record<string, OximetryTraceData> = {};
 
   for (const csv of oximetryCSVs) {
     try {
       const parsed = parseOximetryCSV(csv);
-      const oximetry = computeOximetry(parsed.samples);
-      results[parsed.dateStr] = oximetry;
+      metrics[parsed.dateStr] = computeOximetry(parsed.samples);
+      const trace = buildOximetryTrace(parsed.samples);
+      if (trace) {
+        traces[parsed.dateStr] = trace;
+      }
     } catch (err) {
       console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
     }
   }
 
-  return results;
+  return { metrics, traces };
 }
