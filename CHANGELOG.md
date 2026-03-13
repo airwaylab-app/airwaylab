@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Oximetry trace persistence** — SpO₂/HR trace chart now survives page reloads via IndexedDB storage. Previously, trace data was stripped from localStorage (too large) and required re-uploading the CSV after every refresh. (oximetry-trace-persistence)
 - **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
 
 ### Added

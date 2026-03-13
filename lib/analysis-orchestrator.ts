@@ -18,6 +18,7 @@ import {
   buildManifest,
   saveManifest,
 } from './file-manifest';
+import { storeOximetryTrace, loadOximetryTrace } from './oximetry-trace-idb';
 
 type StateListener = (state: AnalysisState) => void;
 
@@ -94,6 +95,7 @@ export class AnalysisOrchestrator {
           // No new SD nights but new oximetry — delegate to oximetry-only path
           return this.analyzeOximetryOnly(oximetryFiles!);
         }
+        await restoreOximetryTraces(cachedNights);
         const therapyChangeDate = detectTherapyChange(cachedNights);
         this.setState({
           status: 'complete',
@@ -171,6 +173,7 @@ export class AnalysisOrchestrator {
 
       // ── Merge cached + new ──
       const merged = mergeNights(cachedNights, newNights);
+      await restoreOximetryTraces(merged);
       const therapyChangeDate = detectTherapyChange(merged);
 
       // ── Check if oximetry matched any nights ──
@@ -186,6 +189,7 @@ export class AnalysisOrchestrator {
       // ── Save manifest + results ──
       saveManifest(buildManifest(sdArr));
       const persistResult = persistResults(merged, therapyChangeDate);
+      persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',
@@ -334,6 +338,7 @@ export class AnalysisOrchestrator {
       // Persist updated results
       const therapyChangeDate = detectTherapyChange(merged);
       const persistResult = persistResults(merged, therapyChangeDate);
+      persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',
@@ -458,6 +463,46 @@ async function readCSVFiles(
 
   // Read all CSV files in parallel
   return Promise.all(arr.map((file) => file.text()));
+}
+
+/**
+ * Restore oximetry traces from IndexedDB for nights that have
+ * metrics but no trace (stripped during localStorage persistence).
+ * Mutates the array in place for efficiency.
+ */
+async function restoreOximetryTraces(nights: NightResult[]): Promise<void> {
+  const nightsNeedingTrace = nights.filter(
+    (n) => n.oximetry !== null && n.oximetryTrace === null
+  );
+  if (nightsNeedingTrace.length === 0) return;
+
+  const results = await Promise.allSettled(
+    nightsNeedingTrace.map(async (night) => {
+      const trace = await loadOximetryTrace(night.dateStr);
+      if (trace) {
+        night.oximetryTrace = trace;
+      }
+    })
+  );
+
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length > 0) {
+    console.error(`[orchestrator] Failed to restore ${failed.length} oximetry trace(s) from IDB`);
+  }
+}
+
+/**
+ * Fire-and-forget store of oximetry traces to IndexedDB.
+ */
+function persistOximetryTraces(nights: NightResult[]): void {
+  const nightsWithTrace = nights.filter((n) => n.oximetryTrace !== null);
+  if (nightsWithTrace.length === 0) return;
+
+  Promise.allSettled(
+    nightsWithTrace.map((n) => storeOximetryTrace(n.dateStr, n.oximetryTrace!))
+  ).catch(() => {
+    // Non-critical — IDB errors are logged inside storeOximetryTrace
+  });
 }
 
 /**
