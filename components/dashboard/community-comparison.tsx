@@ -50,7 +50,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
       })
       .then((data) => {
         if (controller.signal.aborted) return;
-        if (data.insufficient) {
+        if (data.insufficient || typeof data.totalRatings !== 'number' || typeof data.avgRating !== 'number') {
           setInsufficient(true);
           setStats(null);
         } else {
@@ -142,14 +142,14 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
           <p className="text-xs font-medium text-muted-foreground">
             Community Comparison
             <span className="ml-1.5 text-[10px] font-normal text-muted-foreground/70">
-              ({stats.totalRatings.toLocaleString()} ratings)
+              ({(stats.totalRatings ?? 0).toLocaleString()} ratings)
             </span>
           </p>
           <div className="mt-1.5 grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] text-muted-foreground/80">Community avg. rating</p>
               <p className="font-mono text-sm font-semibold tabular-nums">
-                {stats.avgRating.toFixed(1)}/5
+                {(stats.avgRating ?? 0).toFixed(1)}/5
               </p>
             </div>
             {symptomRating !== null && (
