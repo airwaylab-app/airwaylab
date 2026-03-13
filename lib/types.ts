@@ -230,6 +230,46 @@ export interface OximetryTraceData {
   odi4Events: number[];
 }
 
+export interface SettingsMetrics {
+  /** Number of breaths used for settings analysis */
+  breathCount: number;
+
+  // Detected pressures (from BRP P10/P90)
+  epapDetected: number;
+  ipapDetected: number;
+  psDetected: number;
+
+  // Trigger
+  triggerDelayMedianMs: number;
+  triggerDelayP10Ms: number;
+  triggerDelayP90Ms: number;
+  autoTriggerPct: number;
+
+  // Cycle
+  tiMedianMs: number;
+  tiP25Ms: number;
+  tiP75Ms: number;
+  teMedianMs: number;
+  ieRatio: number;
+  timeAtIpapMedianMs: number;
+  timeAtIpapP25Ms: number;
+  ipapDwellMedianPct: number;
+  ipapDwellP10Pct: number;
+  prematureCyclePct: number;
+  lateCyclePct: number;
+
+  // EPAP
+  endExpPressureMean: number;
+  endExpPressureSd: number;
+
+  // Ventilation
+  tidalVolumeMedianMl: number;
+  tidalVolumeP25Ml: number;
+  tidalVolumeP75Ml: number;
+  tidalVolumeCv: number;
+  minuteVentProxy: number;
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -241,6 +281,7 @@ export interface NightResult {
   ned: NEDResults;
   oximetry: OximetryResults | null;
   oximetryTrace: OximetryTraceData | null;
+  settingsMetrics: SettingsMetrics | null;
 }
 
 export interface AnalysisState {

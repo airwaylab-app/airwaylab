@@ -35,6 +35,7 @@ function stripForShare(nights: NightResult[]): NightResult[] {
       breaths: [],
     },
     oximetryTrace: null,
+    settingsMetrics: null,
   }));
 }
 

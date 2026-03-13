@@ -118,6 +118,7 @@ function makeNight(dateStr: string): NightResult {
     },
     oximetry: null,
     oximetryTrace: null,
+    settingsMetrics: null,
   };
 }
 

@@ -13,6 +13,7 @@ function stripForShare(nights: NightResult[]): NightResult[] {
       breaths: [],
     },
     oximetryTrace: null,
+    settingsMetrics: null,
   }));
 }
 
@@ -46,6 +47,7 @@ function makeNight(overrides: Partial<NightResult> = {}): NightResult {
     },
     oximetry: null,
     oximetryTrace: null,
+    settingsMetrics: null,
     ...overrides,
   };
 }

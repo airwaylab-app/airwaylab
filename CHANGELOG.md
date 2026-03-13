@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **BiPAP Settings Validation Engine** — new analysis engine (`settings-engine.ts`) that uses the 25Hz BRP pressure channel alongside flow to compute per-breath trigger delay, cycle timing, IPAP dwell, tidal volume, and ventilation stability metrics for BiPAP users. Worker pipeline now concatenates pressure data across multi-session nights. Phase 1 of 3 (engine + plumbing, no UI yet). (bipap-settings-validation-metrics)
+- **Delivered vs Prescribed Pressure** — shows both prescribed (from STR.edf settings) and delivered (P10/P90 from BRP.edf waveform) pressure values on the Device tab with mode-aware educational explanations, divergence alerts, and glossary entries. Uses reservoir sampling for efficient percentile computation on large Float32Arrays. (delivered-vs-prescribed-pressure)
+
 ### Fixed
 
 - **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
