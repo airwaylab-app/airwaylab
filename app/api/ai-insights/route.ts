@@ -400,7 +400,6 @@ export async function POST(request: NextRequest) {
       ...(remainingCredits !== undefined && { remainingCredits }),
     });
   } catch (err) {
-    // Distinguish rate limit errors from other failures
     if (err instanceof Anthropic.RateLimitError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'rate_limit' },
@@ -410,6 +409,79 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'AI service is temporarily busy. Please try again in a few minutes.' },
         { status: 429 }
+      );
+    }
+
+    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'auth' },
+        level: 'error',
+      });
+      console.error('[ai-insights] Auth/permission error:', err instanceof Anthropic.AuthenticationError ? 'authentication' : 'permission');
+      return NextResponse.json(
+        { error: 'AI service configuration error. Please try again later.' },
+        { status: 503 }
+      );
+    }
+
+    // APIConnectionTimeoutError extends APIConnectionError — check subclass first
+    if (err instanceof Anthropic.APIConnectionTimeoutError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'connection_timeout' },
+        level: 'warning',
+      });
+      console.error('[ai-insights] Connection timeout');
+      return NextResponse.json(
+        { error: 'AI service timed out. Please try again.' },
+        { status: 504 }
+      );
+    }
+
+    if (err instanceof Anthropic.APIConnectionError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'connection' },
+        level: 'warning',
+      });
+      console.error('[ai-insights] Connection error');
+      return NextResponse.json(
+        { error: 'Could not connect to AI service. Please try again.' },
+        { status: 502 }
+      );
+    }
+
+    if (err instanceof Anthropic.NotFoundError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'not_found' },
+        level: 'error',
+      });
+      console.error('[ai-insights] Model not found');
+      return NextResponse.json(
+        { error: 'AI model unavailable. Please try again later.' },
+        { status: 502 }
+      );
+    }
+
+    if (err instanceof Anthropic.BadRequestError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'bad_request' },
+        level: 'error',
+      });
+      console.error('[ai-insights] Bad request');
+      return NextResponse.json(
+        { error: 'Failed to process analysis data. Please try again.' },
+        { status: 502 }
+      );
+    }
+
+    if (err instanceof Anthropic.InternalServerError) {
+      Sentry.captureException(err, {
+        tags: { route: 'ai-insights', error_type: 'server_error' },
+        level: 'warning',
+      });
+      console.error('[ai-insights] Anthropic internal server error');
+      return NextResponse.json(
+        { error: 'AI service temporarily unavailable. Please try again in a few minutes.' },
+        { status: 502 }
       );
     }
 
