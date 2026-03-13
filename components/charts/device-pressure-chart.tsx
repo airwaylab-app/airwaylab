@@ -20,6 +20,8 @@ import { downsampleForChart } from '@/lib/chart-downsample';
 interface Props {
   pressure: PressurePoint[];
   settings: MachineSettings;
+  deliveredP10?: number | null;
+  deliveredP90?: number | null;
 }
 
 function PressureTooltipContent({ active, payload, label }: {
@@ -42,6 +44,8 @@ function PressureTooltipContent({ active, payload, label }: {
 export const DevicePressureChart = memo(function DevicePressureChart({
   pressure,
   settings,
+  deliveredP10,
+  deliveredP90,
 }: Props) {
   const viewport = useSyncedViewport();
 
@@ -92,7 +96,7 @@ export const DevicePressureChart = memo(function DevicePressureChart({
             />
             <Tooltip content={<PressureTooltipContent />} isAnimationActive={false} />
 
-            {/* Reference lines for pressure settings */}
+            {/* Reference lines — prescribed (dashed) */}
             {isCPAP ? (
               <ReferenceLine y={settings.epap} stroke="hsl(142 71% 45% / 0.5)" strokeDasharray="4 2" label={{ value: `Set ${settings.epap}`, fill: 'hsl(142 71% 45%)', fontSize: 9, position: 'right' }} />
             ) : isAPAP ? (
@@ -105,6 +109,14 @@ export const DevicePressureChart = memo(function DevicePressureChart({
                 <ReferenceLine y={settings.epap} stroke="hsl(142 71% 45% / 0.4)" strokeDasharray="4 2" label={{ value: `EPAP ${settings.epap}`, fill: 'hsl(142 71% 45%)', fontSize: 9, position: 'right' }} />
                 <ReferenceLine y={settings.ipap} stroke="hsl(213 94% 56% / 0.4)" strokeDasharray="4 2" label={{ value: `IPAP ${settings.ipap}`, fill: 'hsl(213 94% 56%)', fontSize: 9, position: 'right' }} />
               </>
+            )}
+
+            {/* Reference lines — delivered (solid) */}
+            {deliveredP10 != null && (
+              <ReferenceLine y={deliveredP10} stroke="hsl(142 71% 55% / 0.7)" strokeWidth={1.5} label={{ value: `Del ${deliveredP10.toFixed(1)}`, fill: 'hsl(142 71% 55%)', fontSize: 8, position: 'left' }} />
+            )}
+            {deliveredP90 != null && (
+              <ReferenceLine y={deliveredP90} stroke="hsl(213 94% 66% / 0.7)" strokeWidth={1.5} label={{ value: `Del ${deliveredP90.toFixed(1)}`, fill: 'hsl(213 94% 66%)', fontSize: 8, position: 'left' }} />
             )}
 
             <Area

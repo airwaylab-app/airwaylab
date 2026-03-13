@@ -253,6 +253,13 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
       'A therapy device that delivers a single fixed air pressure through a mask to keep the upper airway open during sleep. The pressure acts as a pneumatic splint, preventing the airway from collapsing. CPAP is the first-line treatment for obstructive sleep apnea. The prescribed pressure is typically determined by a titration study.',
   },
   {
+    id: 'delivered-pressure',
+    term: 'Delivered Pressure',
+    category: 'pap-therapy',
+    definition:
+      'The actual pressure a PAP machine produced during a therapy session, measured from the high-frequency pressure waveform recorded to the SD card. AirwayLab calculates delivered EPAP and IPAP using the 10th and 90th percentiles of the pressure data, which accurately captures the two pressure levels in each breath cycle. Compare with prescribed pressure to see whether your machine is hitting its configured targets. See also: Prescribed Pressure, Pressure Support.',
+  },
+  {
     id: 'epr',
     term: 'EPR (Expiratory Pressure Relief)',
     category: 'pap-therapy',
@@ -272,6 +279,13 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'pap-therapy',
     definition:
       'The difference between inspiratory pressure (IPAP) and expiratory pressure (EPAP) on a bilevel device. For example, if IPAP is 14 cmH\u2082O and EPAP is 10 cmH\u2082O, pressure support is 4 cmH\u2082O. Higher pressure support provides more assistance during inhalation, which can help overcome upper airway resistance and reduce flow limitation. Typical range is 2\u20136 cmH\u2082O.',
+  },
+  {
+    id: 'prescribed-pressure',
+    term: 'Prescribed Pressure',
+    category: 'pap-therapy',
+    definition:
+      'The pressure settings configured on a PAP device, as opposed to the actual pressure delivered during therapy. For CPAP, this is a single fixed pressure. For APAP/AutoSet, it is a minimum and maximum pressure range within which the device auto-adjusts. For BiPAP/VPAP, it is the EPAP and IPAP pair (or target pressure support). AirwayLab reads prescribed settings from the STR.edf file on the SD card. Comparing prescribed vs delivered pressure helps verify that the machine is hitting its targets. See also: Delivered Pressure, Pressure Support.',
   },
   {
     id: 'titration',
