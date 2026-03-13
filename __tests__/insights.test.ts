@@ -25,7 +25,7 @@ describe('generateInsights', () => {
       expect(['positive', 'warning', 'actionable', 'info']).toContain(insight.type);
       expect(insight.title.length).toBeGreaterThan(0);
       expect(insight.body.length).toBeGreaterThan(0);
-      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend']).toContain(insight.category);
+      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'settings']).toContain(insight.category);
     }
   });
 
@@ -217,6 +217,94 @@ describe('generateInsights', () => {
       const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0], SAMPLE_NIGHTS[1], null, null);
       const symptomInsights = result.filter((i) => i.id.startsWith('symptom-'));
       expect(symptomInsights).toHaveLength(0);
+    });
+  });
+
+  describe('settings insights', () => {
+    const baseSettingsMetrics = {
+      breathCount: 3000,
+      epapDetected: 10,
+      ipapDetected: 18,
+      psDetected: 8,
+      triggerDelayMedianMs: 250,
+      triggerDelayP10Ms: 150,
+      triggerDelayP90Ms: 400,
+      autoTriggerPct: 1,
+      tiMedianMs: 1500,
+      tiP25Ms: 1300,
+      tiP75Ms: 1700,
+      teMedianMs: 2000,
+      ieRatio: 1.33,
+      timeAtIpapMedianMs: 700,
+      timeAtIpapP25Ms: 500,
+      ipapDwellMedianPct: 50,
+      ipapDwellP10Pct: 35,
+      prematureCyclePct: 1,
+      lateCyclePct: 1,
+      endExpPressureMean: 10.1,
+      endExpPressureSd: 0.3,
+      tidalVolumeMedianMl: 450,
+      tidalVolumeP25Ml: 380,
+      tidalVolumeP75Ml: 520,
+      tidalVolumeCv: 20,
+      minuteVentProxy: 350,
+    };
+
+    function makeNightWithSettings(overrides: Record<string, unknown> = {}): NightResult {
+      return {
+        ...SAMPLE_NIGHTS[0],
+        settingsMetrics: { ...baseSettingsMetrics, ...overrides },
+      };
+    }
+
+    it('generates settings-premature-cycle warning when prematureCyclePct > 10', () => {
+      const night = makeNightWithSettings({ prematureCyclePct: 15 });
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'settings-premature-cycle');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('warning');
+      expect(insight!.category).toBe('settings');
+    });
+
+    it('generates settings-low-ipap-dwell actionable when ipapDwellMedianPct < 35', () => {
+      const night = makeNightWithSettings({ ipapDwellMedianPct: 30 });
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'settings-low-ipap-dwell');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('actionable');
+      expect(insight!.category).toBe('settings');
+    });
+
+    it('generates settings-good positive when all settings in range', () => {
+      const night = makeNightWithSettings({ prematureCyclePct: 1, lateCyclePct: 1, ipapDwellMedianPct: 50 });
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'settings-good');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('positive');
+    });
+
+    it('does not generate settings insights when settingsMetrics is null', () => {
+      const night = { ...SAMPLE_NIGHTS[0], settingsMetrics: null };
+      const result = generateInsights([night], night, null, null);
+      const settingsInsights = result.filter((i) => i.category === 'settings');
+      expect(settingsInsights).toHaveLength(0);
+    });
+
+    it('generates settings-ti-delta when Ti changes >150ms from previous night', () => {
+      const current = makeNightWithSettings({ tiMedianMs: 1500 });
+      const prev = makeNightWithSettings({ tiMedianMs: 1300 });
+      const result = generateInsights([current, prev], current, prev, null);
+      const insight = result.find((i) => i.id === 'settings-ti-delta');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('warning');
+    });
+
+    it('generates settings-pressure-mismatch when epapDetected differs >1 from prescribed', () => {
+      const night = makeNightWithSettings({ epapDetected: 11.5 });
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'settings-pressure-mismatch');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('warning');
     });
   });
 

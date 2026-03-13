@@ -28,6 +28,18 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   hypopneaIndex: { green: 2, amber: 5, lowerIsBetter: true },
   amplitudeCv: { green: 20, amber: 30, lowerIsBetter: true },
   unstableEpochPct: { green: 15, amber: 25, lowerIsBetter: true },
+
+  // Settings validation thresholds (BiPAP)
+  settingsTriggerDelay: { green: 300, amber: 500, lowerIsBetter: true },
+  settingsAutoTrigger: { green: 2, amber: 5, lowerIsBetter: true },
+  settingsTi: { green: 1200, amber: 1000, lowerIsBetter: false },
+  settingsIeRatio: { green: 1.2, amber: 1.0, lowerIsBetter: false },
+  settingsTimeAtIpap: { green: 600, amber: 400, lowerIsBetter: false },
+  settingsIpapDwell: { green: 45, amber: 35, lowerIsBetter: false },
+  settingsPrematureCycle: { green: 2, amber: 10, lowerIsBetter: true },
+  settingsLateCycle: { green: 2, amber: 10, lowerIsBetter: true },
+  settingsVtCv: { green: 25, amber: 30, lowerIsBetter: true },
+  settingsEpapDelta: { green: 0.5, amber: 1.0, lowerIsBetter: true },
 };
 
 export type TrafficLight = 'good' | 'warn' | 'bad';

@@ -18,7 +18,7 @@ export interface Insight {
   /** Supporting explanation (1–2 sentences) */
   body: string;
   /** Metric area this relates to */
-  category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend';
+  category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend' | 'settings';
   /** Optional link for further reading */
   link?: { text: string; href: string };
 }
@@ -359,6 +359,103 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         title: 'Poor sleep quality despite low flow limitation',
         body: `You rated this night as ${ratingLabel} despite low flow limitation (${fmt(iflRisk)}%). Other factors may be contributing \u2014 check your night context (congestion, stress, alcohol) for patterns. If poor sleep persists, discuss with your clinician.`,
         category: 'ned',
+      });
+    }
+  }
+
+  // Settings insights (BiPAP only)
+  if (n.settingsMetrics) {
+    const sm = n.settingsMetrics;
+    const settingsWarningIds: string[] = [];
+
+    if (sm.prematureCyclePct > 10) {
+      settingsWarningIds.push('settings-premature-cycle');
+      insights.push({
+        id: 'settings-premature-cycle',
+        type: 'warning',
+        title: 'Machine cycling off during active inspiration',
+        body: `${fmt(sm.prematureCyclePct, 0)}% of breaths had pressure support withdrawn while you were still inhaling. This can reduce effective ventilation. Consider decreasing Cycle sensitivity — discuss with your clinician.`,
+        category: 'settings',
+      });
+    }
+
+    if (sm.lateCyclePct > 10) {
+      settingsWarningIds.push('settings-late-cycle');
+      insights.push({
+        id: 'settings-late-cycle',
+        type: 'warning',
+        title: 'Machine slow to release pressure',
+        body: `${fmt(sm.lateCyclePct, 0)}% of breaths had pressure support continuing into your expiration. This can make exhaling uncomfortable. Consider increasing Cycle sensitivity — discuss with your clinician.`,
+        category: 'settings',
+      });
+    }
+
+    if (sm.ipapDwellMedianPct < 35) {
+      settingsWarningIds.push('settings-low-ipap-dwell');
+      insights.push({
+        id: 'settings-low-ipap-dwell',
+        type: 'actionable',
+        title: 'Low time at full pressure support',
+        body: `Your machine reaches IPAP but cycles off quickly — only ${fmt(sm.ipapDwellMedianPct, 0)}% of each breath is spent at full pressure. This reduces the effective benefit of your PS setting. Cycle sensitivity or Rise Time may need adjustment.`,
+        category: 'settings',
+      });
+    }
+
+    if (sm.tiMedianMs < 1200) {
+      insights.push({
+        id: 'settings-ti-short',
+        type: 'info',
+        title: 'Short inspiratory time',
+        body: `Median inspiratory time of ${sm.tiMedianMs}ms is below typical range. If combined with elevated respiratory rate, this may indicate compensatory tachypnea.`,
+        category: 'settings',
+      });
+    }
+
+    if (prev?.settingsMetrics) {
+      const tiDelta = sm.tiMedianMs - prev.settingsMetrics.tiMedianMs;
+      if (Math.abs(tiDelta) > 150) {
+        insights.push({
+          id: 'settings-ti-delta',
+          type: 'warning',
+          title: 'Inspiratory time changed from previous night',
+          body: `Ti shifted by ${tiDelta > 0 ? '+' : ''}${Math.round(tiDelta)}ms compared to last night (${prev.settingsMetrics.tiMedianMs}ms → ${sm.tiMedianMs}ms). This may reflect a Cycle or EPAP interaction.`,
+          category: 'settings',
+        });
+      }
+    }
+
+    const epapDelta = Math.abs(sm.epapDetected - n.settings.epap);
+    if (epapDelta > 1.0) {
+      insights.push({
+        id: 'settings-pressure-mismatch',
+        type: 'warning',
+        title: 'Delivered pressure differs from prescribed',
+        body: `Detected EPAP of ${fmt(sm.epapDetected)} cmH₂O differs from your prescribed ${n.settings.epap} cmH₂O by more than 1 cmH₂O. Check for mask leak or machine issues.`,
+        category: 'settings',
+      });
+    }
+
+    if (sm.tidalVolumeCv > 30) {
+      insights.push({
+        id: 'settings-vt-unstable',
+        type: 'info',
+        title: 'Unstable ventilation',
+        body: `Tidal volume varies significantly breath-to-breath (CV ${fmt(sm.tidalVolumeCv, 0)}%). This may indicate intermittent airway instability affecting how effectively your machine delivers support.`,
+        category: 'settings',
+      });
+    }
+
+    // Positive insight: only if no warnings/actionable settings insights fired
+    if (settingsWarningIds.length === 0 &&
+        sm.prematureCyclePct < 2 &&
+        sm.lateCyclePct < 2 &&
+        sm.ipapDwellMedianPct > 45) {
+      insights.push({
+        id: 'settings-good',
+        type: 'positive',
+        title: 'Settings delivering as expected',
+        body: 'Your Trigger, Cycle, and pressure delivery metrics are all within expected ranges — your machine appears well-matched to your breathing pattern.',
+        category: 'settings',
       });
     }
   }
