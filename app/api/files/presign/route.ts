@@ -71,27 +71,39 @@ export async function POST(request: NextRequest) {
     // Dedup: check if file with same hash already exists
     const { data: existing } = await serviceRole
       .from('user_files')
-      .select('id, storage_path')
+      .select('id, storage_path, upload_confirmed, uploaded_at')
       .eq('user_id', user.id)
       .eq('file_hash', fileHash)
       .eq('file_path', filePath)
       .maybeSingle();
 
     if (existing) {
-      // Verify the file actually exists in storage (guards against orphaned rows
-      // from interrupted uploads where presign succeeded but PUT didn't)
-      const { data: storageFile } = await serviceRole.storage
-        .from(STORAGE_BUCKET)
-        .list(existing.storage_path.split('/').slice(0, -1).join('/'), {
-          search: existing.storage_path.split('/').pop(),
-        });
+      // Unconfirmed rows older than 1 hour are definitively orphaned —
+      // delete without checking storage (the PUT never completed)
+      const ageMs = Date.now() - new Date(existing.uploaded_at).getTime();
+      const isStaleOrphan = !existing.upload_confirmed && ageMs > 60 * 60 * 1000;
 
-      if (storageFile && storageFile.length > 0) {
-        return NextResponse.json({ skipped: true, fileId: existing.id });
+      if (isStaleOrphan) {
+        await serviceRole.from('user_files').delete().eq('id', existing.id);
+      } else if (existing.upload_confirmed) {
+        // Confirmed row — verify file actually exists in storage
+        const { data: storageFile } = await serviceRole.storage
+          .from(STORAGE_BUCKET)
+          .list(existing.storage_path.split('/').slice(0, -1).join('/'), {
+            search: existing.storage_path.split('/').pop(),
+          });
+
+        if (storageFile && storageFile.length > 0) {
+          return NextResponse.json({ skipped: true, fileId: existing.id });
+        }
+
+        // Storage file missing despite confirmed — delete orphaned row
+        await serviceRole.from('user_files').delete().eq('id', existing.id);
+      } else {
+        // Unconfirmed but recent (< 1 hour) — another upload may be in progress.
+        // Delete and re-create to avoid blocking this upload attempt.
+        await serviceRole.from('user_files').delete().eq('id', existing.id);
       }
-
-      // Orphaned row — delete it and proceed with fresh presign
-      await serviceRole.from('user_files').delete().eq('id', existing.id);
     }
 
     // Build storage path: {user_id}/{nightDate or __shared__}/{fileName}
@@ -103,6 +115,7 @@ export async function POST(request: NextRequest) {
     const isSupported = SUPPORTED_EXTENSIONS.has(ext);
 
     // Insert metadata row (pre-upload to reserve the slot)
+    // upload_confirmed = false until the confirm endpoint verifies the file in storage
     const { data: fileRow, error: insertError } = await serviceRole
       .from('user_files')
       .insert({
@@ -115,6 +128,7 @@ export async function POST(request: NextRequest) {
         file_hash: fileHash,
         mime_type: mimeType ?? null,
         is_supported: isSupported,
+        upload_confirmed: false,
       })
       .select('id')
       .single();

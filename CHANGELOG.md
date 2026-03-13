@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Hero card treatment context framing** — Night summary hero now uses dual framing: acknowledges good event control (RERA/hypopnea) before presenting flow limitation metrics, so users with effective CPAP treatment don't misinterpret red FL metrics as treatment failure. Users with good event control never see a red hero card. (hero-treatment-context-framing)
 
+### Fixed
+
+- **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
+
 ### Added
 
 - **BiPAP Settings Validation Engine** — new analysis engine (`settings-engine.ts`) that uses the 25Hz BRP pressure channel alongside flow to compute per-breath trigger delay, cycle timing, IPAP dwell, tidal volume, and ventilation stability metrics for BiPAP users. Worker pipeline now concatenates pressure data across multi-session nights. Phase 1 of 3 (engine + plumbing, no UI yet). (bipap-settings-validation-metrics)
