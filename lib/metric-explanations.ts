@@ -51,6 +51,28 @@ export const METRIC_METHODOLOGIES = {
     'Glasgow, FL Score, and NED use different methods to detect different aspects of flow limitation. Glasgow scores 9 breath-shape characteristics holistically. FL Score measures population-level flatness across all breaths. NED measures per-breath peak-to-mid flow drops specifically. A high FL Score with low Glasgow can happen when breaths are moderately flat but don\u2019t show the specific shape distortions Glasgow targets (skew, spikes, multi-peaks). Low NED with high Glasgow occurs when breath shapes are abnormal in ways that don\u2019t affect the peak-to-mid flow ratio. Using all three together gives a more complete picture than any single metric.',
 } as const;
 
+/* ------------------------------------------------------------------ */
+/*  Settings Validation methodology descriptions                      */
+/*  Used in the Settings dashboard tab MetricCard popovers            */
+/* ------------------------------------------------------------------ */
+
+export const SETTINGS_METHODOLOGIES = {
+  triggerMetrics:
+    'Computed by comparing the 25Hz BRP flow and pressure channels. Inspiration start is detected by a positive-going zero crossing in smoothed flow. Trigger delay is measured from flow onset to the first pressure sample exceeding EPAP + 15% of PS. Auto-triggers are counted when pressure is already above this threshold at flow onset.',
+
+  cycleMetrics:
+    'Ti and Te are measured from zero-crossings in smoothed flow. Time-at-IPAP counts pressure samples exceeding EPAP + 90% of PS during inspiration. Premature cycling is detected when pressure drops below EPAP + 50% of PS while flow still exceeds 25% of peak. Late cycling is flagged when the first 100ms of expiratory pressure exceeds the 50% PS threshold.',
+
+  ventilationMetrics:
+    'Tidal volume is the integral of inspiratory flow (sum of samples / 60 / sampling rate). CV is standard deviation / mean of all tidal volumes. Minute ventilation is total volume / recording hours. Note: absolute mL values depend on your device\u2019s flow calibration \u2014 night-over-night comparisons and CV are always valid.',
+
+  pressureDetection:
+    'EPAP and IPAP are detected from the full BRP pressure channel using P10 and P90 percentiles. This correctly handles the bimodal pressure distribution (EPAP during expiration, IPAP during inspiration) that would bias mean/median estimates toward EPAP.',
+
+  endExpPressure:
+    'Measured from the 200ms of pressure data immediately before each inspiration start. The mean should match your prescribed EPAP; the standard deviation indicates how consistently the machine returns to baseline between breaths.',
+} as const;
+
 export function getGlasgowExplanation(value: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {
