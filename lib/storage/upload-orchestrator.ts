@@ -7,6 +7,7 @@
 import { extractNightDate } from '@/lib/file-manifest';
 import type { UploadState, UploadResult } from './types';
 import type { WorkerMessage } from './hash-worker';
+import { HashCache } from './hash-cache';
 
 type UploadListener = (state: UploadState) => void;
 
@@ -20,7 +21,7 @@ function getFilePath(file: File): string {
 class UploadOrchestrator {
   private state: UploadState = {
     status: 'idle',
-    progress: { current: 0, total: 0, bytesUploaded: 0, bytesTotal: 0, stage: 'hashing' },
+    progress: { current: 0, total: 0, bytesUploaded: 0, bytesTotal: 0, stage: 'hashing', skippedExisting: 0 },
     result: null,
     error: null,
   };
@@ -81,7 +82,7 @@ class UploadOrchestrator {
     const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
     this.setState({
       status: 'hashing',
-      progress: { current: 0, total: files.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing' },
+      progress: { current: 0, total: files.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
       result: null,
       error: null,
     });
@@ -112,6 +113,7 @@ class UploadOrchestrator {
           bytesUploaded: 0,
           bytesTotal: toUpload.reduce((sum, f) => sum + f.size, 0),
           stage: 'uploading',
+          skippedExisting: skipped,
         },
       });
 
@@ -138,22 +140,49 @@ class UploadOrchestrator {
   }
 
   private async hashFiles(files: File[], signal: AbortSignal): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      const hashes: string[] = new Array(files.length).fill('');
+    const hashCache = new HashCache();
+    const hashes: string[] = new Array(files.length).fill('');
 
-      // Read files into ArrayBuffers in batches
+    // Check cache first — files with matching fingerprint skip the worker
+    const uncachedFiles: Array<{ index: number; file: File }> = [];
+    let cacheHits = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const filePath = getFilePath(file);
+      const cached = hashCache.get(filePath, file.size, file.lastModified);
+      if (cached) {
+        hashes[i] = cached;
+        cacheHits++;
+      } else {
+        uncachedFiles.push({ index: i, file });
+      }
+    }
+
+    // Update progress with cache hits
+    this.setState({
+      progress: { ...this.state.progress, current: cacheHits, total: files.length },
+    });
+
+    // If all files hit cache, we're done
+    if (uncachedFiles.length === 0) {
+      return hashes;
+    }
+
+    // Hash uncached files via Web Worker
+    await new Promise<void>((resolve, reject) => {
       const readAndHash = async () => {
         const BATCH_SIZE = 10;
         const allBuffers: Array<{ index: number; buffer: ArrayBuffer }> = [];
 
-        for (let i = 0; i < files.length; i += BATCH_SIZE) {
+        for (let i = 0; i < uncachedFiles.length; i += BATCH_SIZE) {
           if (signal.aborted) { reject(new Error('Cancelled')); return; }
 
-          const batch = files.slice(i, i + BATCH_SIZE);
+          const batch = uncachedFiles.slice(i, i + BATCH_SIZE);
           const buffers = await Promise.all(
-            batch.map(async (file, j) => ({
-              index: i + j,
-              buffer: await file.arrayBuffer(),
+            batch.map(async (item) => ({
+              index: item.index,
+              buffer: await item.file.arrayBuffer(),
             }))
           );
           allBuffers.push(...buffers);
@@ -164,26 +193,46 @@ class UploadOrchestrator {
           new URL('./hash-worker.ts', import.meta.url)
         );
 
+        // Remap worker indices to original file indices
+        const workerIndexToOriginal = new Map<number, number>();
+        allBuffers.forEach((buf, workerIdx) => {
+          workerIndexToOriginal.set(workerIdx, buf.index);
+        });
+
+        // Reindex buffers for the worker (sequential 0..N)
+        const workerBuffers = allBuffers.map((buf, workerIdx) => ({
+          index: workerIdx,
+          buffer: buf.buffer,
+        }));
+
         let completed = 0;
 
         this.hashWorker.onmessage = (e: MessageEvent<WorkerMessage>) => {
           const msg = e.data;
           if (msg.type === 'HASH_RESULT') {
-            hashes[msg.index] = msg.hash;
+            const originalIndex = workerIndexToOriginal.get(msg.index) ?? msg.index;
+            hashes[originalIndex] = msg.hash;
+
+            // Cache the newly computed hash
+            const file = files[originalIndex];
+            const filePath = getFilePath(file);
+            hashCache.set(filePath, file.size, file.lastModified, msg.hash);
           } else if (msg.type === 'HASH_PROGRESS') {
             completed = msg.completed;
             this.setState({
-              progress: { ...this.state.progress, current: completed, total: files.length },
+              progress: { ...this.state.progress, current: cacheHits + completed, total: files.length },
             });
-            if (completed === files.length) {
+            if (completed === uncachedFiles.length) {
               this.hashWorker?.terminate();
               this.hashWorker = null;
-              resolve(hashes);
+              hashCache.flush();
+              resolve();
             }
           } else if (msg.type === 'HASH_ERROR') {
             this.hashWorker?.terminate();
             this.hashWorker = null;
-            reject(new Error(`Hash failed for file ${msg.index}: ${msg.error}`));
+            const originalIndex = workerIndexToOriginal.get(msg.index) ?? msg.index;
+            reject(new Error(`Hash failed for file ${originalIndex}: ${msg.error}`));
           }
         };
 
@@ -194,13 +243,15 @@ class UploadOrchestrator {
         };
 
         this.hashWorker.postMessage(
-          { type: 'HASH_FILES', files: allBuffers },
-          allBuffers.map(b => b.buffer)
+          { type: 'HASH_FILES', files: workerBuffers },
+          workerBuffers.map(b => b.buffer)
         );
       };
 
       readAndHash().catch(reject);
     });
+
+    return hashes;
   }
 
   private async checkExisting(
@@ -378,7 +429,7 @@ class UploadOrchestrator {
     this.abort();
     this.setState({
       status: 'idle',
-      progress: { current: 0, total: 0, bytesUploaded: 0, bytesTotal: 0, stage: 'hashing' },
+      progress: { current: 0, total: 0, bytesUploaded: 0, bytesTotal: 0, stage: 'hashing', skippedExisting: 0 },
       result: null,
       error: null,
     });
