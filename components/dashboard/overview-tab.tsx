@@ -19,6 +19,7 @@ import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
 import { SymptomRating } from '@/components/dashboard/symptom-rating';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
+import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
@@ -333,6 +334,14 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         night={n}
         symptomRating={symptomRating}
         isContributeConsented={isContributeConsented}
+      />
+
+      {/* Clinician Questions — appointment prep */}
+      <ClinicianQuestionsPanel
+        nights={nights}
+        selectedNight={n}
+        previousNight={p}
+        therapyChangeDate={therapyChangeDate}
       />
 
       {/* Glasgow Component Breakdown (Collapsible) */}
