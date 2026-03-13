@@ -126,6 +126,38 @@ describe('getTrafficDotColor', () => {
   });
 });
 
+describe('settings thresholds', () => {
+  it('has all 10 settings threshold keys', () => {
+    const settingsKeys = [
+      'settingsTriggerDelay', 'settingsAutoTrigger', 'settingsTi',
+      'settingsIeRatio', 'settingsTimeAtIpap', 'settingsIpapDwell',
+      'settingsPrematureCycle', 'settingsLateCycle', 'settingsVtCv',
+      'settingsEpapDelta',
+    ];
+    for (const key of settingsKeys) {
+      expect(THRESHOLDS).toHaveProperty(key);
+    }
+  });
+
+  it('settingsTriggerDelay: 200ms=good, 400ms=warn, 600ms=bad', () => {
+    expect(getTrafficLight(200, THRESHOLDS.settingsTriggerDelay)).toBe('good');
+    expect(getTrafficLight(400, THRESHOLDS.settingsTriggerDelay)).toBe('warn');
+    expect(getTrafficLight(600, THRESHOLDS.settingsTriggerDelay)).toBe('bad');
+  });
+
+  it('settingsTi: 1500ms=good, 1100ms=warn, 800ms=bad (higher-is-better)', () => {
+    expect(getTrafficLight(1500, THRESHOLDS.settingsTi)).toBe('good');
+    expect(getTrafficLight(1100, THRESHOLDS.settingsTi)).toBe('warn');
+    expect(getTrafficLight(800, THRESHOLDS.settingsTi)).toBe('bad');
+  });
+
+  it('settingsIpapDwell: 50%=good, 40%=warn, 30%=bad (higher-is-better)', () => {
+    expect(getTrafficLight(50, THRESHOLDS.settingsIpapDwell)).toBe('good');
+    expect(getTrafficLight(40, THRESHOLDS.settingsIpapDwell)).toBe('warn');
+    expect(getTrafficLight(30, THRESHOLDS.settingsIpapDwell)).toBe('bad');
+  });
+});
+
 describe('THRESHOLDS object', () => {
   it('has all expected threshold keys', () => {
     const expected = [

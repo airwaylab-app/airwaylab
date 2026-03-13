@@ -7,6 +7,7 @@ import { MetricDetailModal } from '@/components/dashboard/metric-detail-modal';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { SETTINGS_METHODOLOGIES } from '@/lib/metric-explanations';
+import { useThresholds } from '@/components/common/thresholds-provider';
 
 interface Props {
   selectedNight: NightResult;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props) {
+  const THRESHOLDS = useThresholds();
   const sm = selectedNight.settingsMetrics;
   const psm = previousNight?.settingsMetrics;
 
@@ -97,6 +99,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="int"
             unit="ms"
             previousValue={psm?.triggerDelayMedianMs}
+            threshold={THRESHOLDS.settingsTriggerDelay}
             tooltip="Time between your breath starting and the machine responding with pressure support. Lower is better — high delays mean the machine is slow to recognise your inspiration."
             methodology={SETTINGS_METHODOLOGIES.triggerMetrics}
             onClick={clickable ? () => openMetric('Trigger Delay', (x) => x.settingsMetrics?.triggerDelayMedianMs, { unit: 'ms' }) : undefined}
@@ -107,6 +110,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="pct"
             unit="%"
             previousValue={psm?.autoTriggerPct}
+            threshold={THRESHOLDS.settingsAutoTrigger}
             tooltip="Percentage of breaths where the machine started delivering pressure before you actually started breathing. High values suggest trigger sensitivity is too high."
             methodology={SETTINGS_METHODOLOGIES.triggerMetrics}
             onClick={clickable ? () => openMetric('Auto-trigger', (x) => x.settingsMetrics?.autoTriggerPct, { unit: '%' }) : undefined}
@@ -129,6 +133,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="int"
             unit="ms"
             previousValue={psm?.tiMedianMs}
+            threshold={THRESHOLDS.settingsTi}
             tooltip="How long each inspiration lasts. Very short Ti may mean the machine is cycling off too early. Very long Ti may mean it's not cycling off soon enough."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('Inspiratory Time (Ti)', (x) => x.settingsMetrics?.tiMedianMs, { unit: 'ms' }) : undefined}
@@ -147,6 +152,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             label="I:E Ratio"
             value={sm.ieRatio}
             previousValue={psm?.ieRatio}
+            threshold={THRESHOLDS.settingsIeRatio}
             tooltip="Ratio of expiratory to inspiratory time. Normal range is 1.2–1.5. Below 1.0 (inspiration longer than expiration) suggests respiratory distress compensation."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('I:E Ratio', (x) => x.settingsMetrics?.ieRatio) : undefined}
@@ -157,6 +163,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="int"
             unit="ms"
             previousValue={psm?.timeAtIpapMedianMs}
+            threshold={THRESHOLDS.settingsTimeAtIpap}
             tooltip="How long per breath the pressure is at full IPAP level. Short dwell means the machine reaches peak pressure but cycles off before you get the full benefit."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('Time at IPAP', (x) => x.settingsMetrics?.timeAtIpapMedianMs, { unit: 'ms' }) : undefined}
@@ -167,6 +174,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="pct"
             unit="%"
             previousValue={psm?.ipapDwellMedianPct}
+            threshold={THRESHOLDS.settingsIpapDwell}
             tooltip="Fraction of each inspiration spent at full pressure support. Below 35% suggests the machine is cycling off too early or rise time is too slow."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('IPAP Dwell', (x) => x.settingsMetrics?.ipapDwellMedianPct, { unit: '%' }) : undefined}
@@ -177,6 +185,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="pct"
             unit="%"
             previousValue={psm?.prematureCyclePct}
+            threshold={THRESHOLDS.settingsPrematureCycle}
             tooltip="Breaths where the machine dropped pressure while you were still actively inhaling. High values mean cycle sensitivity should be decreased."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('Premature Cycle', (x) => x.settingsMetrics?.prematureCyclePct, { unit: '%' }) : undefined}
@@ -187,6 +196,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="pct"
             unit="%"
             previousValue={psm?.lateCyclePct}
+            threshold={THRESHOLDS.settingsLateCycle}
             tooltip="Breaths where you'd already started exhaling but the machine was still delivering pressure. High values mean cycle sensitivity should be increased."
             methodology={SETTINGS_METHODOLOGIES.cycleMetrics}
             onClick={clickable ? () => openMetric('Late Cycle', (x) => x.settingsMetrics?.lateCyclePct, { unit: '%' }) : undefined}
@@ -221,6 +231,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             format="pct"
             unit="%"
             previousValue={psm?.tidalVolumeCv}
+            threshold={THRESHOLDS.settingsVtCv}
             tooltip="Breath-to-breath consistency of tidal volume. Higher CV means more variable ventilation, which can indicate airway instability."
             methodology={SETTINGS_METHODOLOGIES.ventilationMetrics}
             onClick={clickable ? () => openMetric('Vt Variability (CV)', (x) => x.settingsMetrics?.tidalVolumeCv, { unit: '%' }) : undefined}

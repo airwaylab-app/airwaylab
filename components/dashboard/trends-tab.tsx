@@ -2,6 +2,7 @@
 
 import { SettingsTimeline } from '@/components/dashboard/settings-timeline';
 import { MetricsTable } from '@/components/dashboard/metrics-table';
+import { SettingsMetricsTable } from '@/components/dashboard/settings-metrics-table';
 import { ProTease } from '@/components/common/pro-tease';
 import type { NightResult } from '@/lib/types';
 
@@ -24,6 +25,7 @@ export function TrendsTab({ nights, therapyChangeDate }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <MetricsTable nights={nights} />
+      <SettingsMetricsTable nights={nights} />
       <SettingsTimeline nights={nights} therapyChangeDate={therapyChangeDate} />
       <ProTease
         feature="Weekly email digest with trend alerts and therapy change recommendations."
