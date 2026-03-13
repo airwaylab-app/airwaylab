@@ -111,6 +111,17 @@ function AnalyzePageInner() {
   useEffect(() => { userRef.current = user; }, [user]);
   const hasTriggeredAutoUpload = useRef(false);
 
+  // Warn before closing/refreshing while analysis is in progress
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (state.status === 'uploading' || state.status === 'processing') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [state.status]);
+
   // Track session count for new-user UX (beginner vs returning user)
   useEffect(() => {
     try {

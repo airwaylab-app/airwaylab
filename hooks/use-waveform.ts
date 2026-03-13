@@ -25,7 +25,9 @@ export function useWaveform(
     return waveformOrchestrator.subscribe(setState);
   }, []);
 
-  // Extract waveform when night changes
+  // Extract waveform when night or available files change.
+  // sdFiles.length is included so that when files become available
+  // (e.g. re-upload from a persisted session), extraction triggers.
   useEffect(() => {
     let cancelled = false;
     const dateStr = selectedNight.dateStr;
@@ -91,8 +93,7 @@ export function useWaveform(
     }
 
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNight.dateStr, isDemo, user]);
+  }, [selectedNight.dateStr, isDemo, user, sdFiles.length]);
 
   const retry = useCallback(() => {
     if (sdFiles.length > 0) {
