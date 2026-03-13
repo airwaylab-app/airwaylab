@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AI insights error handling** — replaced generic "AI service error (502)" catch-all with specific error messages for each Anthropic SDK error type (auth, connection, timeout, bad request, model not found, server error), with distinct Sentry tags for filtering (ai-insights-error-handling)
 - **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
 - **PDF report empty-array guard** — `openPDFReport([])` now returns silently instead of crashing on `nights[0]` access (codebase-audit-hardening)
 - **API schema leak** — Removed Zod validation error details from `/api/store-analysis-data` 400 response; details now logged server-side only (codebase-audit-hardening)
