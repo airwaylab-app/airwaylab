@@ -256,6 +256,27 @@ export function getCachedNights(dateStrs: string[]): NightResult[] {
 }
 
 /**
+ * Incrementally persist nights by merging into existing cached data.
+ * New nights replace existing ones by dateStr; unknown dates are appended.
+ * Uses the same 4MB cap handling as persistResults().
+ */
+export function persistNightsIncremental(nights: NightResult[]): PersistResult {
+  const existing = loadPersistedResults();
+  const existingNights = existing?.nights ?? [];
+  const therapyChangeDate = existing?.therapyChangeDate ?? null;
+
+  // Build map: existing first, incoming overwrites by dateStr
+  const map = new Map<string, NightResult>();
+  for (const n of existingNights) map.set(n.dateStr, n);
+  for (const n of nights) map.set(n.dateStr, n);
+
+  const merged = Array.from(map.values());
+  merged.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+
+  return persistResults(merged, therapyChangeDate);
+}
+
+/**
  * Clear persisted results.
  */
 export function clearPersistedResults(): void {

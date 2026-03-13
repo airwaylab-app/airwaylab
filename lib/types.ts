@@ -327,9 +327,16 @@ export interface WorkerOximetryResult {
   oximetryTraceByDate: Record<string, OximetryTraceData>;
 }
 
+export interface WorkerNightResult {
+  type: 'NIGHT_RESULT';
+  night: NightResult;
+  nightIndex: number;
+  totalNights: number;
+}
+
 export interface WorkerError {
   type: 'ERROR';
   error: string;
 }
 
-export type WorkerResponse = WorkerProgress | WorkerResult | WorkerOximetryResult | WorkerError;
+export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError;
