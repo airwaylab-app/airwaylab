@@ -36,6 +36,7 @@ function makeMinimalNight(dateStr: string) {
     },
     oximetry: null,
     oximetryTrace: null,
+    settingsMetrics: null,
     settings: { deviceModel: 'AirSense 10', papMode: 'APAP', epap: 6, ipap: 12 },
   };
 }
@@ -216,7 +217,7 @@ describe('Shared Waveform EDF Storage', () => {
     it('single scope sends single night object (not array)', () => {
       const scope = 'single' as 'single' | 'all';
       const nights = [makeMinimalNight('2025-03-01'), makeMinimalNight('2025-03-02')];
-      const stripped = nights.map((n) => ({ ...n, ned: { ...n.ned, breaths: [] }, oximetryTrace: null }));
+      const stripped = nights.map((n) => ({ ...n, ned: { ...n.ned, breaths: [] }, oximetryTrace: null, settingsMetrics: null }));
       const analysisData = scope === 'single' ? stripped[0] : stripped;
       expect(Array.isArray(analysisData)).toBe(false);
     });
@@ -224,7 +225,7 @@ describe('Shared Waveform EDF Storage', () => {
     it('all scope sends array of nights', () => {
       const scope = 'all' as 'single' | 'all';
       const nights = [makeMinimalNight('2025-03-01'), makeMinimalNight('2025-03-02')];
-      const stripped = nights.map((n) => ({ ...n, ned: { ...n.ned, breaths: [] }, oximetryTrace: null }));
+      const stripped = nights.map((n) => ({ ...n, ned: { ...n.ned, breaths: [] }, oximetryTrace: null, settingsMetrics: null }));
       const analysisData = scope === 'single' ? stripped[0] : stripped;
       expect(Array.isArray(analysisData)).toBe(true);
     });

@@ -349,11 +349,15 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
         <span>
           Flow range: <strong className="text-foreground">{waveform.stats.flowMin.toFixed(0)} – {waveform.stats.flowMax.toFixed(0)} L/min</strong>
         </span>
-        {waveform.stats.pressureMin !== null && waveform.stats.pressureMax !== null && (
+        {waveform.stats.pressureP10 != null && waveform.stats.pressureP90 != null ? (
+          <span>
+            Delivered: <strong className="text-foreground">{waveform.stats.pressureP10.toFixed(1)} / {waveform.stats.pressureP90.toFixed(1)} cmH₂O (PS {(waveform.stats.pressureP90 - waveform.stats.pressureP10).toFixed(1)})</strong>
+          </span>
+        ) : waveform.stats.pressureMin !== null && waveform.stats.pressureMax !== null ? (
           <span>
             Pressure: <strong className="text-foreground">{waveform.stats.pressureMin.toFixed(1)} – {waveform.stats.pressureMax.toFixed(1)} cmH₂O</strong>
           </span>
-        )}
+        ) : null}
         <span>
           Events: <strong className="text-foreground">{waveform.events.length}</strong>
         </span>

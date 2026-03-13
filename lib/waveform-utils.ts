@@ -189,7 +189,7 @@ export function computeFlowStats(
   leak: LeakPoint[] = []
 ): WaveformStats {
   if (flow.length === 0) {
-    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, leakMean: null, leakMax: null, leakP95: null };
+    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, pressureP10: null, pressureP90: null, pressureMean: null, leakMean: null, leakMax: null, leakP95: null };
   }
 
   let fMin = Infinity;
@@ -212,13 +212,23 @@ export function computeFlowStats(
 
   let pMin: number | null = null;
   let pMax: number | null = null;
+  let pP10: number | null = null;
+  let pP90: number | null = null;
+  let pMean: number | null = null;
   if (pressure.length > 0) {
     pMin = Infinity;
     pMax = -Infinity;
-    for (const p of pressure) {
-      if (p.avg < pMin) pMin = p.avg;
-      if (p.avg > pMax) pMax = p.avg;
+    let pSum = 0;
+    const pValues = pressure.map((p) => p.avg);
+    for (const v of pValues) {
+      if (v < pMin) pMin = v;
+      if (v > pMax) pMax = v;
+      pSum += v;
     }
+    pMean = +(pSum / pValues.length).toFixed(1);
+    const sorted = pValues.sort((a, b) => a - b);
+    pP10 = +sorted[Math.floor(sorted.length * 0.1)].toFixed(1);
+    pP90 = +sorted[Math.floor(Math.min(sorted.length * 0.9, sorted.length - 1))].toFixed(1);
   }
 
   let leakMean: number | null = null;
@@ -244,6 +254,9 @@ export function computeFlowStats(
     flowMean: +(fSum / flow.length).toFixed(2),
     pressureMin: pMin !== null ? +pMin.toFixed(1) : null,
     pressureMax: pMax !== null ? +pMax.toFixed(1) : null,
+    pressureP10: pP10,
+    pressureP90: pP90,
+    pressureMean: pMean,
     leakMean,
     leakMax,
     leakP95,
@@ -261,7 +274,7 @@ export function computeFlowStatsFromRaw(
   leak: LeakPoint[] = []
 ): WaveformStats {
   if (flow.length === 0) {
-    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, leakMean: null, leakMax: null, leakP95: null };
+    return { breathCount: 0, flowMin: 0, flowMax: 0, flowMean: 0, pressureMin: null, pressureMax: null, pressureP10: null, pressureP90: null, pressureMean: null, leakMean: null, leakMax: null, leakP95: null };
   }
 
   let fMin = Infinity;
@@ -291,13 +304,46 @@ export function computeFlowStatsFromRaw(
 
   let pMin: number | null = null;
   let pMax: number | null = null;
+  let pP10: number | null = null;
+  let pP90: number | null = null;
+  let pMean: number | null = null;
   if (pressure && pressure.length > 0) {
     pMin = Infinity;
     pMax = -Infinity;
+    let pSum = 0;
     for (let i = 0; i < pressure.length; i++) {
-      if (pressure[i] < pMin) pMin = pressure[i];
-      if (pressure[i] > pMax) pMax = pressure[i];
+      const v = pressure[i];
+      if (v < pMin) pMin = v;
+      if (v > pMax) pMax = v;
+      pSum += v;
     }
+    pMean = +(pSum / pressure.length).toFixed(1);
+
+    // Reservoir sampling for P10/P90: cap at 50k samples to avoid sorting millions
+    const RESERVOIR_SIZE = 50_000;
+    let sample: number[];
+    if (pressure.length <= RESERVOIR_SIZE) {
+      sample = Array.from(pressure);
+    } else {
+      // Deterministic reservoir sampling (Algorithm R)
+      sample = new Array(RESERVOIR_SIZE);
+      for (let i = 0; i < RESERVOIR_SIZE; i++) {
+        sample[i] = pressure[i];
+      }
+      // Use a simple deterministic PRNG seeded from array length for reproducibility
+      let seed = pressure.length;
+      for (let i = RESERVOIR_SIZE; i < pressure.length; i++) {
+        // Linear congruential generator
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        const j = seed % (i + 1);
+        if (j < RESERVOIR_SIZE) {
+          sample[j] = pressure[i];
+        }
+      }
+    }
+    sample.sort((a, b) => a - b);
+    pP10 = +sample[Math.floor(sample.length * 0.1)].toFixed(1);
+    pP90 = +sample[Math.floor(Math.min(sample.length * 0.9, sample.length - 1))].toFixed(1);
   }
 
   let leakMean: number | null = null;
@@ -323,6 +369,9 @@ export function computeFlowStatsFromRaw(
     flowMean: +(fSum / flow.length).toFixed(2),
     pressureMin: pMin !== null ? +pMin.toFixed(1) : null,
     pressureMax: pMax !== null ? +pMax.toFixed(1) : null,
+    pressureP10: pP10,
+    pressureP90: pP90,
+    pressureMean: pMean,
     leakMean,
     leakMax,
     leakP95,

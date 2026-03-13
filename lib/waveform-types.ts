@@ -80,6 +80,12 @@ export interface WaveformStats {
   flowMean: number;
   pressureMin: number | null;
   pressureMax: number | null;
+  /** 10th percentile of pressure — approximates delivered EPAP */
+  pressureP10: number | null;
+  /** 90th percentile of pressure — approximates delivered IPAP */
+  pressureP90: number | null;
+  /** Mean pressure across the session */
+  pressureMean: number | null;
   leakMean: number | null;
   leakMax: number | null;
   leakP95: number | null;

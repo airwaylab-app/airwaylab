@@ -13,6 +13,7 @@ import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
 import { computeOximetry } from '../lib/analyzers/oximetry-engine';
+import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
 import type {
   WorkerMessage,
   WorkerProgress,
@@ -266,17 +267,29 @@ async function processFiles(
     // Glasgow Index (duration-weighted across sessions)
     const glasgow = computeNightGlasgow(group.sessions);
 
-    // WAT + NED: concatenate flow data from all sessions
+    // WAT + NED + Settings: concatenate flow and pressure data from all sessions
     const totalFlowSamples = group.sessions.reduce(
       (sum, s) => sum + s.flowData.length,
       0
     );
+    const totalPressSamples = group.sessions.reduce(
+      (sum, s) => sum + (s.pressureData?.length ?? 0),
+      0
+    );
     const combinedFlow = new Float32Array(totalFlowSamples);
-    let offset = 0;
+    const combinedPressure = totalPressSamples > 0
+      ? new Float32Array(totalPressSamples)
+      : null;
+    let flowOffset = 0;
+    let pressOffset = 0;
     let avgSamplingRate = 0;
     for (const session of group.sessions) {
-      combinedFlow.set(session.flowData, offset);
-      offset += session.flowData.length;
+      combinedFlow.set(session.flowData, flowOffset);
+      flowOffset += session.flowData.length;
+      if (combinedPressure && session.pressureData) {
+        combinedPressure.set(session.pressureData, pressOffset);
+        pressOffset += session.pressureData.length;
+      }
       avgSamplingRate += session.samplingRate;
     }
     avgSamplingRate /= group.sessions.length;
@@ -289,6 +302,11 @@ async function processFiles(
 
     // Recording date from first session
     const recordingDate = group.sessions[0].recordingDate;
+
+    // Settings validation (BiPAP only — requires pressure data)
+    const settingsMetricsResult = combinedPressure
+      ? computeSettingsMetrics(combinedFlow, combinedPressure, avgSamplingRate)
+      : null;
 
     // Oximetry: match by night date
     const oxData = oximetryByDate.get(group.nightDate);
@@ -305,6 +323,7 @@ async function processFiles(
       ned,
       oximetry,
       oximetryTrace: null,
+      settingsMetrics: settingsMetricsResult,
     });
   }
 

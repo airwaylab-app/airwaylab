@@ -71,6 +71,7 @@ function makeNight(overrides: {
       totalSamples: 28000, retainedSamples: 27000, doubleTrackingCorrected: 0,
     } : null,
     oximetryTrace: null,
+    settingsMetrics: null,
   };
 }
 

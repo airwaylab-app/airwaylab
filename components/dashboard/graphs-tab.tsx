@@ -217,9 +217,11 @@ function WaveformCharts({
         <span>Duration: <strong className="text-foreground">{formatElapsedTimeShort(storedWaveform.durationSeconds)}</strong></span>
         <span>Breaths: <strong className="text-foreground">{(storedWaveform.stats.breathCount).toLocaleString()}</strong></span>
         <span>Flow range: <strong className="text-foreground">{(storedWaveform.stats.flowMin).toFixed(0)} – {(storedWaveform.stats.flowMax).toFixed(0)} L/min</strong></span>
-        {storedWaveform.stats.pressureMin != null && storedWaveform.stats.pressureMax != null && (
+        {storedWaveform.stats.pressureP10 != null && storedWaveform.stats.pressureP90 != null ? (
+          <span>Delivered: <strong className="text-foreground">{storedWaveform.stats.pressureP10.toFixed(1)} / {storedWaveform.stats.pressureP90.toFixed(1)} cmH₂O (PS {(storedWaveform.stats.pressureP90 - storedWaveform.stats.pressureP10).toFixed(1)})</strong></span>
+        ) : storedWaveform.stats.pressureMin != null && storedWaveform.stats.pressureMax != null ? (
           <span>Pressure: <strong className="text-foreground">{storedWaveform.stats.pressureMin.toFixed(1)} – {storedWaveform.stats.pressureMax.toFixed(1)} cmH₂O</strong></span>
-        )}
+        ) : null}
         <span>Events: <strong className="text-foreground">{storedWaveform.events.length}</strong></span>
         <span>Sample rate: <strong className="text-foreground">{storedWaveform.sampleRate.toFixed(0)} Hz</strong></span>
       </div>

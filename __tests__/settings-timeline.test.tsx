@@ -39,6 +39,7 @@ function makeNight(dateStr: string, settings?: Partial<MachineSettings>): NightR
     },
     oximetry: null,
     oximetryTrace: null,
+    settingsMetrics: null,
   };
 }
 

@@ -114,7 +114,7 @@ describe('Spec Tests 5-7: IndexedDB persistence', () => {
     events: [],
     stats: {
       breathCount: 10, flowMin: -10, flowMax: 10, flowMean: 0,
-      pressureMin: null, pressureMax: null,
+      pressureMin: null, pressureMax: null, pressureP10: null, pressureP90: null, pressureMean: null,
       leakMean: null, leakMax: null, leakP95: null,
     },
     tidalVolume: [],

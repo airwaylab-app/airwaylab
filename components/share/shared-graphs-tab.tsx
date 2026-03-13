@@ -227,11 +227,15 @@ export function SharedGraphsTab({ shareId, filePaths, dateStr }: Props) {
         <span>
           Flow range: <strong className="text-foreground">{waveform.stats.flowMin.toFixed(0)} &ndash; {waveform.stats.flowMax.toFixed(0)} L/min</strong>
         </span>
-        {waveform.stats.pressureMin !== null && waveform.stats.pressureMax !== null && (
+        {waveform.stats.pressureP10 != null && waveform.stats.pressureP90 != null ? (
+          <span>
+            Delivered: <strong className="text-foreground">{waveform.stats.pressureP10.toFixed(1)} / {waveform.stats.pressureP90.toFixed(1)} cmH&#8322;O (PS {(waveform.stats.pressureP90 - waveform.stats.pressureP10).toFixed(1)})</strong>
+          </span>
+        ) : waveform.stats.pressureMin !== null && waveform.stats.pressureMax !== null ? (
           <span>
             Pressure: <strong className="text-foreground">{waveform.stats.pressureMin.toFixed(1)} &ndash; {waveform.stats.pressureMax.toFixed(1)} cmH&#8322;O</strong>
           </span>
-        )}
+        ) : null}
         <span>
           Events: <strong className="text-foreground">{waveform.events.length}</strong>
         </span>

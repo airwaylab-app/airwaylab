@@ -27,6 +27,7 @@ import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
 import { ComparisonTab } from '@/components/dashboard/comparison-tab';
 import { GraphsTab } from '@/components/dashboard/graphs-tab';
+import { SettingsTab } from '@/components/dashboard/settings-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
@@ -56,6 +57,7 @@ import {
   X,
   BarChart,
   HardDrive,
+  Settings2,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -758,6 +760,13 @@ function AnalyzePageInner() {
                 <span className="sm:hidden text-[11px]">Flow</span>
                 <span className="hidden sm:inline">Flow Analysis</span>
               </TabsTrigger>
+              {currentNight?.settingsMetrics && (
+                <TabsTrigger value="settings" className="gap-1.5">
+                  <Settings2 className="h-3.5 w-3.5" />
+                  <span className="sm:hidden text-[11px]">Set</span>
+                  <span className="hidden sm:inline">Settings</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="oximetry" className="gap-1.5">
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="sm:hidden text-[11px]">O₂</span>
@@ -827,6 +836,18 @@ function AnalyzePageInner() {
                 />
               </ErrorBoundary>
             </TabsContent>
+
+            {currentNight?.settingsMetrics && (
+              <TabsContent value="settings" className="mt-6">
+                <ErrorBoundary context="Settings">
+                  <SettingsTab
+                    selectedNight={currentNight}
+                    previousNight={previousNight}
+                    nights={nights}
+                  />
+                </ErrorBoundary>
+              </TabsContent>
+            )}
 
             <TabsContent value="oximetry" className="mt-6">
               <ErrorBoundary context="Oximetry">

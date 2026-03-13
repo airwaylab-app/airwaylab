@@ -34,6 +34,7 @@ function makeNight(dateStr: string, glasgowOverall: number): NightResult {
     },
     oximetry: null,
     oximetryTrace: null,
+    settingsMetrics: null,
   };
 }
 
