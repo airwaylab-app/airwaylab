@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const CATEGORIES = [
   { value: 'general', label: 'General question' },
+  { value: 'research', label: 'Research collaboration' },
   { value: 'privacy', label: 'Privacy & data request' },
   { value: 'billing', label: 'Billing & subscriptions' },
   { value: 'accessibility', label: 'Accessibility' },

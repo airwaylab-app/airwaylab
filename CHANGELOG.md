@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Device diagnostic collection** — Automatically save unknown device STR.edf signal labels and identification text to Supabase when settings extraction fails, enabling future device support. (settings-extraction-fallback-ux)
 - **Tonic desaturation insight** — New insight rule detects when T<94% is elevated with low ODI3, indicating baseline respiratory depression (e.g., alcohol) rather than obstructive events. (research-validation-fixes)
 - **Graphs tab always shows data** — TrendChart now renders for single-night users (was 2+ only) with a dynamic title ("Night Metrics" / "Multi-Night Trends"). When no waveform data is available, the Glasgow Radar chart renders as a fallback from persisted metrics, replacing the old full-page "re-upload" placeholder with a compact info banner. (graphs-tab-always-show-data)
+- **For Researchers page** — New `/research` page targeting sleep medicine researchers and academics. Describes the anonymised PAP therapy dataset, collaboration opportunities, and privacy/ethics commitments. Includes JSON-LD Dataset schema for SEO and live community stats counter. (for-researchers-page)
 
 ### Fixed
 
