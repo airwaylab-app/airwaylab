@@ -5,6 +5,7 @@
 // from cache while only new/modified data hits the worker.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type {
   AnalysisState,
   NightResult,
@@ -259,6 +260,7 @@ export class AnalysisOrchestrator {
       }
       this.clearIncrementalState();
       const error = err instanceof Error ? err.message : String(err);
+      Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
       this.setState({ status: 'error', error });
       throw err;
     }
@@ -412,6 +414,7 @@ export class AnalysisOrchestrator {
       return merged;
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
+      Sentry.captureException(err, { extra: { context: 'analysis-reanalysis' } });
       this.setState({ status: 'error', error });
       throw err;
     }

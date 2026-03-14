@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { waveformOrchestrator, type WaveformState } from '@/lib/waveform-orchestrator';
 import { events } from '@/lib/analytics';
 
@@ -38,6 +39,7 @@ export function useSharedWaveform({
     if (filesCache.current.length > 0) {
       waveformOrchestrator.extract(filesCache.current, dateStr).catch((err) => {
         console.error('[use-shared-waveform] extraction failed:', err);
+        Sentry.captureException(err, { extra: { context: 'shared-waveform-extraction', dateStr } });
       });
       return;
     }
@@ -79,6 +81,7 @@ export function useSharedWaveform({
       await waveformOrchestrator.extract(files, dateStr);
     } catch (err) {
       console.error('[use-shared-waveform] download failed:', err);
+      Sentry.captureException(err, { extra: { context: 'shared-waveform-download', shareId } });
       setDownloading(false);
     }
   }, [shareId, filePaths.length, dateStr]);
@@ -94,6 +97,7 @@ export function useSharedWaveform({
       // Files already downloaded, just extract for new date
       waveformOrchestrator.extract(filesCache.current, dateStr).catch((err) => {
         console.error('[use-shared-waveform] extraction failed:', err);
+        Sentry.captureException(err, { extra: { context: 'shared-waveform-extraction', dateStr } });
       });
       return;
     }
