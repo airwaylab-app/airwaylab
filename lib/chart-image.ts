@@ -397,7 +397,7 @@ export async function renderCompositeImage(night: NightResult): Promise<Blob> {
   ctx.font = `bold 16px ${FONT_BODY}`;
   ctx.textAlign = 'center';
   ctx.fillText(
-    `Overall: ${night.glasgow.overall.toFixed(1)}  |  Dashed = normal range`,
+    `Overall: ${night.glasgow.overall.toFixed(2)}  |  Dashed = normal range`,
     radarCx,
     radarCy + radarR + 40
   );
@@ -411,7 +411,7 @@ export async function renderCompositeImage(night: NightResult): Promise<Blob> {
   const metrics: MetricDef[] = [
     {
       label: 'Glasgow Overall',
-      value: night.glasgow.overall.toFixed(1),
+      value: night.glasgow.overall.toFixed(2),
       thresholdKey: 'glasgowOverall',
       numericValue: night.glasgow.overall,
     },
@@ -532,7 +532,7 @@ export async function renderGlasgowRadarImage(
   ctx.fillStyle = color;
   ctx.font = `bold 48px ${FONT_MONO}`;
   ctx.textAlign = 'center';
-  ctx.fillText(glasgow.overall.toFixed(1), W / 2, radarCy + radarR + 55);
+  ctx.fillText(glasgow.overall.toFixed(2), W / 2, radarCy + radarR + 55);
 
   ctx.fillStyle = COLORS.muted;
   ctx.font = `14px ${FONT_BODY}`;

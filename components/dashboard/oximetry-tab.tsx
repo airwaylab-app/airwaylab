@@ -9,6 +9,7 @@ import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { MetricExplanation } from '@/components/common/metric-explanation';
 import { SpO2Trace } from '@/components/charts/spo2-trace';
+import { SyncedViewportProvider } from '@/hooks/use-synced-viewport';
 import { getODIExplanation } from '@/lib/metric-explanations';
 
 interface Props {
@@ -85,7 +86,10 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
     <div className="flex flex-col gap-6">
       {/* SpO2 / HR Trace Chart */}
       {trace && (
-        <>
+        <SyncedViewportProvider
+          durationSeconds={trace.durationSeconds}
+          dateStr={selectedNight.dateStr}
+        >
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">SpO₂</span>
             <button
@@ -122,7 +126,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
             </button>
           </div>
           <SpO2Trace trace={trace} showHR={showHR} showODIEvents={showODIEvents} />
-        </>
+        </SyncedViewportProvider>
       )}
 
       {/* SpO2 Metrics */}
