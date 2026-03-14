@@ -339,4 +339,11 @@ export interface WorkerError {
   error: string;
 }
 
-export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError;
+export interface WorkerWarning {
+  type: 'WARNING';
+  checkpoint: string;
+  detail: string;
+  tags: Record<string, string | number>;
+}
+
+export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError | WorkerWarning;

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import type { Insight } from './insights';
 import type { NightResult, NightNotes } from './types';
 
@@ -97,6 +98,11 @@ export async function fetchAIInsights(
     const validInsights = validateInsights(data);
     if (!validInsights) {
       console.error('[ai-insights] Invalid response format');
+      Sentry.captureMessage('AI insights: empty or malformed response after 200', {
+        level: 'warning',
+        tags: { checkpoint: 'ai_insights_empty', mode: 'standard' },
+        extra: { hasInsightsKey: 'insights' in (data as Record<string, unknown>), rawLength: JSON.stringify(data).length },
+      });
       throw new Error('AI returned an invalid response. Please try again.');
     }
 
@@ -165,6 +171,11 @@ export async function fetchDeepAIInsights(
     const validInsights = validateInsights(data);
     if (!validInsights) {
       console.error('[ai-insights] Invalid response format');
+      Sentry.captureMessage('AI insights: empty or malformed response after 200', {
+        level: 'warning',
+        tags: { checkpoint: 'ai_insights_empty', mode: 'deep' },
+        extra: { hasInsightsKey: 'insights' in (data as Record<string, unknown>), rawLength: JSON.stringify(data).length },
+      });
       throw new Error('AI returned an invalid response. Please try again.');
     }
 

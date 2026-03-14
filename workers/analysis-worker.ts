@@ -22,6 +22,7 @@ import type {
   WorkerNightResult,
   WorkerOximetryResult,
   WorkerError,
+  WorkerWarning,
   NightResult,
   EDFFile,
   MachineSettings,
@@ -175,6 +176,17 @@ async function processFiles(
 
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
+
+  // Checkpoint: EDFs parsed but no nights formed
+  if (nightGroups.length === 0 && parsedEdfs.length > 0) {
+    const warning: WorkerWarning = {
+      type: 'WARNING',
+      checkpoint: 'analysis_zero_nights',
+      detail: `Parsed ${parsedEdfs.length} EDF files but formed 0 valid nights`,
+      tags: { file_count: brpFiles.length, parsed_count: parsedEdfs.length },
+    };
+    self.postMessage(warning);
+  }
 
   postProgress(2, nightGroups.length + 2, 'Analyzing nights...');
 
@@ -338,6 +350,17 @@ async function processFiles(
       totalNights: nightGroups.length,
     };
     self.postMessage(nightMsg);
+  }
+
+  // Checkpoint: nights analysed but all results empty
+  if (nights.length === 0 && nightGroups.length > 0) {
+    const warning: WorkerWarning = {
+      type: 'WARNING',
+      checkpoint: 'analysis_zero_results',
+      detail: `Analysed ${nightGroups.length} nights but produced 0 results`,
+      tags: { night_count: nightGroups.length },
+    };
+    self.postMessage(warning);
   }
 
   // Sort by date (most recent first)

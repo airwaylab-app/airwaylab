@@ -313,6 +313,12 @@ export class AnalysisOrchestrator {
             this.terminate();
             resolve(msg.nights);
             break;
+          case 'WARNING':
+            Sentry.captureMessage(msg.detail, {
+              level: 'warning',
+              tags: { checkpoint: msg.checkpoint, ...msg.tags },
+            });
+            break;
           case 'ERROR':
             settle();
             this.terminate();
