@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { waveformOrchestrator, type WaveformState } from '@/lib/waveform-orchestrator';
 import { generateSyntheticWaveform } from '@/lib/waveform-utils';
 import { loadCloudFiles } from '@/lib/storage/cloud-file-loader';
@@ -56,6 +57,7 @@ export function useWaveform(
           // Local files available — extract from them
           waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
             console.error('[use-waveform] extraction failed:', err);
+            Sentry.captureException(err, { extra: { context: 'waveform-extraction', dateStr } });
           });
           return;
         }
@@ -78,6 +80,7 @@ export function useWaveform(
             })
             .catch((err: unknown) => {
               console.error('[use-waveform] Cloud file load failed:', err);
+              Sentry.captureException(err, { extra: { context: 'cloud-file-load', dateStr } });
               if (!cancelled) setCloudAttempted(true);
             })
             .finally(() => { if (!cancelled) setCloudLoading(false); });
@@ -87,6 +90,7 @@ export function useWaveform(
         if (!cancelled && sdFiles.length > 0) {
           waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
             console.error('[use-waveform] extraction failed:', err);
+            Sentry.captureException(err, { extra: { context: 'waveform-extraction', dateStr } });
           });
         }
       });
@@ -99,6 +103,7 @@ export function useWaveform(
     if (sdFiles.length > 0) {
       waveformOrchestrator.extract(sdFiles, selectedNight.dateStr).catch((err) => {
         console.error('[use-waveform] retry failed:', err);
+        Sentry.captureException(err, { extra: { context: 'waveform-retry', dateStr: selectedNight.dateStr } });
       });
     } else if (user) {
       // Retry cloud load
