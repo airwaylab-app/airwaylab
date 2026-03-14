@@ -114,7 +114,7 @@ export function Footer() {
         <div className="mt-8 flex flex-col gap-3 border-t border-border/50 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-3.5 w-3.5 text-emerald-500" />
-            <span>100% client-side processing — your data never leaves your device.</span>
+            <span>Private by default — you control your data.</span>
           </div>
           <p className="text-[11px] text-muted-foreground/80">
             GPL-3.0 · Not a medical device · Not FDA/CE cleared · For educational and informational purposes only ·{' '}

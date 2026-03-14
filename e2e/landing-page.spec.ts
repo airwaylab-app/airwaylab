@@ -45,7 +45,7 @@ test.describe('Landing Page', () => {
   });
 
   test('renders trust bar with privacy messaging', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Client-Side/i }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Private by Default/i }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /Open Source/i }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /Research-Grade/i }).first()).toBeVisible();
   });
