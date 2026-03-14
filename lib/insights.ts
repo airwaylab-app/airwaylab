@@ -18,7 +18,7 @@ export interface Insight {
   /** Supporting explanation (1–2 sentences) */
   body: string;
   /** Metric area this relates to */
-  category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend' | 'settings';
+  category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend' | 'settings' | 'correlation' | 'temporal';
   /** Optional link for further reading */
   link?: { text: string; href: string };
 }
