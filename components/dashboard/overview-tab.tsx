@@ -256,10 +256,10 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             const fiNorm = (1 - n.ned.fiMean) * 100;
             const glNorm = (n.glasgow.overall / 9) * 100;
             const components = [
-              { label: 'FL Score', value: n.wat.flScore, unit: '%', norm: flNorm, weight: 0.35, contribution: flNorm * 0.35 },
-              { label: 'NED Mean', value: n.ned.nedMean, unit: '%', norm: nedNorm, weight: 0.30, contribution: nedNorm * 0.30 },
-              { label: 'Flatness Index', value: n.ned.fiMean, unit: '', norm: fiNorm, weight: 0.20, contribution: fiNorm * 0.20 },
-              { label: 'Glasgow Index', value: n.glasgow.overall, unit: '/9', norm: glNorm, weight: 0.15, contribution: glNorm * 0.15 },
+              { label: 'FL Score', value: n.wat.flScore, unit: '%', norm: flNorm, weight: 0.35, contribution: flNorm * 0.35, dp: 1 },
+              { label: 'NED Mean', value: n.ned.nedMean, unit: '%', norm: nedNorm, weight: 0.30, contribution: nedNorm * 0.30, dp: 1 },
+              { label: 'Flatness Index', value: n.ned.fiMean, unit: '', norm: fiNorm, weight: 0.20, contribution: fiNorm * 0.20, dp: 1 },
+              { label: 'Glasgow Index', value: n.glasgow.overall, unit: '/9', norm: glNorm, weight: 0.15, contribution: glNorm * 0.15, dp: 2 },
             ];
             return (
               <div className="overflow-x-auto">
@@ -277,7 +277,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                     {components.map((c) => (
                       <tr key={c.label} className="border-b border-border/20">
                         <td className="py-1.5 text-muted-foreground">{c.label}</td>
-                        <td className="py-1.5 text-right font-mono tabular-nums">{c.value.toFixed(1)}{c.unit}</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums">{c.value.toFixed(c.dp)}{c.unit}</td>
                         <td className="py-1.5 text-right font-mono tabular-nums">{c.norm.toFixed(1)}</td>
                         <td className="py-1.5 text-right font-mono tabular-nums text-muted-foreground/70">{(c.weight * 100).toFixed(0)}%</td>
                         <td className="py-1.5 text-right font-mono tabular-nums font-medium">{c.contribution.toFixed(1)}</td>
@@ -350,7 +350,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
           Glasgow Component Breakdown
           <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
-            Overall: {n.glasgow.overall.toFixed(1)}
+            Overall: {n.glasgow.overall.toFixed(2)}
           </span>
         </summary>
         <div className="border-t border-border/30 px-4 pb-4 pt-3">
@@ -366,7 +366,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                   <div className="text-[10px] text-muted-foreground">{c.label}</div>
                   <div className="mt-0.5 flex items-baseline gap-1.5">
                     <span className="font-mono text-lg font-semibold tabular-nums">
-                      {val.toFixed(1)}
+                      {val.toFixed(2)}
                     </span>
                     {prevVal !== undefined && Math.abs(val - prevVal) > 0.1 && (
                       <span
