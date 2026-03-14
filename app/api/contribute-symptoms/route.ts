@@ -25,6 +25,13 @@ const PayloadSchema = z.object({
   pap_mode: z.string().max(50),
   device_model: z.string().max(100),
   duration_hours: z.number().min(0).max(24),
+  // Enhanced fields (optional for backward compat)
+  hypopnea_index: z.number().min(0).optional(),
+  amplitude_cv: z.number().min(0).optional(),
+  unstable_epoch_pct: z.number().int().min(0).max(100).optional(),
+  tidal_volume_cv: z.number().min(0).optional(),
+  trigger_delay_median_ms: z.number().int().min(0).optional(),
+  ie_ratio: z.number().min(0).optional(),
 });
 
 /**
@@ -93,6 +100,13 @@ export async function POST(request: NextRequest) {
           pap_mode: payload.pap_mode,
           device_model: payload.device_model,
           duration_hours: payload.duration_hours,
+          // Enhanced fields (nullable — backward compatible)
+          hypopnea_index: payload.hypopnea_index ?? null,
+          amplitude_cv: payload.amplitude_cv ?? null,
+          unstable_epoch_pct: payload.unstable_epoch_pct ?? null,
+          tidal_volume_cv: payload.tidal_volume_cv ?? null,
+          trigger_delay_median_ms: payload.trigger_delay_median_ms ?? null,
+          ie_ratio: payload.ie_ratio ?? null,
         },
         { onConflict: 'dedup_hash' }
       );

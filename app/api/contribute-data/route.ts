@@ -94,6 +94,26 @@ function anonymiseNight(n: NightResult, index: number) {
       h1NedMean: n.ned.h1NedMean,
       h2NedMean: n.ned.h2NedMean,
       combinedFLPct: n.ned.combinedFLPct,
+      estimatedArousalIndex: n.ned.estimatedArousalIndex,
+      // Hypopnea (v0.7.0+)
+      ...(n.ned.hypopneaCount !== undefined && { hypopneaCount: n.ned.hypopneaCount }),
+      ...(n.ned.hypopneaIndex !== undefined && { hypopneaIndex: n.ned.hypopneaIndex }),
+      ...(n.ned.hypopneaSource !== undefined && { hypopneaSource: n.ned.hypopneaSource }),
+      ...(n.ned.hypopneaNedInvisibleCount !== undefined && { hypopneaNedInvisibleCount: n.ned.hypopneaNedInvisibleCount }),
+      ...(n.ned.hypopneaNedInvisiblePct !== undefined && { hypopneaNedInvisiblePct: n.ned.hypopneaNedInvisiblePct }),
+      ...(n.ned.hypopneaMeanDropPct !== undefined && { hypopneaMeanDropPct: n.ned.hypopneaMeanDropPct }),
+      ...(n.ned.hypopneaMeanDurationS !== undefined && { hypopneaMeanDurationS: n.ned.hypopneaMeanDurationS }),
+      ...(n.ned.hypopneaH1Index !== undefined && { hypopneaH1Index: n.ned.hypopneaH1Index }),
+      ...(n.ned.hypopneaH2Index !== undefined && { hypopneaH2Index: n.ned.hypopneaH2Index }),
+      // Brief obstruction (v0.7.0+)
+      ...(n.ned.briefObstructionCount !== undefined && { briefObstructionCount: n.ned.briefObstructionCount }),
+      ...(n.ned.briefObstructionIndex !== undefined && { briefObstructionIndex: n.ned.briefObstructionIndex }),
+      ...(n.ned.briefObstructionH1Index !== undefined && { briefObstructionH1Index: n.ned.briefObstructionH1Index }),
+      ...(n.ned.briefObstructionH2Index !== undefined && { briefObstructionH2Index: n.ned.briefObstructionH2Index }),
+      // Amplitude stability (v0.7.0+)
+      ...(n.ned.amplitudeCvOverall !== undefined && { amplitudeCvOverall: n.ned.amplitudeCvOverall }),
+      ...(n.ned.amplitudeCvMedianEpoch !== undefined && { amplitudeCvMedianEpoch: n.ned.amplitudeCvMedianEpoch }),
+      ...(n.ned.unstableEpochPct !== undefined && { unstableEpochPct: n.ned.unstableEpochPct }),
     },
     oximetry: n.oximetry
       ? {
@@ -116,8 +136,12 @@ function anonymiseNight(n: NightResult, index: number) {
           coupledHRRatio: n.oximetry.coupledHRRatio,
           h1: n.oximetry.h1,
           h2: n.oximetry.h2,
+          totalSamples: n.oximetry.totalSamples,
+          retainedSamples: n.oximetry.retainedSamples,
+          doubleTrackingCorrected: n.oximetry.doubleTrackingCorrected,
         }
       : null,
+    settingsMetrics: n.settingsMetrics ?? null,
   };
 }
 

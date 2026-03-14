@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
     const papMode = request.headers.get('x-pap-mode') || 'Unknown';
     const analysisResultsRaw = request.headers.get('x-analysis-results');
     const isCompressed = request.headers.get('content-encoding') === 'gzip';
+    const channelCount = parseInt(request.headers.get('x-channel-count') || '1');
+    const formatVersion = parseInt(request.headers.get('x-format-version') || '1');
+    const hasPressure = request.headers.get('x-has-pressure') === 'true';
 
     // Validate required fields
     if (
@@ -112,6 +115,9 @@ export async function POST(request: NextRequest) {
       device_model: deviceModel,
       pap_mode: papMode,
       analysis_results: analysisResults,
+      channel_count: channelCount,
+      format_version: formatVersion,
+      has_pressure: hasPressure,
     });
 
     if (dbError) {
