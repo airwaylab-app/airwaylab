@@ -36,7 +36,7 @@ function getMetricValue(n: NightResult, key: SortKey): string {
   switch (key) {
     case 'date': return n.dateStr;
     case 'duration': return fmtDuration(n.durationHours);
-    case 'glasgow': return n.glasgow.overall.toFixed(1);
+    case 'glasgow': return n.glasgow.overall.toFixed(2);
     case 'fl': return n.wat.flScore.toFixed(1) + '%';
     case 'regularity': return n.wat.regularityScore.toFixed(0) + '%';
     case 'periodicity': return n.wat.periodicityIndex.toFixed(1) + '%';
@@ -141,7 +141,7 @@ export function MetricsTable({ nights }: Props) {
                   <td className="py-2 pr-4 font-mono tabular-nums">{n.dateStr}</td>
                   <td className="py-2 pr-4 font-mono tabular-nums">{fmtDuration(n.durationHours)}</td>
                   <td className={`py-2 pr-4 font-mono tabular-nums ${getMetricColor(n, 'glasgow', THRESHOLDS)}`}>
-                    {n.glasgow.overall.toFixed(1)}
+                    {n.glasgow.overall.toFixed(2)}
                   </td>
                   <td className={`py-2 pr-4 font-mono tabular-nums ${getMetricColor(n, 'fl', THRESHOLDS)}`}>
                     {n.wat.flScore.toFixed(1)}%

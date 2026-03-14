@@ -92,7 +92,7 @@ export function generateRadarSVG(glasgow: GlasgowComponents): string {
   ${dataPoints.join('\n  ')}
   ${labels.join('\n  ')}
   <text x="${cx}" y="${cy + maxR + 40}" fill="#64748b" font-size="10" text-anchor="middle">
-    Overall: ${glasgow.overall.toFixed(1)} | Dashed = normal range
+    Overall: ${glasgow.overall.toFixed(2)} | Dashed = normal range
   </text>
 </svg>`;
 }

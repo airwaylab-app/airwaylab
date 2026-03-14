@@ -43,7 +43,7 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
     .map((n) => ({
       date: n.dateStr.slice(5),
       fullDate: n.dateStr,
-      glasgow: +sanitizeNumber(n.glasgow.overall).toFixed(1),
+      glasgow: +sanitizeNumber(n.glasgow.overall).toFixed(2),
       flScore: +sanitizeNumber(n.wat.flScore).toFixed(1),
       nedMean: +sanitizeNumber(n.ned.nedMean).toFixed(1),
       reraIndex: +sanitizeNumber(n.ned.reraIndex).toFixed(1),

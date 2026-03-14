@@ -64,7 +64,7 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
         <CardTitle className="text-sm font-medium">
           Glasgow Index Components{' '}
           <span className="font-mono tabular-nums text-muted-foreground">
-            (Overall: {glasgow.overall.toFixed(1)})
+            (Overall: {glasgow.overall.toFixed(2)})
           </span>
         </CardTitle>
       </CardHeader>
@@ -72,7 +72,7 @@ export const GlasgowRadar = memo(function GlasgowRadar({ glasgow }: Props) {
         <div
           className="relative h-[300px] w-full sm:h-[380px]"
           role="img"
-          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(1)} out of 9. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`}
+          aria-label={`Glasgow Index radar chart. Overall score: ${glasgow.overall.toFixed(2)} out of 9. Shows 9 component scores: ${data.map((d) => `${d.component}: ${d.value.toFixed(2)}`).join(', ')}.`}
         >
           <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
             airwaylab.app
