@@ -311,7 +311,7 @@ test.describe('Conversion Funnel — Pricing Page', () => {
     await page.goto('/pricing');
 
     await expect(page.getByText('Unlimited cloud storage for your EDF files')).toBeVisible();
-    await expect(page.getByText('3-6 AI insights per month')).toBeVisible();
+    await expect(page.getByText('3-6 AI insights per month').first()).toBeVisible();
   });
 
   // ── Supporter features include deep AI ────────────────────
