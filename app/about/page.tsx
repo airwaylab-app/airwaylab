@@ -22,7 +22,7 @@ import { FAQItem } from '@/components/common/faq-item';
 export const metadata: Metadata = {
   title: 'About AirwayLab — Methodology & FAQ',
   description:
-    'Learn how AirwayLab analyses PAP flow limitation using four research-grade engines: Glasgow Index, WAT, NED, and Oximetry. 100% browser-based, open-source, and free.',
+    'Learn how AirwayLab analyses PAP flow limitation using four research-grade engines: Glasgow Index, WAT, NED, and Oximetry. Browser-based, privacy-first, open-source, and free.',
   openGraph: {
     title: 'About AirwayLab — Methodology & FAQ',
     description:
@@ -51,7 +51,7 @@ const faqData = [
   {
     question: 'Is my data safe?',
     answer:
-      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data never leaves your device by default. No cookies are used. We use Plausible for privacy-first, cookie-free page-view analytics that collect zero personal data. Optional features like AI-powered insights or cloud storage require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
+      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data stays on your device by default. No cookies are used. We use Plausible for privacy-first, cookie-free page-view analytics that collect zero personal data. Optional features like AI-powered insights, cloud storage, or data contribution require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
   },
   {
     question: 'What pulse oximeters are supported?',
@@ -91,7 +91,7 @@ const faqData = [
   {
     question: 'How does AirwayLab compare to OSCAR?',
     answer:
-      'OSCAR is an excellent tool for detailed session-by-session review with interactive waveform browsing. AirwayLab complements OSCAR by providing automated flow limitation analysis (Glasgow Index, WAT, NED) that OSCAR does not compute. AirwayLab is also browser-based (no installation needed) and privacy-first (no data leaves your browser). Many users benefit from using both tools together.',
+      'OSCAR is an excellent tool for detailed session-by-session review with interactive waveform browsing. AirwayLab complements OSCAR by providing automated flow limitation analysis (Glasgow Index, WAT, NED) that OSCAR does not compute. AirwayLab is also browser-based (no installation needed) and privacy-first (your data stays on your device by default). Many users benefit from using both tools together.',
   },
 ];
 
@@ -216,12 +216,12 @@ export default function AboutPage() {
         </p>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Four research-grade analysis engines process your ResMed SD card data client-side
-          via Web Workers. No uploads, no accounts, no tracking — just the insights your
+          via Web Workers. No tracking, no cookies — just the insights your
           machine already collected but never showed you.
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
-          <span>100% client-side processing &middot; Zero data upload &middot; Your sleep data never leaves your device</span>
+          <span>Private by default &middot; Open source &middot; You control your data</span>
         </div>
       </div>
 
@@ -245,9 +245,9 @@ export default function AboutPage() {
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
             <h3 className="mb-2 text-sm font-semibold text-blue-400">Open Source — Verifiable Trust</h3>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Every line of code is open source (GPL-3.0). In a space where you&apos;re asked to upload
-              medical data to unknown servers, we think you should be able to verify exactly what
-              happens with your data. Nothing leaves your browser. Ever.
+              Every line of code is open source (GPL-3.0). Your sleep data is health data — we think
+              you should be able to verify exactly what happens with it. That&apos;s why the code is
+              open source and analysis runs in your browser by default.
             </p>
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
@@ -308,8 +308,8 @@ export default function AboutPage() {
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Individual analysis is powerful, but the real potential is collective. With your explicit consent,
-                anonymised breathing data could be contributed to an open research dataset — the largest of its kind.
+                Individual analysis is powerful, but the real potential is collective. With your consent,
+                anonymised breathing data can be contributed to an open research dataset — the largest of its kind.
                 Patterns hidden in thousands of real-world therapy nights that no single sleep lab has the scale to
                 find. Think of it as open-source science for airway therapy.
               </p>
@@ -462,7 +462,7 @@ export default function AboutPage() {
 
           <FAQItem question="Is my data safe?">
             Yes. All core analysis runs entirely in your browser using Web
-            Workers &mdash; your sleep data never leaves your device by default.
+            Workers &mdash; your sleep data stays on your device by default.
             No cookies are used. We use Plausible for privacy-first, cookie-free
             page-view analytics that collect zero personal data. Optional
             features like AI-powered insights or cloud storage require your
@@ -602,8 +602,8 @@ export default function AboutPage() {
             with interactive waveform browsing. AirwayLab complements OSCAR by
             providing automated flow limitation analysis (Glasgow Index, WAT,
             NED) that OSCAR does not compute. AirwayLab is also browser-based
-            (no installation needed) and privacy-first (no data leaves your
-            browser). Many users benefit from using both tools together.
+            (no installation needed) and privacy-first (your data stays on your
+            device by default). Many users benefit from using both tools together.
           </FAQItem>
         </div>
       </section>
@@ -659,7 +659,7 @@ export default function AboutPage() {
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
               All core analysis runs in your browser via Web Workers &mdash;
-              your sleep data never leaves your device by default.
+              your sleep data stays on your device by default.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />

@@ -111,7 +111,7 @@ const steps = [
     icon: Cpu,
     num: '02',
     title: 'In-Browser Analysis',
-    desc: 'Four engines run entirely client-side via Web Workers. Zero data transmitted — nothing leaves your device.',
+    desc: 'Four engines run entirely client-side via Web Workers. Zero data transmitted by default — you choose what to share.',
   },
   {
     icon: LineChart,
@@ -124,8 +124,8 @@ const steps = [
 const trustItems = [
   {
     icon: Lock,
-    title: '100% Client-Side',
-    desc: 'All analysis runs in your browser. No servers, no uploads, no tracking. Your PAP data never leaves your device.',
+    title: 'Private by Default',
+    desc: 'All analysis runs in your browser. Your data stays on your device unless you choose to share it.',
   },
   {
     icon: Github,
@@ -273,7 +273,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
                 <Shield className="h-3.5 w-3.5 text-emerald-400" />
-                <span>100% client-side</span>
+                <span>Private by default</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
                 <FileText className="h-3.5 w-3.5 text-primary" />
@@ -439,10 +439,10 @@ export default function Home() {
               <div className="rounded-lg bg-blue-500/10 p-2">
                 <Lock className="h-4 w-4 text-blue-400" />
               </div>
-              <h3 className="text-sm font-semibold">Your Data Belongs to You</h3>
+              <h3 className="text-sm font-semibold">Your Data, Your Choice</h3>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Every analysis runs in your browser. Nothing is uploaded, stored, or tracked. The code is open source and GPL-3.0 licensed — you can verify exactly what happens with your data.
+              Every analysis runs in your browser by default. The code is open source and GPL-3.0 licensed — you can verify exactly what happens with your data. When you&apos;re ready, contributing anonymised scores helps the whole community get better insights.
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">

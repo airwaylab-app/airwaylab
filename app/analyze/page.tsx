@@ -464,7 +464,7 @@ function AnalyzePageInner() {
             )}
             <div className="flex items-center gap-1.5 text-xs text-emerald-500">
               <Shield className="h-3.5 w-3.5 shrink-0" />
-              <span>All data stays on your device</span>
+              <span>Analysing locally on your device</span>
             </div>
           </div>
         </div>
