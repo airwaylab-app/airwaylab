@@ -27,9 +27,12 @@ Sentry.init({
   // You can remove this option if you're not planning to use the Sentry Session Replay feature
   integrations: [
     Sentry.replayIntegration({
-      // Additional Replay configuration goes in here, for example:
       maskAllText: true,
       blockAllMedia: true,
+      // Detect dead clicks (no DOM mutation within 7s) and rage clicks (3+ rapid clicks)
+      slowClickTimeout: 7000,
+      // Capture request/response bodies for API routes in replays (metrics only, never raw waveforms)
+      networkDetailAllowUrls: [/\/api\//],
     }),
   ],
 

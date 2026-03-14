@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Frustration replay detection** — Sentry session replay now captures rage clicks (3+ rapid clicks) and dead clicks (no response within 7s) to detect UX bugs users experience but never report. API request/response bodies included in replays for debugging. (frustration-replay-detection)
 - **Estimated RDI display** — new composite metric combining RERA Index and Hypopnea Index into an estimated Respiratory Disturbance Index, displayed on the Flow Analysis tab with traffic light thresholds (green ≤5, amber ≤15, red >15/hr). Included in CSV, forum, and PDF exports. Based on AASM definition; labeled as conservative lower bound since apneas cannot be detected from flow data. (estimated-rdi-display)
 
 ### Changed
