@@ -6,6 +6,7 @@ import type { Insight } from '@/lib/insights';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { aiRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { salvageTruncatedJSON } from './salvage';
 
 const AI_MONTHLY_LIMIT = 3;
 
@@ -64,6 +65,8 @@ Rules:
 - Prioritise actionable findings over general observations
 - Generate at least one "actionable" type insight with concrete investigation suggestions
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
+- Keep body text to 1 sentence (max ~30 words). Be data-dense, not verbose.
+- If running low on space, finish the current insight and close the array. Fewer complete insights are better than many truncated ones.
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
 
@@ -348,6 +351,7 @@ export async function POST(request: NextRequest) {
 
     // Parse insights from JSON response
     let insights: Insight[];
+    let truncated = false;
     try {
       // Strip markdown code fences and extract JSON array
       let jsonText = textBlock.text.trim();
@@ -364,12 +368,33 @@ export async function POST(request: NextRequest) {
       }
       insights = JSON.parse(jsonText);
     } catch {
-      Sentry.captureMessage('AI insights: JSON parse failed on AI response', {
-        level: 'error',
-        tags: { route: 'ai-insights', error_type: 'ai_response' },
-        extra: { responsePreview: textBlock.text.slice(0, 500), stopReason: message.stop_reason },
-      });
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 });
+      // If response was truncated by max_tokens, try to salvage complete objects
+      if (message.stop_reason === 'max_tokens') {
+        const salvaged = salvageTruncatedJSON<Insight>(textBlock.text);
+        if (salvaged.length > 0) {
+          insights = salvaged;
+          truncated = true;
+          Sentry.captureMessage('AI insights: truncated response salvaged', {
+            level: 'warning',
+            tags: { route: 'ai-insights', error_type: 'ai_truncated' },
+            extra: { totalExtracted: salvaged.length, stopReason: 'max_tokens' },
+          });
+        } else {
+          Sentry.captureMessage('AI insights: truncated response unsalvageable', {
+            level: 'error',
+            tags: { route: 'ai-insights', error_type: 'ai_response' },
+            extra: { responsePreview: textBlock.text.slice(0, 500), stopReason: 'max_tokens' },
+          });
+          return NextResponse.json({ error: 'AI response was too short to generate insights. Please try again.' }, { status: 502 });
+        }
+      } else {
+        Sentry.captureMessage('AI insights: JSON parse failed on AI response', {
+          level: 'error',
+          tags: { route: 'ai-insights', error_type: 'ai_response' },
+          extra: { responsePreview: textBlock.text.slice(0, 500), stopReason: message.stop_reason },
+        });
+        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 });
+      }
     }
 
     // Validate insight shape
@@ -422,6 +447,7 @@ export async function POST(request: NextRequest) {
       insights,
       source: 'ai',
       isDeep: !!isDeepRequest,
+      ...(truncated && { truncated: true }),
       ...(remainingCredits !== undefined && { remainingCredits }),
     });
   } catch (err) {

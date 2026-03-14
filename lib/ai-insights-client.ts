@@ -8,6 +8,8 @@ export interface AIInsightsResult {
   remainingCredits?: number;
   /** Whether per-breath deep analysis was used */
   isDeep?: boolean;
+  /** True when AI response was truncated and only partial insights were recovered */
+  truncated?: boolean;
 }
 
 /** Per-breath summary format stored in Supabase Storage */
