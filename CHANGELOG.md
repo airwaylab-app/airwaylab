@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Pressure waveform contribution** — Waveform contributions now include the pressure channel alongside flow data using the AWL2 binary format, enabling future ML models to learn pressure-response dynamics. Falls back to flow-only when pressure unavailable or size exceeds limit. (pressure-waveform-contribution)
+- **Enhanced contribution schema** — Metrics contributions now include all NED fields (EAI, hypopnea, brief obstruction, amplitude stability), settingsMetrics (trigger/cycle timing, tidal volume, IPAP dwell), and oximetry cleaning metadata. Symptom contributions enriched with 6 additional ML features. ML export RPCs updated. (enhanced-contribution-schema)
 - **Graphs tab always shows data** — TrendChart now renders for single-night users (was 2+ only) with a dynamic title ("Night Metrics" / "Multi-Night Trends"). When no waveform data is available, the Glasgow Radar chart renders as a fallback from persisted metrics, replacing the old full-page "re-upload" placeholder with a compact info banner. (graphs-tab-always-show-data)
 - **Frustration replay detection** — Sentry session replay now captures rage clicks (3+ rapid clicks) and dead clicks (no response within 7s) to detect UX bugs users experience but never report. API request/response bodies included in replays for debugging. (frustration-replay-detection)
 - **Critical journey Sentry events** — 5 checkpoints that fire Sentry warnings on silent failures: zero nights parsed, zero analysis results, empty AI insights response, auth ghost session, all uploaded files rejected. Catches bugs users experience but never report. (critical-journey-sentry-events)

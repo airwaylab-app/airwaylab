@@ -16,6 +16,7 @@ import {
   getContributedWaveformEngine,
   setContributedWaveformEngine,
 } from '@/components/upload/contribution-consent-utils';
+import { buildWaveformBlob } from './waveform-blob';
 import type { NightResult, EDFFile } from './types';
 
 const MAX_COMPRESSED_BYTES = 5 * 1024 * 1024; // 5 MB per night
@@ -59,6 +60,26 @@ function anonymiseResults(n: NightResult) {
       h1NedMean: n.ned.h1NedMean,
       h2NedMean: n.ned.h2NedMean,
       combinedFLPct: n.ned.combinedFLPct,
+      estimatedArousalIndex: n.ned.estimatedArousalIndex,
+      // Hypopnea (v0.7.0+)
+      ...(n.ned.hypopneaCount !== undefined && { hypopneaCount: n.ned.hypopneaCount }),
+      ...(n.ned.hypopneaIndex !== undefined && { hypopneaIndex: n.ned.hypopneaIndex }),
+      ...(n.ned.hypopneaSource !== undefined && { hypopneaSource: n.ned.hypopneaSource }),
+      ...(n.ned.hypopneaNedInvisibleCount !== undefined && { hypopneaNedInvisibleCount: n.ned.hypopneaNedInvisibleCount }),
+      ...(n.ned.hypopneaNedInvisiblePct !== undefined && { hypopneaNedInvisiblePct: n.ned.hypopneaNedInvisiblePct }),
+      ...(n.ned.hypopneaMeanDropPct !== undefined && { hypopneaMeanDropPct: n.ned.hypopneaMeanDropPct }),
+      ...(n.ned.hypopneaMeanDurationS !== undefined && { hypopneaMeanDurationS: n.ned.hypopneaMeanDurationS }),
+      ...(n.ned.hypopneaH1Index !== undefined && { hypopneaH1Index: n.ned.hypopneaH1Index }),
+      ...(n.ned.hypopneaH2Index !== undefined && { hypopneaH2Index: n.ned.hypopneaH2Index }),
+      // Brief obstruction (v0.7.0+)
+      ...(n.ned.briefObstructionCount !== undefined && { briefObstructionCount: n.ned.briefObstructionCount }),
+      ...(n.ned.briefObstructionIndex !== undefined && { briefObstructionIndex: n.ned.briefObstructionIndex }),
+      ...(n.ned.briefObstructionH1Index !== undefined && { briefObstructionH1Index: n.ned.briefObstructionH1Index }),
+      ...(n.ned.briefObstructionH2Index !== undefined && { briefObstructionH2Index: n.ned.briefObstructionH2Index }),
+      // Amplitude stability (v0.7.0+)
+      ...(n.ned.amplitudeCvOverall !== undefined && { amplitudeCvOverall: n.ned.amplitudeCvOverall }),
+      ...(n.ned.amplitudeCvMedianEpoch !== undefined && { amplitudeCvMedianEpoch: n.ned.amplitudeCvMedianEpoch }),
+      ...(n.ned.unstableEpochPct !== undefined && { unstableEpochPct: n.ned.unstableEpochPct }),
     },
     oximetry: n.oximetry
       ? {
@@ -70,8 +91,23 @@ function anonymiseResults(n: NightResult) {
           spo2Min: n.oximetry.spo2Min,
           hrMean: n.oximetry.hrMean,
           hrSD: n.oximetry.hrSD,
+          hrClin8: n.oximetry.hrClin8,
+          hrClin10: n.oximetry.hrClin10,
+          hrClin12: n.oximetry.hrClin12,
+          hrClin15: n.oximetry.hrClin15,
+          hrMean10: n.oximetry.hrMean10,
+          hrMean15: n.oximetry.hrMean15,
+          coupled3_6: n.oximetry.coupled3_6,
+          coupled3_10: n.oximetry.coupled3_10,
+          coupledHRRatio: n.oximetry.coupledHRRatio,
+          h1: n.oximetry.h1,
+          h2: n.oximetry.h2,
+          totalSamples: n.oximetry.totalSamples,
+          retainedSamples: n.oximetry.retainedSamples,
+          doubleTrackingCorrected: n.oximetry.doubleTrackingCorrected,
         }
       : null,
+    settingsMetrics: n.settingsMetrics ?? null,
   };
 }
 
@@ -130,6 +166,7 @@ async function extractFlowForNight(
   nightDate: string
 ): Promise<{
   flowBuffer: ArrayBuffer;
+  pressureBuffer: ArrayBuffer | null;
   samplingRate: number;
   sampleCount: number;
   durationSeconds: number;
@@ -177,8 +214,17 @@ async function extractFlowForNight(
   let totalSamplingRate = 0;
   let totalDuration = 0;
 
+  // Check if all sessions have pressure data with matching length
+  const allHavePressure = group.sessions.every(
+    (s) => s.pressureData !== null && s.pressureData.length === s.flowData.length
+  );
+  const combinedPressure = allHavePressure ? new Float32Array(totalSamples) : null;
+
   for (const session of group.sessions) {
     combinedFlow.set(session.flowData, offset);
+    if (combinedPressure && session.pressureData) {
+      combinedPressure.set(session.pressureData, offset);
+    }
     offset += session.flowData.length;
     totalSamplingRate += session.samplingRate;
     totalDuration += session.durationSeconds;
@@ -188,6 +234,7 @@ async function extractFlowForNight(
 
   return {
     flowBuffer: combinedFlow.buffer,
+    pressureBuffer: combinedPressure ? combinedPressure.buffer : null,
     samplingRate: avgSamplingRate,
     sampleCount: totalSamples,
     durationSeconds: totalDuration,
@@ -204,7 +251,9 @@ async function uploadWaveform(
   samplingRate: number,
   sampleCount: number,
   durationSeconds: number,
-  contributionId: string
+  contributionId: string,
+  channelCount: number,
+  hasPressure: boolean
 ): Promise<boolean> {
   try {
     const headers: Record<string, string> = {
@@ -218,6 +267,9 @@ async function uploadWaveform(
       'X-Device-Model': night.settings.deviceModel || 'Unknown',
       'X-Pap-Mode': night.settings.papMode || 'Unknown',
       'X-Analysis-Results': JSON.stringify(anonymiseResults(night)),
+      'X-Channel-Count': String(channelCount),
+      'X-Format-Version': '2',
+      'X-Has-Pressure': String(hasPressure),
     };
 
     if (isCompressed) {
@@ -265,14 +317,39 @@ export async function contributeWaveformsBackground(
   // Process and upload one night at a time to keep memory low
   for (const night of newNights) {
     try {
-      // Extract flow data by re-parsing EDF files for this night
-      const flowData = await extractFlowForNight(sdFiles, night.dateStr);
-      if (!flowData) continue;
+      // Extract flow + pressure data by re-parsing EDF files for this night
+      const extractedData = await extractFlowForNight(sdFiles, night.dateStr);
+      if (!extractedData) continue;
+
+      // Build AWL2 blob (with pressure if available)
+      const flowArray = new Float32Array(extractedData.flowBuffer);
+      const pressureArray = extractedData.pressureBuffer
+        ? new Float32Array(extractedData.pressureBuffer)
+        : null;
+
+      let waveformBlob = buildWaveformBlob(flowArray, pressureArray);
+      let channelCount = pressureArray && pressureArray.length === flowArray.length ? 2 : 1;
+      let hasPressure = channelCount === 2;
 
       // Compress
-      const { data: compressed, isCompressed } = await compressBuffer(flowData.flowBuffer);
+      let { data: compressed, isCompressed } = await compressBuffer(waveformBlob);
 
-      // Check size limit
+      // Size fallback: if flow+pressure exceeds limit, retry flow-only
+      if (compressed.byteLength > MAX_COMPRESSED_BYTES && hasPressure) {
+        Sentry.addBreadcrumb({
+          message: `Waveform ${night.dateStr}: flow+pressure ${(compressed.byteLength / 1024 / 1024).toFixed(1)} MB exceeds limit, falling back to flow-only`,
+          category: 'waveform-contribution',
+          level: 'info',
+        });
+        waveformBlob = buildWaveformBlob(flowArray, null);
+        channelCount = 1;
+        hasPressure = false;
+        const fallback = await compressBuffer(waveformBlob);
+        compressed = fallback.data;
+        isCompressed = fallback.isCompressed;
+      }
+
+      // Check size limit (final)
       if (compressed.byteLength > MAX_COMPRESSED_BYTES) {
         console.error(
           `[contribute-waveforms] Night ${night.dateStr} exceeds 5 MB limit (${(compressed.byteLength / 1024 / 1024).toFixed(1)} MB), skipping`
@@ -284,15 +361,23 @@ export async function contributeWaveformsBackground(
         continue;
       }
 
+      Sentry.addBreadcrumb({
+        message: `Waveform ${night.dateStr}: ${channelCount} channel(s), pressure=${hasPressure}`,
+        category: 'waveform-contribution',
+        level: 'info',
+      });
+
       // Upload
       const ok = await uploadWaveform(
         night,
         compressed,
         isCompressed,
-        flowData.samplingRate,
-        flowData.sampleCount,
-        flowData.durationSeconds,
-        contributionId
+        extractedData.samplingRate,
+        extractedData.sampleCount,
+        extractedData.durationSeconds,
+        contributionId,
+        channelCount,
+        hasPressure
       );
 
       if (ok) {

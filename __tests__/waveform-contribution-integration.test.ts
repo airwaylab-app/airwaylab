@@ -17,6 +17,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  addBreadcrumb: vi.fn(),
 }));
 
 // ── EDF parser mock ──────────────────────────────────────────
@@ -171,10 +172,13 @@ describe('contributeWaveformsBackground — integration', () => {
     expect(callArgs.headers['X-Device-Model']).toBe('AirSense 10');
     expect(callArgs.headers['X-Pap-Mode']).toBe('APAP');
     expect(callArgs.headers['Content-Type']).toBe('application/octet-stream');
+    expect(callArgs.headers['X-Channel-Count']).toBe('1'); // mock parser has no pressure
+    expect(callArgs.headers['X-Format-Version']).toBe('2');
+    expect(callArgs.headers['X-Has-Pressure']).toBe('false');
 
-    // Should have binary body
+    // Should have binary body (AWL2 header + flow data)
     expect(callArgs.body).toBeInstanceOf(ArrayBuffer);
-    expect(callArgs.body.byteLength).toBeGreaterThan(0);
+    expect(callArgs.body.byteLength).toBeGreaterThan(16); // at least AWL2 header
   });
 
   it('tracks contributed dates after successful upload', async () => {
@@ -311,7 +315,9 @@ describe('contributeWaveformsBackground — integration', () => {
     expect(parsed.glasgow.overall).toBe(2.1);
     expect(parsed.wat.flScore).toBe(32);
     expect(parsed.ned.nedMean).toBe(19.5);
+    expect(parsed.ned.estimatedArousalIndex).toBe(8.2);
     expect(parsed.oximetry).toBeNull();
+    expect(parsed.settingsMetrics).toBeNull();
 
     // Should NOT contain raw data or personal info
     expect(parsed.date).toBeUndefined();
