@@ -35,7 +35,7 @@ test.describe('Free User Flow', () => {
     await page.goto('/analyze');
 
     await expect(page.getByText('Analyze Sleep Data')).toBeVisible();
-    await expect(page.getByText('All data stays on your device')).toBeVisible();
+    await expect(page.getByText('Analysing locally on your device')).toBeVisible();
     // File input should be present
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached();
     // Demo button should be available
