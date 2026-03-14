@@ -311,14 +311,14 @@ test.describe('Conversion Funnel — Pricing Page', () => {
     await page.goto('/pricing');
 
     await expect(page.getByText('Unlimited cloud storage for your EDF files')).toBeVisible();
-    await expect(page.getByText('3 AI-powered insights per month')).toBeVisible();
+    await expect(page.getByText('3-6 AI insights per month')).toBeVisible();
   });
 
   // ── Supporter features include deep AI ────────────────────
   test('supporter tier lists waveform-level deep AI insights', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByText('Unlimited waveform-level deep AI insights')).toBeVisible();
+    await expect(page.getByText('6-10 deep AI insights per analysis (unlimited)')).toBeVisible();
   });
 
   // ── Billing toggle works ──────────────────────────────────
