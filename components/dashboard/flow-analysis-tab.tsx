@@ -8,6 +8,7 @@ import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
+import { computeEstimatedRDI } from '@/lib/derived-metrics';
 
 interface Props {
   selectedNight: NightResult;
@@ -101,7 +102,17 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">
           Negative Effort Dependence (NED)
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <MetricCard
+            label="Est. RDI"
+            value={computeEstimatedRDI(n.ned)}
+            unit="/hr"
+            threshold={THRESHOLDS.estimatedRdi}
+            previousValue={p ? computeEstimatedRDI(p.ned) : undefined}
+            tooltip="Estimated Respiratory Disturbance Index — how often your breathing is disrupted each hour, combining RERAs and hypopneas from flow analysis. This is a conservative estimate (apneas are not included). Lower is better."
+            methodology={METRIC_METHODOLOGIES.estimatedRdi}
+            onClick={clickable ? () => openMetric('Est. RDI', (x) => computeEstimatedRDI(x.ned), { unit: '/hr', threshold: THRESHOLDS.estimatedRdi }) : undefined}
+          />
           <MetricCard
             label="NED Mean"
             value={n.ned.nedMean}

@@ -47,6 +47,9 @@ export const METRIC_METHODOLOGIES = {
   amplitudeCv:
     'Divides the night into 5-minute epochs and computes the coefficient of variation (standard deviation / mean) of peak inspiratory flow within each epoch. Normal tidal breathing has ~15-20% CV. Higher values indicate the airway is intermittently compromising \u2014 even if individual breath shapes look normal by NED.',
 
+  estimatedRdi:
+    'Combines two types of breathing events detected from your flow data: RERAs (short sequences where your airway progressively narrows before a brief recovery breath) and hypopneas (sustained drops in airflow). This gives an estimated Respiratory Disturbance Index — a measure of how often your breathing is disrupted each hour. Note: a full clinical RDI also includes apneas (complete airway blockages), which cannot be detected from flow data alone, so this estimate is a conservative lower bound. It is most accurate when apneas are rare — as is typical in upper airway resistance syndrome (UARS).',
+
   whyDisagree:
     'Glasgow, FL Score, and NED use different methods to detect different aspects of flow limitation. Glasgow scores 9 breath-shape characteristics holistically. FL Score measures population-level flatness across all breaths. NED measures per-breath peak-to-mid flow drops specifically. A high FL Score with low Glasgow can happen when breaths are moderately flat but don\u2019t show the specific shape distortions Glasgow targets (skew, spikes, multi-peaks). Low NED with high Glasgow occurs when breath shapes are abnormal in ways that don\u2019t affect the peak-to-mid flow ratio. Using all three together gives a more complete picture than any single metric.',
 } as const;
@@ -119,6 +122,17 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss whether pressure or settings adjustments could help with your clinician.';
   }
   return 'Significant flow limitation detected. Individual sensitivity varies, but research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
+}
+
+export function getEstimatedRDIExplanation(value: number, threshold: ThresholdDef): string {
+  const light = getTrafficLight(value, threshold);
+  if (light === 'good') {
+    return `Your estimated RDI of ${fmt(value)}/hr is low — few breathing disruptions detected from your flow data. Your therapy appears to be keeping your airway stable.`;
+  }
+  if (light === 'warn') {
+    return `Your estimated RDI of ${fmt(value)}/hr shows moderate breathing disruptions. This includes RERAs and hypopneas detected from flow patterns — events that don't appear in your machine's AHI. Consider discussing with your clinician, especially if you still feel tired despite a low AHI.`;
+  }
+  return `Your estimated RDI of ${fmt(value)}/hr is elevated — your breathing is being disrupted frequently during sleep. This includes events your machine's AHI may not capture. Discuss therapy optimisation with your clinician.`;
 }
 
 export function getODIExplanation(odi3: number, threshold: ThresholdDef): string {
