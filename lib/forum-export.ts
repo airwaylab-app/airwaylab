@@ -8,6 +8,7 @@ import type { Tier } from './auth/auth-context';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { computeIFLRisk } from './ifl-risk';
+import { computeEstimatedRDI } from './derived-metrics';
 import { loadNightNotes } from './night-notes';
 
 const RATING_LABELS: Record<number, string> = {
@@ -94,8 +95,9 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
 
   // NED
   lines.push('**Breath Analysis (NED)**');
+  const estRdi = computeEstimatedRDI(n.ned);
   lines.push(`NED Mean: ${fmt(n.ned.nedMean)}% ${light(n.ned.nedMean, 'nedMean')} | Combined FL: ${Math.round(n.ned.combinedFLPct)}% ${light(n.ned.combinedFLPct, 'combinedFL')} | RERA Index: ${fmt(n.ned.reraIndex)}/hr ${light(n.ned.reraIndex, 'reraIndex')}`);
-  lines.push(`H1 NED: ${fmt(n.ned.h1NedMean)}% | H2 NED: ${fmt(n.ned.h2NedMean)}%`);
+  lines.push(`Est. RDI: ${fmt(estRdi)}/hr ${light(estRdi, 'estimatedRdi')} | H1 NED: ${fmt(n.ned.h1NedMean)}% | H2 NED: ${fmt(n.ned.h2NedMean)}%`);
   const boi = n.ned.briefObstructionIndex ?? 0;
   const hi = n.ned.hypopneaIndex ?? 0;
   if (boi > 0 || hi > 0) {
@@ -135,14 +137,15 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
   lines.push('');
 
   // Table header
-  lines.push('| Date | Duration | IFL Risk | Glasgow | FL Score | NED Mean | RERA/hr | BOI/hr | Regularity |');
-  lines.push('|------|----------|----------|---------|----------|----------|---------|--------|------------|');
+  lines.push('| Date | Duration | IFL Risk | Glasgow | FL Score | NED Mean | RERA/hr | Est. RDI | BOI/hr | Regularity |');
+  lines.push('|------|----------|----------|---------|----------|----------|---------|----------|--------|------------|');
 
   for (const n of sorted) {
     const ifl = computeIFLRisk(n);
     const boi = n.ned.briefObstructionIndex ?? 0;
+    const rdi = computeEstimatedRDI(n.ned);
     lines.push(
-      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(ifl)}% ${light(ifl, 'iflRisk')} | ${fmt(n.glasgow.overall, 2)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${fmt(boi)} | ${Math.round(n.wat.regularityScore)}% |`
+      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(ifl)}% ${light(ifl, 'iflRisk')} | ${fmt(n.glasgow.overall, 2)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${fmt(rdi)} ${light(rdi, 'estimatedRdi')} | ${fmt(boi)} | ${Math.round(n.wat.regularityScore)}% |`
     );
   }
 
@@ -151,7 +154,7 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
     sorted.reduce((sum, n) => sum + fn(n), 0) / sorted.length;
 
   lines.push(
-    `| **Average** | | **${fmt(avg((n) => computeIFLRisk(n)))}%** | **${fmt(avg((n) => n.glasgow.overall), 2)}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${fmt(avg((n) => n.ned.briefObstructionIndex ?? 0))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
+    `| **Average** | | **${fmt(avg((n) => computeIFLRisk(n)))}%** | **${fmt(avg((n) => n.glasgow.overall), 2)}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${fmt(avg((n) => computeEstimatedRDI(n.ned)))}** | **${fmt(avg((n) => n.ned.briefObstructionIndex ?? 0))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
   );
 
   lines.push('');

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Estimated RDI display** — new composite metric combining RERA Index and Hypopnea Index into an estimated Respiratory Disturbance Index, displayed on the Flow Analysis tab with traffic light thresholds (green ≤5, amber ≤15, red >15/hr). Included in CSV, forum, and PDF exports. Based on AASM definition; labeled as conservative lower bound since apneas cannot be detected from flow data. (estimated-rdi-display)
+
 ### Changed
 
 - **Hero card treatment context framing** — Night summary hero now uses dual framing: acknowledges good event control (RERA/hypopnea) before presenting flow limitation metrics, so users with effective CPAP treatment don't misinterpret red FL metrics as treatment failure. Users with good event control never see a red hero card. (hero-treatment-context-framing)

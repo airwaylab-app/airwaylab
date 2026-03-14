@@ -9,6 +9,7 @@ import { getTrafficLight, type TrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { generateRadarSVG, generateTrendSVG } from './pdf-charts';
 import { computeIFLRisk } from './ifl-risk';
+import { computeEstimatedRDI } from './derived-metrics';
 
 const TL_EMOJI: Record<TrafficLight, string> = {
   good: '\u2705',
@@ -85,6 +86,7 @@ function buildNightSection(n: NightResult, index: number): string {
           ${metricRow('NED P95', n.ned.nedP95, '%', 'nedP95')}
           ${metricRow('Combined FL', n.ned.combinedFLPct, '%', 'combinedFL')}
           ${metricRow('RERA Index', n.ned.reraIndex, '/hr', 'reraIndex')}
+          ${metricRow('Est. RDI', computeEstimatedRDI(n.ned), '/hr', 'estimatedRdi')}
           ${metricRow('M-Shape', n.ned.mShapePct, '%')}
 
           ${ox ? `
@@ -114,6 +116,7 @@ function buildSummaryPage(nights: NightResult[]): string {
   const avgFL = avg((n) => n.wat.flScore);
   const avgNED = avg((n) => n.ned.nedMean);
   const avgRERA = avg((n) => n.ned.reraIndex);
+  const avgRDI = avg((n) => computeEstimatedRDI(n.ned));
   const avgReg = avg((n) => n.wat.regularityScore);
 
   const iflTL = getTrafficLight(avgIFL, THRESHOLDS.iflRisk);
@@ -121,6 +124,7 @@ function buildSummaryPage(nights: NightResult[]): string {
   const flTL = getTrafficLight(avgFL, THRESHOLDS.watFL);
   const nedTL = getTrafficLight(avgNED, THRESHOLDS.nedMean);
   const reraTL = getTrafficLight(avgRERA, THRESHOLDS.reraIndex);
+  const rdiTL = getTrafficLight(avgRDI, THRESHOLDS.estimatedRdi);
 
   function summaryMetric(label: string, value: string, tl: TrafficLight): string {
     return `<div style="text-align:center;padding:12px;">
@@ -146,6 +150,7 @@ function buildSummaryPage(nights: NightResult[]): string {
         ${summaryMetric('Avg FL Score', fmt(avgFL) + '%', flTL)}
         ${summaryMetric('Avg NED Mean', fmt(avgNED) + '%', nedTL)}
         ${summaryMetric('Avg RERA/hr', fmt(avgRERA), reraTL)}
+        ${summaryMetric('Avg Est. RDI', fmt(avgRDI) + '/hr', rdiTL)}
         ${summaryMetric('Avg Regularity', Math.round(avgReg) + '%', getTrafficLight(avgReg, THRESHOLDS.watRegularity))}
       </div>
 

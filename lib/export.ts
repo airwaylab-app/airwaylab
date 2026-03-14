@@ -4,6 +4,7 @@
 
 import type { NightResult } from './types';
 import { computeIFLRisk } from './ifl-risk';
+import { computeEstimatedRDI } from './derived-metrics';
 import { loadNightNotes } from './night-notes';
 
 export function exportCSV(nights: NightResult[]): string {
@@ -40,6 +41,7 @@ export function exportCSV(nights: NightResult[]): string {
     'M-Shape%',
     'RERA Index',
     'RERA Count',
+    'Estimated RDI (/hr)',
     'H1 NED Mean',
     'H2 NED Mean',
     'Combined FL%',
@@ -100,6 +102,7 @@ export function exportCSV(nights: NightResult[]): string {
     n.ned.mShapePct.toFixed(2),
     n.ned.reraIndex.toFixed(2),
     n.ned.reraCount,
+    computeEstimatedRDI(n.ned).toFixed(2),
     n.ned.h1NedMean.toFixed(2),
     n.ned.h2NedMean.toFixed(2),
     n.ned.combinedFLPct.toFixed(2),
