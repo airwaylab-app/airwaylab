@@ -27,7 +27,7 @@ export const NightSummaryCard = memo(function NightSummaryCard({ night }: Props)
   const metrics = useMemo(() => [
     {
       label: 'Glasgow Index',
-      value: glasgow.overall.toFixed(1),
+      value: glasgow.overall.toFixed(2),
       tl: getTrafficLight(glasgow.overall, THRESHOLDS.glasgowOverall),
       color: getTrafficColor(getTrafficLight(glasgow.overall, THRESHOLDS.glasgowOverall)),
     },
