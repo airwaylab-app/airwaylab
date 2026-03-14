@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendChart } from '@/components/charts/trend-chart';
+import { GlasgowRadar } from '@/components/charts/glasgow-radar';
 import { FlowWaveform, type EventType } from '@/components/charts/flow-waveform';
 import { DevicePressureChart } from '@/components/charts/device-pressure-chart';
 import { DeviceLeakChart } from '@/components/charts/device-leak-chart';
@@ -285,8 +286,8 @@ export function GraphsTab({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Trend Chart — multi-night overview */}
-      {nights.length > 1 && (
+      {/* Trend Chart — always visible when data exists */}
+      {nights.length > 0 && (
         <TrendChart nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
 
@@ -320,33 +321,32 @@ export function GraphsTab({
         </Card>
       )}
 
-      {/* No waveform data — show upload prompt */}
+      {/* No waveform data — show Glasgow Radar + upload hint */}
       {!cloudLoading && state.status !== 'loading' && state.status !== 'error' && !storedWaveform && (
-        !isDemo && sdFiles.length === 0 && (cloudAttempted || !cloudLoading) ? (
-          <Card className="border-border/50">
-            <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-              <Waves className="h-6 w-6 text-muted-foreground/70" />
-              <p className="text-sm text-muted-foreground">
-                Re-upload your SD card to view flow waveforms
-              </p>
-              <p className="max-w-sm text-center text-[11px] leading-relaxed text-muted-foreground/80">
-                Your analysis metrics were restored from a previous session, but waveform graphs
-                need the original EDF files. Re-upload your SD card folder and they&apos;ll be
-                cached for future visits.
+        <>
+          {/* Glasgow Radar — always available from persisted metrics */}
+          <GlasgowRadar glasgow={selectedNight.glasgow} />
+
+          {/* Info banner for waveform upload */}
+          {!isDemo && sdFiles.length === 0 && (cloudAttempted || !cloudLoading) ? (
+            <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
+              <Waves className="h-4 w-4 shrink-0 text-muted-foreground/70" />
+              <p className="flex-1 text-xs text-muted-foreground">
+                Re-upload your SD card to view flow waveforms, pressure, leak, and respiratory rate charts.
               </p>
               {onReUpload && (
-                <Button variant="outline" size="sm" onClick={onReUpload} className="mt-1">Re-upload SD card</Button>
+                <Button variant="outline" size="sm" onClick={onReUpload} className="shrink-0">Re-upload</Button>
               )}
-            </CardContent>
-          </Card>
-        ) : !storedWaveform ? (
-          <Card className="border-border/50">
-            <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
-              <Waves className="h-6 w-6 text-muted-foreground/70" />
-              <p className="text-sm text-muted-foreground">No flow data available</p>
-            </CardContent>
-          </Card>
-        ) : null
+            </div>
+          ) : !isDemo ? (
+            <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
+              <Waves className="h-4 w-4 shrink-0 text-muted-foreground/70" />
+              <p className="flex-1 text-xs text-muted-foreground">
+                Upload your SD card to view flow waveform charts.
+              </p>
+            </div>
+          ) : null}
+        </>
       )}
 
       {/* ── Synced Stacked Chart View ── */}
