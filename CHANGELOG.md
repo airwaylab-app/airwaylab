@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Graphs tab always shows data** — TrendChart now renders for single-night users (was 2+ only) with a dynamic title ("Night Metrics" / "Multi-Night Trends"). When no waveform data is available, the Glasgow Radar chart renders as a fallback from persisted metrics, replacing the old full-page "re-upload" placeholder with a compact info banner. (graphs-tab-always-show-data)
 - **Frustration replay detection** — Sentry session replay now captures rage clicks (3+ rapid clicks) and dead clicks (no response within 7s) to detect UX bugs users experience but never report. API request/response bodies included in replays for debugging. (frustration-replay-detection)
 - **Critical journey Sentry events** — 5 checkpoints that fire Sentry warnings on silent failures: zero nights parsed, zero analysis results, empty AI insights response, auth ghost session, all uploaded files rejected. Catches bugs users experience but never report. (critical-journey-sentry-events)
 - **E2E tests: export, errors, mobile** — Complementary Playwright tests covering export button flows (CSV, JSON, forum copy), invalid file upload error handling, empty page console errors, and mobile viewport dashboard rendering. Fills gaps in existing e2e coverage. (e2e-export-and-error-tests)
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AI insights truncation recovery** — When Claude's response exceeds the token limit, the parser now salvages complete insights from the truncated JSON instead of returning a 502 error. System prompt updated to enforce conciseness. Fixes JAVASCRIPT-NEXTJS-G (17 events). (ai-insights-truncation-recovery)
 - **Oximetry trace persistence** — SpO₂/HR trace chart now survives page reloads via IndexedDB storage. Previously, trace data was stripped from localStorage (too large) and required re-uploading the CSV after every refresh. (oximetry-trace-persistence)
 - **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
 

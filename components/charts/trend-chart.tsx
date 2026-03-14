@@ -66,7 +66,7 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
     <Card className="border-border/50">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-sm font-medium">Multi-Night Trends</CardTitle>
+          <CardTitle className="text-sm font-medium">{nights.length > 1 ? 'Multi-Night Trends' : 'Night Metrics'}</CardTitle>
           <div className="flex flex-wrap gap-1.5">
             {METRICS.map((m) => (
               <button
