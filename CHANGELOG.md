@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Estimated RDI display** — new composite metric combining RERA Index and Hypopnea Index into an estimated Respiratory Disturbance Index, displayed on the Flow Analysis tab with traffic light thresholds (green ≤5, amber ≤15, red >15/hr). Included in CSV, forum, and PDF exports. Based on AASM definition; labeled as conservative lower bound since apneas cannot be detected from flow data. (estimated-rdi-display)
+- **Premium AI model upgrade** — Supporter and Champion AI insights now use Claude Sonnet instead of Haiku for higher-quality clinical analysis. Community tier continues to use Haiku. (premium-ai-model-upgrade)
+- **Premium insights depth enhancement** — Paid AI analysis now generates 6-10 insights (vs 3-6 for free) with two new categories: cross-engine correlations and temporal patterns. Token budget increased to 4096 for richer output. (premium-insights-depth-enhancement)
 
 ### Changed
 

@@ -22,7 +22,7 @@ const PRICES = {
 const COMMUNITY_FEATURES = [
   'All 4 analysis engines (Glasgow, WAT, NED, Oximetry)',
   'Up to 3 nights per analysis',
-  '3 AI-powered insights per month',
+  '3-6 AI insights per month',
   'Unlimited cloud storage for your EDF files',
   'CSV & JSON export',
   'Forum-formatted summaries',
@@ -30,7 +30,7 @@ const COMMUNITY_FEATURES = [
 
 const SUPPORTER_FEATURES = [
   'Everything in Community, plus:',
-  'Unlimited waveform-level deep AI insights',
+  '6-10 deep AI insights per analysis (unlimited)',
   'Cloud sync across devices',
   'Full trend analysis (up to 90 nights)',
   'PDF clinician reports',
@@ -50,7 +50,7 @@ const CHAMPION_FEATURES = [
 const FAQ_ITEMS = [
   {
     q: 'Can I really use AirwayLab for free?',
-    a: 'Yes. All four analysis engines, 3 nights per upload, and 3 AI insights per month are free forever. No credit card required.',
+    a: 'Yes. All four analysis engines, 3 nights per upload, and 3-6 AI insights per month are free forever. No credit card required.',
   },
   {
     q: 'What happens to my data?',
