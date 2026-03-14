@@ -29,6 +29,8 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   amplitudeCv: { green: 20, amber: 30, lowerIsBetter: true },
   unstableEpochPct: { green: 15, amber: 25, lowerIsBetter: true },
 
+  estimatedRdi: { green: 5, amber: 15, lowerIsBetter: true },
+
   // Settings validation thresholds (BiPAP)
   settingsTriggerDelay: { green: 300, amber: 500, lowerIsBetter: true },
   settingsAutoTrigger: { green: 2, amber: 5, lowerIsBetter: true },
