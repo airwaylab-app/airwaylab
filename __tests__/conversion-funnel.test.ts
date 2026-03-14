@@ -218,8 +218,8 @@ describe('Step 7: Deep AI insights', () => {
 
   it('deep mode only available for non-community tiers', () => {
     const src = readSource('app/api/ai-insights/route.ts');
-    // Deep request requires non-community tier
-    expect(src).toContain("userTier !== 'community'");
+    // Deep request requires paid tier (supporter or champion)
+    expect(src).toContain('isPaidTier');
   });
 });
 
@@ -267,9 +267,9 @@ describe('Step 9: Privacy and pricing updates', () => {
     expect(src).toContain('Unlimited cloud storage for your EDF files');
   });
 
-  it('pricing page shows waveform-level deep AI for supporters', () => {
+  it('pricing page shows deep AI insights for supporters', () => {
     const src = readSource('app/pricing/page.tsx');
-    expect(src).toContain('Unlimited waveform-level deep AI insights');
+    expect(src).toContain('6-10 deep AI insights per analysis (unlimited)');
   });
 
   it('pricing FAQ mentions Account Settings for data deletion', () => {

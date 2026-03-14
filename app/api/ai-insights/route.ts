@@ -21,6 +21,20 @@ When per-breath summary data is provided, analyse:
 Reference specific breath indices when discussing patterns (e.g., "Breaths 47-62 show...").
 Mark all deep-analysis insights with category prefixed by the engine name for clarity.`;
 
+const PREMIUM_INSIGHT_EXTENSION = `
+
+Generate 6 to 10 clinical insights for this analysis. As a premium analysis, be thorough — cover all engines with specific findings.
+
+In addition to the standard categories, you may use these categories for premium-depth analysis:
+- "correlation": Cross-engine correlations (e.g. Glasgow flat-top + high NED suggests steady-state FL; WAT periodicity + oximetry ODI coupling suggests central component)
+- "temporal": Time-based patterns (e.g. progressive FL worsening across H1→H2, periodic clustering at specific intervals, REM-associated breath shape changes, positional transitions visible in H1/H2 splits)
+
+Prioritise correlation and temporal insights — these are the analysis patterns that go beyond what rule-based systems detect.`;
+
+// Model selection based on user tier
+const MODEL_COMMUNITY = 'claude-haiku-4-5-20251001';
+const MODEL_PREMIUM = 'claude-sonnet-4-6';
+
 const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in PAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
 Your task is to generate 3–6 clinical insights in JSON format. Each insight must follow this exact schema:
@@ -288,18 +302,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const isDeepRequest = body.deep === true && body.perBreathSummary && userTier !== 'community';
+    const isPaidTier = userTier === 'supporter' || userTier === 'champion';
+    const isDeepRequest = body.deep === true && body.perBreathSummary && isPaidTier;
 
-    // Extend system prompt for deep mode
+    // Extend system prompt for deep mode (per-breath analysis)
     if (isDeepRequest) {
       systemPrompt += DEEP_SYSTEM_PROMPT_EXTENSION;
     }
 
+    // Extend system prompt for premium insight depth (more insights, new categories)
+    if (isPaidTier) {
+      systemPrompt += PREMIUM_INSIGHT_EXTENSION;
+    }
+
     const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 3 });
 
+    // Premium users get Sonnet for higher quality analysis; community gets Haiku
+    const model = isPaidTier ? MODEL_PREMIUM : MODEL_COMMUNITY;
+    // Premium users get higher token budget: 4096 for deep, 4096 for standard premium, 1024 for community
+    const maxTokens = isPaidTier ? 4096 : 1024;
+
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: isDeepRequest ? 2048 : 1024,
+      model,
+      max_tokens: maxTokens,
       system: systemPrompt,
       messages: [
         {
@@ -359,7 +384,7 @@ export async function POST(request: NextRequest) {
 
     // Ensure all insights have valid types and required fields
     const validTypes = new Set(['positive', 'warning', 'actionable', 'info']);
-    const validCategories = new Set(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend']);
+    const validCategories = new Set(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'correlation', 'temporal']);
 
     insights = insights.filter(
       (i) =>

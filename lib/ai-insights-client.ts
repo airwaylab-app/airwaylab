@@ -134,7 +134,7 @@ export async function fetchDeepAIInsights(
   perBreathSummary?: PerBreathSummary
 ): Promise<AIInsightsResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 45000);
 
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
@@ -178,7 +178,7 @@ export async function fetchDeepAIInsights(
       if (signal?.aborted) {
         throw err; // External abort (unmount / re-generate)
       }
-      console.error('[ai-insights] Request timed out after 30s');
+      console.error('[ai-insights] Request timed out after 45s');
       throw new Error('AI analysis timed out. Please try again.');
     }
     throw err;
