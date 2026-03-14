@@ -88,6 +88,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/analyze?auth_error=true`);
   }
 
+  // Checkpoint: code exchange succeeded but user is null (ghost session)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.error('[auth/callback] Code exchange succeeded but getUser() returned null');
+    Sentry.captureMessage('Auth ghost session: code exchange succeeded but user is null', {
+      level: 'warning',
+      tags: { checkpoint: 'auth_ghost_session', route: 'auth-callback' },
+    });
+  }
+
   // Add auth=success param so the client-side AuthProvider can detect
   // a fresh login and retry session pickup if needed.
   const separator = next.includes('?') ? '&' : '?';
