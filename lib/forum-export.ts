@@ -71,7 +71,7 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
 
   // Glasgow
   lines.push('**Flow Limitation (Glasgow Index)**');
-  lines.push(`Overall: ${fmt(n.glasgow.overall)} ${light(n.glasgow.overall, 'glasgowOverall')}`);
+  lines.push(`Overall: ${fmt(n.glasgow.overall, 2)} ${light(n.glasgow.overall, 'glasgowOverall')}`);
 
   const comps = [
     ['Skew', n.glasgow.skew],
@@ -142,7 +142,7 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
     const ifl = computeIFLRisk(n);
     const boi = n.ned.briefObstructionIndex ?? 0;
     lines.push(
-      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(ifl)}% ${light(ifl, 'iflRisk')} | ${fmt(n.glasgow.overall)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${fmt(boi)} | ${Math.round(n.wat.regularityScore)}% |`
+      `| ${n.dateStr} | ${fmtHrs(n.durationHours)} | ${fmt(ifl)}% ${light(ifl, 'iflRisk')} | ${fmt(n.glasgow.overall, 2)} ${light(n.glasgow.overall, 'glasgowOverall')} | ${fmt(n.wat.flScore)}% | ${fmt(n.ned.nedMean)}% | ${fmt(n.ned.reraIndex)} | ${fmt(boi)} | ${Math.round(n.wat.regularityScore)}% |`
     );
   }
 
@@ -151,7 +151,7 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
     sorted.reduce((sum, n) => sum + fn(n), 0) / sorted.length;
 
   lines.push(
-    `| **Average** | | **${fmt(avg((n) => computeIFLRisk(n)))}%** | **${fmt(avg((n) => n.glasgow.overall))}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${fmt(avg((n) => n.ned.briefObstructionIndex ?? 0))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
+    `| **Average** | | **${fmt(avg((n) => computeIFLRisk(n)))}%** | **${fmt(avg((n) => n.glasgow.overall), 2)}** | **${fmt(avg((n) => n.wat.flScore))}%** | **${fmt(avg((n) => n.ned.nedMean))}%** | **${fmt(avg((n) => n.ned.reraIndex))}** | **${fmt(avg((n) => n.ned.briefObstructionIndex ?? 0))}** | **${Math.round(avg((n) => n.wat.regularityScore))}%** |`
   );
 
   lines.push('');

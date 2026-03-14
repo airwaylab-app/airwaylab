@@ -96,7 +96,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
                   <div className="hidden text-xs text-muted-foreground sm:block">{c.desc}</div>
                 </div>
                 <div className="ml-2 shrink-0 font-mono text-base tabular-nums sm:text-lg">
-                  {(n.glasgow[c.key] as number).toFixed(1)}
+                  {(n.glasgow[c.key] as number).toFixed(2)}
                 </div>
               </div>
             ))}
@@ -126,7 +126,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
                       className="flex flex-1 flex-col items-center gap-1"
                     >
                       <span className="text-[10px] font-mono tabular-nums text-muted-foreground">
-                        {val.toFixed(1)}
+                        {val.toFixed(2)}
                       </span>
                       <div
                         className={`w-full rounded-t transition-colors ${
