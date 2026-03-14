@@ -5,6 +5,7 @@
 // Runs independently from the main analysis orchestrator.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type {
   StoredWaveform,
   WaveformWorkerResponse,
@@ -172,6 +173,7 @@ class WaveformOrchestrator {
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       console.error('[waveform] extraction failed:', error);
+      Sentry.captureException(err, { extra: { context: 'waveform-extraction' } });
       this.setState({ status: 'error', waveform: null, error });
       return null;
     }
