@@ -96,7 +96,7 @@ export function SharedViewClient({
               Shared Analysis &middot; {nightsCount} night
               {nightsCount !== 1 ? 's' : ''} &middot; Expires {expiresDate}
             </h1>
-            {machineInfo && (
+            {machineInfo && machineInfo.settingsSource !== 'unavailable' ? (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <HardDrive className="h-3 w-3" />
                 {machineInfo.deviceModel}
@@ -107,6 +107,11 @@ export function SharedViewClient({
                 {machineInfo.ipap
                   ? ` / IPAP ${machineInfo.ipap}`
                   : ''}
+              </p>
+            ) : (
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/60">
+                <HardDrive className="h-3 w-3" />
+                Device settings not available
               </p>
             )}
           </div>

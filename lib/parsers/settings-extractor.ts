@@ -196,10 +196,23 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       maskType: maskRaw !== undefined ? (MASK_MAP[Math.round(maskRaw)] ?? `Type ${Math.round(maskRaw)}`) : null,
       smartStart: smartStartRaw !== undefined ? Math.round(smartStartRaw) !== 0 : null,
       extendedSettings: Object.keys(extended).length > 0 ? extended : undefined,
+      settingsSource: 'extracted',
     };
   }
 
   return dailySettings;
+}
+
+/**
+ * Extract signal labels from an STR.edf buffer (for diagnostics when extraction fails).
+ */
+export function getSTRSignalLabels(strBuffer: ArrayBuffer): string[] {
+  try {
+    const { signals } = parseSTR(strBuffer);
+    return signals.map((s) => s.label);
+  } catch {
+    return [];
+  }
 }
 
 /**

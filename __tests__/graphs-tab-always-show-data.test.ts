@@ -22,6 +22,7 @@ function makeSettings(): MachineSettings {
     trigger: 'Medium',
     cycle: 'Medium',
     easyBreathe: false,
+    settingsSource: 'extracted',
   };
 }
 

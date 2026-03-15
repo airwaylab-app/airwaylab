@@ -58,7 +58,7 @@ function buildNightSection(n: NightResult, index: number): string {
       <p style="font-size:12px;color:#64748b;margin:0 0 16px;">
         Duration: ${fmt(n.durationHours, 1)} hrs &middot;
         ${n.sessionCount} session${n.sessionCount !== 1 ? 's' : ''} &middot;
-        ${n.settings.papMode} ${n.settings.epap}/${n.settings.ipap} cmH\u2082O
+        ${n.settings.settingsSource === 'unavailable' ? 'Device settings not available' : `${n.settings.papMode} ${n.settings.epap}/${n.settings.ipap} cmH\u2082O`}
       </p>
 
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;">

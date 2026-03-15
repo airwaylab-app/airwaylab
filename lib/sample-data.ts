@@ -20,6 +20,7 @@ const baseSettings: MachineSettings = {
   trigger: 'Medium',
   cycle: 'Medium',
   easyBreathe: false,
+  settingsSource: 'extracted',
 };
 
 // Night 1: Most recent — moderate FL, with oximetry
@@ -303,6 +304,7 @@ const oldSettings: MachineSettings = {
   trigger: 'Medium',
   cycle: 'Medium',
   easyBreathe: false,
+  settingsSource: 'extracted',
 };
 
 export const SAMPLE_NIGHTS: NightResult[] = [

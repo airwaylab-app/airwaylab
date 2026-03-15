@@ -214,6 +214,10 @@ export function loadPersistedResults(): {
       if (night.ned && night.ned.estimatedArousalIndex === undefined) {
         night.ned.estimatedArousalIndex = 0;
       }
+      // Migrate: settingsSource added in v0.8.0
+      if (night.settings && night.settings.settingsSource === undefined) {
+        night.settings.settingsSource = 'extracted';
+      }
       // Migrate: hypopnea & amplitude stability fields added in v0.7.0
       if (night.ned && night.ned.briefObstructionIndex === undefined) {
         night.ned.hypopneaCount = 0;

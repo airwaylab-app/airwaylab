@@ -102,6 +102,7 @@ function makeNight(dateStr: string): NightResult {
       trigger: 'Medium',
       cycle: 'Medium',
       easyBreathe: false,
+      settingsSource: 'extracted',
     },
     glasgow: {
       overall: 2.1,

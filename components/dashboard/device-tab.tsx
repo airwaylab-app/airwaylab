@@ -100,21 +100,33 @@ export function DeviceTab({ selectedNight, isDemo, sdFiles, onReUpload }: Props)
   const settings = selectedNight.settings;
 
   return (
-    <SyncedViewportProvider
-      durationSeconds={waveform.durationSeconds}
-      dateStr={selectedNight.dateStr}
-    >
-      <DeviceTabCharts
-        waveform={waveform}
-        settings={settings}
-        showPressure={showPressure}
-        showLeak={showLeak}
-        hasPressure={hasPressure}
-        hasLeak={hasLeak}
-        onTogglePressure={() => setShowPressure(!showPressure)}
-        onToggleLeak={() => setShowLeak(!showLeak)}
-      />
-    </SyncedViewportProvider>
+    <div className="flex flex-col gap-4">
+      {settings.settingsSource === 'unavailable' && (
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardContent className="flex gap-2 py-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Prescribed settings couldn&apos;t be read from your SD card. Pressure and leak charts below show what your machine actually delivered.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      <SyncedViewportProvider
+        durationSeconds={waveform.durationSeconds}
+        dateStr={selectedNight.dateStr}
+      >
+        <DeviceTabCharts
+          waveform={waveform}
+          settings={settings}
+          showPressure={showPressure}
+          showLeak={showLeak}
+          hasPressure={hasPressure}
+          hasLeak={hasLeak}
+          onTogglePressure={() => setShowPressure(!showPressure)}
+          onToggleLeak={() => setShowLeak(!showLeak)}
+        />
+      </SyncedViewportProvider>
+    </div>
   );
 }
 
