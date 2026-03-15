@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Disclaimer } from '@/components/common/disclaimer';
 import { events } from '@/lib/analytics';
+import { CloudSyncToggle } from '@/components/upload/cloud-sync-nudge';
 import {
   User,
   CreditCard,
@@ -195,6 +196,9 @@ export default function AccountPage() {
                 <span>
                   {stats.nightCount} {stats.nightCount === 1 ? 'night' : 'nights'}
                 </span>
+              </div>
+              <div className="flex justify-between items-center pt-1">
+                <CloudSyncToggle />
               </div>
             </div>
           )}
