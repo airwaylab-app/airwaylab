@@ -85,6 +85,9 @@ export function Footer() {
               >
                 Report an Issue
               </a>
+              <Link href="/research" className="transition-colors hover:text-foreground">
+                For Researchers
+              </Link>
             </nav>
           </div>
 

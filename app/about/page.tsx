@@ -313,6 +313,12 @@ export default function AboutPage() {
                 Patterns hidden in thousands of real-world therapy nights that no single sleep lab has the scale to
                 find. Think of it as open-source science for airway therapy.
               </p>
+              <Link
+                href="/research"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm text-blue-400 transition-colors hover:text-blue-300"
+              >
+                Learn more about our research programme <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           </div>
 
