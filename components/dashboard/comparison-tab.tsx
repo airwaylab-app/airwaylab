@@ -14,6 +14,7 @@ interface Props {
 
 function fmtPressure(n: NightResult): string {
   const s = n.settings;
+  if (s.settingsSource === 'unavailable') return 'N/A';
   if (s.epap > 0 && s.ipap > 0) return `${s.epap}/${s.ipap} cmH₂O (PS ${s.pressureSupport})`;
   if (s.epap > 0) return `${s.epap} cmH₂O`;
   return '—';

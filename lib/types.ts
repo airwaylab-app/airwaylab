@@ -67,6 +67,8 @@ export interface MachineSettings {
   smartStart?: boolean | null;
   /** All additional S.* signals not captured in typed fields above. */
   extendedSettings?: Record<string, number>;
+  /** Whether settings were actually extracted from STR.edf or are fallback defaults. */
+  settingsSource: 'extracted' | 'unavailable';
 }
 
 export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';
@@ -346,4 +348,12 @@ export interface WorkerWarning {
   tags: Record<string, string | number>;
 }
 
-export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError | WorkerWarning;
+export interface WorkerSettingsDiagnostic {
+  type: 'SETTINGS_DIAGNOSTIC';
+  deviceModel: string;
+  signalLabels: string[];
+  identificationText: string | null;
+  hasStrFile: boolean;
+}
+
+export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError | WorkerWarning | WorkerSettingsDiagnostic;

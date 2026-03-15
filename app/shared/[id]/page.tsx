@@ -20,6 +20,11 @@ export const metadata: Metadata = {
  */
 function rehydrateNight(raw: Record<string, unknown>): NightResult {
   const ned = (raw.ned ?? {}) as Record<string, unknown>;
+  // Migrate settings: add settingsSource if missing (pre-v0.8.0 shares)
+  const rawSettings = (raw.settings ?? {}) as Record<string, unknown>;
+  if (rawSettings.settingsSource === undefined) {
+    rawSettings.settingsSource = 'extracted';
+  }
   return {
     ...raw,
     date: new Date(raw.date as string),

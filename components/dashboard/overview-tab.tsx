@@ -133,46 +133,52 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           </span>
         </summary>
         <div className="border-t border-border/30 px-4 pb-4 pt-3">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
-            {n.settings.deviceModel && (
-              <div className="col-span-2 sm:col-span-4">
-                <span className="text-[10px] text-muted-foreground">Device</span>
-                <p className="text-xs font-medium">{n.settings.deviceModel}</p>
+          {n.settings.settingsSource === 'unavailable' ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Your device settings couldn&apos;t be read from the SD card. This usually means the device type isn&apos;t supported yet, or the settings file (STR.edf) wasn&apos;t included in the upload. Analysis of your breathing data is unaffected.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+              {n.settings.deviceModel && (
+                <div className="col-span-2 sm:col-span-4">
+                  <span className="text-[10px] text-muted-foreground">Device</span>
+                  <p className="text-xs font-medium">{n.settings.deviceModel}</p>
+                </div>
+              )}
+              <div>
+                <span className="text-[10px] text-muted-foreground">Mode</span>
+                <p className="text-xs font-medium">{n.settings.papMode}</p>
               </div>
-            )}
-            <div>
-              <span className="text-[10px] text-muted-foreground">Mode</span>
-              <p className="text-xs font-medium">{n.settings.papMode}</p>
+              <div>
+                <span className="text-[10px] text-muted-foreground">EPAP</span>
+                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">IPAP</span>
+                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">PS</span>
+                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">Rise Time</span>
+                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.riseTime !== null ? n.settings.riseTime : '—'}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">Trigger</span>
+                <p className="text-xs font-medium">{n.settings.trigger}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">Cycle</span>
+                <p className="text-xs font-medium">{n.settings.cycle}</p>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">EasyBreathe</span>
+                <p className="text-xs font-medium">{n.settings.easyBreathe ? 'On' : 'Off'}</p>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">EPAP</span>
-              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">IPAP</span>
-              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">PS</span>
-              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">Rise Time</span>
-              <p className="font-mono text-xs font-medium tabular-nums">{n.settings.riseTime !== null ? n.settings.riseTime : '—'}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">Trigger</span>
-              <p className="text-xs font-medium">{n.settings.trigger}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">Cycle</span>
-              <p className="text-xs font-medium">{n.settings.cycle}</p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">EasyBreathe</span>
-              <p className="text-xs font-medium">{n.settings.easyBreathe ? 'On' : 'Off'}</p>
-            </div>
-          </div>
+          )}
         </div>
       </details>
 

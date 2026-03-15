@@ -13,6 +13,7 @@ function makeSettings(overrides: Partial<MachineSettings> = {}): MachineSettings
     epap: 10, ipap: 14, pressureSupport: 4,
     papMode: 'APAP', riseTime: 2, trigger: 'Medium',
     cycle: 'Medium', easyBreathe: false,
+    settingsSource: 'extracted',
     ...overrides,
   };
 }

@@ -7,119 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Device settings extraction status** — Track whether device settings were actually extracted or are fallback defaults (`settingsSource` field). Clear messaging when settings are unavailable instead of misleading zeros/dashes. (settings-extraction-fallback-ux)
+- **Device diagnostic collection** — Automatically save unknown device STR.edf signal labels and identification text to Supabase when settings extraction fails, enabling future device support. (settings-extraction-fallback-ux)
+- **Tonic desaturation insight** — New insight rule detects when T<94% is elevated with low ODI3, indicating baseline respiratory depression (e.g., alcohol) rather than obstructive events. (research-validation-fixes)
+
+### Fixed
+
+- **False EPAP mismatch insights** — Pressure comparison insights no longer fire when settings weren't extracted (prevented "delivered 10 cmH₂O differs from prescribed 0" false warnings). (settings-extraction-fallback-ux)
+- **AI insights on unavailable settings** — Claude Haiku is now told when settings are unavailable instead of receiving zero pressure values. (settings-extraction-fallback-ux)
+- **IFL Risk FI inversion** — Fixed critical bug where the Flatness Index component (20% weight) was inverted in the IFL Symptom Risk composite. Higher FI (more flow limitation) now correctly increases risk instead of decreasing it. (research-validation-fixes)
+- **Brief obstruction EPAP recommendation** — Removed clinically incorrect recommendation to increase EPAP for brief obstructions. Research shows these events do not respond to pressure changes. (research-validation-fixes)
+- **RERA FL criterion** — Replaced unreliable Tpeak/Ti > 0.40 with FI >= 0.85 in RERA detection. Tpeak/Ti is artifactually elevated on BiPAP (94% of breaths exceed threshold), inflating RERA counts. (research-validation-fixes)
+- **EAI methodology description** — Corrected thresholds (35%/50% not 20%/30%), logic (AND not OR), and documented FL prerequisite and 30s refractory period to match actual algorithm. (research-validation-fixes)
+- **Glasgow Index range** — Fixed CLAUDE.md documentation: Glasgow sums all 9 components (range 0-9), not 8 (range 0-8). (research-validation-fixes)
+- **AI prompt pressure ceiling** — Added Jounieaux 1995 glottic narrowing constraint to prevent AI from recommending blanket pressure increases. Removed contradictory EPR adjustment example. (research-validation-fixes)
+- **Coupled event insight** — Corrected overstated coupling mechanism description. In UARS, most HR surges and desaturations are independent. (research-validation-fixes)
+
 ### Security
 
 - **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
 - **Persistent rate limiting** — Rate limiting now persists across Vercel cold starts via Upstash Redis. Falls back to in-memory when not configured. Fails open on Redis errors with Sentry logging. (persistent-rate-limiting)
-
-### Added
-
-- **Pressure waveform contribution** — Waveform contributions now include the pressure channel alongside flow data using the AWL2 binary format, enabling future ML models to learn pressure-response dynamics. Falls back to flow-only when pressure unavailable or size exceeds limit. (pressure-waveform-contribution)
-- **Enhanced contribution schema** — Metrics contributions now include all NED fields (EAI, hypopnea, brief obstruction, amplitude stability), settingsMetrics (trigger/cycle timing, tidal volume, IPAP dwell), and oximetry cleaning metadata. Symptom contributions enriched with 6 additional ML features. ML export RPCs updated. (enhanced-contribution-schema)
-- **Graphs tab always shows data** — TrendChart now renders for single-night users (was 2+ only) with a dynamic title ("Night Metrics" / "Multi-Night Trends"). When no waveform data is available, the Glasgow Radar chart renders as a fallback from persisted metrics, replacing the old full-page "re-upload" placeholder with a compact info banner. (graphs-tab-always-show-data)
-- **Frustration replay detection** — Sentry session replay now captures rage clicks (3+ rapid clicks) and dead clicks (no response within 7s) to detect UX bugs users experience but never report. API request/response bodies included in replays for debugging. (frustration-replay-detection)
-- **Critical journey Sentry events** — 5 checkpoints that fire Sentry warnings on silent failures: zero nights parsed, zero analysis results, empty AI insights response, auth ghost session, all uploaded files rejected. Catches bugs users experience but never report. (critical-journey-sentry-events)
-- **E2E tests: export, errors, mobile** — Complementary Playwright tests covering export button flows (CSV, JSON, forum copy), invalid file upload error handling, empty page console errors, and mobile viewport dashboard rendering. Fills gaps in existing e2e coverage. (e2e-export-and-error-tests)
-- **Estimated RDI display** — new composite metric combining RERA Index and Hypopnea Index into an estimated Respiratory Disturbance Index, displayed on the Flow Analysis tab with traffic light thresholds (green ≤5, amber ≤15, red >15/hr). Included in CSV, forum, and PDF exports. Based on AASM definition; labeled as conservative lower bound since apneas cannot be detected from flow data. (estimated-rdi-display)
-- **Premium AI model upgrade** — Supporter and Champion AI insights now use Claude Sonnet instead of Haiku for higher-quality clinical analysis. Community tier continues to use Haiku. (premium-ai-model-upgrade)
-- **Premium insights depth enhancement** — Paid AI analysis now generates 6-10 insights (vs 3-6 for free) with two new categories: cross-engine correlations and temporal patterns. Token budget increased to 4096 for richer output. (premium-insights-depth-enhancement)
-
-### Changed
-
-- **Hero card treatment context framing** — Night summary hero now uses dual framing: acknowledges good event control (RERA/hypopnea) before presenting flow limitation metrics, so users with effective CPAP treatment don't misinterpret red FL metrics as treatment failure. Users with good event control never see a red hero card. (hero-treatment-context-framing)
-
-### Fixed
-
-- **AI insights truncation recovery** — When Claude's response exceeds the token limit, the parser now salvages complete insights from the truncated JSON instead of returning a 502 error. System prompt updated to enforce conciseness. Fixes JAVASCRIPT-NEXTJS-G (17 events). (ai-insights-truncation-recovery)
-- **Oximetry trace persistence** — SpO₂/HR trace chart now survives page reloads via IndexedDB storage. Previously, trace data was stripped from localStorage (too large) and required re-uploading the CSV after every refresh. (oximetry-trace-persistence)
-- **Resumable Cloud Sync** — cloud file upload now resumes correctly after page refresh instead of restarting from zero. Fixes orphaned metadata rows that caused files to be permanently skipped when upload was interrupted mid-way. Adds client-side hash caching for near-instant re-hashing on resume, and shows "X already stored" in the progress banner. (upload-resume-and-orphan-fix)
-
-### Added
-
-- **Clinician Questions Generator** — rule-based engine that translates amber/red metric patterns into 2–4 targeted questions users can bring to their sleep clinic appointment. Collapsed "Prepare for Your Appointment" section with copy-to-clipboard, traffic light urgency, and medical disclaimer. Education-first design: questions, not recommendations. (clinician-questions-generator)
-- **BiPAP Settings Validation Engine** — new analysis engine (`settings-engine.ts`) that uses the 25Hz BRP pressure channel alongside flow to compute per-breath trigger delay, cycle timing, IPAP dwell, tidal volume, and ventilation stability metrics for BiPAP users. Worker pipeline now concatenates pressure data across multi-session nights. Phase 1 of 3 (engine + plumbing, no UI yet). (bipap-settings-validation-metrics)
-- **Delivered vs Prescribed Pressure** — shows both prescribed (from STR.edf settings) and delivered (P10/P90 from BRP.edf waveform) pressure values on the Device tab with mode-aware educational explanations, divergence alerts, and glossary entries. Uses reservoir sampling for efficient percentile computation on large Float32Arrays. (delivered-vs-prescribed-pressure)
-- **BiPAP Settings Dashboard Tab** — new Settings tab in the dashboard (Phase 2) displaying per-breath trigger response, cycle timing, ventilation, and expiratory pressure metrics from the settings engine. Conditional on BiPAP data — hidden for CPAP users. Includes trend modals, methodology popovers, and medical disclaimer. (bipap-settings-dashboard)
-- **BiPAP Settings Thresholds, Insights & Trends** — Phase 3: 10 traffic light thresholds for settings metrics, 8 insight rules (premature cycle, late cycle, low IPAP dwell, short Ti, Ti delta, pressure mismatch, unstable ventilation, settings-good), and a Settings Metrics table in the Trends tab. (bipap-settings-thresholds-insights)
-
-### Fixed
-
-- **AI insights error handling** — replaced generic "AI service error (502)" catch-all with specific error messages for each Anthropic SDK error type (auth, connection, timeout, bad request, model not found, server error), with distinct Sentry tags for filtering (ai-insights-error-handling)
-- **Disclaimer localStorage crash** — Wrapped localStorage calls in try/catch to prevent crash in Safari private browsing (codebase-audit-hardening)
-- **PDF report empty-array guard** — `openPDFReport([])` now returns silently instead of crashing on `nights[0]` access (codebase-audit-hardening)
-- **API schema leak** — Removed Zod validation error details from `/api/store-analysis-data` 400 response; details now logged server-side only (codebase-audit-hardening)
-- **useWaveform unmount safety** — Added cancelled flag to prevent setState after component unmount during cloud file loading (codebase-audit-hardening)
-- **ShareButton timer cleanup** — setTimeout IDs stored in ref and cleared on unmount to prevent memory leaks (codebase-audit-hardening)
-- **FlowWaveform stable keys** — Event overlay keys now use `type-startSec-endSec` instead of array index for correct React reconciliation (codebase-audit-hardening)
-- **Sentry navigation tracking** — Added missing `onRouterTransitionStart` export to `instrumentation-client.ts` (codebase-audit-hardening)
-
-### Added
-
-- **safeLocalStorage utility** — centralised try/catch wrapper for localStorage calls, preventing crashes in Safari private browsing and quota-exceeded scenarios (codebase-audit-scope-boundary)
-
-### Fixed
-
-- **IndexedDB Sentry observability** — silent catch blocks in waveform-idb.ts now report to Sentry at warning level with module tags for filtering (codebase-audit-scope-boundary)
-- **Test act() warnings** — data-contribution.test.tsx no longer produces React act() warnings from unhandled async state updates (codebase-audit-scope-boundary)
-- **Rate limit tightening** — community-insights reduced from 30 to 10 req/min; health and version endpoints now rate-limited at 60 req/min (codebase-audit-scope-boundary)
-- **Stripe webhook atomicity** — downstream DB failures now remove the idempotency record, allowing Stripe to retry instead of leaving partial state (codebase-audit-scope-boundary)
-
-### Added
-
-- **Vercel Speed Insights** — Core Web Vitals (LCP, CLS, INP) real-user monitoring via `@vercel/speed-insights`, auto-configured on Vercel (analytics-completeness-audit)
-- **Subscription lifecycle analytics** — new `subscription_events` Supabase table tracking created/updated/cancelled/past_due events with MRR for LTV and churn analysis (analytics-completeness-audit)
-- **ML training data export** — two Supabase RPC functions (`export_ml_training_data`, `ml_dataset_stats`) and admin-only `/api/admin/ml-export` endpoint for exporting anonymised symptom contribution data as CSV or JSON (analytics-completeness-audit)
-- **4 new Plausible events** — `Signup Completed`, `Subscription Started`, `Subscription Cancelled`, `Error Recovery` for conversion and UX quality tracking (analytics-completeness-audit)
-
-### Fixed
-
-- **Privacy Policy accuracy** — replaced PostHog (listed but never integrated) with Vercel Speed Insights in both the product analytics bullet and the service providers table (analytics-completeness-audit)
-
-- **Waveform Decimation & IndexedDB Persistence** — Replaced min/max/avg bucketing with simple decimation (take every Nth sample), displaying actual measured flow values. Full 25 Hz Float32Array stored in IndexedDB for instant reload on return visits (90-day TTL). Multi-resolution decimation: full night at 1 Hz, 30min–2h at 2 Hz, 5–30min at 5 Hz, <5min at full 25 Hz. (waveform-decimation-indexeddb)
-
-### Fixed
-
-- **Respiratory rate ~60 br/min bug** — Added 1.5s refractory period to breath detection zero-crossing algorithm, capping effective RR at ~40 br/min (waveform-decimation-indexeddb)
-
-### Changed
-
-- **Shared Waveform Data** — Store EDF files in Supabase Storage when sharing, enabling consultants to view the full Graphs tab (flow waveforms, pressure, events) in shared analysis links. Share creation now requires authentication. (shared-waveform-edf-storage)
-- **AI Insights Conversion Funnel** — registration-gated AI insights with locked teasers for anonymous users, "Generate AI Insights" button for free users (3/month), and deep waveform-level insights for paid users (ai-insights-conversion-funnel)
-- **Account Settings Page** — `/account` with profile, subscription management, data usage stats, and comprehensive server-side data deletion (ai-insights-conversion-funnel)
-- **Returning User Nudge** — banner for anonymous returning users encouraging registration with night count context (ai-insights-conversion-funnel)
-- **Analysis Data Pipeline** — automatic storage of aggregate analysis scores for registered users, with per-breath summaries stored as JSON files in Supabase Storage (ai-insights-conversion-funnel)
-- **17 new analytics events** — full funnel tracking from upload through teaser shown, registration, AI generation, to upgrade (ai-insights-conversion-funnel)
-- **Deep AI Insights for paid users** — per-breath summary data sent to Claude for waveform-level analysis including RERA clustering, breath shape distribution, temporal FL patterns, and progressive FL detection. "Deep Analysis" badge distinguishes from aggregate-based insights (ai-insights-conversion-funnel)
-- **61 conversion funnel tests** — comprehensive test coverage for all spec acceptance criteria, edge cases, and analytics events (ai-insights-conversion-funnel)
-
-### Changed
-
-- **AI insights require explicit button click** — removed auto-fetch, replaced with manual "Generate AI Insights" button. No more AIConsentModal (ai-insights-conversion-funnel)
-- **Cloud storage unlimited for all registered users** — removed tier gates and quota enforcement on file storage. Registration consent covers all data processing (ai-insights-conversion-funnel)
-- **Single registration consent** — AuthModal now includes a consent checkbox covering EDF storage, AI processing, and per-breath data storage. StorageConsent component no longer shown (ai-insights-conversion-funnel)
-- **Feature gate updates** — `raw_storage` and `cloud_sync` now available for community tier; added `deep_ai_insights` feature for supporter/champion (ai-insights-conversion-funnel)
-- **Privacy policy updated** — reflects single registration consent model, per-breath data for paid AI, instant data deletion from Account Settings (ai-insights-conversion-funnel)
-- **Pricing page updated** — community tier shows unlimited cloud storage, supporter tier shows waveform-level deep AI insights, FAQ updated for new data handling (ai-insights-conversion-funnel)
-
-### Removed
-
-- **AIConsentModal** — replaced by single registration consent checkbox (ai-insights-conversion-funnel)
-- **StorageConsent post-analysis UI** — registration consent covers storage (ai-insights-conversion-funnel)
-- **Storage quota enforcement** — unlimited for all registered users (ai-insights-conversion-funnel)
-
-- **Glossary Page** — 38-term sleep and PAP therapy glossary with DefinedTermSet JSON-LD, A-Z quick-nav, category badges, anchor links, and medical disclaimer. SEO-optimised for featured snippets and LLM discoverability (glossary-page)
-- **IFL Symptom Self-Report** — 5-point per-night symptom rating (1=Terrible to 5=Great) with cross-reference insights against IFL Risk. Community comparison card with aggregated distribution when data contribution is consented. Fire-and-forget contribution API with SHA-256 hashing and GDPR-safe anonymisation (ifl-symptom-self-report)
-- **Community Insights** — aggregated symptom distributions for similar IFL profiles, gated behind data contribution consent, with minimum 20-rating threshold for privacy (ifl-symptom-self-report)
-- **AI Prompt Enrichment** — aggregate community stats injected into Claude Haiku system prompt when ≥100 ratings exist, enabling population-level context in AI insights (ifl-symptom-self-report)
-
-### Changed
-
-- **IFL Risk as primary dashboard signal** — NightSummaryHero now leads with IFL Symptom Risk percentage and IFL-first headlines instead of per-metric worst-case (ifl-symptom-self-report)
-- **EAI/RERA demoted to secondary markers** — reframed as "secondary markers" pointing to FL metrics as primary, per Dr. Gold's IFL theory (ifl-symptom-self-report)
-- **IFL sensitivity nuance** — metric explanations and insights now note "not everyone with high FL is symptomatic" and individual sensitivity varies (ifl-symptom-self-report)
-- **New-user guidance** — updated to "Start with IFL Symptom Risk" instead of "Start with Glasgow Index" (ifl-symptom-self-report)
-- **Contribution consent modal** — updated copy with "Help improve sleep analysis for everyone" framing and benefit bullets (ifl-symptom-self-report)
-- **Exports** — symptom rating added to CSV and forum export formats (ifl-symptom-self-report)
 ## [1.2.0] - 2026-03-12
 
 ### Added

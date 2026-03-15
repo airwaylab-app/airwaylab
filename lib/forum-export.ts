@@ -51,9 +51,13 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
 
   lines.push(`**AirwayLab Analysis — ${n.dateStr}**`);
   lines.push('');
-  lines.push(`Machine: ${n.settings.deviceModel} | Mode: ${n.settings.papMode}`);
-  if (n.settings.epap > 0) {
-    lines.push(`Pressures: EPAP ${n.settings.epap} / IPAP ${n.settings.ipap} cmH₂O (PS ${n.settings.pressureSupport})`);
+  if (n.settings.settingsSource === 'unavailable') {
+    lines.push('Settings: Not available (device type not supported or STR.edf missing)');
+  } else {
+    lines.push(`Machine: ${n.settings.deviceModel} | Mode: ${n.settings.papMode}`);
+    if (n.settings.epap > 0) {
+      lines.push(`Pressures: EPAP ${n.settings.epap} / IPAP ${n.settings.ipap} cmH₂O (PS ${n.settings.pressureSupport})`);
+    }
   }
   lines.push(`Duration: ${fmtHrs(n.durationHours)} (${n.sessionCount} session${n.sessionCount !== 1 ? 's' : ''})`);
   lines.push('');

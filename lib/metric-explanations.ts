@@ -21,10 +21,10 @@ export const METRIC_METHODOLOGIES = {
     'Measured per-breath as (Qpeak \u2212 Qmid) / Qpeak \u00d7 100, where Qpeak is peak inspiratory flow and Qmid is flow at the midpoint of inspiration. When the airway narrows during inhalation, mid-inspiratory flow drops below peak flow. The NED mean is the average of this ratio across all breaths in the night.',
 
   reraIndex:
-    'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Tpeak/Ti exceeds 0.40. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
+    'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Flatness Index exceeds 0.85. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
 
   eai:
-    'Estimated by detecting sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). Each spike may indicate a nervous system response to breathing difficulty. A 15-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG, and research suggests flow limitation itself drives symptoms independently of arousals. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
+    'Estimated by detecting breaths where both respiratory rate (>35% above a 120-second rolling baseline) and tidal volume (>50% above baseline) spike simultaneously, and where at least 2 of the preceding 5 breaths showed flow limitation (NED >= 20% or FI >= 0.85). A 30-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG, and research suggests flow limitation itself drives symptoms independently of arousals. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
 
   regularity:
     'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing often indicates a persistently narrowed airway forcing uniform restricted breaths. Lower scores reflect healthy natural breath-to-breath variability.',

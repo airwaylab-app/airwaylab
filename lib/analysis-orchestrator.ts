@@ -12,6 +12,7 @@ import type {
   OximetryResults,
   OximetryTraceData,
   WorkerResponse,
+  WorkerSettingsDiagnostic,
 } from './types';
 import { loadPersistedResults, persistResults, persistNightsIncremental } from './persistence';
 import {
@@ -42,6 +43,9 @@ export class AnalysisOrchestrator {
   private incrementalNights: NightResult[] = [];
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private boundBeforeUnload: (() => void) | null = null;
+
+  /** Diagnostic info from settings extraction failure (null when extraction succeeded). */
+  settingsDiagnostic: WorkerSettingsDiagnostic | null = null;
 
   subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
@@ -318,6 +322,28 @@ export class AnalysisOrchestrator {
               level: 'warning',
               tags: { checkpoint: msg.checkpoint, ...msg.tags },
             });
+            break;
+          case 'SETTINGS_DIAGNOSTIC':
+            this.settingsDiagnostic = msg;
+            Sentry.captureMessage('settings_extraction_failed', {
+              level: 'info',
+              tags: { deviceModel: msg.deviceModel, hasStrFile: String(msg.hasStrFile) },
+              extra: {
+                signalLabels: msg.signalLabels.slice(0, 50),
+                signalCount: msg.signalLabels.length,
+              },
+            });
+            // Save unknown device data to Supabase for future support
+            fetch('/api/device-diagnostic', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                deviceModel: msg.deviceModel,
+                signalLabels: msg.signalLabels,
+                identificationText: msg.identificationText,
+                hasStrFile: msg.hasStrFile,
+              }),
+            }).catch(() => { /* fire-and-forget */ });
             break;
           case 'ERROR':
             settle();

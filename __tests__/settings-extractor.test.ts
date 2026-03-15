@@ -99,6 +99,7 @@ describe('getSettingsForDate', () => {
     trigger: 'medium',
     cycle: 'medium',
     easyBreathe: true,
+    settingsSource: 'extracted',
   });
 
   const dailySettings: Record<string, MachineSettings> = {

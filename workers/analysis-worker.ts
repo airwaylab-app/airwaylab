@@ -6,7 +6,7 @@
 import { parseEDF } from '../lib/parsers/edf-parser';
 import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
-import { extractSettings, parseIdentification, getSettingsForDate } from '../lib/parsers/settings-extractor';
+import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
 import { parseEVE } from '../lib/parsers/eve-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
@@ -23,6 +23,7 @@ import type {
   WorkerOximetryResult,
   WorkerError,
   WorkerWarning,
+  WorkerSettingsDiagnostic,
   NightResult,
   EDFFile,
   MachineSettings,
@@ -104,15 +105,17 @@ async function processFiles(
   let dailySettings: Record<string, MachineSettings> = {};
   let deviceModel = 'Unknown';
 
+  let identificationText: string | null = null;
   if (idFileInfo) {
     const idFile = files.find((f) => f.path.endsWith(idFileInfo.name));
     if (idFile) {
       const decoder = new TextDecoder('utf-8');
-      const text = decoder.decode(idFile.buffer);
-      deviceModel = parseIdentification(text);
+      identificationText = decoder.decode(idFile.buffer);
+      deviceModel = parseIdentification(identificationText);
     }
   }
 
+  let strSignalLabels: string[] = [];
   if (strFileInfo) {
     const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
@@ -121,7 +124,23 @@ async function processFiles(
       } catch {
         // STR parsing failed — continue without settings
       }
+      // Capture signal labels for diagnostics when extraction returns empty
+      if (Object.keys(dailySettings).length === 0) {
+        strSignalLabels = getSTRSignalLabels(strFile.buffer);
+      }
     }
+  }
+
+  // Post diagnostic when settings extraction failed
+  if (Object.keys(dailySettings).length === 0) {
+    const diag: WorkerSettingsDiagnostic = {
+      type: 'SETTINGS_DIAGNOSTIC',
+      deviceModel,
+      signalLabels: strSignalLabels,
+      identificationText: identificationText ? identificationText.slice(0, 2000) : null,
+      hasStrFile: !!strFileInfo,
+    };
+    self.postMessage(diag);
   }
 
   postProgress(1, brpFiles.length + 2, 'Parsing EDF files...');
@@ -271,6 +290,7 @@ async function processFiles(
       trigger: 'N/A',
       cycle: 'N/A',
       easyBreathe: false,
+      settingsSource: 'unavailable' as const,
     };
 
     // Compute total duration

@@ -20,6 +20,7 @@ function makeSettings(overrides: Partial<MachineSettings> = {}): MachineSettings
     trigger: 'Medium',
     cycle: 'Medium',
     easyBreathe: false,
+    settingsSource: 'extracted',
     ...overrides,
   };
 }
