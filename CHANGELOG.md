@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
+
 ### Added
 
 - **Pressure waveform contribution** — Waveform contributions now include the pressure channel alongside flow data using the AWL2 binary format, enabling future ML models to learn pressure-response dynamics. Falls back to flow-only when pressure unavailable or size exceeds limit. (pressure-waveform-contribution)

@@ -7,6 +7,7 @@ import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server
 import { aiRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { salvageTruncatedJSON } from './salvage';
+import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 
 const AI_MONTHLY_LIMIT = 3;
 
@@ -148,7 +149,12 @@ function buildUserPrompt(body: RequestBody): string {
     if (nightNotes.position) activeNotes.position = nightNotes.position;
     if (nightNotes.stress) activeNotes.stress = nightNotes.stress;
     if (nightNotes.exercise) activeNotes.exercise = nightNotes.exercise;
-    if (nightNotes.note) activeNotes.note = nightNotes.note;
+    if (nightNotes.note) {
+      const sanitized = sanitizePromptInput(nightNotes.note);
+      if (!sanitized.flagged) {
+        activeNotes.note = sanitized.text;
+      }
+    }
     if (Object.keys(activeNotes).length > 0) {
       context.userReportedContext = activeNotes;
     }
