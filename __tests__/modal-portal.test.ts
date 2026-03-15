@@ -36,6 +36,8 @@ function findTsxFiles(dir: string): string[] {
 const EXEMPT_FILES = new Set([
   // Header mobile menu backdrop is outside <main> and not a modal overlay
   'components/layout/header.tsx',
+  // Walkthrough tooltip is rendered inside a createPortal call from guided-walkthrough.tsx
+  'components/dashboard/walkthrough-tooltip.tsx',
 ]);
 
 describe('Modal portal enforcement', () => {

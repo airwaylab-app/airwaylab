@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Getting Started guide page** -- Step-by-step guide at `/getting-started` for new users, with navigation links from header, footer, landing page, and error states. Includes analytics tracking and premium upsell. (getting-started-guide-page)
+- **Dashboard guided walkthrough** -- Opt-in 5-step spotlight tour for first-time users. Walkthrough state persists server-side (Supabase profiles) for logged-in users with localStorage fallback. Re-runnable from NextSteps panel. Analytics on start/step/complete/skip. (first-visit-guided-walkthrough)
 - **Device settings extraction status** — Track whether device settings were actually extracted or are fallback defaults (`settingsSource` field). Clear messaging when settings are unavailable instead of misleading zeros/dashes. (settings-extraction-fallback-ux)
 - **Device diagnostic collection** — Automatically save unknown device STR.edf signal labels and identification text to Supabase when settings extraction fails, enabling future device support. (settings-extraction-fallback-ux)
 - **Tonic desaturation insight** — New insight rule detects when T<94% is elevated with low ODI3, indicating baseline respiratory depression (e.g., alcohol) rather than obstructive events. (research-validation-fixes)

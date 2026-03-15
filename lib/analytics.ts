@@ -225,4 +225,23 @@ export const events = {
   /** Error occurred and user recovered (or not) */
   errorRecovery: (errorType: string, recovered: boolean) =>
     trackEvent('Error Recovery', { error_type: errorType, recovered }),
+
+  // ── Onboarding & walkthrough ──────────────────────────────────
+  /** Getting Started page viewed */
+  gettingStartedViewed: () => trackEvent('Getting Started Viewed'),
+
+  /** Walkthrough tour started (user clicked "Show me around") */
+  walkthroughStarted: (source: 'prompt' | 'restart') =>
+    trackEvent('Walkthrough Started', { source }),
+
+  /** Individual walkthrough step viewed */
+  walkthroughStepViewed: (step: number, stepName: string) =>
+    trackEvent('Walkthrough Step Viewed', { step, step_name: stepName }),
+
+  /** Walkthrough completed (user reached final step) */
+  walkthroughCompleted: () => trackEvent('Walkthrough Completed'),
+
+  /** Walkthrough skipped (user clicked "Skip" or "I'll explore on my own") */
+  walkthroughSkipped: (atStep: number) =>
+    trackEvent('Walkthrough Skipped', { at_step: atStep }),
 } as const;

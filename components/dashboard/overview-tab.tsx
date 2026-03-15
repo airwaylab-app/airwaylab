@@ -100,7 +100,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   return (
     <div className="flex flex-col gap-4">
       {/* Night Summary Hero — single glanceable takeaway */}
-      <NightSummaryHero night={n} />
+      <div data-walkthrough="summary-hero">
+        <NightSummaryHero night={n} />
+      </div>
 
       {/* Symptom Rating — how did you sleep? */}
       <SymptomRating
@@ -183,7 +185,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </details>
 
       {/* IFL Symptom Risk + Key Metrics Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 stagger-children">
+      <div data-walkthrough="metrics-grid" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 stagger-children">
         <MetricCard
           label="IFL Symptom Risk"
           value={computeIFLRisk(n)}

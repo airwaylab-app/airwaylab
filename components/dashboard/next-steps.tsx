@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Lightbulb, ArrowRight } from 'lucide-react';
+import { Lightbulb, ArrowRight, Compass } from 'lucide-react';
 import type { NightResult } from '@/lib/types';
 import { getTrafficLight } from '@/lib/thresholds';
 import { useThresholds } from '@/components/common/thresholds-provider';
@@ -94,7 +94,7 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
   const shown = steps.slice(0, 3);
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+    <div data-walkthrough="next-steps" className="rounded-xl border border-border/50 bg-card/30 p-4">
       <div className="flex items-center gap-2">
         <Lightbulb className="h-4 w-4 text-amber-400" />
         <h3 className="text-sm font-semibold text-foreground">What should I do next?</h3>
@@ -128,6 +128,24 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
           </li>
         ))}
       </ol>
+      <div className="mt-3 flex items-center gap-3 border-t border-border/30 pt-3">
+        <button
+          type="button"
+          onClick={() => {
+            const fn = (window as unknown as Record<string, (() => void) | undefined>).__airwaylab_restart_walkthrough;
+            if (fn) fn();
+          }}
+          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+        >
+          <Compass className="h-3 w-3" /> Take the tour again
+        </button>
+        <Link
+          href="/getting-started"
+          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+        >
+          Getting started guide <ArrowRight className="h-2.5 w-2.5" />
+        </Link>
+      </div>
     </div>
   );
 }
