@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (limiter.isLimited(ip)) {
+    if (await limiter.isLimited(ip)) {
       console.warn(`[feedback] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },

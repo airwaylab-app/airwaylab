@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (limiter.isLimited(ip)) {
+    if (await limiter.isLimited(ip)) {
       console.warn(`[contribute-data] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many contributions. Please try again later.' },

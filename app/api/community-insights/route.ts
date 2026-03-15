@@ -12,7 +12,7 @@ const communityRateLimiter = new RateLimiter({
 export async function GET(request: NextRequest) {
   // Rate limiting
   const ip = getRateLimitKey(request);
-  if (communityRateLimiter.isLimited(ip)) {
+  if (await communityRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
   }
 

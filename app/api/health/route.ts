@@ -11,7 +11,7 @@ const healthRateLimiter = new RateLimiter({
 
 export async function GET(request: NextRequest) {
   const ip = getRateLimitKey(request);
-  if (healthRateLimiter.isLimited(ip)) {
+  if (await healthRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
   }
 

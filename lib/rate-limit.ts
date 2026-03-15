@@ -1,7 +1,36 @@
 // ============================================================
-// AirwayLab — In-Memory Rate Limiter
-// Shared rate limiter for API routes. Resets per Vercel cold start.
+// AirwayLab — Rate Limiter
+// Persistent via Upstash Redis when configured, falls back to
+// in-memory (resets per Vercel cold start) for local dev.
 // ============================================================
+
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import * as Sentry from '@sentry/nextjs';
+import { serverEnv } from '@/lib/env';
+
+// ─── Upstash Redis client (singleton, created once) ─────────
+
+let _redis: Redis | null = null;
+let _upstashChecked = false;
+
+function getRedis(): Redis | null {
+  if (_upstashChecked) return _redis;
+  _upstashChecked = true;
+
+  const url = serverEnv.UPSTASH_REDIS_REST_URL;
+  const token = serverEnv.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    _redis = new Redis({ url, token });
+  } else {
+    console.warn('[rate-limit] Upstash not configured — using in-memory fallback (resets on cold start)');
+  }
+
+  return _redis;
+}
+
+// ─── In-memory fallback ─────────────────────────────────────
 
 interface RateLimitEntry {
   count: number;
@@ -20,6 +49,8 @@ export class RateLimiter {
   private readonly windowMs: number;
   private readonly max: number;
   private lastCleanup = Date.now();
+  private upstash: Ratelimit | null = null;
+  private upstashInitialised = false;
 
   constructor(options: RateLimiterOptions) {
     this.windowMs = options.windowMs;
@@ -27,10 +58,50 @@ export class RateLimiter {
   }
 
   /**
-   * Returns true if the key is rate-limited (exceeded max requests).
-   * Automatically resets after the window expires.
+   * Lazily initialise Upstash ratelimiter on first call.
+   * Can't do this in constructor because env vars may not be loaded yet.
    */
-  isLimited(key: string): boolean {
+  private getUpstash(): Ratelimit | null {
+    if (this.upstashInitialised) return this.upstash;
+    this.upstashInitialised = true;
+
+    const redis = getRedis();
+    if (redis) {
+      this.upstash = new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(this.max, `${this.windowMs} ms`),
+        prefix: 'airwaylab_rl',
+      });
+    }
+
+    return this.upstash;
+  }
+
+  /**
+   * Returns true if the key is rate-limited (exceeded max requests).
+   * Uses Upstash Redis when configured, in-memory otherwise.
+   * Fails open on Upstash errors (allows request, logs to Sentry).
+   */
+  async isLimited(key: string): Promise<boolean> {
+    const upstash = this.getUpstash();
+
+    if (upstash) {
+      try {
+        const { success } = await upstash.limit(key);
+        return !success;
+      } catch (err) {
+        Sentry.captureException(err, {
+          tags: { subsystem: 'rate-limit', fallback: 'fail-open' },
+        });
+        return false; // fail-open
+      }
+    }
+
+    return this.inMemoryIsLimited(key);
+  }
+
+  /** Original in-memory implementation (fallback) */
+  private inMemoryIsLimited(key: string): boolean {
     const now = Date.now();
 
     // Periodic cleanup of expired entries to prevent unbounded growth

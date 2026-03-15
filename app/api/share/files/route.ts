@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (presignLimiter.isLimited(ip)) {
+    if (await presignLimiter.isLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many file uploads. Please try again later.' },
         { status: 429 }
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
-    if (downloadLimiter.isLimited(ip)) {
+    if (await downloadLimiter.isLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }

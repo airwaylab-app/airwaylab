@@ -54,6 +54,12 @@ export const serverEnv = {
 
   /** Admin API key for internal endpoints (ML export, etc.) */
   ADMIN_API_KEY: process.env.ADMIN_API_KEY ?? undefined,
+
+  /** Upstash Redis REST URL (enables persistent rate limiting) */
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? undefined,
+
+  /** Upstash Redis REST token */
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? undefined,
 } as const;
 
 /**
@@ -94,6 +100,14 @@ export function validateServerEnv() {
   if (serverEnv.STRIPE_SECRET_KEY && !serverEnv.STRIPE_WEBHOOK_SECRET) {
     warnings.push(
       'STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing — Stripe webhooks will fail.'
+    );
+  }
+
+  const hasUpstashUrl = !!serverEnv.UPSTASH_REDIS_REST_URL;
+  const hasUpstashToken = !!serverEnv.UPSTASH_REDIS_REST_TOKEN;
+  if (hasUpstashUrl !== hasUpstashToken) {
+    warnings.push(
+      'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must both be set (or both unset). Rate limiting will fall back to in-memory.'
     );
   }
 

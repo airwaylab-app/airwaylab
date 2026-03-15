@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (limiter.isLimited(ip)) {
+    if (await limiter.isLimited(ip)) {
       console.warn(`[track-analysis] 429 rate limited ip=${ip}`);
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
     }

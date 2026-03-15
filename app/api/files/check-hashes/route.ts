@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = getRateLimitKey(request);
-  if (rateLimiter.isLimited(ip)) {
+  if (await rateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
