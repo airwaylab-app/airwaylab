@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
+- **Persistent rate limiting** — Rate limiting now persists across Vercel cold starts via Upstash Redis. Falls back to in-memory when not configured. Fails open on Redis errors with Sentry logging. (persistent-rate-limiting)
 
 ### Added
 

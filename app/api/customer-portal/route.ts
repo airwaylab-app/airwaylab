@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   // C3: Rate limiting
   const ip = getRateLimitKey(request);
-  if (stripeRateLimiter.isLimited(ip)) {
+  if (await stripeRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 

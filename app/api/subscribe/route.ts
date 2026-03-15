@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (limiter.isLimited(ip)) {
+    if (await limiter.isLimited(ip)) {
       console.warn(`[subscribe] 429 rate limited ip=${ip}`);
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

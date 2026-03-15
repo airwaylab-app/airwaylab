@@ -21,7 +21,7 @@ const versionRateLimiter = new RateLimiter({
  */
 export async function GET(request: NextRequest) {
   const ip = getRateLimitKey(request);
-  if (versionRateLimiter.isLimited(ip)) {
+  if (await versionRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
   }
 

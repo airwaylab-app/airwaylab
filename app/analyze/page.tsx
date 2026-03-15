@@ -7,6 +7,7 @@ import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
 import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
+import { CloudSyncNudge, hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -170,8 +171,8 @@ function AnalyzePageInner() {
 
     hasTriggeredAutoUpload.current = true;
 
-    // Auto-upload EDF files if available (registration consent covers storage)
-    if (sdFilesRef.current.length > 0) {
+    // Auto-upload EDF files if cloud sync is enabled
+    if (sdFilesRef.current.length > 0 && hasCloudSyncConsent()) {
       events.cloudSyncUsed();
       const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
       uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
@@ -266,13 +267,14 @@ function AnalyzePageInner() {
           setShowContributeNudge(true);
         }
 
-        // Cloud storage: auto-upload raw files for authenticated users
-        // Registration consent covers storage — no separate consent needed
-        if (userRef.current && sdFilesRef.current.length > 0) {
+        // Cloud storage: auto-upload raw files if cloud sync enabled
+        if (userRef.current && sdFilesRef.current.length > 0 && hasCloudSyncConsent()) {
           events.cloudSyncUsed();
           const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
           uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
-          // Store aggregate analysis data
+        }
+        // Store aggregate analysis data (always, not gated by cloud sync)
+        if (userRef.current) {
           storeAnalysisData(newState.nights).catch(() => { /* logged in client */ });
         }
 
@@ -691,7 +693,15 @@ function AnalyzePageInner() {
             </div>
           )}
 
-          {/* Cloud storage progress banner */}
+          {/* Cloud sync: nudge if not enabled, progress if enabled */}
+          <CloudSyncNudge onEnable={() => {
+            // User just opted in — trigger upload for current session files
+            if (sdFilesRef.current.length > 0) {
+              events.cloudSyncUsed();
+              const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+              uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
+            }
+          }} />
           <StorageProgressBanner />
 
           {/* Data Contribution — prominent placement at top of dashboard */}

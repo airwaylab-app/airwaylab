@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const ip = getRateLimitKey(request);
-    if (limiter.isLimited(ip)) {
+    if (await limiter.isLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many uploads. Please try again later.' },
         { status: 429 }

@@ -14,7 +14,7 @@ const statsRateLimiter = new RateLimiter({ windowMs: 60_000, max: 30 });
  */
 export async function GET(request: Request) {
   const ip = getRateLimitKey(request);
-  if (statsRateLimiter.isLimited(ip)) {
+  if (await statsRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

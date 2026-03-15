@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
 
   // Rate limiting (C3)
   const ip = getRateLimitKey(request);
-  if (aiRateLimiter.isLimited(ip)) {
+  if (await aiRateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
