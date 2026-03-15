@@ -26,6 +26,7 @@ function makeNight(overrides: {
       trigger: 'Medium',
       cycle: 'Medium',
       easyBreathe: false,
+      settingsSource: 'extracted',
     },
     glasgow: {
       overall: overrides.glasgowOverall ?? 0,
@@ -51,7 +52,7 @@ function makeNight(overrides: {
       nedP95: 30,
       nedClearFLPct: 2,
       nedBorderlinePct: 5,
-      fiMean: overrides.fiMean ?? 1.0,
+      fiMean: overrides.fiMean ?? 0.5,
       fiFL85Pct: 10,
       tpeakMean: 0.35,
       mShapePct: 5,
@@ -69,29 +70,47 @@ function makeNight(overrides: {
 }
 
 describe('computeIFLRisk', () => {
-  it('returns 0 when all inputs are zero/normal', () => {
-    const night = makeNight({ flScore: 0, nedMean: 0, fiMean: 1.0, glasgowOverall: 0 });
+  it('returns 0 when all inputs are zero/minimal', () => {
+    // FI 0.50 maps to 0% contribution (floor of normalization range)
+    const night = makeNight({ flScore: 0, nedMean: 0, fiMean: 0.50, glasgowOverall: 0 });
     expect(computeIFLRisk(night)).toBe(0);
   });
 
   it('returns 100 when all inputs are maximum', () => {
-    const night = makeNight({ flScore: 100, nedMean: 100, fiMean: 0.0, glasgowOverall: 9 });
+    // FI 1.0 maps to 100% (max FL: perfectly flat breaths)
+    const night = makeNight({ flScore: 100, nedMean: 100, fiMean: 1.0, glasgowOverall: 9 });
     expect(computeIFLRisk(night)).toBe(100);
   });
 
   it('returns correct weighted sum for known input values', () => {
-    // FL Score 50 × 0.35 = 17.5
-    // NED Mean 40 × 0.30 = 12.0
-    // FI (1 - 0.6) × 100 = 40 × 0.20 = 8.0
-    // Glasgow (3 / 9) × 100 = 33.33 × 0.15 = 5.0
-    // Total = 42.5
+    // FL Score 50 * 0.35 = 17.5
+    // NED Mean 40 * 0.30 = 12.0
+    // FI 0.6: Math.max(0, (0.6-0.5)/0.5)*100 = 20 * 0.20 = 4.0
+    // Glasgow (3 / 9) * 100 = 33.33 * 0.15 = 5.0
+    // Total = 38.5
     const night = makeNight({ flScore: 50, nedMean: 40, fiMean: 0.6, glasgowOverall: 3 });
     const result = computeIFLRisk(night);
-    expect(result).toBeCloseTo(42.5, 1);
+    expect(result).toBeCloseTo(38.5, 1);
+  });
+
+  it('higher FI produces higher risk (all else equal)', () => {
+    const lowFI = makeNight({ flScore: 30, nedMean: 20, fiMean: 0.65, glasgowOverall: 1.5 });
+    const highFI = makeNight({ flScore: 30, nedMean: 20, fiMean: 0.90, glasgowOverall: 1.5 });
+    expect(computeIFLRisk(highFI)).toBeGreaterThan(computeIFLRisk(lowFI));
+  });
+
+  it('FI at exactly 0.50 contributes 0 to risk', () => {
+    const night = makeNight({ flScore: 0, nedMean: 0, fiMean: 0.50, glasgowOverall: 0 });
+    expect(computeIFLRisk(night)).toBe(0);
+  });
+
+  it('FI below 0.50 also contributes 0 (floor at 0)', () => {
+    const night = makeNight({ flScore: 0, nedMean: 0, fiMean: 0.30, glasgowOverall: 0 });
+    expect(computeIFLRisk(night)).toBe(0);
   });
 
   it('scores green for mild FL data', () => {
-    const night = makeNight({ flScore: 25, nedMean: 15, fiMean: 0.85, glasgowOverall: 1.0 });
+    const night = makeNight({ flScore: 25, nedMean: 15, fiMean: 0.60, glasgowOverall: 1.0 });
     const risk = computeIFLRisk(night);
     const light = getTrafficLight(risk, THRESHOLDS.iflRisk);
     expect(light).toBe('good');
@@ -108,7 +127,7 @@ describe('computeIFLRisk', () => {
   });
 
   it('scores red for severe FL data', () => {
-    const night = makeNight({ flScore: 70, nedMean: 55, fiMean: 0.4, glasgowOverall: 4.0 });
+    const night = makeNight({ flScore: 70, nedMean: 55, fiMean: 0.95, glasgowOverall: 4.0 });
     const risk = computeIFLRisk(night);
     const light = getTrafficLight(risk, THRESHOLDS.iflRisk);
     expect(light).toBe('bad');
@@ -121,17 +140,23 @@ describe('computeIFLRisk', () => {
     expect(Number.isFinite(risk)).toBe(true);
     expect(risk).toBeGreaterThanOrEqual(0);
   });
+
+  it('full FL scenario produces risk > 60%', () => {
+    const night = makeNight({ flScore: 80, nedMean: 40, fiMean: 0.92, glasgowOverall: 4 });
+    const risk = computeIFLRisk(night);
+    expect(risk).toBeGreaterThan(60);
+  });
 });
 
 describe('getIFLContextNote', () => {
-  it('returns FL-driving note when IFL Risk > 30 and EAI ≤ 5', () => {
+  it('returns FL-driving note when IFL Risk > 30 and EAI <= 5', () => {
     const note = getIFLContextNote(35, 4);
     expect(note).not.toBeNull();
     expect(note).toContain('flow limitation');
     expect(note).toContain('independently of arousals');
   });
 
-  it('returns non-FL note when IFL Risk ≤ 15 and EAI > 10', () => {
+  it('returns non-FL note when IFL Risk <= 15 and EAI > 10', () => {
     const note = getIFLContextNote(12, 15);
     expect(note).not.toBeNull();
     expect(note).toContain('non-FL causes');

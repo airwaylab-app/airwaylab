@@ -312,7 +312,7 @@ function detectRERASequences(
   let runStart = -1;
 
   for (let i = 0; i < breaths.length; i++) {
-    const isFL = breaths[i].ned > 20 || breaths[i].tPeakTi > 0.40;
+    const isFL = breaths[i].ned > 20 || breaths[i].fi >= 0.85;
 
     if (isFL) {
       if (runStart === -1) runStart = i;

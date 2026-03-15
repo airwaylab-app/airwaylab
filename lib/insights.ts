@@ -301,7 +301,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-high',
       type: 'warning',
       title: 'High brief obstruction rate',
-      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may cause micro-arousals. Higher EPAP may help — discuss with your clinician.`,
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may fragment sleep. They often do not respond to pressure changes alone — possible causes include swallowing, positional shifts, or epiglottic flutter. Track your sleep position and note patterns. Discuss with your clinician.`,
       category: 'ned',
     });
   }
@@ -327,7 +327,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-h2-gt-h1',
       type: 'info',
       title: 'Brief obstructions increase in the second half',
-      body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr), consistent with REM-related airway laxity. Positional therapy or increased EPAP during REM may help.`,
+      body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr), consistent with REM-related airway changes. These events often do not respond to pressure changes — positional therapy or tracking sleep position may be more informative.`,
       category: 'ned',
     });
   }
@@ -485,12 +485,23 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       });
     }
 
+    // Tonic vs phasic desaturation: high T<94% with low ODI3
+    if (ox.tBelow94 > 15 && ox.odi3 < 5) {
+      insights.push({
+        id: 'tonic-desat',
+        type: 'info',
+        title: 'Baseline oxygen lower than usual',
+        body: `${fmt(ox.tBelow94)}% of time below 94% SpO2 but only ${fmt(ox.odi3)} desaturation events/hr. This pattern suggests your baseline oxygen level was lower rather than repeated drops from obstruction. Common causes include alcohol, sedating medication, or nasal congestion. If this persists without an obvious cause, discuss with your clinician.`,
+        category: 'oximetry',
+      });
+    }
+
     if (ox.coupled3_10 > 10) {
       insights.push({
         id: 'coupled-high',
         type: 'info',
         title: 'Frequent coupled desat + HR surge events',
-        body: `${fmt(ox.coupled3_10)} coupled events/hr suggests respiratory arousals are causing both oxygen drops and heart rate spikes.`,
+        body: `${fmt(ox.coupled3_10)} coupled events/hr — desaturation and heart rate surge occurring within 30 seconds of each other. This indicates a respiratory cause for these specific events. Note: in UARS, most HR surges and desaturations are independent of each other.`,
         category: 'oximetry',
       });
     }
