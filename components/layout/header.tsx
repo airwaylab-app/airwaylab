@@ -37,6 +37,12 @@ export function Header() {
               Analyze
             </Link>
             <Link
+              href="/getting-started"
+              className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
+            >
+              Getting Started
+            </Link>
+            <Link
               href="/pricing"
               className="hidden rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex sm:px-3 sm:py-2 sm:text-sm"
             >
@@ -82,6 +88,13 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   />
                   <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border/50 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
+                    <Link
+                      href="/getting-started"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      Getting Started
+                    </Link>
                     <Link
                       href="/pricing"
                       onClick={() => setMobileMenuOpen(false)}

@@ -333,6 +333,15 @@ export default function Home() {
             ))}
           </div>
 
+          <div className="mt-8 text-center">
+            <Link
+              href="/getting-started"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Need more detail? Read the step-by-step guide <ArrowRight className="ml-1 inline h-3 w-3" />
+            </Link>
+          </div>
+
           {/* What You'll Need */}
           <div className="mx-auto mt-10 max-w-4xl rounded-xl border border-border/50 bg-card/50 p-5 sm:mt-14 sm:p-6">
             <h3 className="mb-3 text-sm font-semibold">What You&apos;ll Need</h3>

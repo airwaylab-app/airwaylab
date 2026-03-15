@@ -14,6 +14,7 @@ export interface Profile {
   tier: Tier;
   stripe_customer_id: string | null;
   show_on_supporters: boolean;
+  walkthrough_completed: boolean;
 }
 
 export interface Subscription {
@@ -37,6 +38,7 @@ interface AuthContextValue {
   signIn: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  markWalkthroughComplete: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // M1: Handle query errors instead of swallowing them
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters')
+      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed')
       .eq('id', userId)
       .single();
 
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tier: profileTier,
         stripe_customer_id: profileData.stripe_customer_id,
         show_on_supporters: profileData.show_on_supporters,
+        walkthrough_completed: profileData.walkthrough_completed ?? false,
       });
     }
 
@@ -227,6 +230,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscription(null);
   }, [supabase]);
 
+  const markWalkthroughComplete = useCallback(async () => {
+    // Always set localStorage as immediate fallback
+    try { localStorage.setItem('airwaylab_walkthrough_done', '1'); } catch { /* noop */ }
+
+    // Update server-side for logged-in users
+    if (supabase && user) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ walkthrough_completed: true })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('[auth-context] Failed to save walkthrough state:', error.message);
+      } else if (profile) {
+        setProfile({ ...profile, walkthrough_completed: true });
+      }
+    }
+  }, [supabase, user, profile]);
+
   const tier: Tier = profile?.tier ?? 'community';
   const isPaid = tier === 'supporter' || tier === 'champion';
 
@@ -243,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         refreshProfile,
+        markWalkthroughComplete,
       }}
     >
       {children}

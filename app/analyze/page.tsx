@@ -39,6 +39,7 @@ import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { safeGetItem } from '@/lib/safe-local-storage';
+import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -589,7 +590,7 @@ function AnalyzePageInner() {
               </div>
               <p className="pl-[26px] text-xs text-muted-foreground">
                 Make sure you selected the DATALOG folder from your SD card. Need help?{' '}
-                <a href="/about#getting-started" className="text-primary hover:underline">See the guide</a>.
+                <a href="/getting-started" className="text-primary hover:underline">See the guide</a>.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleReset} className="self-start sm:self-auto">
@@ -704,6 +705,9 @@ function AnalyzePageInner() {
           }} />
           <StorageProgressBanner />
 
+          {/* Guided Walkthrough — opt-in tour for first-time users */}
+          <GuidedWalkthrough isComplete={isComplete} />
+
           {/* Data Contribution — prominent placement at top of dashboard */}
           <DataContribution
             nights={nights}
@@ -715,6 +719,7 @@ function AnalyzePageInner() {
           {/* Controls Bar */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
+              <div data-walkthrough="night-selector">
               <NightSelector
                 dates={nightDates}
                 selectedIndex={selectedNight}
@@ -723,6 +728,7 @@ function AnalyzePageInner() {
                   events.nightSwitched(nights.length);
                 }}
               />
+              </div>
               {therapyChangeDate && (
                 <span className="hidden text-xs text-amber-500 sm:inline">
                   Settings changed on {therapyChangeDate}
@@ -751,6 +757,7 @@ function AnalyzePageInner() {
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
             <TabsList
               variant="line"
+              data-walkthrough="tab-bar"
               className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card/50 px-4 backdrop-blur-sm sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1 sm:backdrop-blur-none"
             >
               {/* Primary tabs — full words on mobile */}
