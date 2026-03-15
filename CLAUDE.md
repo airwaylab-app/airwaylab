@@ -101,7 +101,7 @@ airwaylab/
 ## Analysis Engines
 
 ### Glasgow Index (`lib/analyzers/glasgow-index.ts`)
-Ported from DaveSkvn/Glasgow-Index (GPL-3.0). Scores inspiratory flow shapes on 9 components (0–1 each): skew, spike, flatTop, topHeavy, multiPeak, noPause, inspirRate, multiBreath, variableAmp. Overall score = sum of 8 (excludes topHeavy), range 0–8. Pipeline: findMins → findInspirations → calcCycleBasedIndicators → inspirationAmplitude → prepIndices. Multi-session nights use duration-weighted averaging.
+Ported from DaveSkvn/Glasgow-Index (GPL-3.0). Scores inspiratory flow shapes on 9 components (0–1 each): skew, spike, flatTop, topHeavy, multiPeak, noPause, inspirRate, multiBreath, variableAmp. Overall score = sum of all 9 components, range 0–9. Pipeline: findMins → findInspirations → calcCycleBasedIndicators → inspirationAmplitude → prepIndices. Multi-session nights use duration-weighted averaging.
 
 ### WAT — Wobble Analysis Tool (`lib/analyzers/wat-engine.ts`)
 Three metrics: FL Score (inspiratory flatness, 0–100, higher = worse), Regularity (Sample Entropy on minute ventilation, higher = more irregular), Periodicity Index (FFT power in 0.01–0.03 Hz band, detects periodic breathing at 30–100s cycles). Includes a Cooley-Tukey radix-2 FFT implementation.

@@ -64,8 +64,14 @@ describe('generateInsights', () => {
     });
 
     it('detects elevated RERA on bad nights', () => {
-      // night3 has RERA 11.8 → ≥10
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2], SAMPLE_NIGHTS[3], null);
+      // night3 has RERA 11.8 >= 10
+      // Use only 2 nights to avoid trend insights consuming the 6-insight cap
+      const result = generateInsights(
+        [SAMPLE_NIGHTS[2], SAMPLE_NIGHTS[3]],
+        SAMPLE_NIGHTS[2],
+        SAMPLE_NIGHTS[3],
+        null
+      );
       const reraWarning = result.find((i) => i.id === 'rera-high');
       expect(reraWarning).toBeDefined();
       expect(reraWarning!.category).toBe('ned');
@@ -127,6 +133,52 @@ describe('generateInsights', () => {
       // ODI 6.8 is warn, not bad, so no odi-high
       expect(odiHigh).toBeUndefined();
     });
+
+    it('generates tonic-desat insight when T<94% high but ODI3 low', () => {
+      const tonicNight: NightResult = {
+        ...SAMPLE_NIGHTS[0],
+        oximetry: {
+          ...SAMPLE_NIGHTS[0].oximetry!,
+          tBelow94: 20,
+          odi3: 2,
+        },
+      };
+      const result = generateInsights([tonicNight], tonicNight, null, null);
+      const tonic = result.find((i) => i.id === 'tonic-desat');
+      expect(tonic).toBeDefined();
+      expect(tonic!.type).toBe('info');
+      expect(tonic!.category).toBe('oximetry');
+      expect(tonic!.body).toContain('baseline oxygen');
+      expect(tonic!.body).toContain('alcohol');
+    });
+
+    it('does not generate tonic-desat when both T<94% and ODI3 are elevated', () => {
+      const obstructiveNight: NightResult = {
+        ...SAMPLE_NIGHTS[0],
+        oximetry: {
+          ...SAMPLE_NIGHTS[0].oximetry!,
+          tBelow94: 20,
+          odi3: 10,
+        },
+      };
+      const result = generateInsights([obstructiveNight], obstructiveNight, null, null);
+      const tonic = result.find((i) => i.id === 'tonic-desat');
+      expect(tonic).toBeUndefined();
+    });
+
+    it('does not generate tonic-desat when T<94% is normal', () => {
+      const normalNight: NightResult = {
+        ...SAMPLE_NIGHTS[0],
+        oximetry: {
+          ...SAMPLE_NIGHTS[0].oximetry!,
+          tBelow94: 5,
+          odi3: 2,
+        },
+      };
+      const result = generateInsights([normalNight], normalNight, null, null);
+      const tonic = result.find((i) => i.id === 'tonic-desat');
+      expect(tonic).toBeUndefined();
+    });
   });
 
   describe('trend insights', () => {
@@ -158,13 +210,13 @@ describe('generateInsights', () => {
 
   describe('symptom rating cross-reference', () => {
     it('generates symptom-fl-correlation when IFL >45 and rating <=2', () => {
-      // Build a night with IFL >45 but minimal other warning triggers
-      // IFL Risk = 70*0.35 + 35*0.30 + 35*0.20 + (2.0/9)*100*0.15
-      //          = 24.5 + 10.5 + 7.0 + 3.33 = 45.33 → above threshold
+      // IFL Risk with corrected FI formula:
+      // FL Score 70*0.35=24.5, NED 35*0.30=10.5, FI Math.max(0,(0.70-0.5)/0.5)*100=40*0.20=8.0, Glasgow (2.0/9)*100*0.15=3.33
+      // Total = 46.33 → above 45 threshold
       const highFLNight: NightResult = {
         ...SAMPLE_NIGHTS[2],
         wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
-        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.65, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
         glasgow: { ...SAMPLE_NIGHTS[2].glasgow, overall: 2.0 },
       };
       const result = generateInsights([highFLNight], highFLNight, null, null, 2);
@@ -175,15 +227,11 @@ describe('generateInsights', () => {
     });
 
     it('generates symptom-fl-asymptomatic when IFL >45 and rating >=4', () => {
-      // Build a night with IFL >45 but minimal other warning triggers
-      // IFL Risk = 65*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/9)*100*0.15
-      //          = 22.75 + 10.5 + 7.0 + 3.33 = 43.58... need slightly more
-      // IFL Risk = 70*0.35 + 35*0.30 + (1-0.65)*100*0.20 + (2.0/9)*100*0.15
-      //          = 24.5 + 10.5 + 7.0 + 3.33 = 45.33 → just above threshold
+      // Same IFL Risk calculation as above = 46.33 → above 45 threshold
       const highFLNight: NightResult = {
         ...SAMPLE_NIGHTS[2],
         wat: { ...SAMPLE_NIGHTS[2].wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
-        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.65, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        ned: { ...SAMPLE_NIGHTS[2].ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
         glasgow: { ...SAMPLE_NIGHTS[2].glasgow, overall: 2.0 },
       };
       const result = generateInsights([highFLNight], highFLNight, null, null, 4);
@@ -193,11 +241,12 @@ describe('generateInsights', () => {
     });
 
     it('generates symptom-non-fl-cause when IFL <20 and rating <=2', () => {
-      // Create a night with low FL metrics
+      // Low FL: FI 0.55 maps to Math.max(0,(0.55-0.5)/0.5)*100=10, *0.20=2.0
+      // 10*0.35 + 8*0.30 + 10*0.20 + (0.5/9)*100*0.15 = 3.5+2.4+2.0+0.83 = 8.73 → <20
       const lowFLNight: NightResult = {
         ...SAMPLE_NIGHTS[1],
         wat: { ...SAMPLE_NIGHTS[1].wat, flScore: 10 },
-        ned: { ...SAMPLE_NIGHTS[1].ned, nedMean: 8, fiMean: 0.95 },
+        ned: { ...SAMPLE_NIGHTS[1].ned, nedMean: 8, fiMean: 0.55 },
         glasgow: { ...SAMPLE_NIGHTS[1].glasgow, overall: 0.5 },
       };
       const result = generateInsights([lowFLNight], lowFLNight, null, null, 1);
