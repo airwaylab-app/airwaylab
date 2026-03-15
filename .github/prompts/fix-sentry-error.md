@@ -19,15 +19,44 @@ A production error was detected by Sentry and filed as a GitHub issue. Read the 
 
 ## Constraints
 
-### Protected modules — NEVER modify
+### Allowed files — you may ONLY modify files in these paths
 
-These contain clinically validated algorithms. Do not change any logic in:
+You may only create or edit files within the following directories:
 
-- `lib/parsers/` — data parsing engine
-- `lib/analyzers/` — analysis engine
-- `workers/` — web workers
+- `components/` — React components (UI fixes)
+- `hooks/` — custom React hooks
+- `app/` page/layout files (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`) — NOT `app/api/`
+- `lib/utils.ts` — utility functions
+- `lib/thresholds.ts` — display thresholds
+- `lib/metric-explanations.ts` — metric display text
+- `lib/insights.ts` — rule-based insights
+- `lib/export.ts`, `lib/forum-export.ts`, `lib/pdf-report.ts` — export utilities
+- `lib/persistence.ts` — localStorage logic
+- `lib/analytics.ts` — Plausible analytics helpers
+- `public/` — static assets
 
-If the error originates in a protected module, **do not attempt a fix**. Instead:
+### Forbidden paths — NEVER modify
+
+Do NOT modify, create, or delete files in any of these paths. If the error originates here, apply `needs-human` and stop.
+
+- `app/api/` — API routes (auth, data flows, external integrations)
+- `lib/parsers/` — clinically validated data parsing
+- `lib/analyzers/` — clinically validated analysis engines
+- `lib/auth/` — authentication logic
+- `lib/supabase/` — database client configuration
+- `lib/env.ts` — environment variable definitions
+- `lib/csrf.ts` — CSRF protection
+- `lib/rate-limit.ts` — rate limiting
+- `lib/ai-insights-client.ts` — AI API client
+- `workers/` — web worker orchestration
+- `supabase/migrations/` — database migrations
+- `.github/` — CI/CD workflows and prompts
+- `middleware.ts` — request middleware
+- `next.config.mjs` — Next.js configuration (security headers, CSP)
+- `sentry.*.config.ts` — Sentry configuration
+- `.env*` — environment files
+
+If the error originates in a forbidden path, **do not attempt a fix**. Instead:
 1. Comment on the issue with your root cause analysis
 2. Apply the `needs-human` label
 3. Stop — do not open a PR

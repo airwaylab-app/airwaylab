@@ -79,10 +79,11 @@ jobs:
           prompt_file: .github/prompts/fix-sentry-error.md
           issue_number: ${{ github.event.issue.number }}
 
-      - name: Enable auto-merge
+      - name: Gate sensitive file changes
         if: |
           steps.check-branch.outputs.exists == 'false' &&
           steps.rate-limit.outputs.exceeded == 'false'
+        id: file-gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -91,14 +92,65 @@ jobs:
 
           if [ -z "$PR_NUMBER" ]; then
             echo "No PR found — Claude Code may have applied needs-human label instead"
+            echo "has_pr=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # Check for hold label
-          HOLD=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name] | map(select(. == "hold")) | length')
-          if [ "$HOLD" -gt 0 ]; then
-            echo "PR #$PR_NUMBER has 'hold' label — skipping auto-merge"
-            exit 0
+          echo "has_pr=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+          # Check if PR touches sensitive files (security-critical paths)
+          SENSITIVE_PATTERNS="app/api/ lib/auth/ lib/env.ts lib/supabase/ lib/csrf.ts lib/rate-limit.ts supabase/migrations/ .github/ sentry middleware.ts next.config"
+          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only 2>/dev/null || echo "")
+
+          SENSITIVE=false
+          for pattern in $SENSITIVE_PATTERNS; do
+            if echo "$CHANGED_FILES" | grep -q "$pattern"; then
+              echo "⚠️  PR touches sensitive path: $pattern"
+              SENSITIVE=true
+            fi
+          done
+
+          if [ "$SENSITIVE" = "true" ]; then
+            echo "sensitive=true" >> "$GITHUB_OUTPUT"
+            gh pr edit "$PR_NUMBER" --add-label "hold,security-review" 2>/dev/null || true
+
+            # Build the flagged files list
+            FLAGGED=""
+            while IFS= read -r f; do
+              [ -z "$f" ] && continue
+              for p in $SENSITIVE_PATTERNS; do
+                if echo "$f" | grep -q "$p"; then
+                  FLAGGED="${FLAGGED}- \`${f}\` (matches \`${p}\`)\n"
+                  break
+                fi
+              done
+            done <<< "$CHANGED_FILES"
+
+            COMMENT_BODY="⚠️ **Security gate triggered** — this auto-fix touches sensitive files (API routes, auth, config, or infrastructure).
+
+Auto-merge has been blocked. Manual review required before merging.
+
+**Changed files flagged:**
+$(echo -e "$FLAGGED")"
+
+            gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" 2>/dev/null || true
+          else
+            echo "sensitive=false" >> "$GITHUB_OUTPUT"
           fi
 
-          gh pr merge "$PR_NUMBER" --auto --squash || echo "Auto-merge could not be enabled (check repo settings)"
+      - name: Notify — PR ready for review
+        if: |
+          steps.file-gate.outputs.has_pr == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.file-gate.outputs.pr_number }}"
+          SENSITIVE="${{ steps.file-gate.outputs.sensitive }}"
+
+          if [ "$SENSITIVE" = "true" ]; then
+            echo "PR #$PR_NUMBER blocked — touches sensitive files. Review required."
+          else
+            echo "PR #$PR_NUMBER ready for review on Vercel preview."
+            gh pr comment "$PR_NUMBER" --body "Auto-fix PR is ready. Please verify the Vercel preview before merging." 2>/dev/null || true
+          fi
