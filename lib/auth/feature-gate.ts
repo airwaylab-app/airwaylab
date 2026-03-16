@@ -13,11 +13,12 @@ type Feature =
   | 'trends_full'
   | 'pdf_report'
   | 'enhanced_export'
-  | 'metric_explanations'
-  | 'next_steps'
   | 'early_access'
   | 'supporter_badge';
 
+// metric_explanations and next_steps intentionally removed —
+// both are free for all users (data visibility + appointment prep).
+// Actionable therapy guidance via AI is the premium differentiator.
 const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   ai_insights: ['community', 'supporter', 'champion'], // Community gets 3/month
   deep_ai_insights: ['supporter', 'champion'],          // Waveform-level analysis
@@ -26,8 +27,6 @@ const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   trends_full: ['supporter', 'champion'],
   pdf_report: ['supporter', 'champion'],
   enhanced_export: ['supporter', 'champion'],
-  metric_explanations: ['supporter', 'champion'],
-  next_steps: ['supporter', 'champion'],
   early_access: ['champion'],
   supporter_badge: ['supporter', 'champion'],
 };
