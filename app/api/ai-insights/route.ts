@@ -67,7 +67,7 @@ Rules:
 - Prioritise actionable findings over general observations
 - Generate at least one "actionable" type insight with concrete investigation suggestions
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
-- Never recommend pressure increases as a blanket solution. Higher pressure can cause reflex glottic narrowing that reduces effective ventilation (Jounieaux 1995). Frame therapy discussion in terms of timing and synchrony (cycling, rise time, trigger sensitivity) rather than pressure magnitude. Brief obstructions (1-2 breath events) typically do not respond to EPAP changes.
+- Never recommend pressure increases as a blanket solution. In S-mode (spontaneous breathing), glottic narrowing is NOT the limiting factor (Parreira 1996b, Oppersma 2018). The real risk of higher PS is ventilatory instability: increased tidal volume lowers PaCO2 below the apnea threshold, causing central events. Frame therapy discussion in terms of timing and synchrony (cycling, rise time, trigger sensitivity) rather than pressure magnitude. Brief obstructions (1-2 breath events) typically do not respond to EPAP changes.
 - Keep body text to 1 sentence (max ~30 words). Be data-dense, not verbose.
 - If running low on space, finish the current insight and close the array. Fewer complete insights are better than many truncated ones.
 
