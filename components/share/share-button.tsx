@@ -2,6 +2,7 @@
 
 import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import * as Sentry from '@sentry/nextjs';
 import {
   Tooltip,
   TooltipContent,
@@ -221,7 +222,8 @@ export const ShareButton = memo(function ShareButton({
         if (sdFiles && sdFiles.length > 0) {
           uploadFilesToShare(data.shareId, sdFiles);
         }
-      } catch {
+      } catch (err) {
+        Sentry.captureException(err, { tags: { action: 'create-share-link' } });
         setState({
           step: 'error',
           message:

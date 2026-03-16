@@ -109,7 +109,8 @@ export default function PricingPage() {
       } else {
         setCheckoutError(data.error || 'Could not start checkout. Please try again.');
       }
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'checkout' } });
       setCheckoutError('Could not connect to payment service. Please try again.');
     } finally {
       setLoadingPriceId(null);
@@ -129,7 +130,8 @@ export default function PricingPage() {
       } else {
         setCheckoutError('Could not open billing portal. Please try again.');
       }
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'customer-portal' } });
       setCheckoutError('Could not connect to billing portal. Please try again.');
     }
   };

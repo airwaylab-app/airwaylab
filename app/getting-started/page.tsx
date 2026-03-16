@@ -169,9 +169,61 @@ const steps = [
   },
 ];
 
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to Analyze Your PAP Sleep Data with AirwayLab',
+  description:
+    'Learn how to use AirwayLab in 5 simple steps. From SD card to sleep analysis results.',
+  totalTime: 'PT5M',
+  tool: [
+    { '@type': 'HowToTool', name: 'ResMed AirSense 10 or 11, or AirCurve 10' },
+    { '@type': 'HowToTool', name: 'SD card reader (USB or built-in)' },
+    { '@type': 'HowToTool', name: 'Desktop or laptop computer with a web browser' },
+  ],
+  step: [
+    {
+      '@type': 'HowToStep',
+      position: 1,
+      name: 'Find Your SD Card',
+      text: 'Your ResMed machine has an SD card slot on the side (AirSense 10/11) or back (AirCurve 10). Power off your machine, then gently push the card to eject it.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 2,
+      name: 'Connect to Your Computer',
+      text: 'Insert the SD card into your computer\'s SD card slot, or use a USB SD card reader.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 3,
+      name: 'Upload Your Data',
+      text: 'Go to the Analyze page and click "Upload SD Card." Select the entire SD card or the DATALOG folder inside it. AirwayLab will find the right files automatically.',
+      url: 'https://airwaylab.app/analyze',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 4,
+      name: 'Read Your Results',
+      text: 'After analysis, you will see a dashboard with your results. Green means looking good, amber means worth monitoring, red means discuss with clinician.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 5,
+      name: 'What to Do Next',
+      text: 'Use AirwayLab alongside OSCAR for the most complete picture. Upload weekly to track trends over time. Share results with your clinician using the Share button.',
+    },
+  ],
+};
+
 export default function GettingStartedPage() {
   return (
     <div className="flex flex-col">
+      {/* Static JSON-LD from hardcoded constant - safe, no user input */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
       <GettingStartedTracker />
 
       {/* Hero */}
