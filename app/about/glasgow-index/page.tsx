@@ -42,6 +42,20 @@ const breadcrumbJsonLd = {
   ],
 };
 
+const medicalPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MedicalWebPage',
+  name: 'Glasgow Index - PAP Flow Limitation Scoring',
+  description: 'The Glasgow Index scores inspiratory flow shapes on 9 morphological components to quantify flow limitation severity. Scores range from 0 (normal) to 9 (severe).',
+  url: 'https://airwaylab.app/about/glasgow-index',
+  about: {
+    '@type': 'MedicalCondition',
+    name: 'Inspiratory Flow Limitation',
+  },
+  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
+};
+
 const components = [
   {
     name: 'Skew',
@@ -93,9 +107,14 @@ const components = [
 export default function GlasgowIndexPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      {/* Static JSON-LD from hardcoded constants - no user input, safe */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(medicalPageJsonLd) }}
       />
       {/* Breadcrumb */}
       <Link

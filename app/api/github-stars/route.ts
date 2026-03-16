@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { captureApiError } from '@/lib/sentry-utils';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const rateLimiter = new RateLimiter({ max: 30, windowMs: 60_000 });
 
 const REPO = 'airwaylab-app/airwaylab';
 
@@ -10,7 +13,12 @@ const REPO = 'airwaylab-app/airwaylab';
  * Avoids client-side rate limiting (60 req/hour unauthenticated).
  * Cached for 15 minutes via Cache-Control header.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const rateLimitKey = getRateLimitKey(request);
+  if (await rateLimiter.isLimited(rateLimitKey)) {
+    return NextResponse.json({ stars: 0 }, { status: 429 });
+  }
+
   try {
     const r = await fetch(`https://api.github.com/repos/${REPO}`, {
       headers: {

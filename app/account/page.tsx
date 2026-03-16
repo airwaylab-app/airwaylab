@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Disclaimer } from '@/components/common/disclaimer';
+import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import { CloudSyncToggle } from '@/components/upload/cloud-sync-nudge';
 import {
@@ -58,7 +59,8 @@ export default function AccountPage() {
         if (!res.ok) throw new Error('Failed to fetch stats');
         const data = (await res.json()) as UserDataStats;
         setStats(data);
-      } catch {
+      } catch (err) {
+        Sentry.captureException(err, { tags: { action: 'fetch-user-stats' } });
         setStatsError(true);
       } finally {
         setStatsLoading(false);
@@ -78,7 +80,8 @@ export default function AccountPage() {
       setShowDeleteConfirm(false);
       setStats({ fileCount: 0, totalBytes: 0, nightCount: 0 });
       events.dataDeletionCompleted();
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'delete-user-data' } });
       setDeleteState('error');
     }
   }
@@ -146,7 +149,9 @@ export default function AccountPage() {
                   const res = await fetch('/api/customer-portal', { method: 'POST', credentials: 'same-origin' });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
-                } catch { /* noop */ }
+                } catch (err) {
+                  Sentry.captureException(err, { tags: { action: 'customer-portal' } });
+                }
               }}
             >
               Manage subscription

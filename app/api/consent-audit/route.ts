@@ -3,7 +3,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { captureApiError } from '@/lib/sentry-utils';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import crypto from 'crypto';
+
+const rateLimiter = new RateLimiter({ max: 30, windowMs: 3600_000 });
 
 const ConsentAuditSchema = z.object({
   consentType: z.enum(['ai_insights', 'data_contribution', 'cloud_storage', 'email_notifications']),
@@ -19,6 +22,11 @@ const ConsentAuditSchema = z.object({
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  const rateLimitKey = getRateLimitKey(request);
+  if (await rateLimiter.isLimited(rateLimitKey)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   const supabase = getSupabaseServer();

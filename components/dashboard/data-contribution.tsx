@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { Users, Loader2, X, Shield, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
@@ -92,7 +93,8 @@ export function DataContribution({
       trackContributedDates(nights);
       // Persist opt-in so the user isn't prompted again on future visits
       setConsentState(true);
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'contribute-data' } });
       setStatus('error');
     }
   }, [nights]);

@@ -39,7 +39,8 @@ test.describe('Error Handling', () => {
         !e.includes('_vercel') &&
         !e.includes('speed-insights') &&
         !e.includes('MIME type') &&
-        !e.includes('404')
+        !e.includes('404') &&
+        !e.includes('429')
     );
     expect(realErrors).toHaveLength(0);
   });

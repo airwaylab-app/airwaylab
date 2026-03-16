@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 50 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
 const MAX_BODY_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(request: NextRequest) {

@@ -46,6 +46,21 @@ const breadcrumbJsonLd = {
   ],
 };
 
+const medicalPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MedicalWebPage',
+  name: 'What Is PAP Flow Limitation?',
+  description: 'Learn about flow limitation in PAP therapy: causes, detection methods, and how AirwayLab measures it using Glasgow Index, WAT, and NED analysis.',
+  url: 'https://airwaylab.app/about/flow-limitation',
+  about: {
+    '@type': 'MedicalCondition',
+    name: 'Inspiratory Flow Limitation',
+    alternateName: 'Upper Airway Resistance',
+  },
+  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
+};
+
 const detectionMethods = [
   {
     icon: Activity,
@@ -82,9 +97,14 @@ const detectionMethods = [
 export default function FlowLimitationPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      {/* Static JSON-LD from hardcoded constants - safe, no user input */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(medicalPageJsonLd) }}
       />
       {/* Breadcrumb */}
       <Link

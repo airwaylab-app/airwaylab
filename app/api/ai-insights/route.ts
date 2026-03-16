@@ -246,22 +246,27 @@ export async function POST(request: NextRequest) {
 
   if (userTier === 'community') {
     const adminClient = getSupabaseServiceRole();
-    if (adminClient) {
-      const month = getCurrentMonth();
-      const { data: usage } = await adminClient
-        .from('ai_usage')
-        .select('count')
-        .eq('user_id', user.id)
-        .eq('month', month)
-        .maybeSingle();
+    if (!adminClient) {
+      // Hard fail: without service role, we cannot enforce usage limits.
+      // Allowing through would give community users unlimited free AI.
+      console.error('[ai-insights] Service role not configured — cannot enforce community usage limit');
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
 
-      const currentCount = usage?.count ?? 0;
-      if (currentCount >= AI_MONTHLY_LIMIT) {
-        return NextResponse.json(
-          { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
-          { status: 403 }
-        );
-      }
+    const month = getCurrentMonth();
+    const { data: usage } = await adminClient
+      .from('ai_usage')
+      .select('count')
+      .eq('user_id', user.id)
+      .eq('month', month)
+      .maybeSingle();
+
+    const currentCount = usage?.count ?? 0;
+    if (currentCount >= AI_MONTHLY_LIMIT) {
+      return NextResponse.json(
+        { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
+        { status: 403 }
+      );
     }
   }
 

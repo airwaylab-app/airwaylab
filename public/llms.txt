@@ -18,7 +18,7 @@ AirwayLab is a privacy-first web application that analyzes ResMed PAP sleep ther
 AirwayLab runs four research-grade analysis engines on every night of PAP data:
 
 ### Glasgow Index
-Per-breath flow shape scoring based on 9 morphological components: skewness, spikiness, flat-top pattern, multi-peak pattern, no-pause pattern, variable amplitude, inspiratory time variability, peak flow variability, and tidal volume variability. Produces a composite score from 0 (normal) to 4 (severe flow limitation). Based on methodology from respiratory research at the University of Glasgow.
+Per-breath flow shape scoring based on 9 morphological components: skewness, spikiness, flat-top pattern, multi-peak pattern, no-pause pattern, variable amplitude, inspiratory time variability, peak flow variability, and tidal volume variability. Each component scores 0-1, producing a composite score from 0 (normal) to 9 (severe flow limitation). Based on methodology from respiratory research at the University of Glasgow.
 
 ### WAT (Waveform Analysis Tool)
 Evaluates ventilation regularity and periodic breathing patterns. Metrics include flow limitation score (percentage of breaths with limited flow), sample entropy (breathing pattern regularity), and FFT-based periodicity detection for identifying cyclic breathing patterns.
@@ -44,6 +44,7 @@ Optional 17-metric SpO₂ and heart rate analysis framework. Requires a separate
 - https://airwaylab.app/changelog — Version history and release notes
 - https://airwaylab.app/supporters — Community supporters
 - https://airwaylab.app/contact — Contact form
+- https://airwaylab.app/research — Research dataset and methodology for researchers
 - https://airwaylab.app/privacy — Privacy policy
 - https://airwaylab.app/terms — Terms of service
 - https://airwaylab.app/glossary — Sleep and PAP therapy glossary with 38 defined terms

@@ -42,6 +42,21 @@ const breadcrumbJsonLd = {
   ],
 };
 
+const medicalPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MedicalWebPage',
+  name: 'Pulse Oximetry Analysis for PAP Users',
+  description: 'AirwayLab analyzes pulse oximetry data across 17 metrics including ODI-3, ODI-4, desaturation time, heart rate surges, and coupled desaturation-arousal events.',
+  url: 'https://airwaylab.app/about/oximetry-analysis',
+  about: {
+    '@type': 'MedicalCondition',
+    name: 'Sleep-Disordered Breathing',
+    alternateName: 'Nocturnal Hypoxemia',
+  },
+  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
+};
+
 const metrics = [
   {
     category: 'Oxygen Desaturation',
@@ -129,9 +144,14 @@ const metrics = [
 export default function OximetryAnalysisPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+      {/* Static JSON-LD from hardcoded constants - no user input, safe */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(medicalPageJsonLd) }}
       />
       {/* Breadcrumb */}
       <Link
