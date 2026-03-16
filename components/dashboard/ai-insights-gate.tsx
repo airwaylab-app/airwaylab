@@ -291,7 +291,7 @@ export function AIInsightsGate({
 
       {/* Deep insight teasers for free users after AI insights load */}
       {aiInsights && aiInsights.length > 0 && !isPaid && !isDemo && (
-        <DeepInsightTeasers />
+        <DeepInsightTeasers night={selectedNight} />
       )}
     </>
   );

@@ -19,12 +19,13 @@ import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
 import { SymptomRating } from '@/components/dashboard/symptom-rating';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
+import { CommunityBenchmarks } from '@/components/dashboard/community-benchmarks';
 import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
-import type { ThresholdDef } from '@/lib/thresholds';
+import { getTrafficLight, type ThresholdDef } from '@/lib/thresholds';
 
 const GLASGOW_COMPONENTS: { key: keyof GlasgowComponents; label: string; short: string }[] = [
   { key: 'skew', label: 'Skew', short: 'Waveform asymmetry' },
@@ -243,6 +244,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         text={getIFLRiskExplanation(computeIFLRisk(n), THRESHOLDS.iflRisk)}
         defaultExpanded={isNewUser}
       />
+
+      {/* Community Benchmarks — ungated, shows metric position bars */}
+      <CommunityBenchmarks night={n} isDemo={isDemo} />
 
       {/* IFL Risk Breakdown (Collapsible) */}
       <details className="group rounded-xl border border-border/50 bg-card/30">
@@ -587,10 +591,15 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         <NightHeatmap nights={nights} therapyChangeDate={therapyChangeDate} />
       )}
 
-      {/* Upgrade prompt for community users */}
-      {!isPaid && (
-        <UpgradePrompt feature="Waveform-level deep AI insights and detailed metric explanations are available to supporters." />
-      )}
+      {/* Upgrade prompt for community users — contextual to their data */}
+      {!isPaid && (() => {
+        const ifl = computeIFLRisk(n);
+        const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk);
+        const msg = iflTier === 'good'
+          ? 'Your therapy looks effective. Supporters get deeper analysis to understand exactly why -- and what to watch for over time.'
+          : 'Your flow limitation patterns suggest room for therapy optimisation. Get AI-powered analysis of what your breathing data means for your settings.';
+        return <UpgradePrompt feature={msg} />;
+      })()}
 
       {/* Metric Detail Modal */}
       {detailMetric && (
