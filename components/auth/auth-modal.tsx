@@ -141,7 +141,7 @@ export function AuthModal({ open, onClose }: Props) {
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
                 />
                 <span className="text-[11px] leading-snug text-muted-foreground">
-                  I agree to store my sleep data on AirwayLab&apos;s servers and have it processed by AI to generate insights. I can delete all data anytime.{' '}
+                  I agree to store my sleep data on AirwayLab&apos;s servers, including cloud backup of my SD card files, and have it processed by AI to generate insights. I can disable cloud backup and delete all data anytime.{' '}
                   <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
                     Privacy Policy
                   </a>

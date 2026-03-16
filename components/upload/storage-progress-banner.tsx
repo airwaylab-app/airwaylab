@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Cloud, Check, AlertCircle, X, Loader2 } from 'lucide-react';
+import { Cloud, Check, AlertCircle, AlertTriangle, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import type { UploadState } from '@/lib/storage/types';
@@ -11,6 +11,33 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+/**
+ * Extract a human-readable error reason from the errors array.
+ * Groups by error type and returns the most common one.
+ */
+function extractErrorSummary(errors: string[]): string | null {
+  if (errors.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  for (const err of errors) {
+    // Strip file-specific prefix ("BRP.edf: ") to group by error type
+    const normalized = err.replace(/^[^:]+:\s*/, '');
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+
+  // Return the most common error
+  let topError = '';
+  let topCount = 0;
+  counts.forEach((count, msg) => {
+    if (count > topCount) {
+      topError = msg;
+      topCount = count;
+    }
+  });
+
+  return topError || null;
 }
 
 /**
@@ -41,7 +68,7 @@ export function StorageProgressBanner() {
       .catch(() => { /* noop */ });
   }, [user]);
 
-  // Auto-dismiss after 8 seconds on success
+  // Auto-dismiss after 8 seconds on full success (no failures)
   useEffect(() => {
     if (state.status === 'complete' && state.result && state.result.failed === 0) {
       // Update cloud file count after successful upload
@@ -75,22 +102,31 @@ export function StorageProgressBanner() {
 
   const { progress, result, error } = state;
   const isAuthError = error?.includes('session') || error?.includes('sign in');
+  const hasFailures = result && result.failed > 0;
+  const isPartialSuccess = hasFailures && result.uploaded > 0;
+
+  // Determine banner styling: failures use amber/warning, not green/success
+  const bannerStyle = state.status === 'error'
+    ? isAuthError
+      ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+      : 'border-red-500/20 bg-red-500/5 text-red-400'
+    : state.status === 'complete'
+      ? hasFailures
+        ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+        : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+      : 'border-sky-500/20 bg-sky-500/5 text-sky-400';
 
   return (
-    <div className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 text-xs ${
-      state.status === 'error'
-        ? isAuthError
-          ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
-          : 'border-red-500/20 bg-red-500/5 text-red-400'
-        : state.status === 'complete'
-          ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
-          : 'border-sky-500/20 bg-sky-500/5 text-sky-400'
-    }`}>
+    <div className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 text-xs ${bannerStyle}`}>
       {/* Icon */}
       {state.status === 'error' ? (
         <AlertCircle className="h-4 w-4 shrink-0" />
       ) : state.status === 'complete' ? (
-        <Check className="h-4 w-4 shrink-0" />
+        hasFailures ? (
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+        ) : (
+          <Check className="h-4 w-4 shrink-0" />
+        )
       ) : (
         <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
       )}
@@ -120,13 +156,26 @@ export function StorageProgressBanner() {
         )}
         {state.status === 'complete' && result && (
           <span>
-            <Cloud className="inline h-3 w-3 mr-1" />
+            {!hasFailures && <Cloud className="inline h-3 w-3 mr-1" />}
             {result.uploaded === 0 && result.skipped > 0 && result.failed === 0
               ? `All ${result.skipped} files already stored.`
               : <>
-                  {result.uploaded > 0 && `${result.uploaded} files synced. `}
+                  {result.uploaded > 0 && `${result.uploaded} synced. `}
                   {result.skipped > 0 && `${result.skipped} already stored. `}
-                  {result.failed > 0 && `${result.failed} failed. `}
+                  {hasFailures && (
+                    <>
+                      {result.failed} failed
+                      {isPartialSuccess ? '. ' : ' '}
+                      {(() => {
+                        const reason = extractErrorSummary(result.errors);
+                        return reason ? (
+                          <span className="hidden sm:inline text-amber-400/70">
+                            — {reason}
+                          </span>
+                        ) : null;
+                      })()}
+                    </>
+                  )}
                 </>
             }
           </span>
