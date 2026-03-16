@@ -12,7 +12,7 @@ const benchmarkRateLimiter = new RateLimiter({
 /** In-memory cache for aggregate percentiles (1 hour TTL) */
 let cachedBenchmarks: BenchmarkResponse | null = null;
 let cachedAt = 0;
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface MetricPercentiles {
   p10: number;
