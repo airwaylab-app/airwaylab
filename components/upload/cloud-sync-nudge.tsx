@@ -46,9 +46,22 @@ export function CloudSyncNudge({
 
   if (!visible || !user) return null;
 
-  const handleEnable = () => {
+  const handleEnable = async () => {
     setCloudSyncConsent(true);
     setVisible(false);
+
+    // Sync consent to server (fire-and-forget — presign also checks DB)
+    try {
+      await fetch('/api/files/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ consent: true }),
+      });
+    } catch {
+      // Non-blocking — the migration backfill handles most users
+    }
+
     onEnable();
   };
 
@@ -123,10 +136,25 @@ export function CloudSyncToggle() {
 
   if (!user) return null;
 
-  const toggle = () => {
+  const toggle = async () => {
     const next = !enabled;
     setCloudSyncConsent(next);
     setEnabled(next);
+
+    // Sync to server — revert on any failure (network error or non-OK response)
+    try {
+      const res = await fetch('/api/files/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ consent: next }),
+      });
+      if (!res.ok) throw new Error('Server error');
+    } catch {
+      // Revert on failure
+      setCloudSyncConsent(!next);
+      setEnabled(!next);
+    }
   };
 
   return (

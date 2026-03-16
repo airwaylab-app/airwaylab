@@ -2,17 +2,26 @@
 // AirwayLab — Upload Orchestrator
 // Manages background upload of SD card files to cloud storage.
 // Handles hashing, dedup, presigned uploads, and progress.
+//
+// Hardening:
+//   - Pre-flight check verifies auth + consent before bulk upload
+//   - Fail-fast aborts after 3 consecutive identical errors
+//   - Sentry captures systematic failures for remote diagnosis
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import { extractNightDate } from '@/lib/file-manifest';
 import type { UploadState, UploadResult } from './types';
 import type { WorkerMessage } from './hash-worker';
 import { HashCache } from './hash-cache';
+import { hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 
 type UploadListener = (state: UploadState) => void;
 
 const CONCURRENCY = 10;
 const RETRY_DELAY_MS = 2000;
+/** Abort after this many consecutive failures with the same error */
+const FAIL_FAST_THRESHOLD = 3;
 
 function getFilePath(file: File): string {
   return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
@@ -68,6 +77,58 @@ class UploadOrchestrator {
   }
 
   /**
+   * Pre-flight check: verify auth and storage consent before starting bulk upload.
+   * Returns null if OK, or an error message if the pipeline will fail.
+   */
+  private async preflight(signal: AbortSignal): Promise<string | null> {
+    try {
+      const res = await fetch('/api/files/consent', {
+        credentials: 'same-origin',
+        signal,
+      });
+
+      if (res.status === 401) {
+        return 'Cloud sync requires an active session. Please sign in again.';
+      }
+      if (res.status === 403) {
+        return 'Cloud sync is not available. Please sign in again.';
+      }
+      if (!res.ok) {
+        // Server error — don't block upload, the presign endpoint might still work
+        console.error('[upload-orchestrator] preflight: consent check returned', res.status);
+        return null;
+      }
+
+      const data = await res.json();
+      if (!data.consent) {
+        // Only auto-fix if user previously opted in via the UI (localStorage)
+        // This covers the known bug where CloudSyncNudge set localStorage but not the DB
+        if (hasCloudSyncConsent()) {
+          const fixRes = await fetch('/api/files/consent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ consent: true }),
+            signal,
+          });
+          if (!fixRes.ok) {
+            return 'Could not enable cloud storage. Please try again or check Account Settings.';
+          }
+        } else {
+          return 'Cloud sync is not enabled. Enable it from your dashboard to back up your files.';
+        }
+      }
+
+      return null;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') throw err;
+      // Network error — don't block, let the upload attempt proceed
+      console.error('[upload-orchestrator] preflight failed:', err);
+      return null;
+    }
+  }
+
+  /**
    * Upload files to cloud storage. Handles hashing, dedup, and upload.
    */
   async upload(files: File[]): Promise<UploadResult> {
@@ -88,6 +149,13 @@ class UploadOrchestrator {
     });
 
     try {
+      // Step 0: Pre-flight check — verify auth + consent before hashing 900+ files
+      const preflightError = await this.preflight(signal);
+      if (preflightError) {
+        throw new Error(preflightError);
+      }
+      if (signal.aborted) throw new Error('Cancelled');
+
       // Step 1: Hash all files
       const fileHashes = await this.hashFiles(files, signal);
       if (signal.aborted) throw new Error('Cancelled');
@@ -120,6 +188,11 @@ class UploadOrchestrator {
       const result = await this.uploadFiles(toUpload, fileHashes, files, signal);
       result.skipped = skipped;
 
+      // Report systematic failures to Sentry
+      if (result.failed > 0) {
+        this.reportFailures(result, files.length);
+      }
+
       this.releasePageExit();
       this.setState({
         status: 'complete',
@@ -133,10 +206,47 @@ class UploadOrchestrator {
       const error = err instanceof Error ? err.message : String(err);
       if (error !== 'Cancelled') {
         console.error('[upload-orchestrator] Upload failed:', error);
+        Sentry.captureMessage('cloud_upload_failed', {
+          level: 'error',
+          tags: { stage: this.state.status },
+          extra: { error, fileCount: files.length },
+        });
       }
       this.setState({ status: 'error', error });
       return { uploaded: 0, skipped: 0, failed: files.length, errors: [error] };
     }
+  }
+
+  /**
+   * Report upload failures to Sentry with error breakdown.
+   */
+  private reportFailures(result: UploadResult, totalFiles: number): void {
+    // Deduplicate errors to find patterns
+    const errorCounts = new Map<string, number>();
+    for (const err of result.errors) {
+      // Strip file-specific prefix to group by error type
+      const normalized = err.replace(/^[^:]+:\s*/, '');
+      errorCounts.set(normalized, (errorCounts.get(normalized) ?? 0) + 1);
+    }
+
+    const topErrors = Array.from(errorCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    Sentry.captureMessage('cloud_upload_partial_failure', {
+      level: result.uploaded === 0 ? 'error' : 'warning',
+      tags: {
+        allFailed: String(result.uploaded === 0),
+        failedCount: String(result.failed),
+      },
+      extra: {
+        uploaded: result.uploaded,
+        skipped: result.skipped,
+        failed: result.failed,
+        totalFiles,
+        topErrors: Object.fromEntries(topErrors),
+      },
+    });
   }
 
   private async hashFiles(files: File[], signal: AbortSignal): Promise<string[]> {
@@ -295,6 +405,12 @@ class UploadOrchestrator {
     const result: UploadResult = { uploaded: 0, skipped: 0, failed: 0, errors: [] };
     let bytesUploaded = 0;
 
+    // Fail-fast tracking: abort if we see the same error repeatedly.
+    // Safe under concurrency because JS is single-threaded — the catch block
+    // (where mutation happens) runs synchronously between await points.
+    let consecutiveErrors = 0;
+    let lastErrorMessage = '';
+
     // Process with concurrency limit
     const queue = [...toUpload];
     const running: Promise<void>[] = [];
@@ -313,6 +429,9 @@ class UploadOrchestrator {
         } else {
           result.skipped++;
         }
+        // Reset consecutive error counter on success
+        consecutiveErrors = 0;
+        lastErrorMessage = '';
       } catch {
         // Retry once
         try {
@@ -321,9 +440,26 @@ class UploadOrchestrator {
           const uploaded = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
           if (uploaded) result.uploaded++;
           else result.skipped++;
+          consecutiveErrors = 0;
+          lastErrorMessage = '';
         } catch (retryErr) {
+          const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
           result.failed++;
-          result.errors.push(`${fileName}: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`);
+          result.errors.push(`${fileName}: ${errMsg}`);
+
+          // Fail-fast: track consecutive identical errors
+          const normalized = errMsg.replace(/^[^:]+:\s*/, '');
+          if (normalized === lastErrorMessage) {
+            consecutiveErrors++;
+          } else {
+            consecutiveErrors = 1;
+            lastErrorMessage = normalized;
+          }
+
+          // Abort if we've seen the same error too many times in a row
+          if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
+            this.abortController?.abort();
+          }
         }
       }
 
@@ -382,7 +518,7 @@ class UploadOrchestrator {
     if (!presignRes.ok) {
       const err = await presignRes.json().catch(() => ({ error: 'Presign failed' }));
       if (presignRes.status === 401 || presignRes.status === 403) {
-        throw new Error('Cloud sync requires an active session. Please sign in again.');
+        throw new Error(err.error || 'Cloud sync requires an active session. Please sign in again.');
       }
       throw new Error(err.error || `Presign failed: ${presignRes.status}`);
     }
