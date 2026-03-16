@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, X, Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getAIRemaining } from '@/lib/auth/feature-gate';
 
 interface Props {
-  /** What feature triggered this prompt */
+  /** Contextual feature message shown to the user */
   feature: string;
   /** Compact inline variant vs full card */
   variant?: 'card' | 'inline';
@@ -16,8 +16,9 @@ interface Props {
 }
 
 /**
- * Community-framing upgrade prompt.
- * NOT transactional SaaS language — uses "support", "fund development".
+ * Value-focused upgrade prompt.
+ * Communicates what premium adds (therapy insights),
+ * not just "support the project."
  */
 export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: Props) {
   const { tier, user } = useAuth();
@@ -33,13 +34,12 @@ export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: P
   if (variant === 'inline') {
     return (
       <div className="flex items-center gap-2 rounded-md bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
-        <Heart className="h-3 w-3 shrink-0 text-primary/60" />
+        <Sparkles className="h-3 w-3 shrink-0 text-primary/60" />
         <span>
-          {feature}.{' '}
+          {feature}{' '}
           <Link href="/pricing" className="font-medium text-primary hover:underline">
-            Support AirwayLab
-          </Link>{' '}
-          to unlock this and fund continued development.
+            See supporter benefits
+          </Link>
         </span>
       </div>
     );
@@ -55,10 +55,10 @@ export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: P
         <X className="h-3 w-3" />
       </button>
       <div className="flex items-start gap-2.5 pr-6">
-        <Heart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60" />
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60" />
         <div className="flex flex-col gap-1.5">
           <p className="text-xs leading-snug text-muted-foreground">
-            <span className="font-medium text-foreground/80">{feature}</span>
+            {feature}
           </p>
 
           {user && aiRemaining > 0 && (
@@ -68,15 +68,12 @@ export function UpgradePrompt({ feature, variant = 'card', remainingCredits }: P
             </div>
           )}
 
-          <p className="text-[10px] leading-snug text-muted-foreground/80">
-            Supporter contributions fund AirwayLab&apos;s continued development as a free, open-source tool.{' '}
-            <Link
-              href="/pricing"
-              className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
-            >
-              See how you can help
-            </Link>
-          </p>
+          <Link
+            href="/pricing"
+            className="text-[10px] font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
+          >
+            See supporter benefits
+          </Link>
         </div>
       </div>
     </div>

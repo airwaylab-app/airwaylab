@@ -244,4 +244,8 @@ export const events = {
   /** Walkthrough skipped (user clicked "Skip" or "I'll explore on my own") */
   walkthroughSkipped: (atStep: number) =>
     trackEvent('Walkthrough Skipped', { at_step: atStep }),
+
+  // ── Community benchmarks ──────────────────────────────────────
+  /** Community benchmarks loaded and viewed */
+  communityBenchmarksViewed: () => trackEvent('Community Benchmarks Viewed'),
 } as const;

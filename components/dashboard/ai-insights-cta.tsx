@@ -14,12 +14,12 @@ interface Props {
 }
 
 /**
- * Contextual CTA below AI insights explaining costs and encouraging support.
+ * Contextual CTA below AI insights.
  *
  * Four states:
- * - Demo mode: explain AI is funded out of pocket, nudge to upload own data
- * - Community tier (credits remaining): show remaining, explain community funding
- * - Community tier (credits exhausted): warm message, nudge to support
+ * - Demo mode: nudge to upload own data
+ * - Community tier (credits remaining): explain premium depth
+ * - Community tier (credits exhausted): value-focused upgrade message
  * - Paid users: hidden
  */
 export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
@@ -46,7 +46,7 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
       <div className="min-w-0 flex-1 text-[11px] leading-relaxed text-muted-foreground/70">
         {isDemo ? (
           <p>
-            These AI insights are powered by Claude and funded out of pocket to keep AirwayLab free for everyone.{' '}
+            These AI insights are powered by Claude and funded out of pocket to keep AirwayLab free.{' '}
             <Link
               href="/analyze"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
@@ -57,7 +57,8 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
           </p>
         ) : aiRemaining > 0 ? (
           <p>
-            Each AI analysis is funded out of pocket to keep AirwayLab free.
+            These insights use your aggregate scores. Supporters get deeper analysis that examines individual breath
+            patterns and suggests areas to discuss with your clinician.
             <span className="font-medium text-foreground/60">
               {' '}{aiRemaining} free {aiRemaining === 1 ? 'analysis' : 'analyses'} left this month.
             </span>{' '}
@@ -65,20 +66,19 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
               href="/pricing"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
             >
-              Support the project
-            </Link>{' '}
-            to help keep it running.
+              See supporter benefits
+            </Link>
           </p>
         ) : (
           <p>
-            You&apos;ve used your 3 free AI analyses this month. They reset next month.{' '}
+            Your free analyses reset next month. Supporters get unlimited AI analysis with waveform-level
+            depth -- understanding not just what your numbers are, but what they mean for your therapy.{' '}
             <Link
               href="/pricing"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
             >
-              Become a supporter
-            </Link>{' '}
-            for unlimited AI analysis — and help fund AirwayLab for the whole community.
+              See supporter benefits
+            </Link>
           </p>
         )}
       </div>
