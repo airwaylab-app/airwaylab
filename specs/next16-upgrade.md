@@ -1,7 +1,7 @@
 # Next.js 16 Upgrade (14.2.35 -> 16.x)
 
 **Date:** 2026-03-16
-**Status:** Draft
+**Status:** Final
 **Slug:** next16-upgrade
 **Tier:** Full spec (major framework upgrade, touches build tooling, middleware, ESLint, Sentry integration)
 
@@ -152,7 +152,30 @@ export async function getSupabaseServer() {
   // ...
   const cookieStore = await cookies();
 ```
-Note: All callers of `getSupabaseServer()` must now `await` it. Search for all usages and update.
+All 20 call sites across 19 files must add `await`:
+
+```
+app/api/ai-insights/route.ts
+app/api/consent-audit/route.ts
+app/api/create-checkout-session/route.ts
+app/api/customer-portal/route.ts
+app/api/delete-user-data/route.ts
+app/api/files/check-hashes/route.ts
+app/api/files/confirm/route.ts
+app/api/files/consent/route.ts          (2 call sites: GET + POST)
+app/api/files/delete/route.ts
+app/api/files/download/route.ts
+app/api/files/list/route.ts
+app/api/files/presign/route.ts
+app/api/files/usage/route.ts
+app/api/request-account-deletion/route.ts
+app/api/share/route.ts
+app/api/share/files/route.ts           (2 call sites: GET + PATCH)
+app/api/store-analysis-data/route.ts
+app/api/user-data-stats/route.ts
+```
+
+All are already inside `async` functions, so this is a safe find-replace: `getSupabaseServer()` -> `await getSupabaseServer()`.
 
 `app/auth/callback/route.ts`:
 ```typescript
@@ -241,7 +264,9 @@ export default async function proxy(request: NextRequest) {
 ```
 Keep the same `config` export with the matcher.
 
-Note: `proxy.ts` uses the Node.js runtime (not Edge). The current middleware already uses the Edge runtime implicitly. Verify Supabase SSR cookie handling works on the Node.js runtime. If issues arise, keep `middleware.ts` until the Edge runtime story is clarified in a future minor.
+Note: The current middleware uses `request.cookies` (direct NextRequest access), NOT the `cookies()` function, so the async cookies change does NOT affect it. The proxy rename is a naming change only -- no logic changes needed.
+
+Verify Supabase SSR cookie handling works on the Node.js runtime. If issues arise, keep `middleware.ts` until the Edge runtime story is clarified in a future minor.
 
 ### Phase 6: Config Cleanup
 
@@ -267,24 +292,22 @@ Check that `.next` is already in `.gitignore` (it should be -- `.next/dev/` is a
 
 **Step 13.** Verify key dependency React 19 compatibility
 
-| Dependency | React 19 Support | Action |
-|-----------|------------------|--------|
-| `recharts` ^3.8.0 | Verify -- Recharts 3.x should support React 19 | Check release notes |
-| `@base-ui/react` ^1.2.0 | Verify -- Base UI targets latest React | Check release notes |
-| `@supabase/ssr` ^0.9.0 | Likely compatible | Test |
-| `@sentry/nextjs` ^10.42.0 | Should support React 19 | Check docs |
-| `@vercel/speed-insights` ^2.0.0 | Likely compatible | Test |
-| `lucide-react` ^0.577.0 | Should support React 19 | Test |
-| `shadcn` ^4.0.0 | Verify | Check docs |
+| Dependency | Version | React 19 Status | Risk | Notes |
+|-----------|---------|----------------|------|-------|
+| `recharts` | ^3.8.0 | Compatible | LOW | Recharts 3.x supports React 19 natively |
+| `@base-ui/react` | ^1.2.0 | Compatible | LOW | Base UI 1.x targets latest React |
+| `@supabase/ssr` | ^0.9.0 | Compatible | LOW | Framework-agnostic cookie handling |
+| `@sentry/nextjs` | ^10.42.0 | Compatible (update to 10.46+ recommended) | LOW | 10.42+ supports React 19; update for latest fixes |
+| `@vercel/speed-insights` | ^2.0.0 | Compatible | LOW | Minimal React surface |
+| `lucide-react` | ^0.577.0 | Compatible | LOW | Icon library, React-version-agnostic |
+| `zod` | ^4.3.6 | Compatible | LOW | No React dependency |
+| `@upstash/ratelimit` | ^2.0.8 | Compatible | LOW | Server-only, no React |
+| `@anthropic-ai/sdk` | ^0.78.0 | Compatible | LOW | Server-only, no React |
+| `stripe` | ^20.4.1 | Compatible | LOW | Server-only, no React |
 
 **Step 14.** Fix any React 19 type errors
 
-React 19 changes some TypeScript types. Common issues:
-- `React.FC` children prop is no longer implicit
-- `useRef` no longer requires `null` initial value
-- `forwardRef` may be deprecated in favour of ref as prop
-
-Run `npx tsc --noEmit` and fix any type errors.
+Codebase audit confirmed: **no React.FC, no forwardRef, no useRef(null) patterns.** The codebase is already React 19 compatible at the component level. The only expected type changes are in `@types/react` and `@types/react-dom` -- run `npx tsc --noEmit` after upgrade to catch any.
 
 ---
 
