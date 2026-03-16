@@ -6,6 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
+        disallow: ['/account', '/shared/', '/api/'],
       },
     ],
     sitemap: 'https://airwaylab.app/sitemap.xml',

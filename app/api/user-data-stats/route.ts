@@ -1,8 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function GET() {
+const rateLimiter = new RateLimiter({ max: 60, windowMs: 60_000 });
+
+export async function GET(request: NextRequest) {
+  const rateLimitKey = getRateLimitKey(request);
+  if (await rateLimiter.isLimited(rateLimitKey)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const supabase = getSupabaseServer();
     if (!supabase) {

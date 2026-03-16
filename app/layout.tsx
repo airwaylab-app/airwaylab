@@ -43,14 +43,14 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
-    images: [{ url: '/og-image.png' }],
+    images: [{ url: '/opengraph-image' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
     description:
       'See if your sleep therapy is actually working — beyond AHI. Free, open-source PAP analysis in your browser.',
-    images: ['/og-image.png'],
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -81,7 +81,7 @@ const orgJsonLd = {
   '@type': 'Organization',
   name: 'AirwayLab',
   url: 'https://airwaylab.app',
-  logo: 'https://airwaylab.app/og-image.png',
+  logo: 'https://airwaylab.app/opengraph-image',
   sameAs: ['https://github.com/airwaylab-app/airwaylab'],
   description:
     'Free, open-source PAP flow limitation analysis that runs entirely in your browser.',
