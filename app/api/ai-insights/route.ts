@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Auth check — require signed-in user
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (!supabase) {
     Sentry.captureMessage('AI insights: Supabase not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
     return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });

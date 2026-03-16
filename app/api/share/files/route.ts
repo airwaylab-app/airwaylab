@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Auth check
-    const supabaseAuth = getSupabaseServer();
+    const supabaseAuth = await getSupabaseServer();
     if (!supabaseAuth) {
       return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
     }
@@ -255,7 +255,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     // Auth check
-    const supabaseAuth = getSupabaseServer();
+    const supabaseAuth = await getSupabaseServer();
     if (!supabaseAuth) {
       return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
     }

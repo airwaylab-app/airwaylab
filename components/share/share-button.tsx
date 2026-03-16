@@ -74,7 +74,7 @@ export const ShareButton = memo(function ShareButton({
   const [fileUpload, setFileUpload] = useState<FileUploadProgress>({ status: 'idle', uploaded: 0, total: 0 });
   const focusTrapRef = useFocusTrap(state.step === 'success' || state.step === 'error');
   const pendingScopeRef = useRef<'single' | 'all' | null>(null);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Clear copy feedback timer on unmount
   useEffect(() => {

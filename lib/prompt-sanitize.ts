@@ -29,7 +29,6 @@ const INJECTION_PATTERNS: RegExp[] = [
 ];
 
 /** Unicode control characters and zero-width chars to strip */
-// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\x00-\x1F\x7F-\x9F\u200B\u200C\u200D\u200E\u200F\u2028\u2029\uFEFF]/g;
 
 /** URL pattern (http/https) */

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricCard } from '@/components/common/metric-card';
@@ -315,12 +316,12 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
               </div>
             );
           })()}
-          <a
+          <Link
             href="/blog/flow-limitation-and-sleepiness"
             className="mt-3 inline-block text-xs text-primary/70 underline underline-offset-2 hover:text-primary"
           >
             Read: Does Flow Limitation Drive Sleepiness?
-          </a>
+          </Link>
         </div>
       </details>
 

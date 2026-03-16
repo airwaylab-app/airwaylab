@@ -5,7 +5,7 @@
  * account settings, free/paid AI insights, deep mode, nudges,
  * analytics events, and privacy/pricing content.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 

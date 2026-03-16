@@ -171,7 +171,7 @@ describe('THRESHOLDS object', () => {
   });
 
   it('all thresholds have valid structure', () => {
-    for (const [key, def] of Object.entries(THRESHOLDS)) {
+    for (const [_key, def] of Object.entries(THRESHOLDS)) {
       expect(typeof def.green).toBe('number');
       expect(typeof def.amber).toBe('number');
       expect(typeof def.lowerIsBetter).toBe('boolean');

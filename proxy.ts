@@ -1,12 +1,12 @@
 // ============================================================
-// AirwayLab — Middleware
+// AirwayLab — Proxy (formerly middleware)
 // Refreshes Supabase auth session on every request.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
