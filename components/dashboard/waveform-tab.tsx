@@ -228,6 +228,16 @@ export function WaveformTab({ selectedNight, isDemo, sdFiles, onReUpload }: Prop
   }
 
   if (!waveform) {
+    if (!isDemo && sdFiles.length > 0) {
+      return (
+        <Card className="border-border/50">
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Preparing waveform data...</p>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16">

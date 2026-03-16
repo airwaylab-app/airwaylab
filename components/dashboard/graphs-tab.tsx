@@ -321,13 +321,13 @@ export function GraphsTab({
         </Card>
       )}
 
-      {/* No waveform data — show Glasgow Radar + upload hint */}
+      {/* No waveform data — show Glasgow Radar + upload/loading hint */}
       {!cloudLoading && state.status !== 'loading' && state.status !== 'error' && !storedWaveform && (
         <>
           {/* Glasgow Radar — always available from persisted metrics */}
           <GlasgowRadar glasgow={selectedNight.glasgow} />
 
-          {/* Info banner for waveform upload */}
+          {/* Info banner: upload prompt OR loading indicator */}
           {!isDemo && sdFiles.length === 0 && (cloudAttempted || !cloudLoading) ? (
             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
               <Waves className="h-4 w-4 shrink-0 text-muted-foreground/70" />
@@ -338,13 +338,20 @@ export function GraphsTab({
                 <Button variant="outline" size="sm" onClick={onReUpload} className="shrink-0">Re-upload</Button>
               )}
             </div>
-          ) : !isDemo ? (
+          ) : !isDemo && sdFiles.length === 0 ? (
             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
               <Waves className="h-4 w-4 shrink-0 text-muted-foreground/70" />
               <p className="flex-1 text-xs text-muted-foreground">
                 Upload your SD card to view flow waveform charts.
               </p>
             </div>
+          ) : !isDemo && sdFiles.length > 0 ? (
+            <Card className="border-border/50">
+              <CardContent className="flex flex-col items-center justify-center gap-3 py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Preparing waveform data...</p>
+              </CardContent>
+            </Card>
           ) : null}
         </>
       )}
