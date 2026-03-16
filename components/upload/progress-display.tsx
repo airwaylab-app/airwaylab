@@ -6,9 +6,10 @@ interface ProgressDisplayProps {
   current: number;
   total: number;
   stage: string;
+  isAuthenticated?: boolean;
 }
 
-export function ProgressDisplay({ current, total, stage }: ProgressDisplayProps) {
+export function ProgressDisplay({ current, total, stage, isAuthenticated }: ProgressDisplayProps) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
@@ -40,7 +41,7 @@ export function ProgressDisplay({ current, total, stage }: ProgressDisplayProps)
         <span className="font-mono tabular-nums">{pct}%</span>
       </div>
 
-      {pct > 30 && (
+      {pct > 30 && !isAuthenticated && (
         <p className="mt-3 text-center text-[11px] text-muted-foreground/70">
           After analysis, you&apos;ll have the option to contribute your anonymised scores to help PAP research.
         </p>
