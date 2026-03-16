@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Auth check — share creation requires a logged-in user
-    const supabaseAuth = getSupabaseServer();
+    const supabaseAuth = await getSupabaseServer();
     if (!supabaseAuth) {
       return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
     }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseEVE, type MachineEvent } from '@/lib/parsers/eve-parser';
+import { parseEVE } from '@/lib/parsers/eve-parser';
 import { filterEVEFiles } from '@/lib/parsers/night-grouper';
 
 const FIXTURES_DIR = join(__dirname, 'fixtures/sd-card/DATALOG');

@@ -14,18 +14,6 @@ import path from 'path';
 
 const FIXTURES_DIR = path.resolve(__dirname, '../__tests__/fixtures/sd-card');
 
-/** Helper: upload fixtures and wait for analysis to complete */
-async function uploadAndWaitForAnalysis(page: import('@playwright/test').Page) {
-  await page.goto('/analyze');
-  const fileInput = page.locator('input[type="file"][webkitdirectory]');
-  await expect(fileInput).toBeAttached();
-  await fileInput.setInputFiles(FIXTURES_DIR);
-
-  await expect(
-    page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
-  ).toBeVisible({ timeout: 90_000 });
-}
-
 test.describe('Modal Viewport Positioning', () => {
 
   // ── Auth modal portals to body ──────────────────────────────

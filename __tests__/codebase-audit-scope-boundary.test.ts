@@ -3,7 +3,7 @@
  * Covers: safeLocalStorage utility, IndexedDB Sentry captures,
  * rate limit tightening, and Stripe webhook atomicity.
  */
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 

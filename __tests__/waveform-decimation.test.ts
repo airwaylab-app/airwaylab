@@ -4,13 +4,13 @@
  * Maps to the 12 test cases defined in specs/waveform-decimation-indexeddb.md.
  * IDB tests (5-7, 12) use mocked indexedDB since fake-indexeddb is not a dependency.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   decimateFlow,
   getTargetRate,
   generateSyntheticWaveform,
 } from '@/lib/waveform-utils';
-import type { FlowSample, StoredWaveform } from '@/lib/waveform-types';
+import type { StoredWaveform } from '@/lib/waveform-types';
 
 // ── Test 1: decimateFlow with factor 25 returns every 25th sample ──
 
@@ -101,9 +101,6 @@ describe('Spec Test 4: getTargetRate zoom mapping', () => {
 describe('Spec Tests 5-7: IndexedDB persistence', () => {
   // These tests verify the IDB module's logic by mocking indexedDB.
   // Full integration tests with real IDB would need fake-indexeddb.
-
-  let loadWaveform: typeof import('@/lib/waveform-idb').loadWaveform;
-  let storeWaveform: typeof import('@/lib/waveform-idb').storeWaveform;
 
   const makeStored = (overrides: Partial<StoredWaveform> = {}): StoredWaveform => ({
     dateStr: '2026-03-10',

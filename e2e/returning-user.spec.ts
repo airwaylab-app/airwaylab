@@ -13,11 +13,6 @@ import path from 'path';
 
 const FIXTURES_DIR = path.resolve(__dirname, '../__tests__/fixtures/sd-card');
 
-/** Helper: click a tab by its text content using data-slot selector */
-async function clickTab(page: import('@playwright/test').Page, text: RegExp) {
-  await page.locator('[data-slot="tabs-trigger"]').filter({ hasText: text }).click({ force: true });
-}
-
 test.describe('Returning User Flow', () => {
 
   // ── New user (sessions <= 5) gets simplified controls ───────
@@ -63,7 +58,7 @@ test.describe('Returning User Flow', () => {
     // Returning users should see threshold settings icon
     // (Export buttons hidden in demo, but threshold settings visible)
     const thresholdButton = page.getByLabel(/threshold|settings/i);
-    const isVisible = await thresholdButton.isVisible().catch(() => false);
+    const _isVisible = await thresholdButton.isVisible().catch(() => false);
     // Threshold settings may or may not be visible in demo — just verify no crash
     expect(true).toBe(true);
   });

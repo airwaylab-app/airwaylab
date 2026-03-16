@@ -78,7 +78,6 @@ vi.mock('@/lib/parsers/edf-parser', () => ({
 import {
   getContributedWaveformDates,
   trackContributedWaveformDate,
-  clearContributedWaveformDates,
   setContributedWaveformEngine,
 } from '@/components/upload/contribution-consent-utils';
 import type { NightResult } from '@/lib/types';

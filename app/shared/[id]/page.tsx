@@ -74,11 +74,11 @@ function rehydrateNights(raw: unknown): NightResult[] | null {
 }
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function SharedAnalysisPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   // Validate UUID format
   const uuidRegex =

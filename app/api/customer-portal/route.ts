@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Auth check
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (!supabase) {
     return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
   }

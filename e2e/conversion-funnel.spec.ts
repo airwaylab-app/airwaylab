@@ -16,11 +16,6 @@ import path from 'path';
 
 const FIXTURES_DIR = path.resolve(__dirname, '../__tests__/fixtures/sd-card');
 
-/** Helper: click a tab by its text content using data-slot selector */
-async function clickTab(page: import('@playwright/test').Page, text: RegExp) {
-  await page.locator('[data-slot="tabs-trigger"]').filter({ hasText: text }).click({ force: true });
-}
-
 /** Helper: upload fixtures and wait for analysis to complete */
 async function uploadAndWaitForAnalysis(page: import('@playwright/test').Page) {
   await page.goto('/analyze');

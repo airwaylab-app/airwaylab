@@ -12,13 +12,13 @@ import { cookies } from 'next/headers';
  * Use in Server Components, Route Handlers, and Server Actions.
  * Returns null if env vars are not configured.
  */
-export function getSupabaseServer() {
+export async function getSupabaseServer() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) return null;
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(url, anonKey, {
     cookies: {

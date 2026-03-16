@@ -68,7 +68,7 @@ describe('persistence', () => {
           breaths: new Array(5000).fill({ nedPct: 10, fi: 0.5, tpeak: 0.3 }),
         },
       }));
-      const result = persistResults(manyNights as any, null);
+      const result = persistResults(manyNights as unknown as typeof SAMPLE_NIGHTS, null);
       // With stripped data, 500 nights should still be within 4MB
       expect(result.saved).toBe(true);
       expect(result.nightsSaved).toBe(500);

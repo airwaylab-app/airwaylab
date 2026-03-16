@@ -136,7 +136,6 @@ export const FlowWaveform = memo(function FlowWaveform({
     const step = filtered.length / MAX_VISIBLE_EVENTS;
     const sampled = Array.from({ length: MAX_VISIBLE_EVENTS }, (_, i) => filtered[Math.round(i * step)]);
     return { visibleEvents: sampled, eventsCapped: true };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, anyEventsVisible, activeTypes, data]);
 
   // Determine which event types exist in the data (for legend display)

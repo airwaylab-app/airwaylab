@@ -16,7 +16,7 @@ import type { Breath, MachineHypopneaSummary } from '@/lib/types';
  * inspStart is expressed in samples (sampleIdx), which can be
  * converted to seconds via samplingRate.
  */
-function makeBeath(qPeak: number, inspStartSample: number, durationSamples: number, ned = 0): Breath {
+function _makeBeath(qPeak: number, inspStartSample: number, durationSamples: number, ned = 0): Breath {
   const inspFlow = new Float32Array(durationSamples);
   // Fill with a simple sine-ish shape peaking at qPeak
   for (let i = 0; i < durationSamples; i++) {
@@ -194,8 +194,8 @@ describe('Hypopnea & Amplitude Stability Detection', () => {
   it('flags nedVisible: true when max NED during event >= 34%', () => {
     // Build a signal where the low-amplitude breaths have flat-topped shapes
     // (high NED). We can create this by making the inspiration very flat.
-    const normalAmps = Array(35).fill(1.0);
-    const lowAmps = Array(5).fill(0.4); // 60% drop
+    const _normalAmps = Array(35).fill(1.0);
+    const _lowAmps = Array(5).fill(0.4); // 60% drop
 
     // Build flow manually with flat-topped breaths during the event
     const samplesPerBreath = 4 * SR; // 100 samples per breath
