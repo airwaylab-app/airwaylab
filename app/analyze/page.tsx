@@ -563,6 +563,7 @@ function AnalyzePageInner() {
               current={progress.current}
               total={progress.total}
               stage={progress.stage}
+              isAuthenticated={!!user}
             />
           </div>
           {/* Skeleton dashboard preview */}
