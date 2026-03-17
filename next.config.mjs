@@ -57,7 +57,7 @@ const nextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-DNS-Prefetch-Control',
@@ -71,7 +71,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://cdn.plausible.io https://plausible.io https://checkout.stripe.com https://api.stripe.com",
+              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://cdn.plausible.io https://plausible.io https://checkout.stripe.com https://api.stripe.com https://*.ingest.de.sentry.io",
               "frame-src https://checkout.stripe.com https://js.stripe.com",
               "worker-src 'self' blob:",
             ].join('; '),

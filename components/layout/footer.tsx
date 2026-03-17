@@ -24,9 +24,9 @@ export function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Navigation
-            </h4>
+            </p>
             <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
               <Link href="/analyze" className="transition-colors hover:text-foreground">
                 Analyze Data
@@ -60,9 +60,9 @@ export function Footer() {
 
           {/* Community */}
           <div>
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Community
-            </h4>
+            </p>
             <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
               <a
                 href="https://www.apneaboard.com"
@@ -96,9 +96,9 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Legal
-            </h4>
+            </p>
             <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
               <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Privacy Policy
