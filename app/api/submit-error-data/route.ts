@@ -25,7 +25,7 @@ async function sendNotificationEmail(fields: {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'AirwayLab <noreply@airwaylab.app>',
+        from: 'AirwayLab <noreply@mail.airwaylab.app>',
         to: ['dev@airwaylab.app'],
         subject: `Unsupported format: ${fields.fileNames.slice(0, 3).join(', ')}`,
         text: [

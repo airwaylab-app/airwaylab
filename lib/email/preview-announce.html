@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Announcement Email Preview</title>
+  <style>
+    body { background: #1a1a1a; margin: 0; padding: 24px; font-family: system-ui; }
+    h1 { color: #fff; font-size: 16px; text-align: center; margin: 0 0 16px; }
+    .label { color: #888; font-size: 11px; text-align: center; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Announcement Email Preview</h1>
+  <div class="label">Subject: AirwayLab beta update: new features, a bug fix, and a question for you</div>
+  <iframe id="preview" style="width:100%;max-width:640px;height:1500px;border:1px solid #333;border-radius:12px;display:block;margin:0 auto;background:#0a0a0b;"></iframe>
+
+  <script>
+    const BASE_URL = 'https://airwaylab.app';
+    const unsub = 'https://airwaylab.app/api/email/unsubscribe?token=preview-token';
+
+    const p = (t) => `<p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 16px 0;">${t}</p>`;
+    const h2 = (t) => `<h2 style="font-size:20px;color:#ffffff;font-weight:700;margin:0 0 16px 0;">${t}</h2>`;
+    const h3 = (t) => `<h3 style="font-size:16px;color:#ffffff;font-weight:700;margin:24px 0 12px 0;">${t}</h3>`;
+    const cta = (t, h) => `<div style="margin:24px 0;"><a href="${h}" style="display:inline-block;padding:10px 24px;background-color:#5eead4;color:#0a0a0b;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">${t}</a></div>`;
+    const li = (t) => `<li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;">${t}</li>`;
+    const box = (c, bc, bg) => `<div style="margin:24px 0;padding:16px;border-radius:8px;border:1px solid ${bc};background-color:${bg};">${c}</div>`;
+
+    const content = `
+      ${h2("AirwayLab beta update")}
+      ${p("You signed up for updates from AirwayLab. Thank you for being one of the first. We're still in beta, still building, and your feedback is shaping what this becomes.")}
+      ${p("Here's what's new, what went wrong, and what we need from you.")}
+
+      ${h3("What we shipped")}
+      <ul style="margin:0 0 16px 0;padding-left:20px;">
+        ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet.</strong> Deeper, more specific therapy recommendations for Supporters and Champions. Free users still get 3 analyses per month via Haiku.')}
+        ${li('<strong style="color:#fff;">Settings dashboard.</strong> See your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
+        ${li('<strong style="color:#fff;">Night comparison.</strong> Compare any two nights side by side across all four engines.')}
+        ${li('<strong style="color:#fff;">Cloud sync (free for everyone).</strong> Your SD card files are now stored securely in the EU so you can access your data from any device.')}
+        ${li("<strong style=\"color:#fff;\">Email updates.</strong> We now send occasional therapy tips and analysis reminders. You're opted in by default since you signed up for updates.")}
+      </ul>
+
+      ${box(`
+        <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 8px 0;">
+          <strong style="color:#f59e0b;">We need you to re-upload your SD card.</strong>
+        </p>
+        <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
+          We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the research dataset, please upload your full SD card again. Your personal analysis results aren't affected. This only impacts the anonymised data used to improve analysis quality for everyone.
+        </p>
+      `, '#92400e', '#451a0380')}
+
+      ${cta('Re-upload Your SD Card', BASE_URL + '/analyze?utm_source=email&utm_medium=announce&utm_campaign=reupload')}
+
+      ${h3("Thank you to our Supporters and Champions")}
+      ${p("A genuine thank you to everyone who's upgraded to a paid plan. AirwayLab is a side project with a tiny maintenance budget, and your support directly funds better AI analysis, more features, and keeping the core tool free for everyone.")}
+      ${p('Supporters ($9/mo) get unlimited AI insights and cloud sync. Champions ($25/mo) get deeper per-breath analysis, priority support, and early access to new features. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=announce&utm_campaign=premium" style="color:#5eead4;text-decoration:underline;">See plans</a>.')}
+
+      ${box(`
+        <p style="font-size:15px;color:#ffffff;font-weight:700;line-height:1.5;margin:0 0 8px 0;">
+          What should we build next?
+        </p>
+        <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
+          You're using AirwayLab because you care about understanding your therapy. We want to build what actually helps you. What's missing? What's confusing? What would make you upload every week?
+        </p>
+        <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:8px 0 0 0;">
+          Hit reply or email me directly at <a href="mailto:dev@airwaylab.app" style="color:#5eead4;text-decoration:underline;">dev@airwaylab.app</a>. I read everything personally.
+        </p>
+      `, '#5eead4', '#5eead410')}
+
+      <div style="margin:24px 0;padding:16px;border-radius:8px;border:1px solid #27272a;background-color:#18181b;">
+        <p style="font-size:13px;color:#a1a1aa;line-height:1.6;margin:0;">
+          <strong style="color:#fff;">Don't want these emails?</strong> No problem.
+          <a href="${unsub}" style="color:#5eead4;text-decoration:underline;">Click here to unsubscribe</a>
+          and you won't hear from us again. You can also toggle email updates from
+          <a href="${BASE_URL}/settings" style="color:#5eead4;text-decoration:none;">account settings</a> at any time.
+        </p>
+      </div>
+    `;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="color-scheme" content="dark" /></head>
+<body style="margin:0;padding:0;background-color:#0a0a0b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:700;color:#ffffff;">
+        <span style="color:#ffffff;">Airway</span><span style="color:#5eead4;font-weight:400;">Lab</span>
+      </span>
+    </div>
+    ${content}
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid #1e1e21;">
+      <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0;">
+        You're receiving this because you signed up on
+        <a href="${BASE_URL}" style="color:#5eead4;text-decoration:none;">airwaylab.app</a>.
+      </p>
+      <p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">
+        <a href="${unsub}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
+        from all AirwayLab emails.
+      </p>
+    </div>
+  </div>
+</body></html>`;
+
+    document.getElementById('preview').srcdoc = html;
+  </script>
+</body>
+</html>
