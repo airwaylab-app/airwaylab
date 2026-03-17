@@ -27,8 +27,11 @@ Sentry.init({
   // You can remove this option if you're not planning to use the Sentry Session Replay feature
   integrations: [
     Sentry.replayIntegration({
-      maskAllText: true,
-      blockAllMedia: true,
+      // Unmask by default so we can debug upload flows, errors, and navigation.
+      // Health data in analysis results is masked via data-sentry-mask on the container.
+      maskAllText: false,
+      blockAllMedia: false,
+      mask: ['[data-sentry-mask]'],
       // Detect dead clicks (no DOM mutation within 7s) and rage clicks (3+ rapid clicks)
       slowClickTimeout: 7000,
       // Capture request/response bodies for API routes in replays (metrics only, never raw waveforms)

@@ -88,7 +88,7 @@ export function SharedViewClient({
 
   return (
     <ThresholdsProvider>
-      <div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8" data-sentry-mask>
         {/* Header banner */}
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
