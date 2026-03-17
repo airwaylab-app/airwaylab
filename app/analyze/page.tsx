@@ -18,6 +18,7 @@ import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
 import { ShareButton } from '@/components/share/share-button';
 import { EmailOptIn } from '@/components/common/email-opt-in';
+import { EmailOptInToggle, EmailOptInNudge } from '@/components/common/email-opt-in-toggle';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { ThresholdsProvider } from '@/components/common/thresholds-provider';
 import { ThresholdSettingsModal } from '@/components/dashboard/threshold-settings-modal';
@@ -279,6 +280,16 @@ function AnalyzePageInner() {
         // Store aggregate analysis data (always, not gated by cloud sync)
         if (userRef.current) {
           storeAnalysisData(newState.nights).catch(() => { /* logged in client */ });
+        }
+
+        // Trigger email drip: post-upload sequence (fire-and-forget)
+        if (userRef.current) {
+          fetch('/api/email/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ sequence: 'post_upload' }),
+          }).catch(() => { /* non-critical */ });
         }
 
         // Update local lifetime night count (deduplicate by date)
@@ -719,6 +730,9 @@ function AnalyzePageInner() {
           {/* Post-analysis upgrade nudge — one-time, after first results */}
           {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
 
+          {/* Email opt-in nudge — one-time, for authenticated users without opt-in */}
+          {!isDemo && <EmailOptInNudge />}
+
           {/* Data Contribution — prominent placement at top of dashboard */}
           <DataContribution
             nights={nights}
@@ -750,7 +764,11 @@ function AnalyzePageInner() {
               {/* Full controls for returning users; simplified for new users */}
               {!isNewUser && (
                 <div className="hidden sm:block">
-                  <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
+                  {user ? (
+                    <EmailOptInToggle />
+                  ) : (
+                    <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
+                  )}
                 </div>
               )}
               {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} sdFiles={sdFilesRef.current} />}

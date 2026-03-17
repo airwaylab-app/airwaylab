@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { Github, AlertTriangle } from 'lucide-react';
 import { ContactForm } from '@/components/contact/contact-form';
+import { UnsubscribeBanner } from '@/components/common/unsubscribe-banner';
 
 export const metadata: Metadata = {
   title: 'Contact — AirwayLab',
@@ -38,6 +39,7 @@ export default function ContactPage() {
       </div>
 
       <Suspense fallback={null}>
+        <UnsubscribeBanner />
         <ContactForm />
       </Suspense>
 

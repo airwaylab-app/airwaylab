@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 12 March 2026
+          Last updated: 17 March 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -88,7 +88,26 @@ export default function PrivacyPolicyPage() {
             <li>Subscription tier and billing status (via Stripe)</li>
           </ul>
 
-          <h3 className="mt-4">3.2 Payment Data</h3>
+          <h3 className="mt-4">3.2 Email Communications (Opt-In)</h3>
+          <p>
+            If you opt in to email updates, we send periodic emails about your analysis activity
+            and new features. These include:
+          </p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>Post-upload tips (after your first analysis)</li>
+            <li>Feature education (how to use AI insights, exports, and reports)</li>
+            <li>Re-engagement reminders (if you haven&rsquo;t uploaded in 14+ days)</li>
+          </ul>
+          <p className="mt-2">
+            <strong>No health data is ever included in emails.</strong> Emails contain only
+            general tips and links back to the app. Emails are sent via{' '}
+            <a href="https://resend.com/privacy" target="_blank" rel="noopener noreferrer">
+              Resend
+            </a>
+            . You can unsubscribe at any time via the link in each email or from your dashboard.
+          </p>
+
+          <h3 className="mt-4">3.3 Payment Data</h3>
           <p>
             Payment processing is handled entirely by{' '}
             <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">
@@ -98,7 +117,7 @@ export default function PrivacyPolicyPage() {
             receive only your Stripe customer ID and subscription status.
           </p>
 
-          <h3 className="mt-4">3.3 Health Data (registered users)</h3>
+          <h3 className="mt-4">3.4 Health Data (registered users)</h3>
           <p>
             When you create an account, you consent to the following data processing:
           </p>
@@ -125,7 +144,7 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h3 className="mt-4">3.4 Automatically Collected Data</h3>
+          <h3 className="mt-4">3.5 Automatically Collected Data</h3>
           <ul className="ml-4 list-disc space-y-1">
             <li>
               <strong>Page views:</strong> Collected by Plausible Analytics — a privacy-first,
@@ -141,7 +160,7 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h3 className="mt-4">3.5 What We Do NOT Collect</h3>
+          <h3 className="mt-4">3.6 What We Do NOT Collect</h3>
           <ul className="ml-4 list-disc space-y-1">
             <li>Cookies (we use none)</li>
             <li>Browser fingerprints</li>
@@ -266,9 +285,9 @@ export default function PrivacyPolicyPage() {
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Resend</td>
-                  <td className="py-2 pr-4">Transactional email</td>
+                  <td className="py-2 pr-4">Transactional &amp; drip email</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Email address, message content</td>
+                  <td className="py-2">Email address, message content (no health data)</td>
                 </tr>
               </tbody>
             </table>
@@ -319,7 +338,8 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Withdraw consent:</strong> Delete all your data at any time from Account
-              Settings. You can also contact us to request full account deletion.
+              Settings. Unsubscribe from emails via the link in each email or from your
+              dashboard. You can also contact us to request full account deletion.
             </li>
             <li>
               <strong>Opt out of analytics:</strong> Plausible respects your browser&rsquo;s
