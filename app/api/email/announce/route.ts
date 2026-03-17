@@ -33,6 +33,15 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const dryRun = body.dry_run !== false; // default to dry run
+  const testEmail: string | undefined = body.test_email;
+
+  // Test mode: send to a single address for preview, no backfill or DB queries
+  if (testEmail) {
+    const unsubscribeUrl = getUnsubscribeUrl('test-user-preview');
+    const { subject, html } = buildAnnouncementEmail(unsubscribeUrl);
+    const sent = await sendEmail({ to: testEmail, subject, html, unsubscribeUrl });
+    return NextResponse.json({ test: true, sent, to: testEmail });
+  }
 
   const supabase = getSupabaseAdmin();
   if (!supabase) {
