@@ -42,7 +42,7 @@ async function sendAlert(subject: string, body: string) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'AirwayLab <noreply@airwaylab.app>',
+        from: 'AirwayLab <noreply@mail.airwaylab.app>',
         to: ['dev@airwaylab.app'],
         subject,
         text: body,

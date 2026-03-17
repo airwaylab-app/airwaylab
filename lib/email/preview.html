@@ -1,0 +1,113 @@
+<!--
+  Email template preview — open this file in a browser.
+  Shows all 7 drip email templates side by side.
+  NOT deployed, just a local preview tool.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AirwayLab Email Templates Preview</title>
+  <style>
+    body { background: #1a1a1a; color: #fff; font-family: system-ui; margin: 0; padding: 24px; }
+    h1 { font-size: 20px; margin: 0 0 24px; }
+    h2 { font-size: 14px; color: #5eead4; margin: 32px 0 8px; padding-top: 24px; border-top: 1px solid #333; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 640px; margin: 0 auto; }
+    iframe { width: 100%; height: 520px; border: 1px solid #333; border-radius: 12px; background: #0a0a0b; }
+    .label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <h1>AirwayLab Email Templates</h1>
+
+    <div>
+      <h2>Sequence 1: Post-Upload</h2>
+      <div class="label">Step 1 — Sent immediately after first analysis</div>
+      <iframe id="pu1"></iframe>
+      <div class="label" style="margin-top:16px">Step 2 — Day 3</div>
+      <iframe id="pu2"></iframe>
+      <div class="label" style="margin-top:16px">Step 3 — Day 7</div>
+      <iframe id="pu3"></iframe>
+    </div>
+
+    <div>
+      <h2>Sequence 2: Dormancy Re-engagement</h2>
+      <div class="label">Step 1 — 14 days after last analysis</div>
+      <iframe id="d1"></iframe>
+      <div class="label" style="margin-top:16px">Step 2 — 30 days after last analysis</div>
+      <iframe id="d2"></iframe>
+    </div>
+
+    <div>
+      <h2>Sequence 3: Feature Education</h2>
+      <div class="label">Step 1 — Sent immediately on email opt-in</div>
+      <iframe id="fe1"></iframe>
+      <div class="label" style="margin-top:16px">Step 2 — Day 7</div>
+      <iframe id="fe2"></iframe>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import templates and render into iframes
+    // Since this is a local preview, we inline the HTML directly
+
+    const unsub = 'https://airwaylab.app/api/email/unsubscribe?token=preview';
+    const BASE = 'https://airwaylab.app';
+
+    function layout(content) {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="color-scheme" content="dark" /></head>
+<body style="margin:0;padding:0;background-color:#0a0a0b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:700;color:#ffffff;">
+        <span style="color:#ffffff;">Airway</span><span style="color:#5eead4;font-weight:400;">Lab</span>
+      </span>
+    </div>
+    ${content}
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid #1e1e21;">
+      <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0;">
+        You're receiving this because you opted in to email updates on
+        <a href="${BASE}" style="color:#5eead4;text-decoration:none;">airwaylab.app</a>.
+      </p>
+      <p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">
+        <a href="${unsub}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
+        from these emails.
+      </p>
+    </div>
+  </div>
+</body></html>`;
+    }
+
+    function cta(text, href) {
+      return `<div style="margin:24px 0;"><a href="${href}" style="display:inline-block;padding:10px 24px;background-color:#5eead4;color:#0a0a0b;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">${text}</a></div>`;
+    }
+    function p(text) { return `<p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 16px 0;">${text}</p>`; }
+    function h(text) { return `<h2 style="font-size:20px;color:#ffffff;font-weight:700;margin:0 0 16px 0;">${text}</h2>`; }
+    function ul(items) { return `<ul style="margin:0 0 16px 0;padding-left:20px;">${items.map(i => `<li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;">${i}</li>`).join('')}</ul>`; }
+
+    const templates = {
+      pu1: layout(h('Your analysis is saved') + p("Your ResMed SD card data has been analysed by four research-grade engines. Here's what you can do next:") + ul(['<strong style="color:#fff;">Upload more nights</strong> -- trend tracking shows how your therapy changes over time.','<strong style="color:#fff;">Try AI insights</strong> -- get a plain-language explanation of what your metrics mean.','<strong style="color:#fff;">Export your report</strong> -- download a PDF or CSV for your next sleep clinic visit.']) + cta('Upload Your Next Night', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_1') + p('Your data stays in your browser unless you choose to share it.')),
+
+      pu2: layout(h('Why multi-night analysis matters') + p("Sleep-disordered breathing varies from night to night. A single night's Glasgow Index might be 1.2 (green) or 2.8 (amber) depending on circumstances.") + p("That's why trends matter. When you upload multiple nights, AirwayLab tracks how your metrics change:") + ul(['Whether a pressure adjustment improved your flow limitation','Night-to-night variability in breathing patterns','First-half vs second-half differences (H1/H2 split)','The overall direction of your therapy']) + cta('See Your Trends', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_2')),
+
+      pu3: layout(h('Track how you feel, not just the numbers') + p("AirwayLab measures what your airway does. But symptoms are personal -- two people with the same flow limitation can feel completely different.") + p("That's why we added symptom self-reporting. After each analysis, you can log how you feel on a simple scale.") + p("It takes 5 seconds. And it's the data your clinician actually wants to see alongside your metrics.") + cta('Log Your Sleep Quality', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3')),
+
+      d1: layout(h("We've been busy") + p("It's been a couple of weeks since your last analysis. Here's what's new in AirwayLab:") + ul(['<strong style="color:#fff;">Improved AI insights</strong> -- deeper, more specific therapy recommendations','<strong style="color:#fff;">Community benchmarks</strong> -- see how your metrics compare to other PAP users','<strong style="color:#fff;">Better trend views</strong> -- clearer visualisations of therapy evolution']) + p('Your previous results are still saved in your browser. Upload new data to see how things have changed.') + cta('Analyse New Data', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_1')),
+
+      d2: layout(h('Pick up where you left off') + p("Your previous analysis results are still stored in your browser. Upload this month's SD card data to compare:") + ul(["Has your Glasgow Index improved or worsened?","Is your flow limitation percentage trending in the right direction?","Are RERAs more or less frequent than last time?"]) + p("Even a single new night gives you a comparison point. Your clinician will appreciate the longitudinal data.") + cta('Compare Your Progress', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2')),
+
+      fe1: layout(h('Numbers are useful. Explanations are better.') + p("AirwayLab's four engines give you detailed metrics -- Glasgow Index, FL Score, NED, RERA counts. But what do they mean for <em>your</em> therapy?") + p("AI insights translate your metrics into plain-language explanations:") + ul(['"Your Glasgow Index of 2.4 suggests moderate flow limitation, primarily in the second half of the night..."','"Your RERA index of 6.2 is above the normal range, which may explain persistent fatigue despite a low AHI..."','"Consider discussing an EPR reduction with your clinician..."']) + p('Free users get 3 AI analyses per month. Supporters get unlimited.') + cta('Try AI Insights', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1')),
+
+      fe2: layout(h('Objective data for your next appointment') + p("Most sleep physicians see AHI and call it done. But you now have flow limitation scores, RERA estimates, and breath-by-breath analysis that tells a much deeper story.") + p("AirwayLab gives you three ways to share:") + ul(['<strong style="color:#fff;">PDF report</strong> -- professional format with metric cards, trends, and radar charts.','<strong style="color:#fff;">CSV export</strong> -- 67-column dataset for detailed review.','<strong style="color:#fff;">Forum post</strong> -- formatted for ApneaBoard or r/SleepApnea.']) + p("The more data you bring, the better the conversation.") + cta('Export Your Report', BASE+'/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2')),
+    };
+
+    for (const [id, html] of Object.entries(templates)) {
+      const iframe = document.getElementById(id);
+      iframe.srcdoc = html;
+    }
+  </script>
+</body>
+</html>

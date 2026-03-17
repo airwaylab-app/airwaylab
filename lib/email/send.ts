@@ -33,7 +33,7 @@ export async function sendEmail({ to, subject, html, unsubscribeUrl }: SendEmail
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'AirwayLab <noreply@airwaylab.app>',
+        from: 'AirwayLab <noreply@mail.airwaylab.app>',
         to: [to],
         subject,
         html,

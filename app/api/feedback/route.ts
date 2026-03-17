@@ -35,7 +35,7 @@ async function sendNotificationEmail(fields: {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'AirwayLab <noreply@airwaylab.app>',
+        from: 'AirwayLab <noreply@mail.airwaylab.app>',
         to: ['dev@airwaylab.app'],
         subject: `${label}: ${fields.message.slice(0, 60)}${fields.message.length > 60 ? '...' : ''}`,
         text: [
