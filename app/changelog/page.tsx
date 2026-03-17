@@ -31,8 +31,39 @@ const DEFAULT_ICON = { icon: Package, color: 'text-muted-foreground' };
 export default function ChangelogPage() {
   const versions = parseChangelog();
 
+  // Schema markup uses only server-controlled static data (no user input)
+  const changelogJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'AirwayLab',
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'Web',
+    url: 'https://airwaylab.app',
+    softwareVersion: versions[0]?.version,
+    dateModified: versions[0]?.date,
+    releaseNotes: `https://airwaylab.app/changelog`,
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://airwaylab.app' },
+      { '@type': 'ListItem', position: 2, name: 'Changelog', item: 'https://airwaylab.app/changelog' },
+    ],
+  };
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(changelogJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
