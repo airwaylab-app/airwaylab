@@ -71,7 +71,7 @@ export function ContributionNudgeDialog({
           </h2>
           <ul className="mx-auto mt-2 max-w-sm space-y-1.5 text-sm leading-relaxed text-muted-foreground text-left">
             <li>Unlock community comparison for your results</li>
-            <li>Help build the largest open PAP therapy dataset</li>
+            <li>Help build the largest PAP therapy dataset</li>
             <li>Enable researchers to improve treatment for everyone</li>
           </ul>
           <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-muted-foreground/70">

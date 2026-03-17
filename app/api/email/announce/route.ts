@@ -143,7 +143,7 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
         <strong style="color:#f59e0b;">We need you to re-upload your SD card.</strong>
       </p>
       <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
-        We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the open research dataset, please upload your full SD card again. Your personal analysis results aren't affected -- this only impacts the anonymised data we use for community research.
+        We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the research dataset, please upload your full SD card again. Your personal analysis results aren't affected -- this only impacts the anonymised data used to improve analysis quality for everyone.
       </p>
     `, '#92400e', '#451a0380')}
 
