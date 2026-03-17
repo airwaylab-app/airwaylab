@@ -55,6 +55,9 @@ export const serverEnv = {
   /** Admin API key for internal endpoints (ML export, etc.) */
   ADMIN_API_KEY: process.env.ADMIN_API_KEY ?? undefined,
 
+  /** GitHub personal access token (raises API rate limit from 60 to 5000 req/hr) */
+  GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? undefined,
+
   /** Upstash Redis REST URL (enables persistent rate limiting) */
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? undefined,
 
