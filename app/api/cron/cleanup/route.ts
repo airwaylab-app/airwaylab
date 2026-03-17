@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { processEmailDrips } from '@/lib/email/cron-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,20 @@ export async function GET(request: NextRequest) {
       Sentry.captureException(sessionsError, { tags: { route: 'cron-cleanup' } });
     } else {
       results.old_sessions_deleted = sessionsData?.[0]?.deleted_count ?? 0;
+    }
+
+    // 3. Process email drip sequences (send pending + schedule dormancy)
+    try {
+      const emailResult = await processEmailDrips(supabase);
+      results.emails_sent = emailResult.sent;
+      results.emails_failed = emailResult.failed;
+      results.dormancy_scheduled = emailResult.dormancyScheduled;
+      console.error(
+        `[cron/cleanup] email drips: sent=${emailResult.sent}, failed=${emailResult.failed}, dormancy=${emailResult.dormancyScheduled}`
+      );
+    } catch (emailErr) {
+      console.error('[cron/cleanup] email drip error:', emailErr);
+      Sentry.captureException(emailErr, { tags: { route: 'cron-cleanup', phase: 'email-drips' } });
     }
 
     console.error(
