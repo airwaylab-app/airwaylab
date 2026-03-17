@@ -87,3 +87,54 @@ export function setContributedWaveformEngine(version: string): void {
     localStorage.setItem(WAVEFORM_ENGINE_KEY, version);
   } catch { /* noop */ }
 }
+
+// ── Oximetry trace contribution date tracking ────────────────
+
+const OXTRACE_DATES_KEY = 'airwaylab_contributed_oxtrace_dates';
+const OXTRACE_ENGINE_KEY = 'airwaylab_contributed_oxtrace_engine';
+
+/** Get the set of night dates that have had oximetry traces contributed. */
+export function getContributedOximetryDates(): Set<string> {
+  try {
+    const raw = localStorage.getItem(OXTRACE_DATES_KEY);
+    if (!raw) return new Set();
+    const arr: unknown = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr.filter((v): v is string => typeof v === 'string'));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Track a successfully contributed oximetry trace date. */
+export function trackContributedOximetryDate(dateStr: string): void {
+  try {
+    const existing = getContributedOximetryDates();
+    existing.add(dateStr);
+    localStorage.setItem(OXTRACE_DATES_KEY, JSON.stringify(Array.from(existing)));
+  } catch { /* noop */ }
+}
+
+/** Clear all contributed oximetry trace dates (e.g., on engine version change). */
+export function clearContributedOximetryDates(): void {
+  try {
+    localStorage.removeItem(OXTRACE_DATES_KEY);
+    localStorage.removeItem(OXTRACE_ENGINE_KEY);
+  } catch { /* noop */ }
+}
+
+/** Get the engine version that was active when oximetry traces were last contributed. */
+export function getContributedOximetryEngine(): string | null {
+  try {
+    return localStorage.getItem(OXTRACE_ENGINE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Store the engine version used for oximetry trace contribution. */
+export function setContributedOximetryEngine(version: string): void {
+  try {
+    localStorage.setItem(OXTRACE_ENGINE_KEY, version);
+  } catch { /* noop */ }
+}

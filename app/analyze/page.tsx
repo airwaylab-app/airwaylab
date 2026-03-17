@@ -38,6 +38,7 @@ import { loadPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
+import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
@@ -346,6 +347,11 @@ function AnalyzePageInner() {
             contributionId
           ).catch(() => { /* logged in contributeWaveformsBackground */ });
         }
+        // Background oximetry trace contribution — fire-and-forget, no UI
+        contributeOximetryTraceBackground(
+          nightsToSubmit,
+          contributionId
+        ).catch(() => { /* logged in contributeOximetryTraceBackground */ });
       })
       .catch(() => {
         setAutoSubmitStatus('error');
