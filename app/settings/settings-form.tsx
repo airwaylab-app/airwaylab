@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { RotateCcw, Lock } from 'lucide-react';
+import { RotateCcw, Lock, Bell, BellOff, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth/auth-context';
 import { THRESHOLDS, type ThresholdDef } from '@/lib/thresholds';
 import {
   useThresholds,
@@ -181,6 +182,8 @@ function OptionButton({
 export function SettingsForm() {
   const [prefs, setPrefs] = useState<DisplayPreferences>(DEFAULTS);
   const [mounted, setMounted] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const { user, profile, refreshProfile } = useAuth();
   const thresholds = useThresholds();
   const { setOverride, resetOne, resetAll, isCustomised } =
     useThresholdActions();
@@ -338,6 +341,54 @@ export function SettingsForm() {
           ))}
         </div>
       </section>
+
+      {/* ── Email preferences ── */}
+      {user && profile && (
+        <section className="rounded-xl border border-border/50 bg-card/30 p-4 sm:p-6">
+          <h2 className="mb-4 text-base font-semibold text-foreground">Email updates</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-foreground">Therapy tips and analysis reminders</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Occasional emails about your therapy progress and new features. No health data included.
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                setEmailLoading(true);
+                try {
+                  const res = await fetch('/api/email/opt-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ opt_in: !profile.email_opt_in }),
+                  });
+                  if (res.ok) {
+                    await refreshProfile();
+                    if (!profile.email_opt_in) events.emailSubscribe('settings');
+                  }
+                } catch { /* non-critical */ }
+                finally { setEmailLoading(false); }
+              }}
+              disabled={emailLoading}
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:text-sm ${
+                profile.email_opt_in
+                  ? 'border-primary/30 bg-primary/10 text-primary'
+                  : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'
+              }`}
+            >
+              {emailLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : profile.email_opt_in ? (
+                <Bell className="h-3.5 w-3.5" />
+              ) : (
+                <BellOff className="h-3.5 w-3.5" />
+              )}
+              {profile.email_opt_in ? 'Subscribed' : 'Not subscribed'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* ── Reset all ── */}
       <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card/30 p-4 sm:p-6">

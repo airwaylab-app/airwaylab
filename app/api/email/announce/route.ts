@@ -127,15 +127,16 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
 
   const content = `
     ${h2("AirwayLab beta update")}
-    ${p("You signed up for updates from AirwayLab -- thank you for being one of the first. We're still in beta, still building, and your feedback is shaping what this becomes.")}
+    ${p("You signed up for updates from AirwayLab. Thank you for being one of the first. We're still in beta, still building, and your feedback is shaping what this becomes.")}
     ${p("Here's what's new, what went wrong, and what we need from you.")}
 
     ${h3("What we shipped")}
     <ul style="margin:0 0 16px 0;padding-left:20px;">
-      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet</strong> -- deeper, more specific therapy recommendations for Supporters. Free users still get 3 analyses per month.')}
-      ${li('<strong style="color:#fff;">Settings dashboard</strong> -- see your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
-      ${li('<strong style="color:#fff;">Night comparison</strong> -- compare any two nights side by side across all four engines.')}
-      ${li('<strong style="color:#fff;">Email updates</strong> -- we now send occasional therapy tips and analysis reminders. You\'re opted in by default since you signed up for updates.')}
+      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet.</strong> Deeper, more specific therapy recommendations for Supporters and Champions. Free users still get 3 analyses per month via Haiku.')}
+      ${li('<strong style="color:#fff;">Settings dashboard.</strong> See your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
+      ${li('<strong style="color:#fff;">Night comparison.</strong> Compare any two nights side by side across all four engines.')}
+      ${li('<strong style="color:#fff;">Cloud sync (free for everyone).</strong> Your SD card files are now stored securely in the EU so you can access your data from any device.')}
+      ${li('<strong style="color:#fff;">Email updates.</strong> We now send occasional therapy tips and analysis reminders. You\'re opted in by default since you signed up for updates.')}
     </ul>
 
     ${box(`
@@ -143,15 +144,15 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
         <strong style="color:#f59e0b;">We need you to re-upload your SD card.</strong>
       </p>
       <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
-        We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the research dataset, please upload your full SD card again. Your personal analysis results aren't affected -- this only impacts the anonymised data used to improve analysis quality for everyone.
+        We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the research dataset, please upload your full SD card again. Your personal analysis results aren't affected. This only impacts the anonymised data used to improve analysis quality for everyone.
       </p>
     `, '#92400e', '#451a0380')}
 
     ${cta('Re-upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=announce&utm_campaign=reupload`)}
 
-    ${h3("Thank you to our first Supporters")}
+    ${h3("Thank you to our Supporters and Champions")}
     ${p("A genuine thank you to everyone who's upgraded to a paid plan. AirwayLab is a side project with a tiny maintenance budget, and your support directly funds better AI analysis, more features, and keeping the core tool free for everyone.")}
-    ${p('If you haven\'t checked out what Supporters get -- unlimited AI insights, deeper per-breath analysis, cloud sync, and priority on new features -- <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=announce&utm_campaign=premium" style="color:#5eead4;text-decoration:underline;">have a look</a>.')}
+    ${p('Supporters ($9/mo) get unlimited AI insights and cloud sync. Champions ($25/mo) get deeper per-breath analysis, priority support, and early access to new features. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=announce&utm_campaign=premium" style="color:#5eead4;text-decoration:underline;">See plans</a>.')}
 
     ${box(`
       <p style="font-size:15px;color:#ffffff;font-weight:700;line-height:1.5;margin:0 0 8px 0;">
@@ -169,8 +170,8 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
       <p style="font-size:13px;color:#a1a1aa;line-height:1.6;margin:0;">
         <strong style="color:#fff;">Don't want these emails?</strong> No problem.
         <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Click here to unsubscribe</a>
-        and you won't hear from us again. You can also toggle email updates off from your
-        <a href="${BASE_URL}/analyze" style="color:#5eead4;text-decoration:none;">dashboard</a> at any time.
+        and you won't hear from us again. You can also toggle email updates from
+        <a href="${BASE_URL}/settings" style="color:#5eead4;text-decoration:none;">account settings</a> at any time.
       </p>
     </div>
   `;
@@ -206,7 +207,7 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
 </html>`;
 
   return {
-    subject: 'AirwayLab beta update -- new features, a bug fix, and a question for you',
+    subject: 'AirwayLab beta update: new features, a bug fix, and a question for you',
     html,
   };
 }
