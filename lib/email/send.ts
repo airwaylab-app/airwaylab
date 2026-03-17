@@ -34,6 +34,7 @@ export async function sendEmail({ to, subject, html, unsubscribeUrl }: SendEmail
       },
       body: JSON.stringify({
         from: 'AirwayLab <noreply@mail.airwaylab.app>',
+        reply_to: 'dev@airwaylab.app',
         to: [to],
         subject,
         html,
