@@ -40,6 +40,7 @@ export function Header() {
               { href: '/blog', label: 'Blog' },
               { href: '/providers', label: 'For Providers' },
               { href: '/glossary', label: 'Glossary' },
+              { href: '/settings', label: 'Settings' },
               { href: '/about', label: 'About' },
             ].map(({ href, label, alwaysVisible }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
@@ -81,6 +82,7 @@ export function Header() {
                       { href: '/blog', label: 'Blog' },
                       { href: '/providers', label: 'For Providers' },
                       { href: '/glossary', label: 'Glossary' },
+                      { href: '/settings', label: 'Settings' },
                       { href: '/about', label: 'About' },
                     ].map(({ href, label }) => {
                       const isActive = pathname === href || pathname.startsWith(href + '/');
