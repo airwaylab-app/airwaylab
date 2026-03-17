@@ -393,6 +393,41 @@ export default function ResearchPage() {
         </div>
       </section>
 
+      {/* ---- Related Resources ---- */}
+      <section className="mb-12">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight">Related reading</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/blog/beyond-ahi"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Beyond AHI</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Why the standard sleep apnea metric misses critical breathing events.</p>
+          </Link>
+          <Link
+            href="/blog/understanding-flow-limitation"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Understanding Flow Limitation</h3>
+            <p className="mt-1 text-xs text-muted-foreground">What flow limitation is and how AirwayLab detects it from PAP data.</p>
+          </Link>
+          <Link
+            href="/about"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Analysis Methodology</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Detailed documentation of all four analysis engines and their algorithms.</p>
+          </Link>
+          <Link
+            href="/glossary"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Metric Glossary</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Definitions of every metric AirwayLab computes, with clinical context.</p>
+          </Link>
+        </div>
+      </section>
+
       {/* ---- Medical Disclaimer ---- */}
       <section className="mb-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Sparkles, Wrench, Bug, Shield, Accessibility, Package } from 'lucide-react';
 import { parseChangelog } from '@/lib/changelog-parser';
 
@@ -155,6 +156,18 @@ export default function ChangelogPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      {/* Cross-links */}
+      <div className="mt-12 border-t border-border/50 pt-8">
+        <p className="text-sm text-muted-foreground">
+          Want to understand the analysis behind these features? Read the{' '}
+          <Link href="/about" className="text-primary hover:text-primary/80">methodology documentation</Link>,
+          explore the{' '}
+          <Link href="/blog" className="text-primary hover:text-primary/80">blog</Link> for deep dives,
+          or check the{' '}
+          <Link href="/glossary" className="text-primary hover:text-primary/80">metric glossary</Link> for definitions.
+        </p>
       </div>
     </div>
   );

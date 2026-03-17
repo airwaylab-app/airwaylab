@@ -246,6 +246,158 @@ export default function ProvidersPage() {
         </div>
       </section>
 
+      {/* ─── Before/After Scenario ─── */}
+      <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          What This Looks Like in Practice
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          A typical remote consult scenario, using real metric ranges from AirwayLab&apos;s analysis engines.
+        </p>
+
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          {/* Before */}
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+              <h3 className="text-sm font-semibold text-amber-400">Initial Assessment</h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Patient reports persistent fatigue despite 6 months of CPAP. Machine-reported AHI: 2.1/hr.
+            </p>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Glasgow Index</span>
+                <span className="font-mono font-medium text-amber-400">3.2</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">FL Score</span>
+                <span className="font-mono font-medium text-amber-400">62%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">NED Mean</span>
+                <span className="font-mono font-medium text-amber-400">28%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">RERA Index</span>
+                <span className="font-mono font-medium text-amber-400">8.4/hr</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">IFL Risk</span>
+                <span className="font-mono font-medium text-red-400">High</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground/70">
+              CPAP 10 cmH2O, EPR 3. Significant residual flow limitation invisible to AHI.
+            </p>
+          </div>
+
+          {/* After */}
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 sm:p-6">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              <h3 className="text-sm font-semibold text-emerald-400">After Adjustment</h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Provider switched to BiPAP (EPAP 8, IPAP 14, PS 6) based on flow limitation data.
+              Follow-up at 4 weeks.
+            </p>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Glasgow Index</span>
+                <span className="font-mono font-medium text-emerald-400">1.1</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">FL Score</span>
+                <span className="font-mono font-medium text-emerald-400">24%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">NED Mean</span>
+                <span className="font-mono font-medium text-emerald-400">12%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">RERA Index</span>
+                <span className="font-mono font-medium text-emerald-400">2.1/hr</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">IFL Risk</span>
+                <span className="font-mono font-medium text-emerald-400">Low</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground/70">
+              Patient reports improved energy. Objective metrics confirm therapy response.
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-6 text-xs text-muted-foreground/70">
+          Illustrative scenario using typical metric ranges. Not based on a specific patient.
+          Always verify with clinical assessment.
+        </p>
+      </section>
+
+      {/* ─── FAQ ─── */}
+      <section className="border-y border-border/50 bg-card/20">
+        <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
+          <h2 className="mb-8 text-2xl font-bold tracking-tight sm:text-3xl">
+            Common Questions
+          </h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Is patient data shared with AirwayLab?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                No. All analysis runs in the patient&apos;s browser. Raw waveform data never leaves
+                their device. When they share a link, only aggregate scores (not raw data) are stored,
+                encrypted, and auto-deleted after 30 days. Patients can revoke access at any time.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">What devices are supported?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Currently ResMed AirSense 10 and AirCurve 10 series. AirSense 11 support is in
+                development. Pulse oximetry from Viatom/Checkme O2 Max is supported for combined
+                analysis. See the{' '}
+                <Link href="/about" className="text-primary hover:text-primary/80">
+                  methodology page
+                </Link>{' '}
+                for details.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Can I use this for billing or clinical documentation?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                AirwayLab is not a medical device and is not FDA-cleared or CE-marked. It is an
+                educational tool. The analysis provides objective data points that may inform clinical
+                decisions, but should not be cited as diagnostic evidence. PDF and CSV exports can
+                supplement clinical notes.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">How does this compare to OSCAR?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                OSCAR is a desktop application for interactive waveform browsing. AirwayLab adds
+                automated flow limitation scoring (Glasgow Index, NED, WAT), RERA detection, and
+                composite metrics that OSCAR doesn&apos;t compute. Many providers use both. See our{' '}
+                <Link href="/blog" className="text-primary hover:text-primary/80">
+                  comparison article
+                </Link>{' '}
+                for details.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Is there a cost for providers?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                The core analysis is free and always will be. Paid tiers unlock AI-powered insights,
+                cloud sync, and extended trend views. Clinic-specific features (multi-patient dashboards,
+                branded reports) are on the{' '}
+                <Link href="/pricing" className="text-primary hover:text-primary/80">roadmap</Link>.
+                Early adopters who shape what we build get priority access.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Roadmap ─── */}
       <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
         <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">

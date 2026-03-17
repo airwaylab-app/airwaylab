@@ -40,6 +40,7 @@ import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { safeGetItem } from '@/lib/safe-local-storage';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
+import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -708,6 +709,9 @@ function AnalyzePageInner() {
 
           {/* Guided Walkthrough — opt-in tour for first-time users */}
           <GuidedWalkthrough isComplete={isComplete} />
+
+          {/* Post-analysis upgrade nudge — one-time, after first results */}
+          {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
 
           {/* Data Contribution — prominent placement at top of dashboard */}
           <DataContribution

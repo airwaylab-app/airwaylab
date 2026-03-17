@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { Crown } from 'lucide-react';
+import Link from 'next/link';
+import { Crown, Heart } from 'lucide-react';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -108,7 +109,22 @@ export default async function SupportersPage() {
         </div>
       )}
 
-      <div className="mt-12 text-center">
+      {/* Become a supporter CTA */}
+      <div className="mt-12 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+        <Heart className="mx-auto h-5 w-5 text-primary/60" />
+        <h3 className="mt-2 text-sm font-semibold">Help keep AirwayLab free and open-source</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Supporters fund continued development and get AI-powered insights, cloud sync, and more.
+        </p>
+        <Link
+          href="/pricing"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          See plans
+        </Link>
+      </div>
+
+      <div className="mt-6 text-center">
         <p className="text-xs text-muted-foreground">
           Only supporters who opt in are shown. Toggle visibility in your
           account settings.
