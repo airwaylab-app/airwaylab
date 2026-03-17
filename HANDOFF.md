@@ -73,11 +73,43 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
 - **State:** Single `tsconfig.json` includes test files (`**/*.ts`) but doesn't reference vitest types. Running `npx tsc --noEmit` produces errors for all 82 test files.
 - **Fix:** Either exclude `__tests__/` from the main tsconfig and add a `tsconfig.test.json`, or add vitest types to the main config.
 
+### 10. CSP Allows `unsafe-inline` and `unsafe-eval`
+- **File:** `next.config.mjs:70`
+- **Issue:** Content Security Policy includes `script-src 'self' 'unsafe-inline' 'unsafe-eval'`. This undermines XSS protection — any injected inline script can execute.
+- **Fix:** Remove `unsafe-inline` and `unsafe-eval`. Use nonce-based approach for Next.js/Sentry integration.
+
+### 11. `parseInt` Without NaN Guard Bypasses Payload Size Checks
+- **Files:** `app/api/contribute-data/route.ts:182`, `app/api/feedback/route.ts:86`, `app/api/contact/route.ts:85`, `app/api/submit-error-data/route.ts:73`
+- **Issue:** `parseInt(contentLength)` without radix or NaN validation. Malformed Content-Length (e.g., `"100, 200"`) produces `NaN`, and `NaN > MAX_PAYLOAD_BYTES` evaluates to `false`, bypassing size guards.
+- **Fix:** Use `Number(contentLength)` with `isNaN()` check, or `parseInt(contentLength, 10)`.
+
+### 12. Account Deletion Not Transactional
+- **File:** `app/api/delete-user-data/route.ts:93-110`
+- **Issue:** Deletes from multiple tables in a loop, catching errors individually. If one table fails, user data is partially deleted with no rollback.
+- **Impact:** GDPR violation — incomplete data deletion, orphaned records.
+- **Fix:** Wrap all deletions in a Supabase RPC transaction for all-or-nothing semantics.
+
+### 13. Email Opt-In Route Missing Return After Error
+- **File:** `app/api/email/opt-in/route.ts:57`
+- **Issue:** After profile update failure, error is logged but execution continues. Route returns 200 OK even though the update failed, then proceeds to schedule emails.
+- **Fix:** Add `return` after the error response.
+
+### 14. AI Insights Usage Counter Not Atomic
+- **File:** `app/api/ai-insights/route.ts:256-270`
+- **Issue:** Checks usage count, calls AI endpoint, then increments counter. Two simultaneous requests can both pass the check before either increments.
+- **Impact:** Community users can exceed their 3/month limit.
+- **Fix:** Increment counter before calling AI API, or use atomic RPC operation.
+
+### 15. Service Role Falls Back to Public Supabase URL
+- **File:** `lib/supabase/server.ts:47`
+- **Issue:** `getSupabaseServiceRole()` falls back to `NEXT_PUBLIC_SUPABASE_URL` if `SUPABASE_URL` is not set. The public URL with service role key could expose unintended behavior.
+- **Fix:** Remove fallback — service role must only use the private `SUPABASE_URL`.
+
 ---
 
 ## P2 — Architectural Debt
 
-### 10. God Component: `app/analyze/page.tsx`
+### 16. God Component: `app/analyze/page.tsx`
 - **Size:** 967 lines, 14 `useState` hooks, 9 `useEffect` hooks, 46 imports
 - **Problem:** Single component manages upload state, analysis orchestration, night selection, tab rendering, consent flows, demo mode, persisted data loading, cloud sync nudging, and error data submission. This is the root cause of many integration bugs — any state change can cascade unpredictably.
 - **Recommendation:** Extract into composable hooks:
@@ -87,11 +119,11 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
   - `useCloudSync()` — handles cloud storage nudging
   - Keep the page component as a thin shell that composes these hooks.
 
-### 11. No Auth Middleware
+### 17. No Auth Middleware
 - **State:** 40 API routes each independently call `supabase.auth.getUser()` with inconsistent error handling patterns. Some destructure `authError`, some don't. Some return 401, some return 403.
 - **Fix:** Create a shared `withAuth()` wrapper or Next.js middleware that validates the session once and passes the user to the handler. This eliminates ~80 lines of duplicated auth boilerplate and ensures consistent error responses.
 
-### 12. Silent Error Swallowing (145 instances across 72 files)
+### 18. Silent Error Swallowing (145 instances across 72 files)
 - **Pattern:** `catch { /* noop */ }` or `catch { return fallback; }`
 - **Breakdown:**
   - ~40 instances in localStorage wrappers — **acceptable** (private browsing throws)
@@ -102,11 +134,11 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
   - ~15 instances in other locations
 - **Recommendation:** Audit each catch block. Add `Sentry.captureException()` or `console.error()` to non-localStorage catches. For localStorage catches, the current pattern is correct.
 
-### 13. 100 Client Components
+### 19. 100 Client Components
 - **State:** 100 files have `'use client'`. While many genuinely need client-side interactivity, some may be client components only because they import from a client component chain.
 - **Recommendation:** Audit the component tree to identify components that could be server components if their client dependencies were restructured. Priority targets: layout components, static content components.
 
-### 14. `@testing-library/dom` in Production Dependencies
+### 20. `@testing-library/dom` in Production Dependencies
 - **File:** `package.json:23`
 - **Issue:** `@testing-library/dom` is listed under `dependencies` instead of `devDependencies`. This inflates the production bundle.
 - **Fix:** Move to `devDependencies`.
@@ -115,29 +147,29 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
 
 ## P3 — Performance Inefficiencies
 
-### 15. WAT Engine: O(n^2) Sample Entropy
+### 21. WAT Engine: O(n^2) Sample Entropy
 - **File:** `lib/analyzers/wat-engine.ts:203-217`
 - **Issue:** Nested loop compares every pair of templates. For 720 samples (60-minute window at 5-second steps), this is 259K comparisons.
 - **Mitigation:** Acceptable for current usage but will become a bottleneck if recording lengths increase. Consider approximation algorithms if performance becomes an issue.
 
-### 16. WAT Engine: Recursive FFT Array Allocation
+### 22. WAT Engine: Recursive FFT Array Allocation
 - **File:** `lib/analyzers/wat-engine.ts:241-244`
 - **Issue:** Creates new `even` and `odd` arrays on every recursive call. For 2^16 samples, this creates ~2M temporary arrays, causing GC pressure.
 - **Fix:** Implement iterative Cooley-Tukey FFT with bit-reversal permutation.
 
-### 17. Oximetry Engine: Redundant HR Baseline Calculations
+### 23. Oximetry Engine: Redundant HR Baseline Calculations
 - **File:** `lib/analyzers/oximetry-engine.ts:249-266`
 - **Issue:** For each ODI event, recomputes HR baseline for every sample in the +/-30s window. Should pre-compute baseline array once.
 
-### 18. Analysis Worker: Repeated Sort on SA2 Concatenation
+### 24. Analysis Worker: Repeated Sort on SA2 Concatenation
 - **File:** `workers/analysis-worker.ts:227`
 - **Issue:** Sorts the entire samples array after each SA2 file is appended. Should collect all files first, then sort once.
 
-### 19. Persistence: Binary Search Re-serializes on Every Iteration
+### 25. Persistence: Binary Search Re-serializes on Every Iteration
 - **File:** `lib/persistence.ts:94-103`
 - **Issue:** When data exceeds 4MB, the binary search calls `trySerialise()` up to log(n) times, each time re-stripping bulk data and re-serializing. The stripped data could be cached.
 
-### 20. Persistence: Only Validates First Night
+### 26. Persistence: Only Validates First Night
 - **File:** `lib/persistence.ts:197-208`
 - **Issue:** `loadPersistedResults()` validates the shape of `data.nights[0]` but returns all nights. Corrupted nights after the first pass through unchecked.
 
@@ -145,39 +177,39 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
 
 ## P3 — Code Quality & Maintenance
 
-### 21. Console.error Misused for Info Logging
+### 27. Console.error Misused for Info Logging
 - **File:** `workers/analysis-worker.ts:234, 264`
 - **Issue:** Uses `console.error` for successful parse diagnostics. Per CLAUDE.md, `console.error` should be for actual errors. This pollutes Vercel logs and Sentry with false positives.
 
-### 22. No Shared Statistics Utilities
+### 28. No Shared Statistics Utilities
 - **Files:** `lib/analyzers/ned-engine.ts:833-859`, `lib/analyzers/oximetry-engine.ts:295-327`
 - **Issue:** `mean()`, `std()`, `median()` functions are duplicated across engines.
 - **Note:** Engines are intentionally self-contained (protected modules), so this is a conscious trade-off. But a shared `lib/utils/statistics.ts` could be imported by both without breaking encapsulation.
 
-### 23. HR Baseline Calculation Duplicated 3x
+### 29. HR Baseline Calculation Duplicated 3x
 - **File:** `lib/analyzers/oximetry-engine.ts:145-155, 192-201, 250-261`
 - **Issue:** Same "rolling mean over preceding window" logic copied three times within a single file.
 
-### 24. Email Routes Missing Rate Limiting
+### 30. Email Routes Missing Rate Limiting
 - **Files:** `app/api/email/unsubscribe/route.ts`, `app/api/email/trigger/route.ts`, `app/api/email/opt-in/route.ts`
 - **Issue:** These routes lack rate limiting, unlike the other 36 API routes that use `RateLimiter`.
 
-### 25. Inconsistent Auth Error Responses
+### 31. Inconsistent Auth Error Responses
 - **State:** Some routes return `{ error: 'Unauthorized' }` with 401, others return `{ error: 'Authentication required' }` with 401, others return 403. No standard error shape.
 
 ---
 
 ## Toolchain & Configuration
 
-### 26. Node Modules Not Installed
+### 32. Node Modules Not Installed
 - **State:** `node_modules/` directory is missing. All `npm run` commands fail (`vitest: not found`, `next: not found`).
 - **Fix:** Run `npm install` before any development work.
 
-### 27. ESLint Version Mismatch
+### 33. ESLint Version Mismatch
 - **State:** ESLint 10.0.0 installed in `package.json` but `eslint-config-next@^16.1.6` is designed for ESLint 9.x. The config uses flat config format (`eslint.config.mjs`) but the package import fails.
 - **Fix:** Align ESLint and config versions.
 
-### 28. Single tsconfig for App + Tests
+### 34. Single tsconfig for App + Tests
 - **State:** No `tsconfig.test.json`. The main tsconfig includes `**/*.ts` which pulls in test files that reference `vitest` types not available to the main config.
 - **Fix:** Add vitest types to the main tsconfig or create a separate test tsconfig.
 
@@ -209,19 +241,23 @@ AirwayLab is a well-structured project with strong privacy architecture and clea
 
 | Priority | Issue # | Effort | Impact |
 |----------|---------|--------|--------|
-| **Now** | 26 | 1 min | Unblocks all development |
-| **Now** | 8, 9, 27, 28 | 30 min | Restores CI pipeline |
-| **Now** | 14 | 1 min | Removes test lib from prod bundle |
+| **Now** | 32 | 1 min | Unblocks all development |
+| **Now** | 8, 9, 33, 34 | 30 min | Restores CI pipeline |
+| **Now** | 20 | 1 min | Removes test lib from prod bundle |
+| **Now** | 13 | 5 min | Fixes email opt-in silent failure |
 | **This week** | 1, 2 | 1 hr | Fixes clinical accuracy bugs (needs clinical review) |
 | **This week** | 6 | 15 min | Prevents runtime crashes |
 | **This week** | 7 | 30 min | Surfaces data loss to users |
-| **Next sprint** | 10 | 4 hr | Reduces integration bug surface area |
-| **Next sprint** | 11 | 2 hr | Eliminates auth boilerplate + inconsistencies |
-| **Next sprint** | 12 | 3 hr | Improves debuggability (audit each catch block) |
-| **Ongoing** | 24, 25 | 1 hr | Hardens API routes |
+| **This week** | 10, 11 | 1 hr | Fixes CSP and payload size guard bypasses |
+| **This week** | 12 | 2 hr | Fixes GDPR-violating partial account deletion |
+| **This week** | 14, 15 | 1 hr | Fixes AI usage counter race + service role fallback |
+| **Next sprint** | 16 | 4 hr | Reduces integration bug surface area |
+| **Next sprint** | 17 | 2 hr | Eliminates auth boilerplate + inconsistencies |
+| **Next sprint** | 18 | 3 hr | Improves debuggability (audit each catch block) |
+| **Ongoing** | 30, 31 | 1 hr | Hardens API routes |
 | **Backlog** | 3, 4, 5 | 2 hr | Edge case fixes in protected engines |
-| **Backlog** | 15-19 | 4 hr | Performance optimizations |
-| **Backlog** | 20-23 | 2 hr | Code quality improvements |
+| **Backlog** | 21-25 | 4 hr | Performance optimizations |
+| **Backlog** | 26-29 | 2 hr | Code quality improvements |
 
 ---
 
