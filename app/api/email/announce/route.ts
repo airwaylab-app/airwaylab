@@ -135,7 +135,7 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
       ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet.</strong> Deeper, more specific therapy recommendations for Supporters and Champions. Free users still get 3 analyses per month via Haiku.')}
       ${li('<strong style="color:#fff;">Settings dashboard.</strong> See your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
       ${li('<strong style="color:#fff;">Night comparison.</strong> Compare any two nights side by side across all four engines.')}
-      ${li('<strong style="color:#fff;">Cloud sync (free for everyone).</strong> Your SD card files are now stored securely in the EU so you can access your data from any device.')}
+      ${li('<strong style="color:#fff;">Cloud sync (free for everyone).</strong> Your SD card files are now stored securely in the EU so you can access your data from any device. You can delete all stored data at any time from your account settings.')}
       ${li('<strong style="color:#fff;">Email updates.</strong> We now send occasional therapy tips and analysis reminders. You\'re opted in by default since you signed up for updates.')}
     </ul>
 
