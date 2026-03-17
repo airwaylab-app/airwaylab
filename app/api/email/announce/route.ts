@@ -8,7 +8,12 @@ const BASE_URL = 'https://airwaylab.app';
 
 /**
  * One-time product announcement email for existing users.
- * Protected by ADMIN_API_KEY. Does NOT set email_opt_in.
+ * Protected by ADMIN_API_KEY.
+ *
+ * Backfills email_opt_in = true for all users (consent was given
+ * via the signup form but never stored due to a missing endpoint).
+ * The email includes a prominent unsubscribe link for anyone who
+ * changed their mind.
  *
  * Usage:
  *   curl -X POST https://airwaylab.app/api/email/announce \
@@ -53,6 +58,21 @@ export async function POST(request: NextRequest) {
         recipient_count: recipients.length,
         recipients: recipients.map((u) => u.email),
       });
+    }
+
+    // Backfill: set email_opt_in = true for all users.
+    // These users consented via the signup form — the /api/subscribe
+    // endpoint was never built, so consent was lost. This restores it.
+    const { error: backfillError } = await supabase
+      .from('profiles')
+      .update({ email_opt_in: true })
+      .eq('email_opt_in', false);
+
+    if (backfillError) {
+      console.error('[email/announce] Backfill failed:', backfillError.message);
+      // Continue anyway — sending is more important than the flag
+    } else {
+      console.error(`[email/announce] Backfilled email_opt_in = true for all users`);
     }
 
     let sent = 0;
@@ -102,16 +122,23 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
 
   const content = `
     ${h2("What's new in AirwayLab")}
-    ${p("We've been shipping. Here's what's changed since you last uploaded:")}
+    ${p("You signed up for updates from AirwayLab. We've shipped a lot since then -- here's a quick overview:")}
     <ul style="margin:0 0 16px 0;padding-left:20px;">
       ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet</strong> -- deeper, more specific therapy recommendations for paid users. Free users still get 3 per month via Haiku.')}
       ${li('<strong style="color:#fff;">Settings dashboard</strong> -- see your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
       ${li('<strong style="color:#fff;">Night comparison</strong> -- compare any two nights side by side across all engines.')}
-      ${li('<strong style="color:#fff;">Email updates</strong> -- opt in to get therapy tips and analysis reminders. You can enable this from your dashboard.')}
+      ${li('<strong style="color:#fff;">Therapy tips by email</strong> -- we now send occasional emails with tips on reading your data and getting the most out of your therapy. You\'re opted in by default.')}
     </ul>
     ${p("Your previous results are still saved. Upload new data to see how your therapy has changed.")}
     ${cta('Open AirwayLab', `${BASE_URL}/analyze?utm_source=email&utm_medium=announce&utm_campaign=product_update_1`)}
-    ${p("If you don't want to hear from us again, click unsubscribe below and we won't email you.")}
+    <div style="margin:24px 0;padding:16px;border-radius:8px;border:1px solid #27272a;background-color:#18181b;">
+      <p style="font-size:13px;color:#a1a1aa;line-height:1.6;margin:0;">
+        <strong style="color:#fff;">Don't want these emails?</strong> No problem.
+        <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Click here to unsubscribe</a>
+        and you won't hear from us again. You can also toggle email updates off from your
+        <a href="${BASE_URL}/analyze" style="color:#5eead4;text-decoration:none;">dashboard</a> at any time.
+      </p>
+    </div>
   `;
 
   const html = `<!DOCTYPE html>
@@ -132,13 +159,12 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
     ${content}
     <div style="margin-top:40px;padding-top:24px;border-top:1px solid #1e1e21;">
       <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0;">
-        You're receiving this one-time update because you have an account on
+        You're receiving this because you signed up on
         <a href="${BASE_URL}" style="color:#5eead4;text-decoration:none;">airwaylab.app</a>.
-        This is not a recurring email.
       </p>
       <p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
-        -- we won't email you again.
+        from all AirwayLab emails.
       </p>
     </div>
   </div>
