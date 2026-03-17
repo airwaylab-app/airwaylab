@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           from: 'AirwayLab <noreply@mail.airwaylab.app>',
+          reply_to: 'dev@airwaylab.app',
           to: [testEmail],
           subject,
           html,
