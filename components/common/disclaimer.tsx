@@ -32,7 +32,7 @@ export function Disclaimer() {
           <span>
             Not medical advice. AirwayLab is not a medical device and is not FDA/CE cleared.
             Always consult qualified healthcare providers for treatment decisions.{' '}
-            <a href="/terms#medical-disclaimer" className="underline underline-offset-2 hover:text-amber-200">Learn more</a>
+            <a href="/terms#medical-disclaimer" className="underline underline-offset-2 hover:text-amber-200">Read our medical disclaimer</a>
           </span>
         </div>
         <button

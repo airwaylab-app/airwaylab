@@ -179,28 +179,28 @@ export default function Home() {
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 {/* Mobile: Demo primary, Upload secondary */}
-                <Link href="/analyze?demo" className="sm:hidden">
+                <Link href="/analyze?demo" className="sm:hidden" prefetch={false}>
                   <Button size="lg" className="w-full gap-2 shadow-glow">
                     <Play className="h-4 w-4" /> See Demo
                   </Button>
                 </Link>
-                <Link href="/analyze" className="sm:hidden">
+                <Link href="/analyze" className="sm:hidden" prefetch={false}>
                   <Button variant="outline" size="lg" className="w-full gap-2">
                     <Upload className="h-4 w-4" /> Upload Your SD Card
                   </Button>
                 </Link>
                 {/* Desktop: Upload primary, Demo secondary */}
-                <Link href="/analyze" className="hidden sm:block">
+                <Link href="/analyze" className="hidden sm:block" prefetch={false}>
                   <Button size="lg" className="gap-2 shadow-glow">
                     <Upload className="h-4 w-4" /> Upload Your SD Card
                   </Button>
                 </Link>
-                <Link href="/analyze?demo" className="hidden sm:block">
+                <Link href="/analyze?demo" className="hidden sm:block" prefetch={false}>
                   <Button variant="outline" size="lg" className="gap-2">
                     <Play className="h-4 w-4" /> See Demo
                   </Button>
                 </Link>
-                <p className="text-[11px] text-muted-foreground/60 sm:hidden">
+                <p className="text-[11px] text-muted-foreground/75 sm:hidden">
                   Uploading requires a desktop computer with an SD card reader.
                 </p>
                 <div className="sm:hidden">
@@ -239,11 +239,11 @@ export default function Home() {
                       <span className="font-mono text-lg font-semibold tabular-nums">
                         {m.value}
                       </span>
-                      <span className="mt-0.5 text-[9px] text-muted-foreground/50">{m.desc}</span>
+                      <span className="mt-0.5 text-[9px] text-muted-foreground/70">{m.desc}</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground/60">
+                <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground/75">
                   <div className="flex items-center gap-1">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Good
                   </div>
@@ -293,7 +293,7 @@ export default function Home() {
                 <t.icon className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold">{t.title}</h3>
+                <p className="text-sm font-semibold">{t.title}</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t.desc}</p>
               </div>
             </div>
@@ -649,7 +649,7 @@ export default function Home() {
                 <p className="font-mono text-xl font-semibold tabular-nums">6.4</p>
               </div>
             </div>
-            <p className="mt-3 text-center text-[10px] italic text-muted-foreground/60">Example data</p>
+            <p className="mt-3 text-center text-[10px] italic text-muted-foreground/75">Example data</p>
           </div>
 
           {/* Glasgow Radar */}
@@ -695,7 +695,7 @@ export default function Home() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link href="/analyze?demo">
+          <Link href="/analyze?demo" prefetch={false}>
             <Button variant="outline" size="sm" className="gap-2">
               <Play className="h-3.5 w-3.5" />
               Try the interactive demo
@@ -775,7 +775,7 @@ export default function Home() {
             No sign-up, no cloud upload, no cost. Just drag your SD card folder
             and explore your data in seconds.
           </p>
-          <Link href="/analyze">
+          <Link href="/analyze" prefetch={false}>
             <Button size="lg" className="gap-2 shadow-glow">
               <Upload className="h-4 w-4" /> Upload Your SD Card
             </Button>
