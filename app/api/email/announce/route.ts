@@ -39,8 +39,32 @@ export async function POST(request: NextRequest) {
   if (testEmail) {
     const unsubscribeUrl = getUnsubscribeUrl('test-user-preview');
     const { subject, html } = buildAnnouncementEmail(unsubscribeUrl);
-    const sent = await sendEmail({ to: testEmail, subject, html, unsubscribeUrl });
-    return NextResponse.json({ test: true, sent, to: testEmail });
+
+    // Inline send with error details for debugging
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ test: true, sent: false, error: 'RESEND_API_KEY not set' });
+    }
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          from: 'AirwayLab <noreply@airwaylab.app>',
+          to: [testEmail],
+          subject,
+          html,
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        }),
+      });
+      const resBody = await res.text();
+      return NextResponse.json({ test: true, sent: res.ok, status: res.status, to: testEmail, resend: resBody });
+    } catch (err) {
+      return NextResponse.json({ test: true, sent: false, error: String(err) });
+    }
   }
 
   const supabase = getSupabaseAdmin();
