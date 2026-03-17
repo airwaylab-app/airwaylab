@@ -11,4 +11,14 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  beforeSend(event) {
+    // Supabase storage rejects internally for duplicate uploads before our code handles it.
+    // The contribute-waveforms endpoint treats duplicates as idempotent success (upsert: false by design).
+    const message = event.exception?.values?.[0]?.value ?? '';
+    if (message.includes('The resource already exists')) {
+      return null;
+    }
+    return event;
+  },
 });

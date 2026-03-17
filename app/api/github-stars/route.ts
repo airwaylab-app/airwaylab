@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { captureApiError } from '@/lib/sentry-utils';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { serverEnv } from '@/lib/env';
 
 const rateLimiter = new RateLimiter({ max: 30, windowMs: 60_000 });
 
@@ -10,7 +11,7 @@ const REPO = 'airwaylab-app/airwaylab';
  * GET /api/github-stars
  *
  * Server-side proxy for GitHub star count.
- * Avoids client-side rate limiting (60 req/hour unauthenticated).
+ * Uses GITHUB_TOKEN for authenticated requests (5000 req/hr vs 60 unauthenticated).
  * Cached for 15 minutes via Cache-Control header.
  */
 export async function GET(request: NextRequest) {
@@ -20,11 +21,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'airwaylab-app',
+    };
+    if (serverEnv.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${serverEnv.GITHUB_TOKEN}`;
+    }
+
     const r = await fetch(`https://api.github.com/repos/${REPO}`, {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'airwaylab-app',
-      },
+      headers,
       next: { revalidate: 900 }, // ISR: 15 minutes
     });
 
