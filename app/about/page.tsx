@@ -309,9 +309,9 @@ export default function AboutPage() {
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Individual analysis is powerful, but the real potential is collective. With your consent,
-                anonymised breathing data can be contributed to an open research dataset — the largest of its kind.
+                anonymised breathing data can be contributed to a growing research dataset.
                 Patterns hidden in thousands of real-world therapy nights that no single sleep lab has the scale to
-                find. Think of it as open-source science for airway therapy.
+                find. This data powers better analysis algorithms for everyone.
               </p>
               <Link
                 href="/research"

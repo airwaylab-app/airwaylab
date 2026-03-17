@@ -20,11 +20,11 @@ import { CommunityCounter } from '@/components/common/community-counter';
 export const metadata: Metadata = {
   title: 'For Researchers — AirwayLab',
   description:
-    'AirwayLab is building an open, anonymised PAP therapy dataset. Collaborate with us to advance sleep science research on flow limitation, RERAs, and breathing pattern analysis.',
+    'AirwayLab is building a large-scale anonymised PAP therapy dataset. Collaborate with us to advance sleep science research on flow limitation, RERAs, and breathing pattern analysis.',
   openGraph: {
     title: 'For Researchers — AirwayLab',
     description:
-      'Open, anonymised PAP therapy dataset for sleep science research. Collaborate with us on flow limitation, RERA detection, and breathing pattern analysis.',
+      'Large-scale anonymised PAP therapy dataset for sleep science research. Collaborate with us on flow limitation, RERA detection, and breathing pattern analysis.',
   },
   alternates: {
     canonical: 'https://airwaylab.app/research',
@@ -198,13 +198,13 @@ export default function ResearchPage() {
       {/* ---- Hero ---- */}
       <section className="mb-12 sm:mb-16">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Open data for sleep science
+          Research collaboration
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          AirwayLab is building the largest open dataset of anonymised PAP therapy metrics. Every
+          AirwayLab is building one of the largest anonymised PAP therapy datasets. Every
           data point is contributed voluntarily, stripped of identifiers, and stored in the EU. We
-          believe better data leads to better therapy &mdash; and we want to work with researchers
-          who share that goal.
+          believe better data leads to better therapy &mdash; and we work with researchers
+          on a partnership basis to advance sleep science.
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
