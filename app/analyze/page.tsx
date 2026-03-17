@@ -623,7 +623,7 @@ function AnalyzePageInner() {
       {/* Results Dashboard */}
       {isComplete && nights.length > 0 && currentNight && (
         <ThresholdsProvider>
-        <div className="flex flex-col gap-4 animate-fade-in-up">
+        <div className="flex flex-col gap-4 animate-fade-in-up" data-sentry-mask>
           {/* Demo Banner */}
           {isDemo && (
             <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -713,35 +713,10 @@ function AnalyzePageInner() {
             </div>
           )}
 
-          {/* Cloud sync: nudge if not enabled, progress if enabled */}
-          <CloudSyncNudge onEnable={() => {
-            // User just opted in — trigger upload for current session files
-            if (sdFilesRef.current.length > 0) {
-              events.cloudSyncUsed();
-              const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
-              uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
-            }
-          }} />
+          {/* Cloud sync progress (non-dismissible, transient) */}
           <StorageProgressBanner />
 
-          {/* Guided Walkthrough — opt-in tour for first-time users */}
-          <GuidedWalkthrough isComplete={isComplete} />
-
-          {/* Post-analysis upgrade nudge — one-time, after first results */}
-          {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
-
-          {/* Email opt-in nudge — one-time, for authenticated users without opt-in */}
-          {!isDemo && <EmailOptInNudge />}
-
-          {/* Data Contribution — prominent placement at top of dashboard */}
-          <DataContribution
-            nights={nights}
-            isDemo={isDemo}
-            autoSubmitStatus={autoSubmitStatus}
-            autoSubmitCount={autoSubmitCount}
-          />
-
-          {/* Controls Bar */}
+          {/* Controls Bar — immediately after status banners, before any nudges */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
               <div data-walkthrough="night-selector">
@@ -780,14 +755,12 @@ function AnalyzePageInner() {
             </div>
           </div>
 
-          {/* StorageConsent removed — registration consent covers storage */}
-
-          {/* Tabbed Views */}
+          {/* Tabbed Views — right after controls, above nudge banners */}
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
             <TabsList
               variant="line"
               data-walkthrough="tab-bar"
-              className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card/50 px-4 backdrop-blur-sm sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1 sm:backdrop-blur-none"
+              className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card px-4 sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1"
             >
               {/* Primary tabs — full words on mobile */}
               <TabsTrigger value="overview" className="gap-1.5">
@@ -940,6 +913,26 @@ function AnalyzePageInner() {
               </ErrorBoundary>
             </TabsContent>
           </Tabs>
+
+          {/* Nudge banners — below dashboard content so data is always visible first */}
+          <div className="flex flex-col gap-4">
+            <CloudSyncNudge onEnable={() => {
+              if (sdFilesRef.current.length > 0) {
+                events.cloudSyncUsed();
+                const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+                uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
+              }
+            }} />
+            <GuidedWalkthrough isComplete={isComplete} />
+            {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
+            {!isDemo && <EmailOptInNudge />}
+            <DataContribution
+              nights={nights}
+              isDemo={isDemo}
+              autoSubmitStatus={autoSubmitStatus}
+              autoSubmitCount={autoSubmitCount}
+            />
+          </div>
 
         </div>
         </ThresholdsProvider>
