@@ -164,7 +164,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
-        fetchProfile(initialSession.user.id).finally(() => setIsLoading(false));
+        fetchProfile(initialSession.user.id).then(() => {
+          // Check if user signed up via EmailOptIn (pending email opt-in)
+          try {
+            if (localStorage.getItem('airwaylab_email_opt_in_pending') === '1') {
+              localStorage.removeItem('airwaylab_email_opt_in_pending');
+              fetch('/api/email/opt-in', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ opt_in: true }),
+              }).catch(() => { /* non-critical */ });
+            }
+          } catch { /* localStorage unavailable */ }
+        }).finally(() => setIsLoading(false));
       } else {
         setIsLoading(false);
       }
