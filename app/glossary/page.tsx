@@ -514,6 +514,34 @@ export default function GlossaryPage() {
           ))}
       </div>
 
+      {/* Cross-links */}
+      <div className="mt-12 border-t border-border/50 pt-8">
+        <h2 className="mb-3 text-lg font-semibold">Go deeper</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link
+            href="/about/flow-limitation"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Flow Limitation</h3>
+            <p className="mt-1 text-xs text-muted-foreground">How AirwayLab detects and scores airway restriction.</p>
+          </Link>
+          <Link
+            href="/about/glasgow-index"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Glasgow Index</h3>
+            <p className="mt-1 text-xs text-muted-foreground">The 9-component breath shape scoring methodology.</p>
+          </Link>
+          <Link
+            href="/about/oximetry-analysis"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Oximetry Analysis</h3>
+            <p className="mt-1 text-xs text-muted-foreground">17-metric SpO2 and heart rate analysis framework.</p>
+          </Link>
+        </div>
+      </div>
+
       {/* Medical Disclaimer */}
       <section className="mt-12 mb-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">

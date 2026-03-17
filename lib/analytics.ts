@@ -248,4 +248,13 @@ export const events = {
   // ── Community benchmarks ──────────────────────────────────────
   /** Community benchmarks loaded and viewed */
   communityBenchmarksViewed: () => trackEvent('Community Benchmarks Viewed'),
+
+  // ── Post-analysis upgrade nudge ──────────────────────────────
+  /** Post-analysis upgrade nudge dismissed */
+  upgradeNudgeDismissed: (source: string) =>
+    trackEvent('Upgrade Nudge Dismissed', { source }),
+
+  /** Post-analysis upgrade nudge CTA clicked */
+  upgradeNudgeClicked: (source: string) =>
+    trackEvent('Upgrade Nudge Clicked', { source }),
 } as const;
