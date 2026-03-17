@@ -7,6 +7,7 @@ import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 // Lazy-load post components
 import AHINormalStillTired from '../posts/ahi-normal-still-tired';
 import OSCARAlternative from '../posts/oscar-alternative';
+import HowPAPTherapyWorks from '../posts/how-pap-therapy-works';
 import IFLSymptomSensitivity from '../posts/ifl-symptom-sensitivity';
 import HiddenRespiratoryEvents from '../posts/hidden-respiratory-events';
 import FlowLimitationAndSleepiness from '../posts/flow-limitation-and-sleepiness';
@@ -20,6 +21,7 @@ import PAPDataPrivacy from '../posts/pap-data-privacy';
 const postComponents: Record<string, React.ComponentType> = {
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
+  'how-pap-therapy-works': HowPAPTherapyWorks,
   'ifl-symptom-sensitivity': IFLSymptomSensitivity,
   'hidden-respiratory-events': HiddenRespiratoryEvents,
   'flow-limitation-and-sleepiness': FlowLimitationAndSleepiness,
