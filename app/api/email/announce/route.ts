@@ -120,17 +120,51 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
   const li = (text: string) =>
     `<li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;">${text}</li>`;
 
+  const h3 = (text: string) =>
+    `<h3 style="font-size:16px;color:#ffffff;font-weight:700;margin:24px 0 12px 0;">${text}</h3>`;
+  const box = (content: string, borderColor: string, bgColor: string) =>
+    `<div style="margin:24px 0;padding:16px;border-radius:8px;border:1px solid ${borderColor};background-color:${bgColor};">${content}</div>`;
+
   const content = `
-    ${h2("What's new in AirwayLab")}
-    ${p("You signed up for updates from AirwayLab. We've shipped a lot since then -- here's a quick overview:")}
+    ${h2("AirwayLab beta update")}
+    ${p("You signed up for updates from AirwayLab -- thank you for being one of the first. We're still in beta, still building, and your feedback is shaping what this becomes.")}
+    ${p("Here's what's new, what went wrong, and what we need from you.")}
+
+    ${h3("What we shipped")}
     <ul style="margin:0 0 16px 0;padding-left:20px;">
-      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet</strong> -- deeper, more specific therapy recommendations for paid users. Free users still get 3 per month via Haiku.')}
+      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet</strong> -- deeper, more specific therapy recommendations for Supporters. Free users still get 3 analyses per month.')}
       ${li('<strong style="color:#fff;">Settings dashboard</strong> -- see your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
-      ${li('<strong style="color:#fff;">Night comparison</strong> -- compare any two nights side by side across all engines.')}
-      ${li('<strong style="color:#fff;">Therapy tips by email</strong> -- we now send occasional emails with tips on reading your data and getting the most out of your therapy. You\'re opted in by default.')}
+      ${li('<strong style="color:#fff;">Night comparison</strong> -- compare any two nights side by side across all four engines.')}
+      ${li('<strong style="color:#fff;">Email updates</strong> -- we now send occasional therapy tips and analysis reminders. You\'re opted in by default since you signed up for updates.')}
     </ul>
-    ${p("Your previous results are still saved. Upload new data to see how your therapy has changed.")}
-    ${cta('Open AirwayLab', `${BASE_URL}/analyze?utm_source=email&utm_medium=announce&utm_campaign=product_update_1`)}
+
+    ${box(`
+      <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 8px 0;">
+        <strong style="color:#f59e0b;">We need you to re-upload your SD card.</strong>
+      </p>
+      <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
+        We had a storage bug that affected contributed research data. If you haven't uploaded in the last 3 days and you want your data included in the open research dataset, please upload your full SD card again. Your personal analysis results aren't affected -- this only impacts the anonymised data we use for community research.
+      </p>
+    `, '#92400e', '#451a0380')}
+
+    ${cta('Re-upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=announce&utm_campaign=reupload`)}
+
+    ${h3("Thank you to our first Supporters")}
+    ${p("A genuine thank you to everyone who's upgraded to a paid plan. AirwayLab is a side project with a tiny maintenance budget, and your support directly funds better AI analysis, more features, and keeping the core tool free for everyone.")}
+    ${p('If you haven\'t checked out what Supporters get -- unlimited AI insights, deeper per-breath analysis, cloud sync, and priority on new features -- <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=announce&utm_campaign=premium" style="color:#5eead4;text-decoration:underline;">have a look</a>.')}
+
+    ${box(`
+      <p style="font-size:15px;color:#ffffff;font-weight:700;line-height:1.5;margin:0 0 8px 0;">
+        What should we build next?
+      </p>
+      <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;">
+        You're using AirwayLab because you care about understanding your therapy. We want to build what actually helps you. What's missing? What's confusing? What would make you upload every week?
+      </p>
+      <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:8px 0 0 0;">
+        Hit reply or email me directly at <a href="mailto:dev@airwaylab.app" style="color:#5eead4;text-decoration:underline;">dev@airwaylab.app</a>. I read everything personally.
+      </p>
+    `, '#5eead4', '#5eead410')}
+
     <div style="margin:24px 0;padding:16px;border-radius:8px;border:1px solid #27272a;background-color:#18181b;">
       <p style="font-size:13px;color:#a1a1aa;line-height:1.6;margin:0;">
         <strong style="color:#fff;">Don't want these emails?</strong> No problem.
@@ -172,7 +206,7 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
 </html>`;
 
   return {
-    subject: "What's new in AirwayLab -- settings dashboard, night comparison, and more",
+    subject: 'AirwayLab beta update -- new features, a bug fix, and a question for you',
     html,
   };
 }
