@@ -32,6 +32,17 @@ export const blogPosts: BlogPost[] = [
       'Comparing OSCAR and AirwayLab for PAP therapy analysis. OSCAR excels at waveform browsing; AirwayLab adds automated flow limitation scoring, RERA detection, and AI insights.',
   },
   {
+    slug: 'how-pap-therapy-works',
+    title: 'How PAP Therapy Actually Works: CPAP, BiPAP, and Pressure Support Explained',
+    description:
+      'A visual, beginner-friendly guide to the physics of PAP therapy. Understand how EPAP splints your airway, why inspiration creates dangerous negative pressure, and how pressure support pushes air through.',
+    date: '2026-03-17',
+    readTime: '14 min read',
+    tags: ['PAP', 'CPAP', 'BiPAP', 'Getting Started'],
+    ogDescription:
+      'Your PAP machine blows air, but why does that keep your airway open? A visual guide to EPAP, IPAP, pressure support, and the physics of keeping a flexible airway splinted during sleep.',
+  },
+  {
     slug: 'ifl-symptom-sensitivity',
     title: 'Not Everyone With High Flow Limitation Feels Bad — Here\'s How to Find Out If Yours Matters',
     description:
