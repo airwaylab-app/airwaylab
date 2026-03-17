@@ -10,6 +10,28 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'ahi-normal-still-tired',
+    title: 'Your AHI Is Normal But You\'re Still Exhausted — Here\'s What Your Data Is Missing',
+    description:
+      'An AHI under 5 doesn\'t mean your therapy is working. Flow limitation, RERAs, and autonomic stress can fragment your sleep without showing up in standard metrics. Here\'s how to find out.',
+    date: '2026-03-17',
+    readTime: '9 min read',
+    tags: ['AHI', 'Fatigue', 'Flow Limitation', 'Getting Started'],
+    ogDescription:
+      'Your AHI is normal but you\'re still tired? Flow limitation and RERAs may be disrupting your sleep without triggering scored events. Learn how to check your PAP data.',
+  },
+  {
+    slug: 'oscar-alternative',
+    title: 'AirwayLab vs OSCAR: What Each Tool Does Best (and How to Use Both)',
+    description:
+      'OSCAR shows your waveforms. AirwayLab analyses them. A practical comparison of the two open-source PAP data tools, with a workflow for using both together.',
+    date: '2026-03-17',
+    readTime: '8 min read',
+    tags: ['OSCAR', 'CPAP Software', 'Flow Limitation', 'Comparison'],
+    ogDescription:
+      'Comparing OSCAR and AirwayLab for PAP therapy analysis. OSCAR excels at waveform browsing; AirwayLab adds automated flow limitation scoring, RERA detection, and AI insights.',
+  },
+  {
     slug: 'ifl-symptom-sensitivity',
     title: 'Not Everyone With High Flow Limitation Feels Bad — Here\'s How to Find Out If Yours Matters',
     description:

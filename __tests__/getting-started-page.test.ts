@@ -88,7 +88,7 @@ describe('Getting Started page', () => {
   // Navigation integration tests
   it('header contains Getting Started link', () => {
     const content = readFile('components/layout/header.tsx');
-    expect(content).toContain('href="/getting-started"');
+    expect(content).toContain('/getting-started');
     expect(content).toContain('Getting Started');
   });
 

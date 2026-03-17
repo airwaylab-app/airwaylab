@@ -5,6 +5,8 @@ import { ArrowLeft, Calendar, Clock, Tag } from 'lucide-react';
 import { blogPosts, getPostBySlug, getAllSlugs } from '@/lib/blog-posts';
 
 // Lazy-load post components
+import AHINormalStillTired from '../posts/ahi-normal-still-tired';
+import OSCARAlternative from '../posts/oscar-alternative';
 import IFLSymptomSensitivity from '../posts/ifl-symptom-sensitivity';
 import HiddenRespiratoryEvents from '../posts/hidden-respiratory-events';
 import FlowLimitationAndSleepiness from '../posts/flow-limitation-and-sleepiness';
@@ -16,6 +18,8 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'ahi-normal-still-tired': AHINormalStillTired,
+  'oscar-alternative': OSCARAlternative,
   'ifl-symptom-sensitivity': IFLSymptomSensitivity,
   'hidden-respiratory-events': HiddenRespiratoryEvents,
   'flow-limitation-and-sleepiness': FlowLimitationAndSleepiness,
@@ -75,8 +79,15 @@ export default async function BlogPostPage({
   const PostComponent = postComponents[slug];
   if (!PostComponent) notFound();
 
-  // Find related posts (other posts, excluding current)
-  const relatedPosts = blogPosts.filter((p) => p.slug !== slug).slice(0, 2);
+  // Find related posts by tag overlap, then recency
+  const relatedPosts = blogPosts
+    .filter((p) => p.slug !== slug)
+    .map((p) => ({
+      ...p,
+      tagOverlap: p.tags.filter((t) => post.tags.includes(t)).length,
+    }))
+    .sort((a, b) => b.tagOverlap - a.tagOverlap || new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 3);
 
   // JSON-LD for BlogPosting
   const jsonLd = {
@@ -175,8 +186,8 @@ export default async function BlogPostPage({
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
         <section className="mt-12 border-t border-border/50 pt-8">
-          <h2 className="mb-4 text-lg font-bold">More from AirwayLab</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <h2 className="mb-4 text-lg font-bold">Related reading</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
             {relatedPosts.map((related) => (
               <Link
                 key={related.slug}
