@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
-import { scheduleSequence, cancelAllPending } from '@/lib/email/sequences';
-import { SEQUENCES } from '@/lib/email/templates';
-import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
-import { sendEmail } from '@/lib/email/send';
+import { cancelAllPending } from '@/lib/email/sequences';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
@@ -19,7 +16,7 @@ const OptInSchema = z.object({
  * POST /api/email/opt-in
  *
  * Toggles email_opt_in for the authenticated user.
- * On opt-in: schedules feature_education sequence, sends step 1 inline.
+ * On opt-in: sets the flag (sequences are scheduled by triggers, not here).
  * On opt-out: cancels all pending email sequences.
  */
 export async function POST(request: NextRequest) {
@@ -71,41 +68,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
     }
 
-    if (opt_in) {
-      // Schedule feature_education sequence
-      await scheduleSequence(supabase, user.id, 'feature_education');
-
-      // Send step 1 inline
-      const config = SEQUENCES.feature_education;
-      const unsubscribeUrl = getUnsubscribeUrl(user.id);
-      const template = config.getTemplate(1, unsubscribeUrl);
-
-      if (template) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.email) {
-          const sent = await sendEmail({
-            to: profile.email,
-            subject: template.subject,
-            html: template.html,
-            unsubscribeUrl,
-          });
-
-          if (sent) {
-            await supabase
-              .from('email_sequences')
-              .update({ status: 'sent', sent_at: new Date().toISOString() })
-              .eq('user_id', user.id)
-              .eq('sequence_name', 'feature_education')
-              .eq('step', 1);
-          }
-        }
-      }
-    } else {
+    if (!opt_in) {
       // Cancel all pending sequences
       await cancelAllPending(supabase, user.id);
     }
