@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
+const TrackAnalysisSchema = z.object({
+  nightCount: z.number().int().min(1).max(1095),
+  hasOximetry: z.boolean(),
+  isDemo: z.boolean(),
+  durationMs: z.number().optional(),
+  glasgowAvg: z.number().optional(),
+});
+
 /**
  * POST /api/track-analysis
  *
  * Records an anonymous analysis session in Supabase.
  * Called once when analysis completes (not on demo loads).
- * No PII is collected — just aggregate metrics.
+ * No PII is collected -- just aggregate metrics.
  */
 const MAX_PAYLOAD_BYTES = 4_000; // 4 KB
 
@@ -34,32 +43,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
-    const body = await request.json();
-    const {
-      nightCount,
-      hasOximetry,
-      isDemo,
-      durationMs,
-      glasgowAvg,
-    } = body as {
-      nightCount: number;
-      hasOximetry: boolean;
-      isDemo: boolean;
-      durationMs?: number;
-      glasgowAvg?: number;
-    };
-
-    // Basic validation
-    if (
-      typeof nightCount !== 'number' ||
-      nightCount < 1 ||
-      nightCount > 1095 ||
-      typeof hasOximetry !== 'boolean' ||
-      typeof isDemo !== 'boolean'
-    ) {
-      console.warn(`[track-analysis] 400 invalid data: nightCount=${nightCount}`);
+    const body = await request.json().catch(() => null);
+    const parsed = TrackAnalysisSchema.safeParse(body);
+    if (!parsed.success) {
+      console.warn('[track-analysis] 400 invalid payload');
       return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
     }
+
+    const { nightCount, hasOximetry, isDemo, durationMs, glasgowAvg } = parsed.data;
 
     const supabase = getSupabaseAdmin();
 

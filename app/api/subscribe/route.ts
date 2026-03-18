@@ -1,26 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
 const limiter = new RateLimiter({ windowMs: 60_000, max: 5 });
 
-// ── Email validation ───────────────────────────────────────────────
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const MAX_EMAIL_LENGTH = 254; // RFC 5321
-
-function isValidEmail(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= MAX_EMAIL_LENGTH &&
-    EMAIL_RE.test(value)
-  );
-}
-
-// ── Allowed sources (prevent injection of arbitrary strings) ───────
-const ALLOWED_SOURCES = ['hero', 'post-analysis', 'footer', 'inline', 'about'];
+const SubscribeSchema = z.object({
+  email: z.string().min(1).max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/),
+  source: z.enum(['hero', 'post-analysis', 'footer', 'inline', 'about', 'unknown']).catch('unknown'),
+});
 
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -37,20 +27,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse body with size guard
-    const body = await request.json();
-    const { email, source } = body as { email: unknown; source: unknown };
-
-    if (!isValidEmail(email)) {
-      console.warn(`[subscribe] 400 invalid email`);
-      return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+    const parsed = SubscribeSchema.safeParse(body);
+    if (!parsed.success) {
+      console.warn('[subscribe] 400 invalid payload');
+      return NextResponse.json({ error: 'Invalid request data.' }, { status: 400 });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanSource =
-      typeof source === 'string' && ALLOWED_SOURCES.includes(source)
-        ? source
-        : 'unknown';
+    const cleanEmail = parsed.data.email.trim().toLowerCase();
+    const cleanSource = parsed.data.source;
 
     const supabase = getSupabaseAdmin();
 
