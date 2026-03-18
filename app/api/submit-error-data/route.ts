@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -7,6 +8,16 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
+
+const SubmitErrorSchema = z.object({
+  fileNames: z.array(z.string()).min(1, 'No file names provided.').max(50),
+  errorMessage: z.string().min(3, 'Error message required.').max(2000),
+  email: z.preprocess(
+    (v) => (typeof v === 'string' && v.length > 0 ? v : null),
+    z.string().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/).nullable()
+  ),
+  userAgent: z.string().max(500).optional(),
+});
 
 const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
 
@@ -34,7 +45,7 @@ async function sendNotificationEmail(fields: {
           '',
           `Files (${fields.fileNames.length}): ${fields.fileNames.slice(0, 10).join(', ')}`,
           `Error: ${fields.errorMessage.slice(0, 500)}`,
-          `Email: ${fields.email ?? '—'}`,
+          `Email: ${fields.email ?? '\u2014'}`,
         ].join('\n'),
       }),
     });
@@ -75,32 +86,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
 
-    const body = await request.json();
-    const { fileNames, errorMessage, email, userAgent } = body as {
-      fileNames: string[];
-      errorMessage: string;
-      email?: string;
-      userAgent?: string;
-    };
-
-    if (!Array.isArray(fileNames) || fileNames.length === 0) {
-      console.warn('[submit-error-data] 400 no file names provided');
-      return NextResponse.json({ error: 'No file names provided.' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+    const parsed = SubmitErrorSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    if (typeof errorMessage !== 'string' || errorMessage.length < 3) {
-      console.warn('[submit-error-data] 400 missing error message');
-      return NextResponse.json({ error: 'Error message required.' }, { status: 400 });
-    }
+    const { fileNames, errorMessage, email, userAgent } = parsed.data;
 
-    // Validate email if provided
-    if (email !== undefined && email !== null && email !== '') {
-      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
-        return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
-      }
-    }
-
-    // Sanitize file names — only keep name and extension, limit count
+    // Sanitize file names -- only keep name and extension, limit count
     const sanitizedFiles = fileNames
       .slice(0, 50)
       .map((f) => {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -7,6 +8,18 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
+
+const ProviderInterestSchema = z.object({
+  name: z.string()
+    .max(100, 'Name too long (max 100 characters).')
+    .refine((s) => s.trim().length >= 2, 'Name must be at least 2 characters.'),
+  email: z.string().min(1).max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email address.'),
+  practiceType: z.enum(['independent_sleep_consultant', 'respiratory_therapist', 'sleep_physician', 'other'] as const).nullable().catch(null),
+  message: z.preprocess(
+    (v) => (typeof v === 'string' && v.length > 0 ? v : null),
+    z.string().max(2000, 'Message too long (max 2000 characters).').nullable()
+  ),
+});
 
 const PRACTICE_TYPE_LABELS: Record<string, string> = {
   independent_sleep_consultant: 'Independent Sleep Consultant',
@@ -40,8 +53,8 @@ async function sendNotificationEmail(fields: {
           '',
           `Name: ${fields.name}`,
           `Email: ${fields.email}`,
-          `Practice type: ${fields.practiceType ? PRACTICE_TYPE_LABELS[fields.practiceType] ?? fields.practiceType : '—'}`,
-          `Message: ${fields.message ?? '—'}`,
+          `Practice type: ${fields.practiceType ? PRACTICE_TYPE_LABELS[fields.practiceType] ?? fields.practiceType : '\u2014'}`,
+          `Message: ${fields.message ?? '\u2014'}`,
         ].join('\n'),
       }),
     });
@@ -51,18 +64,12 @@ async function sendNotificationEmail(fields: {
       console.error('[provider-interest] Resend error:', res.status, body);
     }
   } catch (err) {
-    // Non-critical — don't fail the request if notification fails
+    // Non-critical -- don't fail the request if notification fails
     console.error('[provider-interest] Notification email failed:', err);
   }
 }
 
 const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
-const ALLOWED_PRACTICE_TYPES = [
-  'independent_sleep_consultant',
-  'respiratory_therapist',
-  'sleep_physician',
-  'other',
-] as const;
 
 /**
  * POST /api/provider-interest
@@ -93,57 +100,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { name, email, practiceType, message } = body as {
-      name: unknown;
-      email: unknown;
-      practiceType?: unknown;
-      message?: unknown;
-    };
-
-    // Validate name
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'Name must be at least 2 characters.' },
-        { status: 400 }
-      );
-    }
-    if (name.trim().length > 100) {
-      return NextResponse.json(
-        { error: 'Name too long (max 100 characters).' },
-        { status: 400 }
-      );
+    const body = await request.json().catch(() => null);
+    const parsed = ProviderInterestSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    // Validate email
-    if (
-      !email ||
-      typeof email !== 'string' ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      email.length > 254
-    ) {
-      return NextResponse.json(
-        { error: 'Please enter a valid email address.' },
-        { status: 400 }
-      );
-    }
-
-    // Validate practiceType (optional)
-    const cleanPracticeType =
-      typeof practiceType === 'string' &&
-      (ALLOWED_PRACTICE_TYPES as readonly string[]).includes(practiceType)
-        ? practiceType
-        : null;
-
-    // Validate message (optional)
-    if (message !== undefined && message !== null && message !== '') {
-      if (typeof message !== 'string' || message.length > 2000) {
-        return NextResponse.json(
-          { error: 'Message too long (max 2000 characters).' },
-          { status: 400 }
-        );
-      }
-    }
+    const { name, email, practiceType: cleanPracticeType, message } = parsed.data;
 
     const supabase = getSupabaseAdmin();
 
@@ -152,7 +116,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         practice_type: cleanPracticeType,
-        message: typeof message === 'string' ? message.trim() || null : null,
+        message: message?.trim() || null,
       });
 
       if (error) {
@@ -163,21 +127,21 @@ export async function POST(request: NextRequest) {
 
       // Fire-and-forget notification email
       sendNotificationEmail({
-        name: (name as string).trim(),
-        email: (email as string).trim().toLowerCase(),
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         practiceType: cleanPracticeType,
-        message: typeof message === 'string' ? message.trim() || null : null,
+        message: message?.trim() || null,
       });
     } else {
-      console.error('[provider-interest] Supabase not configured — submission not stored');
+      console.error('[provider-interest] Supabase not configured -- submission not stored');
     }
 
     Sentry.captureMessage('New provider interest submission', {
       level: 'info',
       tags: { route: 'provider-interest', practice_type: cleanPracticeType ?? 'none' },
       extra: {
-        name: (name as string).trim(),
-        emailDomain: (email as string).split('@')[1],
+        name: name.trim(),
+        emailDomain: email.split('@')[1],
       },
     });
 
