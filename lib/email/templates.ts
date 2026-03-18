@@ -77,17 +77,12 @@ function bulletList(items: string[]): string {
 
 export function postUploadStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Your first analysis is saved -- here\'s what to do next',
+    subject: "Your first analysis is saved -- here's what to do next",
     html: layout(`
-      ${heading('Your analysis is saved')}
-      ${paragraph('Your ResMed SD card data has been analysed by four research-grade engines. Here\'s what you can do next:')}
-      ${bulletList([
-        '<strong style="color:#fff;">Upload more nights</strong> -- trend tracking shows how your therapy changes over time. One night is a snapshot; seven nights is a picture.',
-        '<strong style="color:#fff;">Try AI insights</strong> -- get a plain-language explanation of what your metrics mean for your therapy. Free users get 3 per month.',
-        '<strong style="color:#fff;">Export your report</strong> -- download a PDF or CSV to bring to your next sleep clinic visit.',
-      ])}
+      ${heading('Your breathing data has been analysed')}
+      ${paragraph('Four research-grade engines just scored your flow limitation, breathing regularity, and airway resistance. Your results are saved in your browser -- no one sees them but you.')}
+      ${paragraph('One night is a snapshot. Upload a few more nights and you\'ll start to see how your therapy is actually trending -- whether pressure changes helped, which nights are worse, and what your clinician should know.')}
       ${ctaButton('Upload Your Next Night', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_1`)}
-      ${paragraph('Your data stays in your browser unless you choose to share it. No one sees your results but you.')}
     `, unsubscribeUrl),
   };
 }
@@ -105,7 +100,7 @@ export function postUploadStep2(unsubscribeUrl: string): { subject: string; html
         'First-half vs second-half differences (H1/H2 split)',
         'The overall direction of your therapy',
       ])}
-      ${ctaButton('See Your Trends', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_2`)}
+      ${ctaButton('Upload Your Next Night', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_2`)}
     `, unsubscribeUrl),
   };
 }
@@ -127,34 +122,30 @@ export function postUploadStep3(unsubscribeUrl: string): { subject: string; html
 
 export function dormancyStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Your PAP data is waiting -- new features since your last visit',
+    subject: 'Your therapy data is still here',
     html: layout(`
-      ${heading('We\'ve been busy')}
-      ${paragraph('It\'s been a couple of weeks since your last analysis. Here\'s what\'s new in AirwayLab:')}
+      ${heading('Ready when you are')}
+      ${paragraph('Your previous analysis results are saved. When you upload new SD card data, AirwayLab compares it against your earlier nights so you can see what\'s changed.')}
+      ${paragraph('Even one new night gives you:')}
       ${bulletList([
-        '<strong style="color:#fff;">Improved AI insights</strong> -- deeper, more specific therapy recommendations powered by your flow data',
-        '<strong style="color:#fff;">Community benchmarks</strong> -- see how your metrics compare to other PAP users (anonymised, opt-in only)',
-        '<strong style="color:#fff;">Better trend views</strong> -- clearer visualisations of how your therapy is evolving',
+        'A before-and-after comparison of your flow limitation scores',
+        'Whether your breathing patterns are improving or drifting',
+        'Updated trend data to bring to your next clinic visit',
       ])}
-      ${paragraph('Your previous results are still saved in your browser. Upload new data to see how things have changed.')}
-      ${ctaButton('Analyse New Data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_1`)}
+      ${ctaButton('Upload This Month\'s Data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_1`)}
     `, unsubscribeUrl),
   };
 }
 
 export function dormancyStep2(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Still tracking your therapy? Your previous results are saved',
+    subject: 'Last check-in: are you still tracking your therapy?',
     html: layout(`
-      ${heading('Pick up where you left off')}
-      ${paragraph('Your previous analysis results are still stored in your browser. Upload this month\'s SD card data to compare:')}
-      ${bulletList([
-        'Has your Glasgow Index improved or worsened?',
-        'Is your flow limitation percentage trending in the right direction?',
-        'Are RERAs more or less frequent than last time?',
-      ])}
-      ${paragraph('Even a single new night gives you a comparison point. Your clinician will appreciate the longitudinal data.')}
-      ${ctaButton('Compare Your Progress', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2`)}
+      ${heading('No pressure -- just checking in')}
+      ${paragraph('We send occasional emails to help you get the most out of AirwayLab. If you\'re no longer tracking your PAP therapy, no worries -- this is the last email we\'ll send unless you upload new data.')}
+      ${paragraph('If you are still on therapy, your previous results are waiting. Upload your latest SD card data and see how your metrics compare.')}
+      ${ctaButton('Upload New Data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2`)}
+      ${paragraph('If you\'d rather not hear from us, <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">unsubscribe here</a>. One click, no questions.')}
     `, unsubscribeUrl),
   };
 }
@@ -163,7 +154,7 @@ export function dormancyStep2(unsubscribeUrl: string): { subject: string; html: 
 
 export function featureEducationStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Did you know? AI insights explain what your numbers mean',
+    subject: 'Your metrics, explained in plain language',
     html: layout(`
       ${heading('Numbers are useful. Explanations are better.')}
       ${paragraph('AirwayLab\'s four engines give you detailed metrics -- Glasgow Index, FL Score, NED, RERA counts. But what do they mean for <em>your</em> therapy?')}
@@ -197,9 +188,42 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
   };
 }
 
+// ── Sequence 4: Activation (signed up, never uploaded) ───────
+
+export function activationStep1(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Need help uploading your SD card data?',
+    html: layout(`
+      ${heading('Getting started takes 60 seconds')}
+      ${paragraph('You created an AirwayLab account but haven\'t uploaded any data yet. Here\'s what you need:')}
+      ${bulletList([
+        '<strong style="color:#fff;">A ResMed SD card</strong> -- remove it from your CPAP/BiPAP machine (AirSense 10, AirSense 11, AirCurve, or similar)',
+        '<strong style="color:#fff;">An SD card reader</strong> -- plug it into your computer',
+        '<strong style="color:#fff;">Select the DATALOG folder</strong> -- AirwayLab will find and parse all the EDF files automatically',
+      ])}
+      ${paragraph('Everything runs in your browser. Your data never leaves your device unless you choose to share it.')}
+      ${ctaButton('Upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_1`)}
+      ${paragraph('Having trouble? Reply to this email and we\'ll help you get started.')}
+    `, unsubscribeUrl),
+  };
+}
+
+export function activationStep2(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Your CPAP data has insights waiting to be found',
+    html: layout(`
+      ${heading('What one upload reveals')}
+      ${paragraph('AirwayLab users who upload a week of SD card data typically discover patterns their AHI never showed -- subtle flow limitation, periodic breathing, and arousal patterns that explain why they still feel tired despite "normal" numbers.')}
+      ${paragraph('Your machine has been recording detailed flow waveforms every night. AirwayLab\'s four engines analyse those waveforms at the breath level -- something OSCAR and your machine\'s built-in reports can\'t do.')}
+      ${ctaButton('Start Your First Analysis', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_2`)}
+      ${paragraph('This is the last activation email we\'ll send. If you\'re not ready yet, your account will be here when you are.')}
+    `, unsubscribeUrl),
+  };
+}
+
 // ── Template registry ────────────────────────────────────────
 
-export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education';
+export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation';
 
 interface SequenceConfig {
   totalSteps: number;
@@ -221,7 +245,7 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   dormancy: {
     totalSteps: 2,
-    delays: [0, 16], // 14 days dormant + 0 = 14 days, + 16 = 30 days
+    delays: [0, 7], // step 1 at trigger (3d or 7d via AB test), step 2 at t+7
     getTemplate: (step, url) => {
       if (step === 1) return dormancyStep1(url);
       if (step === 2) return dormancyStep2(url);
@@ -230,10 +254,19 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   feature_education: {
     totalSteps: 2,
-    delays: [0, 7], // step 1 sent inline at trigger, step 2 via cron
+    delays: [10, 17], // starts 10 days after first upload (after post_upload finishes)
     getTemplate: (step, url) => {
       if (step === 1) return featureEducationStep1(url);
       if (step === 2) return featureEducationStep2(url);
+      return null;
+    },
+  },
+  activation: {
+    totalSteps: 2,
+    delays: [0, 3], // step 1 at trigger (48h after signup), step 2 at t+3
+    getTemplate: (step, url) => {
+      if (step === 1) return activationStep1(url);
+      if (step === 2) return activationStep2(url);
       return null;
     },
   },

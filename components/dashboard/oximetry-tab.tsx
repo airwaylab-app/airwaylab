@@ -103,8 +103,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               }`}
             >
               <div
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: showODIEvents ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+                className={`h-2 w-2 rounded-full ${showODIEvents ? 'bg-red-500' : 'bg-muted-foreground/40'}`}
               />
               ODI-3
             </button>
@@ -119,8 +118,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
               }`}
             >
               <div
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: showHR ? 'hsl(0 84% 60%)' : 'hsl(215 20% 30%)' }}
+                className={`h-2 w-2 rounded-full ${showHR ? 'bg-red-500' : 'bg-muted-foreground/40'}`}
               />
               Heart Rate
             </button>

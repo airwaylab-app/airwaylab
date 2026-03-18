@@ -16,13 +16,14 @@ interface SendEmailParams {
 
 /**
  * Send a single email via Resend API.
- * Returns true on success, false on failure (logged, not thrown).
+ * Returns the Resend message ID on success, null on failure (logged, not thrown).
+ * The message ID is used to correlate webhook events (opens, clicks, delivery).
  */
-export async function sendEmail({ to, subject, html, unsubscribeUrl }: SendEmailParams): Promise<boolean> {
+export async function sendEmail({ to, subject, html, unsubscribeUrl }: SendEmailParams): Promise<string | null> {
   const apiKey = serverEnv.RESEND_API_KEY;
   if (!apiKey) {
     console.error('[email-send] RESEND_API_KEY not configured');
-    return false;
+    return null;
   }
 
   try {
@@ -50,12 +51,13 @@ export async function sendEmail({ to, subject, html, unsubscribeUrl }: SendEmail
     if (!res.ok) {
       const body = await res.text();
       console.error(`[email-send] Resend API error ${res.status}: ${body}`);
-      return false;
+      return null;
     }
 
-    return true;
+    const data = await res.json() as { id?: string };
+    return data.id ?? null;
   } catch (err) {
     console.error('[email-send] Failed to send email:', err);
-    return false;
+    return null;
   }
 }
