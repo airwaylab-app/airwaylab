@@ -192,8 +192,9 @@ Full process details are in `prompts/spec.md` and `prompts/build.md`. This secti
 | **Full spec** | New features, engine changes, API routes, privacy/consent, protected modules | `prompts/spec.md` → `prompts/build.md` (all agents) | New analysis metric, AI insights flow, auth changes, data contribution |
 | **Light spec** | UI changes, refactors, significant bug fixes | Write the step template (files, tests, manual QA). Review + all 5 checks + preview verification. | Dashboard layout change, component refactor, broken loading state |
 | **No spec** | Near-zero regression risk | Standard PR with all 5 checks. Quick visual check on preview. | Blog posts, copy changes, dependency bumps, CSS-only tweaks, docs |
+| **Batch fixes** | Known issues with clear scope from audits/issues | Validate findings against codebase, implement directly, pipeline, PR. No architecture design. Skip feature-dev. | Zod validation gaps, missing rate limiters, dep cleanup, test gaps |
 
-When in doubt, use the tier above.
+When in doubt, use the tier above. **Do not use `/feature-dev` for batch fixes.** Feature-dev's 7-phase workflow (explore, architecture, clarify) is designed for new features with unknown scope. For audit findings and known fixes: validate, implement, ship.
 
 ### Shipping Rules
 
@@ -207,6 +208,15 @@ When in doubt, use the tier above.
 8. **Max 3 feature PRs per day.** Ship, verify, observe.
 9. **Fix-on-fix = red flag.** Stop. Revert if merged. Re-spec the area.
 10. **Bundle size budget.** Flag any PR increasing bundle >10KB. LCP must stay under 2s.
+
+### Remote/Headless Session Handoff
+
+Remote Claude sessions (launched via `claude --dangerously-skip-permissions` or background tasks) MUST follow this protocol:
+
+1. **Output = GitHub issue, not PR.** Create an issue with findings, not a docs PR or implementation. Findings go stale; issues are actionable.
+2. **Never implement fixes.** The remote session lacks interactive context to make design decisions. It discovers; a human-supervised session implements.
+3. **Validate before reporting.** Check the current codebase state before claiming something is missing. `Glob` + `Grep` first.
+4. **One branch, no uncommitted work.** If any code was written during exploration, either commit it on a clearly-named branch or discard it. Never leave uncommitted changes for another session to inherit.
 
 ### Rollback Protocol
 

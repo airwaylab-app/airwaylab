@@ -27,6 +27,7 @@ import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRisk
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
 import { getTrafficLight, type ThresholdDef } from '@/lib/thresholds';
+import { fmtHrs } from '@/lib/format-utils';
 
 const GLASGOW_COMPONENTS: { key: keyof GlasgowComponents; label: string; short: string }[] = [
   { key: 'skew', label: 'Skew', short: 'Waveform asymmetry' },
@@ -39,12 +40,6 @@ const GLASGOW_COMPONENTS: { key: keyof GlasgowComponents; label: string; short: 
   { key: 'multiBreath', label: 'Multi-Breath', short: 'Cross-breath pattern' },
   { key: 'variableAmp', label: 'Var. Amp', short: 'Amplitude variability' },
 ];
-
-function fmtHrs(h: number): string {
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return `${hrs}h ${mins}m`;
-}
 
 interface Props {
   nights: NightResult[];

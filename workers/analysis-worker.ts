@@ -155,8 +155,16 @@ async function processFiles(
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
       parsedEdfs.push(edf);
-    } catch {
-      // Skip unparseable files
+    } catch (err) {
+      const filename = brp.path.split('/').pop() || brp.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
     }
 
     // Yield every PARSE_BATCH_SIZE files and report progress
@@ -167,7 +175,10 @@ async function processFiles(
   }
 
   if (parsedEdfs.length === 0) {
-    throw new Error('No valid BRP.edf files could be parsed');
+    if (brpFiles.length === 0) {
+      throw new Error('No flow data files (BRP.edf) found in the uploaded data. Make sure you selected the root folder or DATALOG folder from your SD card.');
+    }
+    throw new Error(`Found ${brpFiles.length} flow data file(s) but none could be parsed. The files may be corrupted or in an unsupported format.`);
   }
 
   // Step 3.5: Parse EVE.edf files and group events by night date
@@ -188,8 +199,16 @@ async function processFiles(
         existing.push(...hypopneas);
         eveEventsByDate.set(nightDate, existing);
       }
-    } catch {
-      // EVE parsing failed — continue without machine events
+    } catch (err) {
+      const filename = eveInfo.path.split('/').pop() || eveInfo.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
     }
   }
 
@@ -231,7 +250,7 @@ async function processFiles(
           oximetryByDate.set(parsed.dateStr, parsed);
         }
 
-        console.error(`[sa2] Parsed ${parsed.samples.length} samples from ${filename} for night ${parsed.dateStr}`);
+        console.info(`[sa2] Parsed ${parsed.samples.length} samples from ${filename} for night ${parsed.dateStr}`);
       } catch (err) {
         const filename = sa2Info.path.split('/').pop() || sa2Info.path;
         console.error(`[sa2] Failed to parse ${filename}: ${err instanceof Error ? err.message : String(err)}`);
@@ -245,7 +264,7 @@ async function processFiles(
       try {
         const parsed = parseOximetryCSV(csv);
         if (oximetryByDate.has(parsed.dateStr)) {
-          console.error(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
+          console.info(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
         }
@@ -263,7 +282,7 @@ async function processFiles(
     if (matched.length === 0) {
       console.error(`[oximetry] No date matches. Oximetry dates: [${oxDates.join(', ')}], Night dates: [${nightDates.slice(0, 5).join(', ')}${nightDates.length > 5 ? '...' : ''}]`);
     } else {
-      console.error(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
+      console.info(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
     }
   }
 

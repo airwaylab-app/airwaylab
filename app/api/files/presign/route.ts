@@ -85,6 +85,9 @@ export async function POST(request: NextRequest) {
 
       if (isStaleOrphan) {
         await serviceRole.from('user_files').delete().eq('id', existing.id);
+        // Clean up any orphaned storage object to prevent "resource already exists"
+        // on the subsequent createSignedUploadUrl call
+        await serviceRole.storage.from(STORAGE_BUCKET).remove([existing.storage_path]);
       } else if (existing.upload_confirmed) {
         // Confirmed row — verify file actually exists in storage
         const { data: storageFile } = await serviceRole.storage
@@ -102,7 +105,9 @@ export async function POST(request: NextRequest) {
       } else {
         // Unconfirmed but recent (< 1 hour) — another upload may be in progress.
         // Delete and re-create to avoid blocking this upload attempt.
+        // Also remove any partial storage object to avoid signed URL conflicts.
         await serviceRole.from('user_files').delete().eq('id', existing.id);
+        await serviceRole.storage.from(STORAGE_BUCKET).remove([existing.storage_path]);
       }
     }
 
