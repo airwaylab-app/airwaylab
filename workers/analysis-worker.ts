@@ -155,8 +155,16 @@ async function processFiles(
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
       parsedEdfs.push(edf);
-    } catch {
-      // Skip unparseable files
+    } catch (err) {
+      const filename = brp.path.split('/').pop() || brp.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
     }
 
     // Yield every PARSE_BATCH_SIZE files and report progress
@@ -188,8 +196,16 @@ async function processFiles(
         existing.push(...hypopneas);
         eveEventsByDate.set(nightDate, existing);
       }
-    } catch {
-      // EVE parsing failed — continue without machine events
+    } catch (err) {
+      const filename = eveInfo.path.split('/').pop() || eveInfo.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
     }
   }
 
