@@ -2,24 +2,28 @@
  * Email sequence management — scheduling, cancellation, and queries.
  *
  * Used by:
- * - Analysis page (trigger post-upload sequence)
- * - Auth callback (trigger feature-education sequence)
- * - Cron job (query pending emails, send, update status)
+ * - Analysis page (trigger post-upload + feature-education sequence)
+ * - Auth callback (opt-in toggle)
+ * - Cron job (query pending emails, send, schedule dormancy/activation, sunset)
  * - Unsubscribe route (cancel all pending)
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SEQUENCES, type SequenceName } from './templates';
+import { type ABVariant } from './ab';
 
 /**
  * Schedule a full email sequence for a user.
  * Creates one row per step with the appropriate scheduled_at time.
  * Skips if the user already has this sequence (idempotent).
+ *
+ * @param variant - A/B variant for this user's sequence (stored for analysis)
  */
 export async function scheduleSequence(
   supabase: SupabaseClient,
   userId: string,
-  sequenceName: SequenceName
+  sequenceName: SequenceName,
+  variant?: ABVariant
 ): Promise<void> {
   const config = SEQUENCES[sequenceName];
   if (!config) return;
@@ -31,6 +35,7 @@ export async function scheduleSequence(
     step: index + 1,
     status: 'pending' as const,
     scheduled_at: new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000).toISOString(),
+    ...(variant && { ab_variant: variant }),
   }));
 
   // upsert to make this idempotent — if sequence already exists, skip
@@ -93,6 +98,7 @@ export async function getPendingEmails(
   sequence_name: SequenceName;
   step: number;
   email: string;
+  ab_variant: string | null;
 }>> {
   const { data, error } = await supabase
     .from('email_sequences')
@@ -101,6 +107,7 @@ export async function getPendingEmails(
       user_id,
       sequence_name,
       step,
+      ab_variant,
       profiles!inner(email, email_opt_in)
     `)
     .eq('status', 'pending')
@@ -128,20 +135,26 @@ export async function getPendingEmails(
         sequence_name: row.sequence_name as SequenceName,
         step: row.step,
         email: profile.email,
+        ab_variant: (row as Record<string, unknown>).ab_variant as string | null,
       };
     });
 }
 
 /**
- * Mark an email as sent.
+ * Mark an email as sent and store the Resend message ID for webhook correlation.
  */
 export async function markSent(
   supabase: SupabaseClient,
-  emailId: string
+  emailId: string,
+  resendId?: string
 ): Promise<void> {
   const { error } = await supabase
     .from('email_sequences')
-    .update({ status: 'sent', sent_at: new Date().toISOString() })
+    .update({
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      ...(resendId && { resend_id: resendId }),
+    })
     .eq('id', emailId);
 
   if (error) {
@@ -151,15 +164,23 @@ export async function markSent(
 
 /**
  * Check for dormant users and schedule re-engagement sequences.
- * Called by the cron job. A user is dormant if:
- * - last_analysis_at is > 14 days ago
- * - email_opt_in is true
- * - they don't already have a dormancy sequence
+ * Called by the cron job.
+ *
+ * A/B test (dormancy_timing): variant A triggers at 3 days, variant B at 7 days.
+ * Each user's variant is computed deterministically from their ID.
+ *
+ * The query uses the shorter threshold (3 days) to find all candidates,
+ * then filters per-user based on their variant's threshold.
  */
 export async function scheduleDormancySequences(
   supabase: SupabaseClient
 ): Promise<number> {
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { getABVariant, ACTIVE_TESTS } = await import('./ab');
+  const thresholds = ACTIVE_TESTS.dormancy_timing.dormancyDays;
+
+  // Use the shortest threshold to find all potential candidates
+  const minDays = Math.min(thresholds.A, thresholds.B);
+  const cutoff = new Date(Date.now() - minDays * 24 * 60 * 60 * 1000).toISOString();
 
   // Find users who already have a dormancy sequence (to exclude them)
   const { data: existingDormancy } = await supabase
@@ -169,29 +190,140 @@ export async function scheduleDormancySequences(
 
   const excludeIds = existingDormancy?.map((r) => r.user_id) ?? [];
 
-  // Find users who are dormant, opted in, and don't have a dormancy sequence
+  // Find users who are potentially dormant, opted in, and don't have a dormancy sequence
   let query = supabase
     .from('profiles')
-    .select('id')
+    .select('id, last_analysis_at')
     .eq('email_opt_in', true)
-    .lt('last_analysis_at', fourteenDaysAgo);
+    .lt('last_analysis_at', cutoff);
 
   if (excludeIds.length > 0) {
     query = query.not('id', 'in', `(${excludeIds.join(',')})`);
   }
 
-  const { data: dormantUsers, error } = await query;
+  const { data: candidates, error } = await query;
 
-  if (error || !dormantUsers) {
+  if (error || !candidates) {
     console.error('[email-sequences] Failed to find dormant users:', error?.message);
     return 0;
   }
 
   let scheduled = 0;
-  for (const user of dormantUsers) {
-    await scheduleSequence(supabase, user.id, 'dormancy');
+  const now = Date.now();
+
+  for (const user of candidates) {
+    const variant = getABVariant(user.id, 'dormancy_timing');
+    const requiredDays = thresholds[variant];
+    const requiredCutoff = now - requiredDays * 24 * 60 * 60 * 1000;
+    const lastAnalysis = new Date(user.last_analysis_at).getTime();
+
+    // Only schedule if this user has been inactive long enough for their variant
+    if (lastAnalysis <= requiredCutoff) {
+      await scheduleSequence(supabase, user.id, 'dormancy', variant);
+      scheduled++;
+    }
+  }
+
+  return scheduled;
+}
+
+/**
+ * Check for users who signed up but never uploaded, and schedule activation emails.
+ * Called by the cron job.
+ *
+ * Triggers 48h after account creation if last_analysis_at is null.
+ */
+export async function scheduleActivationSequences(
+  supabase: SupabaseClient
+): Promise<number> {
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Find users who already have an activation sequence
+  const { data: existingActivation } = await supabase
+    .from('email_sequences')
+    .select('user_id')
+    .eq('sequence_name', 'activation');
+
+  const excludeIds = existingActivation?.map((r) => r.user_id) ?? [];
+
+  // Find users created 48h+ ago, opted in, never uploaded, no activation sequence
+  let query = supabase
+    .from('profiles')
+    .select('id')
+    .eq('email_opt_in', true)
+    .is('last_analysis_at', null)
+    .lt('created_at', twoDaysAgo);
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  }
+
+  const { data: inactiveUsers, error } = await query;
+
+  if (error || !inactiveUsers) {
+    console.error('[email-sequences] Failed to find inactive users:', error?.message);
+    return 0;
+  }
+
+  let scheduled = 0;
+  for (const user of inactiveUsers) {
+    await scheduleSequence(supabase, user.id, 'activation');
     scheduled++;
   }
 
   return scheduled;
+}
+
+/**
+ * Sunset policy: opt out users who haven't engaged with 3+ consecutive emails.
+ * Called by the cron job. Requires webhook tracking data (opened_at, clicked_at).
+ *
+ * A user is sunsetted if they have >= 3 sent emails where:
+ * - delivered_at is not null (email arrived)
+ * - opened_at is null AND clicked_at is null (no engagement)
+ *
+ * Sunsetted users get email_opt_in = false and all pending emails cancelled.
+ */
+export async function applySunsetPolicy(
+  supabase: SupabaseClient
+): Promise<number> {
+  // Find users with 3+ delivered-but-unengaged emails
+  const { data: candidates, error } = await supabase
+    .from('email_sequences')
+    .select('user_id')
+    .eq('status', 'sent')
+    .not('delivered_at', 'is', null)
+    .is('opened_at', null)
+    .is('clicked_at', null);
+
+  if (error || !candidates) {
+    console.error('[email-sequences] Sunset policy query failed:', error?.message);
+    return 0;
+  }
+
+  // Count unengaged emails per user
+  const countByUser = new Map<string, number>();
+  for (const row of candidates) {
+    countByUser.set(row.user_id, (countByUser.get(row.user_id) ?? 0) + 1);
+  }
+
+  let sunsetted = 0;
+  for (const [userId, count] of countByUser) {
+    if (count >= 3) {
+      // Opt out and cancel pending
+      await supabase
+        .from('profiles')
+        .update({ email_opt_in: false })
+        .eq('id', userId);
+
+      await cancelAllPending(supabase, userId);
+      sunsetted++;
+    }
+  }
+
+  if (sunsetted > 0) {
+    console.error(`[email-sequences] Sunset policy: opted out ${sunsetted} users with ${sunsetted} unengaged emails`);
+  }
+
+  return sunsetted;
 }
