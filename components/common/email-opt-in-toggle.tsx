@@ -8,8 +8,8 @@ import { events } from '@/lib/analytics';
 
 /**
  * Email opt-in toggle for authenticated users.
- * Sets email_opt_in on the user's profile and triggers feature_education
- * drip sequence on first opt-in.
+ * Sets email_opt_in on the user's profile. Email sequences are triggered
+ * by user actions (upload, signup), not by the opt-in toggle itself.
  */
 export function EmailOptInToggle() {
   const { user, profile, refreshProfile } = useAuth();
