@@ -167,7 +167,10 @@ async function processFiles(
   }
 
   if (parsedEdfs.length === 0) {
-    throw new Error('No valid BRP.edf files could be parsed');
+    if (brpFiles.length === 0) {
+      throw new Error('No flow data files (BRP.edf) found in the uploaded data. Make sure you selected the root folder or DATALOG folder from your SD card.');
+    }
+    throw new Error(`Found ${brpFiles.length} flow data file(s) but none could be parsed. The files may be corrupted or in an unsupported format.`);
   }
 
   // Step 3.5: Parse EVE.edf files and group events by night date
