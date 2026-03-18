@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
@@ -178,9 +179,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Size guard
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
-      console.warn(`[contribute-data] 413 payload too large: ${contentLength} bytes`);
+        if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+      console.warn(`[contribute-data] 413 payload too large: ${request.headers.get('content-length')} bytes`);
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
