@@ -5,6 +5,7 @@ import { useThresholds } from '@/components/common/thresholds-provider';
 import { getTrafficLight, type TrafficLight } from '@/lib/thresholds';
 import type { NightResult } from '@/lib/types';
 import { computeIFLRisk } from '@/lib/ifl-risk';
+import { fmt } from '@/lib/format-utils';
 import { CheckCircle, AlertCircle, TrendingDown } from 'lucide-react';
 
 interface Props {
@@ -35,10 +36,6 @@ const iconColors: Record<TrafficLight, string> = {
   warn: 'text-amber-500',
   bad: 'text-red-500',
 };
-
-function fmt(n: number, dp = 1): string {
-  return n.toFixed(dp);
-}
 
 /**
  * Determine whether event control (RERA / hypopnea) is in the green zone.

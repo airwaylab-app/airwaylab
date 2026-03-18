@@ -10,6 +10,7 @@ import { getStoredThresholds } from './threshold-overrides';
 import { computeIFLRisk } from './ifl-risk';
 import { computeEstimatedRDI } from './derived-metrics';
 import { loadNightNotes } from './night-notes';
+import { fmt, fmtHrs } from './format-utils';
 
 const RATING_LABELS: Record<number, string> = {
   1: 'Terrible',
@@ -31,16 +32,6 @@ function light(val: number, key: string): string {
   if (!threshold) return '';
   const l = getTrafficLight(val, threshold);
   return l === 'good' ? '✅' : l === 'warn' ? '⚠️' : '🔴';
-}
-
-function fmt(n: number, dp = 1): string {
-  return n.toFixed(dp);
-}
-
-function fmtHrs(h: number): string {
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return `${hrs}h ${mins}m`;
 }
 
 /**

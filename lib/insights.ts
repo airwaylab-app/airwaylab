@@ -7,6 +7,7 @@ import type { NightResult } from './types';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { computeIFLRisk, getIFLContextNote } from './ifl-risk';
+import { fmt, mean } from './format-utils';
 
 export interface Insight {
   /** Unique key for React rendering */
@@ -26,11 +27,6 @@ export interface Insight {
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
-
-function mean(vals: number[]): number {
-  if (vals.length === 0) return 0;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
 
 function trend(vals: number[]): 'improving' | 'stable' | 'worsening' {
   if (vals.length < 3) return 'stable';
@@ -53,10 +49,6 @@ function trend(vals: number[]): 'improving' | 'stable' | 'worsening' {
 
 function trendLowerBetter(vals: number[]): 'improving' | 'stable' | 'worsening' {
   return trend(vals);
-}
-
-function fmt(n: number, dp = 1): string {
-  return n.toFixed(dp);
 }
 
 const RATING_LABELS: Record<number, string> = {
