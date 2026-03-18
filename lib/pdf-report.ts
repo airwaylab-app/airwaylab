@@ -10,6 +10,7 @@ import { getStoredThresholds } from './threshold-overrides';
 import { generateRadarSVG, generateTrendSVG } from './pdf-charts';
 import { computeIFLRisk } from './ifl-risk';
 import { computeEstimatedRDI } from './derived-metrics';
+import { fmt } from './format-utils';
 
 const TL_EMOJI: Record<TrafficLight, string> = {
   good: '\u2705',
@@ -22,10 +23,6 @@ const TL_HEX: Record<TrafficLight, string> = {
   warn: '#f59e0b',
   bad: '#ef4444',
 };
-
-function fmt(v: number, d = 2): string {
-  return v.toFixed(d);
-}
 
 function metricRow(
   label: string,
@@ -42,7 +39,7 @@ function metricRow(
   return `<tr>
     <td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;color:#475569;">${label}</td>
     <td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;color:${color};">
-      ${emoji} ${fmt(value)}${unit}
+      ${emoji} ${fmt(value, 2)}${unit}
     </td>
   </tr>`;
 }
@@ -145,12 +142,12 @@ function buildSummaryPage(nights: NightResult[]): string {
       </p>
 
       <div style="display:flex;justify-content:space-around;border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin-bottom:24px;">
-        ${summaryMetric('Avg IFL Risk', fmt(avgIFL) + '%', iflTL)}
-        ${summaryMetric('Avg Glasgow', fmt(avgGlasgow), glTL)}
-        ${summaryMetric('Avg FL Score', fmt(avgFL) + '%', flTL)}
-        ${summaryMetric('Avg NED Mean', fmt(avgNED) + '%', nedTL)}
-        ${summaryMetric('Avg RERA/hr', fmt(avgRERA), reraTL)}
-        ${summaryMetric('Avg Est. RDI', fmt(avgRDI) + '/hr', rdiTL)}
+        ${summaryMetric('Avg IFL Risk', fmt(avgIFL, 2) + '%', iflTL)}
+        ${summaryMetric('Avg Glasgow', fmt(avgGlasgow, 2), glTL)}
+        ${summaryMetric('Avg FL Score', fmt(avgFL, 2) + '%', flTL)}
+        ${summaryMetric('Avg NED Mean', fmt(avgNED, 2) + '%', nedTL)}
+        ${summaryMetric('Avg RERA/hr', fmt(avgRERA, 2), reraTL)}
+        ${summaryMetric('Avg Est. RDI', fmt(avgRDI, 2) + '/hr', rdiTL)}
         ${summaryMetric('Avg Regularity', Math.round(avgReg) + '%', getTrafficLight(avgReg, THRESHOLDS.watRegularity))}
       </div>
 
