@@ -49,6 +49,9 @@ export const serverEnv = {
   /** Resend API key for transactional email */
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? undefined,
 
+  /** Resend webhook secret (used as query param for webhook auth) */
+  RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET ?? undefined,
+
   /** Secret for authenticating Vercel Cron requests */
   CRON_SECRET: process.env.CRON_SECRET ?? undefined,
 
