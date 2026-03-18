@@ -42,10 +42,15 @@ export function validateSDFiles(files: File[]): ValidationResult {
     (f) => f.name.toUpperCase().startsWith('STR')
   );
 
-  // Look for flow data files (BRP, FLW patterns)
-  const hasFlowData = edfFiles.some(
-    (f) => /^(BRP|FLW)/i.test(f.name)
-  );
+  // Look for flow data files using the same matching as the worker's filterBRPFiles:
+  // files ending with brp.edf / _brp.edf and larger than 50KB
+  const MIN_FLOW_SIZE = 50 * 1024;
+  const hasFlowData = edfFiles.some((f) => {
+    const name = f.name.toLowerCase();
+    return (name.endsWith('brp.edf') || name.endsWith('_brp.edf') ||
+            name.endsWith('flw.edf') || name.endsWith('_flw.edf')) &&
+      f.size > MIN_FLOW_SIZE;
+  });
 
   // Check for common mistakes
   if (edfFiles.length === 0) {
@@ -68,9 +73,23 @@ export function validateSDFiles(files: File[]): ValidationResult {
   }
 
   if (!hasFlowData) {
-    warnings.push(
-      'No flow data files (BRP/FLW) found. Breath-by-breath analysis requires flow signal data.'
-    );
+    // Check if flow files exist but are too small (short sessions filtered out)
+    const hasSmallFlowFiles = edfFiles.some((f) => {
+      const name = f.name.toLowerCase();
+      return (name.endsWith('brp.edf') || name.endsWith('_brp.edf') ||
+              name.endsWith('flw.edf') || name.endsWith('_flw.edf')) &&
+        f.size <= MIN_FLOW_SIZE;
+    });
+
+    if (hasSmallFlowFiles) {
+      errors.push(
+        'Flow data files were found but are too small to contain usable data (< 50KB). This usually means the recording sessions were very short. Try uploading more nights of data.'
+      );
+    } else {
+      errors.push(
+        'No flow data files (BRP/FLW) found. Breath-by-breath analysis requires flow signal data from your PAP machine\'s SD card.'
+      );
+    }
   }
 
   // Check for SA2 oximetry data (integrated/paired pulse oximeter)
