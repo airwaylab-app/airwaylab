@@ -439,7 +439,9 @@ export async function POST(request: NextRequest) {
         validCategories.has(i.category)
     );
 
-    // Increment server-side AI usage counter atomically via RPC
+    // Increment server-side AI usage counter atomically via RPC (with token tracking)
+    const inputTokens = message.usage?.input_tokens ?? 0;
+    const outputTokens = message.usage?.output_tokens ?? 0;
     const adminClient = getSupabaseServiceRole();
     let remainingCredits: number | undefined;
     if (adminClient) {
@@ -447,6 +449,8 @@ export async function POST(request: NextRequest) {
       await adminClient.rpc('increment_ai_usage', {
         p_user_id: user.id,
         p_month: month,
+        p_input_tokens: inputTokens,
+        p_output_tokens: outputTokens,
       });
 
       // Read back the updated count to return accurate remaining credits

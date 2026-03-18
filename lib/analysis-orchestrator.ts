@@ -276,21 +276,30 @@ export class AnalysisOrchestrator {
     onNightComplete?: (night: NightResult) => void
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
-      // Safety timeout — 10 minutes to handle multi-year SD cards (800+ files)
-      const WORKER_TIMEOUT_MS = 10 * 60 * 1000;
+      // Progress-aware timeout: resets on any worker message.
+      // If the worker goes silent for 5 minutes, it's stuck.
+      // No hard cap — large SD cards (800+ files) can take a long time
+      // but the worker sends PROGRESS messages throughout.
+      const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
       let settled = false;
+      let idleTimer: ReturnType<typeof setTimeout>;
 
-      const timeout = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          this.terminate();
-          reject(new Error('Analysis timed out after 10 minutes. Your data may be too large or in an unsupported format.'));
-        }
-      }, WORKER_TIMEOUT_MS);
+      const startIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            this.terminate();
+            reject(new Error('Analysis appears stuck — no progress for 5 minutes. Try refreshing the page or uploading fewer files.'));
+          }
+        }, IDLE_TIMEOUT_MS);
+      };
+
+      startIdleTimer();
 
       const settle = () => {
         settled = true;
-        clearTimeout(timeout);
+        clearTimeout(idleTimer);
       };
 
       this.worker = new Worker(
@@ -299,6 +308,8 @@ export class AnalysisOrchestrator {
 
       this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const msg = e.data;
+        // Any message from the worker proves it's alive — reset idle timer
+        startIdleTimer();
         switch (msg.type) {
           case 'PROGRESS':
             this.setState({

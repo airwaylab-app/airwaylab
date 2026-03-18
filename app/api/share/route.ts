@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 /**
  * Zod schema to validate the shape of analysis data.
@@ -64,9 +65,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Size guard
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_BYTES) {
-      console.error(`[share] 413 payload too large: ${contentLength} bytes`);
+        if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+      console.error(`[share] 413 payload too large: ${request.headers.get('content-length')} bytes`);
       return NextResponse.json(
         { error: 'Payload too large. Maximum 5MB.' },
         { status: 413 }
