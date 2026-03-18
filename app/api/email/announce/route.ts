@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const dryRun = body.dry_run !== false; // default to dry run
   const testEmail: string | undefined = body.test_email;
+  const sendTo: string[] | undefined = body.send_to; // optional: only send to these addresses
 
   // Test mode: send to a single address for preview, no backfill or DB queries
   if (testEmail) {
@@ -84,7 +85,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
-    const recipients = users.filter((u) => u.email);
+    let recipients = users.filter((u) => u.email);
+
+    // If send_to is specified, only send to those addresses (for retrying failures)
+    if (sendTo && sendTo.length > 0) {
+      const sendToSet = new Set(sendTo);
+      recipients = recipients.filter((u) => sendToSet.has(u.email));
+    }
 
     if (dryRun) {
       return NextResponse.json({
@@ -111,6 +118,7 @@ export async function POST(request: NextRequest) {
 
     let sent = 0;
     let failed = 0;
+    const failedEmails: string[] = [];
 
     for (const user of recipients) {
       const unsubscribeUrl = getUnsubscribeUrl(user.id);
@@ -127,16 +135,15 @@ export async function POST(request: NextRequest) {
         sent++;
       } else {
         failed++;
+        failedEmails.push(user.email);
       }
 
-      // Small delay to stay within Resend rate limits
-      if (sent % 10 === 0) {
-        await new Promise((r) => setTimeout(r, 1000));
-      }
+      // 600ms delay between every email (Resend free tier: 2/sec)
+      await new Promise((r) => setTimeout(r, 600));
     }
 
-    console.error(`[email/announce] Sent: ${sent}, Failed: ${failed}`);
-    return NextResponse.json({ sent, failed, total: recipients.length });
+    console.error(`[email/announce] Sent: ${sent}, Failed: ${failed}, Failed addresses: ${failedEmails.join(', ')}`);
+    return NextResponse.json({ sent, failed, total: recipients.length, failed_emails: failedEmails });
   } catch (err) {
     console.error('[email/announce] Error:', err);
     Sentry.captureException(err, { tags: { route: 'email-announce' } });
