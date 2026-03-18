@@ -43,6 +43,9 @@ export default function AccountPage() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState(false);
 
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteState, setDeleteState] = useState<
     'idle' | 'deleting' | 'success' | 'error'
@@ -140,22 +143,46 @@ export default function AccountPage() {
             </span>
           </div>
           {isPaid ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/customer-portal', { method: 'POST', credentials: 'same-origin' });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                } catch (err) {
-                  Sentry.captureException(err, { tags: { action: 'customer-portal' } });
-                }
-              }}
-            >
-              Manage subscription
-            </Button>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={portalLoading}
+                onClick={async () => {
+                  setPortalLoading(true);
+                  setPortalError(false);
+                  try {
+                    const res = await fetch('/api/customer-portal', { method: 'POST', credentials: 'same-origin' });
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else {
+                      setPortalError(true);
+                    }
+                  } catch (err) {
+                    Sentry.captureException(err, { tags: { action: 'customer-portal' } });
+                    setPortalError(true);
+                  } finally {
+                    setPortalLoading(false);
+                  }
+                }}
+              >
+                {portalLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Opening portal...
+                  </>
+                ) : (
+                  'Manage subscription'
+                )}
+              </Button>
+              {portalError && (
+                <p className="text-sm text-red-400 text-center">
+                  Could not open billing portal. Please try again or contact us via the <a href="/contact" className="underline">contact form</a>.
+                </p>
+              )}
+            </div>
           ) : (
             <Link href="/pricing">
               <Button variant="outline" size="sm" className="w-full">
