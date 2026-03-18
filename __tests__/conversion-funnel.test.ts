@@ -136,9 +136,8 @@ describe('Step 5: Account settings', () => {
 
   it('delete API route validates auth and rate-limits', () => {
     const src = readSource('app/api/delete-user-data/route.ts');
-    expect(src).toContain('getUser');
+    expect(src).toContain('requireAuthWithServiceRole');
     expect(src).toContain('isLimited');
-    expect(src).toContain('401');
   });
 
   it('delete API cleans up storage files and DB tables', () => {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 
 const rateLimiter = new RateLimiter({ max: 60, windowMs: 60_000 });
 
@@ -12,20 +13,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await getSupabaseServer();
-    if (!supabase) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     // Query user_files: count and sum of file_size
     const { count: fileCount, error: filesError } = await serviceRole
@@ -71,7 +61,7 @@ export async function GET(request: NextRequest) {
       nightCount: nightCount ?? 0,
     });
   } catch (error) {
-    Sentry.captureException(error);
+    captureError(error, 'user-data-stats');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

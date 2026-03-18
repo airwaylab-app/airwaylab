@@ -20,3 +20,19 @@ export function captureApiError(
     tags: { ...tags, upstream_html: isUpstreamHtml },
   });
 }
+
+/**
+ * Log an error to console and capture it in Sentry with structured context.
+ * Use this instead of bare Sentry.captureException for consistent error handling.
+ */
+export function captureError(
+  err: unknown,
+  context: string,
+  extra?: Record<string, unknown>
+): void {
+  console.error(`[${context}]`, err);
+  Sentry.captureException(err, {
+    tags: { context },
+    extra,
+  });
+}

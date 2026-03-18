@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 100 });
 
@@ -34,26 +35,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const supabase = await getSupabaseServer();
-    if (!supabase) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) {
       console.error('[store-analysis-data] 400 validation failed:', parsed.error.issues);
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    }
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
     }
 
     const { nights } = parsed.data;
@@ -84,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ stored: nights.length });
   } catch (error) {
-    Sentry.captureException(error);
+    captureError(error, 'store-analysis-data');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

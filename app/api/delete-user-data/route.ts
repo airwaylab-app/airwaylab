@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { STORAGE_BUCKET } from '@/lib/storage/types';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
 
@@ -18,20 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const supabase = await getSupabaseServer();
-    if (!supabase) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     // 1. Delete files from Supabase Storage (handles nested directories)
     try {
@@ -129,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    Sentry.captureException(error);
+    captureError(error, 'delete-user-data');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
