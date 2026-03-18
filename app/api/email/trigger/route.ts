@@ -7,20 +7,21 @@ import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 import { sendEmail } from '@/lib/email/send';
 import { validateOrigin } from '@/lib/csrf';
+import { getABVariant, getVariantSubject } from '@/lib/email/ab';
 
 const TriggerSchema = z.object({
-  sequence: z.enum(['post_upload', 'feature_education']),
+  sequence: z.enum(['post_upload']),
 });
 
 /**
  * POST /api/email/trigger
  *
- * Schedules an email drip sequence for the authenticated user.
- * Step 1 is sent inline (immediately). Steps 2+ are scheduled in DB
- * for the hourly cron to pick up.
+ * Schedules email drip sequences for the authenticated user on first upload.
+ * - post_upload: sent immediately (step 1 inline, steps 2-3 via cron)
+ * - feature_education: scheduled to start 10 days after upload (after post_upload finishes)
+ * - cancels dormancy + activation sequences (user is now active)
  *
- * Also updates last_analysis_at for post_upload triggers and
- * cancels any dormancy sequence (user is active).
+ * Also updates last_analysis_at.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -43,8 +44,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { sequence } = parsed.data;
-
   const supabase = getSupabaseServiceRole();
   if (!supabase) {
     return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
@@ -62,39 +61,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, skipped: 'not_opted_in' });
     }
 
-    // For post_upload: update last_analysis_at and cancel dormancy
-    if (sequence === 'post_upload') {
-      await supabase
-        .from('profiles')
-        .update({ last_analysis_at: new Date().toISOString() })
-        .eq('id', user.id);
+    // Update last_analysis_at and cancel dormancy + activation (user is active)
+    await supabase
+      .from('profiles')
+      .update({ last_analysis_at: new Date().toISOString() })
+      .eq('id', user.id);
 
-      await cancelSequence(supabase, user.id, 'dormancy');
-    }
+    await cancelSequence(supabase, user.id, 'dormancy');
+    await cancelSequence(supabase, user.id, 'activation');
 
-    // Schedule the full sequence (idempotent)
-    await scheduleSequence(supabase, user.id, sequence);
+    // Compute AB variant for subject line test
+    const variant = getABVariant(user.id, 'post_upload_subject');
 
-    // Send step 1 inline (immediately)
-    const config = SEQUENCES[sequence];
+    // Schedule post_upload sequence (idempotent)
+    await scheduleSequence(supabase, user.id, 'post_upload', variant);
+
+    // Schedule feature_education to start after post_upload finishes (day 10)
+    await scheduleSequence(supabase, user.id, 'feature_education', variant);
+
+    // Send post_upload step 1 inline (immediately)
+    const config = SEQUENCES.post_upload;
     const unsubscribeUrl = getUnsubscribeUrl(user.id);
     const template = config.getTemplate(1, unsubscribeUrl);
 
     if (template) {
-      const sent = await sendEmail({
+      // Use variant subject if available
+      const variantSubject = getVariantSubject('post_upload', 1, variant);
+      const subject = variantSubject ?? template.subject;
+
+      const resendId = await sendEmail({
         to: profile.email,
-        subject: template.subject,
+        subject,
         html: template.html,
         unsubscribeUrl,
       });
 
-      if (sent) {
+      if (resendId) {
         // Mark step 1 as sent so cron doesn't re-send
         await supabase
           .from('email_sequences')
-          .update({ status: 'sent', sent_at: new Date().toISOString() })
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            resend_id: resendId,
+          })
           .eq('user_id', user.id)
-          .eq('sequence_name', sequence)
+          .eq('sequence_name', 'post_upload')
           .eq('step', 1);
       }
     }
