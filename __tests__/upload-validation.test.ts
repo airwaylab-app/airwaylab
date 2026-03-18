@@ -32,8 +32,8 @@ describe('validateSDFiles', () => {
 
   it('validates basic EDF files successfully', () => {
     const files = [
-      mockFile('BRP_20250110_001234.edf', 5000, 'SD/DATALOG/20250110/BRP_20250110_001234.edf'),
-      mockFile('FLW_20250110_001234.edf', 5000, 'SD/DATALOG/20250110/FLW_20250110_001234.edf'),
+      mockFile('20250110_001234_BRP.edf', 100_000, 'SD/DATALOG/20250110/20250110_001234_BRP.edf'),
+      mockFile('20250110_001234_FLW.edf', 100_000, 'SD/DATALOG/20250110/20250110_001234_FLW.edf'),
       mockFile('STR.edf', 2000, 'SD/STR.edf'),
       mockFile('some_other.edf', 1000, 'SD/DATALOG/20250110/some_other.edf'),
       mockFile('another.edf', 1000, 'SD/DATALOG/20250110/another.edf'),
@@ -47,8 +47,8 @@ describe('validateSDFiles', () => {
 
   it('warns when no STR.edf is found', () => {
     const files = [
-      mockFile('BRP_20250110.edf', 5000, 'SD/DATALOG/20250110/BRP_20250110.edf'),
-      mockFile('FLW_20250110.edf', 5000, 'SD/DATALOG/20250110/FLW_20250110.edf'),
+      mockFile('BRP.edf', 100_000, 'SD/DATALOG/20250110/BRP.edf'),
+      mockFile('FLW.edf', 100_000, 'SD/DATALOG/20250110/FLW.edf'),
       mockFile('other1.edf', 1000, 'SD/DATALOG/20250110/other1.edf'),
       mockFile('other2.edf', 1000, 'SD/DATALOG/20250110/other2.edf'),
       mockFile('other3.edf', 1000, 'SD/DATALOG/20250110/other3.edf'),
@@ -58,7 +58,7 @@ describe('validateSDFiles', () => {
     expect(result.warnings.some((w) => w.includes('STR.edf'))).toBe(true);
   });
 
-  it('warns when no flow data files found', () => {
+  it('rejects when no flow data files found', () => {
     const files = [
       mockFile('EVE_20250110.edf', 5000, 'SD/DATALOG/20250110/EVE_20250110.edf'),
       mockFile('STR.edf', 2000, 'SD/STR.edf'),
@@ -67,13 +67,41 @@ describe('validateSDFiles', () => {
       mockFile('other3.edf', 1000, 'SD/DATALOG/20250110/other3.edf'),
     ];
     const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('flow data'))).toBe(true);
+  });
+
+  it('rejects when flow data files are too small (< 50KB)', () => {
+    const files = [
+      mockFile('BRP.edf', 40 * 1024, 'SD/DATALOG/20250110/BRP.edf'),
+      mockFile('STR.edf', 2000, 'SD/STR.edf'),
+      mockFile('other1.edf', 1000, 'SD/DATALOG/20250110/other1.edf'),
+      mockFile('other2.edf', 1000, 'SD/DATALOG/20250110/other2.edf'),
+      mockFile('other3.edf', 1000, 'SD/DATALOG/20250110/other3.edf'),
+    ];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('too small'))).toBe(true);
+  });
+
+  it('accepts flow data files with endsWith matching (timestamped names)', () => {
+    const files = [
+      mockFile('20250110_220000_BRP.edf', 100_000, 'SD/DATALOG/20250110/20250110_220000_BRP.edf'),
+      mockFile('STR.edf', 2000, 'SD/STR.edf'),
+      mockFile('other1.edf', 1000, 'SD/DATALOG/20250110/other1.edf'),
+      mockFile('other2.edf', 1000, 'SD/DATALOG/20250110/other2.edf'),
+      mockFile('other3.edf', 1000, 'SD/DATALOG/20250110/other3.edf'),
+    ];
+    const result = validateSDFiles(files);
     expect(result.valid).toBe(true);
-    expect(result.warnings.some((w) => w.includes('flow data'))).toBe(true);
   });
 
   it('accepts uploads with many non-EDF files without warnings about them', () => {
-    const files: File[] = [];
-    // Add some EDF files in DATALOG structure
+    const files: File[] = [
+      // Valid flow data file so validation passes
+      mockFile('BRP.edf', 100_000, 'SD/DATALOG/20250110/BRP.edf'),
+    ];
+    // Add some other EDF files in DATALOG structure
     for (let i = 0; i < 5; i++) {
       files.push(mockFile(`file${i}.edf`, 1000, `SD/DATALOG/20250110/file${i}.edf`));
     }
@@ -89,8 +117,7 @@ describe('validateSDFiles', () => {
 
   it('warns about missing DATALOG structure when few EDFs and no DATALOG path', () => {
     const files = [
-      mockFile('BRP.edf'),
-      mockFile('FLW.edf'),
+      mockFile('BRP.edf', 100_000),
       mockFile('STR.edf'),
     ];
     const result = validateSDFiles(files);
@@ -106,8 +133,7 @@ describe('validateSDFiles', () => {
 
   it('does not mention "ResMed" in folder structure warning', () => {
     const files = [
-      mockFile('BRP.edf'),
-      mockFile('FLW.edf'),
+      mockFile('BRP.edf', 100_000),
       mockFile('STR.edf'),
     ];
     const result = validateSDFiles(files);
@@ -118,8 +144,8 @@ describe('validateSDFiles', () => {
 
   it('handles case-insensitive EDF extension', () => {
     const files = [
-      mockFile('BRP_20250110.EDF', 5000, 'SD/DATALOG/20250110/BRP_20250110.EDF'),
-      mockFile('FLW_20250110.Edf', 5000, 'SD/DATALOG/20250110/FLW_20250110.Edf'),
+      mockFile('BRP.EDF', 100_000, 'SD/DATALOG/20250110/BRP.EDF'),
+      mockFile('FLW.Edf', 100_000, 'SD/DATALOG/20250110/FLW.Edf'),
       mockFile('str.edf', 2000, 'SD/str.edf'),
       mockFile('other1.edf', 1000, 'SD/DATALOG/20250110/other1.edf'),
       mockFile('other2.edf', 1000, 'SD/DATALOG/20250110/other2.edf'),
