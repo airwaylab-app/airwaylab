@@ -3,6 +3,8 @@
 // Quick checks before sending files to the analysis worker.
 // ============================================================
 
+import { getFilePath } from './file-path-utils';
+
 export interface ValidationResult {
   valid: boolean;
   edfCount: number;
@@ -29,10 +31,7 @@ export function validateSDFiles(files: File[]): ValidationResult {
   );
 
   // Check for DATALOG folder structure
-  const paths = files.map((f) => {
-    const rel = (f as unknown as { webkitRelativePath?: string }).webkitRelativePath;
-    return rel || f.name;
-  });
+  const paths = files.map((f) => getFilePath(f));
 
   const hasDatalog = paths.some((p) =>
     p.toUpperCase().includes('DATALOG')

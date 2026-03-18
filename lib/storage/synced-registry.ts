@@ -17,12 +17,10 @@ interface SyncedData {
   entries: Record<string, SyncedEntry>;
 }
 
+import { getFilePath } from '@/lib/file-path-utils';
+
 function makeKey(filePath: string, fileSize: number, lastModified: number): string {
   return `${filePath}|${fileSize}|${lastModified}`;
-}
-
-function getFilePath(file: File): string {
-  return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
 }
 
 export class SyncedRegistry {

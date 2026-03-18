@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/nextjs';
 import { parseEDF } from './parsers/edf-parser';
 import { filterBRPFiles, groupByNight } from './parsers/night-grouper';
 import { ENGINE_VERSION } from './engine-version';
+import { getFilePath, getFileName } from './file-path-utils';
 import {
   getContributedWaveformDates,
   trackContributedWaveformDate,
@@ -173,10 +174,8 @@ async function extractFlowForNight(
 } | null> {
   // Build file list for BRP filtering
   const fileList = files.map((f) => ({
-    name:
-      (f as unknown as { webkitRelativePath?: string }).webkitRelativePath?.split('/').pop() ||
-      f.name,
-    path: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name,
+    name: getFileName(f),
+    path: getFilePath(f),
     size: f.size,
   }));
 
@@ -185,11 +184,7 @@ async function extractFlowForNight(
   // Parse BRP files
   const parsedEdfs: EDFFile[] = [];
   for (const brp of brpFiles) {
-    const fileData = files.find((f) => {
-      const path =
-        (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
-      return path === brp.path;
-    });
+    const fileData = files.find((f) => getFilePath(f) === brp.path);
     if (!fileData) continue;
     try {
       const buffer = await fileData.arrayBuffer();

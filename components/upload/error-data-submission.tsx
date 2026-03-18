@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { HelpCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getFilePath } from '@/lib/file-path-utils';
 
 interface Props {
   error: string;
@@ -20,10 +21,7 @@ export function ErrorDataSubmission({ error, files }: Props) {
   const handleSubmit = useCallback(async () => {
     setStatus('sending');
     try {
-      const fileNames = files.slice(0, 50).map((f) => {
-        const rel = (f as unknown as { webkitRelativePath?: string }).webkitRelativePath;
-        return rel || f.name;
-      });
+      const fileNames = files.slice(0, 50).map((f) => getFilePath(f));
 
       const res = await fetch('/api/submit-error-data', {
         method: 'POST',

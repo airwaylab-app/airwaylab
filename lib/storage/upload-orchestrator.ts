@@ -15,6 +15,7 @@ import type { UploadState, UploadResult } from './types';
 import type { WorkerMessage } from './hash-worker';
 import { HashCache } from './hash-cache';
 import { hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
+import { getFilePath } from '@/lib/file-path-utils';
 
 type UploadListener = (state: UploadState) => void;
 
@@ -22,10 +23,6 @@ const CONCURRENCY = 10;
 const RETRY_DELAY_MS = 2000;
 /** Abort after this many consecutive failures with the same error */
 const FAIL_FAST_THRESHOLD = 3;
-
-function getFilePath(file: File): string {
-  return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
-}
 
 class UploadOrchestrator {
   private state: UploadState = {

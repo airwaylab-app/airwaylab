@@ -15,6 +15,7 @@ import type {
   WorkerSettingsDiagnostic,
 } from './types';
 import { loadPersistedResults, persistResults, persistNightsIncremental } from './persistence';
+import { getFilePath } from './file-path-utils';
 import {
   extractNightDate,
   buildManifest,
@@ -117,8 +118,7 @@ export class AnalysisOrchestrator {
         // No manifest — fall back to date-based dedup
         const uploadDates = new Set<string>();
         for (const file of sdArr) {
-          const path =
-            (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+          const path = getFilePath(file);
           const date = extractNightDate(path);
           if (date) uploadDates.add(date);
         }
@@ -145,8 +145,7 @@ export class AnalysisOrchestrator {
 
         if (newDates.size > 0 && unchangedDates.length > 0) {
           filesToProcess = sdArr.filter((file) => {
-            const path =
-              (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+            const path = getFilePath(file);
             const date = extractNightDate(path);
             return date === null || newDates.has(date);
           });
@@ -579,8 +578,7 @@ async function readFileList(
     const batch = files.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(
       batch.map(async (file) => {
-        const path =
-          (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const path = getFilePath(file);
         const buffer = await file.arrayBuffer();
         return { buffer, path };
       })

@@ -4,6 +4,8 @@
 // nights and only analyze new/modified data.
 // ============================================================
 
+import { getFilePath } from './file-path-utils';
+
 const MANIFEST_KEY = 'airwaylab_file_manifest';
 
 export interface FileFingerprint {
@@ -31,9 +33,7 @@ const DATE_FOLDER_RE = /(\d{8})\//;
  * Create a fingerprint from a File object.
  */
 export function fingerprintFile(file: File): FileFingerprint {
-  const path =
-    (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
-    file.name;
+  const path = getFilePath(file);
   return { path, size: file.size, lastModified: file.lastModified };
 }
 
@@ -56,9 +56,7 @@ export function extractNightDate(path: string): string | null {
 export function groupFilesByNight(files: File[]): Map<string, File[]> {
   const groups = new Map<string, File[]>();
   for (const file of files) {
-    const path =
-      (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
-      file.name;
+    const path = getFilePath(file);
     const date = extractNightDate(path) ?? '__unknown__';
     const arr = groups.get(date) ?? [];
     arr.push(file);

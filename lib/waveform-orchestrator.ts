@@ -13,6 +13,7 @@ import type {
 } from './waveform-types';
 import { ENGINE_VERSION } from './engine-version';
 import { storeWaveform, loadWaveform, deleteExpired } from './waveform-idb';
+import { getFilePath } from './file-path-utils';
 
 type WaveformListener = (state: WaveformState) => void;
 
@@ -98,8 +99,7 @@ class WaveformOrchestrator {
     try {
       // Pre-filter to BRP + EVE files — avoids reading non-relevant files into memory
       const brpFiles = files.filter((f) => {
-        const path =
-          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const path = getFilePath(f);
         const name = (path.split('/').pop() || '').toLowerCase();
         return (name.endsWith('brp.edf') || name.endsWith('_brp.edf')) && f.size > 50 * 1024;
       });
@@ -111,8 +111,7 @@ class WaveformOrchestrator {
 
       // Also find EVE.edf files (machine-recorded events, tiny ~1KB)
       const eveFiles = files.filter((f) => {
-        const path =
-          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const path = getFilePath(f);
         const name = (path.split('/').pop() || '').toLowerCase();
         return name.endsWith('eve.edf') || name.endsWith('_eve.edf');
       });
@@ -120,8 +119,7 @@ class WaveformOrchestrator {
       // Further filter to only files matching the target date's DATALOG folder.
       const dateCompact = targetDate.replace(/-/g, '');
       const filterByDate = (f: File) => {
-        const path =
-          (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const path = getFilePath(f);
         return path.includes(`DATALOG/${dateCompact}/`) || path.includes(`/${dateCompact}_`);
       };
 
@@ -269,8 +267,7 @@ async function readFiles(files: File[]): Promise<{ buffer: ArrayBuffer; path: st
     const batch = files.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(
       batch.map(async (file) => {
-        const path =
-          (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const path = getFilePath(file);
         const buffer = await file.arrayBuffer();
         return { buffer, path };
       })
