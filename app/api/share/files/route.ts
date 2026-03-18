@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { getSupabaseServiceRole } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry-utils';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
@@ -62,21 +64,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auth check
-    const supabaseAuth = await getSupabaseServer();
-    if (!supabaseAuth) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     const body = await request.json();
     const parsed = PresignRequestSchema.safeParse(body);
@@ -151,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ uploadUrls }, { status: 200 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'share-files-presign' } });
+    captureError(err, 'share-files-presign');
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }
@@ -234,7 +224,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ downloadUrls }, { status: 200 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'share-files-download' } });
+    captureError(err, 'share-files-download');
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }
@@ -254,21 +244,9 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    // Auth check
-    const supabaseAuth = await getSupabaseServer();
-    if (!supabaseAuth) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     const body = await request.json();
     const parsed = FinaliseSchema.safeParse(body);
@@ -313,7 +291,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'share-files-finalise' } });
+    captureError(err, 'share-files-finalise');
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }

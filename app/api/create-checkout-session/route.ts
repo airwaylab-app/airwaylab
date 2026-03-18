@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api/require-auth';
+import { getSupabaseServiceRole } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry-utils';
 import { stripeRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
@@ -34,16 +36,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payments not configured' }, { status: 503 });
   }
 
-  // Auth check
-  const supabase = await getSupabaseServer();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const { user, supabase } = auth;
 
   // Parse request
   let priceId: string;
@@ -151,9 +146,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'create-checkout-session' } });
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.error('[create-checkout-session] Error:', errMsg, err);
+    captureError(err, 'create-checkout-session');
 
     // Surface Stripe-specific errors so users know what went wrong
     if (err instanceof Stripe.errors.StripeError) {

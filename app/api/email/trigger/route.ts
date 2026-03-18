@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 import { scheduleSequence, cancelSequence } from '@/lib/email/sequences';
 import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
@@ -27,15 +27,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
   }
 
-  const supabaseAuth = await getSupabaseServer();
-  if (!supabaseAuth) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuthWithServiceRole();
+  if (auth.error) return auth.error;
+  const { user, serviceRole: supabase } = auth;
 
   const body = await request.json().catch(() => null);
   const parsed = TriggerSchema.safeParse(body);
@@ -44,11 +38,6 @@ export async function POST(request: NextRequest) {
   }
 
   const { sequence } = parsed.data;
-
-  const supabase = getSupabaseServiceRole();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-  }
 
   try {
     // Check if user has opted in to emails
@@ -101,8 +90,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[email/trigger] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'email-trigger' } });
+    captureError(err, 'email-trigger');
     return NextResponse.json({ error: 'Failed to schedule emails' }, { status: 500 });
   }
 }

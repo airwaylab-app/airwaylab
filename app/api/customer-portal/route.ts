@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 import { stripeRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
@@ -23,16 +24,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payments not configured' }, { status: 503 });
   }
 
-  // Auth check
-  const supabase = await getSupabaseServer();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const { user, supabase } = auth;
 
   // Get Stripe customer ID
   const { data: profile } = await supabase
@@ -79,8 +73,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: portalSession.url });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'customer-portal' } });
-    console.error('[customer-portal] Error:', err);
+    captureError(err, 'customer-portal');
     return NextResponse.json({ error: 'Failed to create portal session' }, { status: 500 });
   }
 }

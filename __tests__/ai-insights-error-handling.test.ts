@@ -229,7 +229,7 @@ describe('AI Insights Error Handling', () => {
     expect(body.error).toBe('AI service error');
     expect(mockCaptureException).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ tags: expect.objectContaining({ route: 'ai-insights' }) })
+      expect.objectContaining({ tags: expect.objectContaining({ context: 'ai-insights' }) })
     );
   });
 });

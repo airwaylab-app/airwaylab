@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 import { scheduleSequence, cancelAllPending } from '@/lib/email/sequences';
 import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
@@ -24,15 +24,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
   }
 
-  const supabaseAuth = await getSupabaseServer();
-  if (!supabaseAuth) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuthWithServiceRole();
+  if (auth.error) return auth.error;
+  const { user, serviceRole: supabase } = auth;
 
   const body = await request.json().catch(() => null);
   const parsed = OptInSchema.safeParse(body);
@@ -41,11 +35,6 @@ export async function POST(request: NextRequest) {
   }
 
   const { opt_in } = parsed.data;
-
-  const supabase = getSupabaseServiceRole();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-  }
 
   try {
     // Update profile
@@ -100,8 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, email_opt_in: opt_in });
   } catch (err) {
-    console.error('[email/opt-in] Error:', err);
-    Sentry.captureException(err, { tags: { route: 'email-opt-in' } });
+    captureError(err, 'email-opt-in');
     return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
   }
 }

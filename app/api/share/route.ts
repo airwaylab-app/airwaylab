@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
+import { captureError } from '@/lib/sentry-utils';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
@@ -49,19 +50,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auth check — share creation requires a logged-in user
-    const supabaseAuth = await getSupabaseServer();
-    if (!supabaseAuth) {
-      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-    }
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Sign in to share your analysis.' },
-        { status: 401 }
-      );
-    }
+    const auth = await requireAuthWithServiceRole();
+    if (auth.error) return auth.error;
+    const { user, serviceRole } = auth;
 
     // Size guard
     const contentLength = request.headers.get('content-length');
@@ -87,15 +78,6 @@ export async function POST(request: NextRequest) {
 
     const count = parsed.data.nightsCount
       ?? (Array.isArray(analysisData) ? analysisData.length : 1);
-
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      console.error('[share] Supabase service role not configured');
-      return NextResponse.json(
-        { error: 'Something went wrong. Please try again.' },
-        { status: 500 }
-      );
-    }
 
     const { data, error } = await serviceRole
       .from('shared_analyses')
@@ -134,7 +116,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'share' } });
+    captureError(err, 'share');
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }

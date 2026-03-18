@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api/require-auth';
 import { validateOrigin } from '@/lib/csrf';
 import { captureApiError } from '@/lib/sentry-utils';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -29,15 +29,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  const supabase = await getSupabaseServer();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const { user, supabase } = auth;
 
   let body: z.infer<typeof ConsentAuditSchema>;
   try {

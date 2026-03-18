@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuthWithServiceRole } from '@/lib/api/require-auth';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
@@ -27,20 +27,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  const supabase = await getSupabaseServer();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const serviceRole = getSupabaseServiceRole();
-  if (!serviceRole) {
-    return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
-  }
+  const auth = await requireAuthWithServiceRole();
+  if (auth.error) return auth.error;
+  const { user, serviceRole } = auth;
 
   try {
     const body = await request.json();

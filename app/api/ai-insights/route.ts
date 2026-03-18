@@ -3,7 +3,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import type { Insight } from '@/lib/insights';
-import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api/require-auth';
+import { getSupabaseServiceRole } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry-utils';
 import { aiRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { salvageTruncatedJSON } from './salvage';
@@ -223,17 +225,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
-  // Auth check — require signed-in user
-  const supabase = await getSupabaseServer();
-  if (!supabase) {
-    Sentry.captureMessage('AI insights: Supabase not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const { user, supabase } = auth;
 
   // Server-side AI usage enforcement (C2)
   const { data: profile } = await supabase
@@ -554,8 +548,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    Sentry.captureException(err, { tags: { route: 'ai-insights' } });
-    console.error('[ai-insights] Error:', err);
+    captureError(err, 'ai-insights');
     return NextResponse.json(
       { error: 'AI service error' },
       { status: 502 }
