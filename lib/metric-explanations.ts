@@ -1,9 +1,6 @@
 import type { ThresholdDef } from './thresholds';
 import { getTrafficLight } from './thresholds';
-
-function fmt(n: number, dp = 1): string {
-  return n.toFixed(dp);
-}
+import { fmt } from './format-utils';
 
 /* ------------------------------------------------------------------ */
 /*  Plain-language methodology descriptions                           */

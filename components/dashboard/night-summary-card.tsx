@@ -6,12 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { getTrafficLight, getTrafficColor, type TrafficLight } from '@/lib/thresholds';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
-
-function fmtHrs(h: number): string {
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return `${hrs}h ${mins}m`;
-}
+import { fmtHrs } from '@/lib/format-utils';
 
 interface Props {
   night: NightResult;
