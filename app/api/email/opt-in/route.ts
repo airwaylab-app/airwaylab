@@ -7,6 +7,9 @@ import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 import { sendEmail } from '@/lib/email/send';
 import { validateOrigin } from '@/lib/csrf';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 const OptInSchema = z.object({
   opt_in: z.boolean(),
@@ -22,6 +25,15 @@ const OptInSchema = z.object({
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
+  }
+
+  const ip = getRateLimitKey(request);
+  if (await limiter.isLimited(ip)) {
+    console.warn(`[email/opt-in] 429 rate limited ip=${ip}`);
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    );
   }
 
   const supabaseAuth = await getSupabaseServer();
