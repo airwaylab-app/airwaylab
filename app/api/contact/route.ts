@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -7,7 +8,18 @@ import { serverEnv } from '@/lib/env';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
-const ALLOWED_CATEGORIES = ['general', 'privacy', 'billing', 'accessibility', 'security'] as const;
+const ContactSchema = z.object({
+  email: z.string().min(1).max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'A valid email address is required.'),
+  message: z.string()
+    .max(2000, 'Message too long (max 2000 characters).')
+    .refine((s) => s.trim().length >= 10, 'Message must be at least 10 characters.'),
+  name: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim().length > 0 ? v.trim() : null),
+    z.string().max(100).nullable()
+  ),
+  category: z.enum(['general', 'privacy', 'billing', 'accessibility', 'security'] as const).catch('general'),
+});
+
 const CATEGORY_LABELS: Record<string, string> = {
   general: 'General',
   privacy: 'Privacy & Data',
@@ -43,7 +55,7 @@ async function sendNotificationEmail(fields: {
           `New contact form submission on airwaylab.app`,
           '',
           `Category: ${label}`,
-          `Name: ${fields.name ?? '—'}`,
+          `Name: ${fields.name ?? '\u2014'}`,
           `Email: ${fields.email}`,
           '',
           `Message:`,
@@ -88,44 +100,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
 
-    const body = await request.json();
-    const { name, email, category, message } = body as {
-      name?: unknown;
-      email: unknown;
-      category?: unknown;
-      message: unknown;
-    };
-
-    // Validate email (required)
-    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-      return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+    const parsed = ContactSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    // Validate message
-    if (!message || typeof message !== 'string' || message.trim().length < 10) {
-      return NextResponse.json(
-        { error: 'Message must be at least 10 characters.' },
-        { status: 400 }
-      );
-    }
-    if (message.length > 2000) {
-      return NextResponse.json(
-        { error: 'Message too long (max 2000 characters).' },
-        { status: 400 }
-      );
-    }
-
-    // Sanitize category
-    const cleanCategory =
-      typeof category === 'string' && (ALLOWED_CATEGORIES as readonly string[]).includes(category)
-        ? category
-        : 'general';
-
-    // Sanitize name
-    const cleanName =
-      typeof name === 'string' && name.trim().length > 0 && name.length <= 100
-        ? name.trim()
-        : null;
+    const { email, message, name: cleanName, category: cleanCategory } = parsed.data;
 
     const supabase = getSupabaseAdmin();
 
