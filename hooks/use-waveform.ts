@@ -97,6 +97,7 @@ export function useWaveform(
     }
 
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cloudAttemptedDates is a ref (stable identity), not state. Including it would cause infinite re-renders.
   }, [selectedNight.dateStr, isDemo, user, sdFiles.length]);
 
   const retry = useCallback(() => {
