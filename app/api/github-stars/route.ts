@@ -36,7 +36,11 @@ export async function GET(request: NextRequest) {
 
     if (!r.ok) {
       console.error(`[github-stars] GitHub API returned ${r.status}`);
-      captureApiError(new Error(`GitHub API returned ${r.status}`), { route: 'github-stars' });
+      // Only capture to Sentry when a token IS configured (unexpected failure).
+      // Without a token, 403 is expected (unauthenticated rate limit).
+      if (r.status >= 500 || (r.status === 403 && serverEnv.GITHUB_TOKEN)) {
+        captureApiError(new Error(`GitHub API returned ${r.status}`), { route: 'github-stars' });
+      }
       return NextResponse.json(
         { stars: 0 },
         {
