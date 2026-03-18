@@ -28,14 +28,13 @@ describe('Post-upload sequence templates', () => {
     const { html } = postUploadStep1(UNSUB_URL);
     expect(html).toContain('Upload Your Next Night');
     expect(html).toContain('airwaylab.app/analyze');
-    expect(html).toContain('stays in your browser');
+    expect(html).toContain('saved in your browser');
   });
 
   it('step 2 explains multi-night analysis value', () => {
     const { subject, html } = postUploadStep2(UNSUB_URL);
     expect(subject).toBeTruthy();
-    expect(html).toContain('trends');
-    expect(html).toContain('See Your Trends');
+    expect(html).toContain('Upload Your Next Night');
   });
 
   it('step 3 promotes symptom tracking', () => {
@@ -50,15 +49,15 @@ describe('Dormancy sequence templates', () => {
   it('step 1 highlights new features', () => {
     const { subject, html } = dormancyStep1(UNSUB_URL);
     expect(subject).toBeTruthy();
-    expect(html).toContain('Analyse New Data');
-    expect(html).toContain('previous results are still saved');
+    expect(html).toContain('Upload This Month');
+    expect(html).toContain('Ready when you are');
   });
 
   it('step 2 encourages comparison', () => {
     const { subject, html } = dormancyStep2(UNSUB_URL);
     expect(subject).toBeTruthy();
-    expect(html).toContain('Compare Your Progress');
-    expect(html).toContain('Glasgow Index');
+    expect(html).toContain('Upload New Data');
+    expect(html).toContain('compare');
   });
 });
 
@@ -161,13 +160,13 @@ describe('SEQUENCES registry', () => {
     expect(SEQUENCES.post_upload.delays).toEqual([0, 3, 7]);
   });
 
-  it('dormancy has 2 steps with delays [0, 16]', () => {
+  it('dormancy has 2 steps with delays [0, 7]', () => {
     expect(SEQUENCES.dormancy.totalSteps).toBe(2);
-    expect(SEQUENCES.dormancy.delays).toEqual([0, 16]);
+    expect(SEQUENCES.dormancy.delays).toEqual([0, 7]);
   });
 
-  it('feature_education has 2 steps with delays [0, 7]', () => {
+  it('feature_education has 2 steps with delays [10, 17]', () => {
     expect(SEQUENCES.feature_education.totalSteps).toBe(2);
-    expect(SEQUENCES.feature_education.delays).toEqual([0, 7]);
+    expect(SEQUENCES.feature_education.delays).toEqual([10, 17]);
   });
 });
