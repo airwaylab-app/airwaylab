@@ -49,6 +49,9 @@ export const serverEnv = {
   /** Resend API key for transactional email */
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? undefined,
 
+  /** Resend webhook secret (used as query param for webhook auth) */
+  RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET ?? undefined,
+
   /** Secret for authenticating Vercel Cron requests */
   CRON_SECRET: process.env.CRON_SECRET ?? undefined,
 
@@ -63,6 +66,18 @@ export const serverEnv = {
 
   /** Upstash Redis REST token */
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? undefined,
+
+  /** Vercel API token for usage monitoring (optional) */
+  VERCEL_TOKEN: process.env.VERCEL_TOKEN ?? undefined,
+
+  /** Vercel team ID for usage queries */
+  VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID ?? undefined,
+
+  /** Vercel project ID for usage queries */
+  VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID ?? undefined,
+
+  /** Sentry auth token for stats API (optional) */
+  SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN ?? undefined,
 } as const;
 
 /**
@@ -111,6 +126,15 @@ export function validateServerEnv() {
   if (hasUpstashUrl !== hasUpstashToken) {
     warnings.push(
       'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must both be set (or both unset). Rate limiting will fall back to in-memory.'
+    );
+  }
+
+  // Vercel monitoring requires all three vars
+  const hasVercelToken = !!serverEnv.VERCEL_TOKEN;
+  const hasVercelTeam = !!serverEnv.VERCEL_TEAM_ID;
+  if (hasVercelToken && !hasVercelTeam) {
+    warnings.push(
+      'VERCEL_TOKEN is set but VERCEL_TEAM_ID is missing -- Vercel usage monitoring will be skipped.'
     );
   }
 
