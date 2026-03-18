@@ -9,6 +9,7 @@ const PAGE_SIZE = 20;
 import { getTrafficLight, getTrafficColor, type ThresholdDef } from '@/lib/thresholds';
 import { useThresholds } from '@/components/common/thresholds-provider';
 import type { NightResult } from '@/lib/types';
+import { fmtHrs } from '@/lib/format-utils';
 
 type SortKey = 'date' | 'glasgow' | 'fl' | 'regularity' | 'periodicity' | 'ned' | 'rera' | 'boi' | 'duration';
 
@@ -28,14 +29,10 @@ const cols: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: 'boi', label: 'BOI/hr', shortLabel: 'BOI' },
 ];
 
-function fmtDuration(h: number): string {
-  return `${Math.floor(h)}h ${Math.round((h % 1) * 60)}m`;
-}
-
 function getMetricValue(n: NightResult, key: SortKey): string {
   switch (key) {
     case 'date': return n.dateStr;
-    case 'duration': return fmtDuration(n.durationHours);
+    case 'duration': return fmtHrs(n.durationHours);
     case 'glasgow': return n.glasgow.overall.toFixed(2);
     case 'fl': return n.wat.flScore.toFixed(1) + '%';
     case 'regularity': return n.wat.regularityScore.toFixed(0) + '%';
@@ -139,7 +136,7 @@ export function MetricsTable({ nights }: Props) {
               {visible.map((n) => (
                 <tr key={n.dateStr} className="border-b border-border/30 transition-colors hover:bg-card/50">
                   <td className="py-2 pr-4 font-mono tabular-nums">{n.dateStr}</td>
-                  <td className="py-2 pr-4 font-mono tabular-nums">{fmtDuration(n.durationHours)}</td>
+                  <td className="py-2 pr-4 font-mono tabular-nums">{fmtHrs(n.durationHours)}</td>
                   <td className={`py-2 pr-4 font-mono tabular-nums ${getMetricColor(n, 'glasgow', THRESHOLDS)}`}>
                     {n.glasgow.overall.toFixed(2)}
                   </td>
@@ -176,7 +173,7 @@ export function MetricsTable({ nights }: Props) {
             >
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-mono text-xs font-medium tabular-nums">{n.dateStr}</span>
-                <span className="text-[10px] text-muted-foreground">{fmtDuration(n.durationHours)}</span>
+                <span className="text-[10px] text-muted-foreground">{fmtHrs(n.durationHours)}</span>
               </div>
               <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
                 {metricKeys.map((key) => {

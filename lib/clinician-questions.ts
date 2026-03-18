@@ -9,6 +9,7 @@ import type { NightResult } from './types';
 import type { TrafficLight, ThresholdDef } from './thresholds';
 import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
+import { fmt, mean } from './format-utils';
 
 export interface ClinicianQuestion {
   id: string;
@@ -30,15 +31,6 @@ const MAX_QUESTIONS = 4;
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
-
-function fmt(n: number, dp = 1): string {
-  return n.toFixed(dp);
-}
-
-function mean(vals: number[]): number {
-  if (vals.length === 0) return 0;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
 
 /** Urgency sort value: bad=0, warn=1, good=2 */
 function urgencyRank(u: TrafficLight): number {
