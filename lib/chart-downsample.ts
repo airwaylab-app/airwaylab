@@ -26,12 +26,12 @@ export function downsampleForChart<T>(data: T[], maxPoints = MAX_CHART_POINTS): 
   if (data.length <= maxPoints) return data;
 
   const result: T[] = new Array(maxPoints);
-  result[0] = data[0];
-  result[maxPoints - 1] = data[data.length - 1];
+  result[0] = data[0]!;
+  result[maxPoints - 1] = data[data.length - 1]!;
 
   const step = (data.length - 1) / (maxPoints - 1);
   for (let i = 1; i < maxPoints - 1; i++) {
-    result[i] = data[Math.round(i * step)];
+    result[i] = data[Math.round(i * step)]!;
   }
 
   return result;

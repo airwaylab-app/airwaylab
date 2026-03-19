@@ -31,7 +31,7 @@ function TVTooltipContent({ active, payload, label }: {
       <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: CHART_COLORS[3] }}>Tidal Volume:</span>{' '}
-        <span className="font-mono">{Math.round(payload[0].value)}</span> mL
+        <span className="font-mono">{Math.round(payload[0]!.value)}</span> mL
       </p>
     </div>
   );

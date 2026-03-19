@@ -20,7 +20,9 @@ vi.mock('@/lib/csrf', () => ({
 const mockIsLimited = vi.fn(() => false);
 vi.mock('@/lib/rate-limit', () => ({
   aiRateLimiter: { isLimited: (...args: Parameters<typeof mockIsLimited>) => mockIsLimited(...args) },
+  aiPremiumRateLimiter: { isLimited: (...args: Parameters<typeof mockIsLimited>) => mockIsLimited(...args) },
   getRateLimitKey: vi.fn(() => '127.0.0.1'),
+  getUserRateLimitKey: vi.fn((id: string) => `user:${id}`),
 }));
 
 const mockCaptureException = vi.fn();

@@ -126,9 +126,9 @@ export function exportForumMultiNight(nights: NightResult[], tier?: Tier): strin
   const sorted = [...nights].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
 
   lines.push(`**AirwayLab Summary — ${sorted.length} Nights**`);
-  lines.push(`(${sorted[0].dateStr} to ${sorted[sorted.length - 1].dateStr})`);
+  lines.push(`(${sorted[0]!.dateStr} to ${sorted[sorted.length - 1]!.dateStr})`);
   lines.push('');
-  lines.push(`Machine: ${sorted[0].settings.deviceModel} | Mode: ${sorted[0].settings.papMode}`);
+  lines.push(`Machine: ${sorted[0]!.settings.deviceModel} | Mode: ${sorted[0]!.settings.papMode}`);
   lines.push('');
 
   // Table header

@@ -50,8 +50,8 @@ function detectTherapyChange(nights: NightResult[]): string | null {
 
   // Nights are sorted most-recent-first
   for (let i = 0; i < nights.length - 1; i++) {
-    const curr = nights[i].settings;
-    const prev = nights[i + 1].settings;
+    const curr = nights[i]!.settings;
+    const prev = nights[i + 1]!.settings;
 
     if (
       curr.epap !== prev.epap ||
@@ -59,7 +59,7 @@ function detectTherapyChange(nights: NightResult[]): string | null {
       curr.papMode !== prev.papMode ||
       curr.pressureSupport !== prev.pressureSupport
     ) {
-      return nights[i].dateStr;
+      return nights[i]!.dateStr;
     }
   }
 
@@ -196,9 +196,9 @@ describe('mergeNights', () => {
     const result = mergeNights([], fresh);
 
     expect(result).toHaveLength(3);
-    expect(result[0].dateStr).toBe('2026-03-12');
-    expect(result[1].dateStr).toBe('2026-03-11');
-    expect(result[2].dateStr).toBe('2026-03-10');
+    expect(result[0]!.dateStr).toBe('2026-03-12');
+    expect(result[1]!.dateStr).toBe('2026-03-11');
+    expect(result[2]!.dateStr).toBe('2026-03-10');
   });
 
   it('returns cached results sorted most-recent-first when no fresh', () => {
@@ -210,9 +210,9 @@ describe('mergeNights', () => {
     const result = mergeNights(cached, []);
 
     expect(result).toHaveLength(3);
-    expect(result[0].dateStr).toBe('2026-03-10');
-    expect(result[1].dateStr).toBe('2026-03-09');
-    expect(result[2].dateStr).toBe('2026-03-08');
+    expect(result[0]!.dateStr).toBe('2026-03-10');
+    expect(result[1]!.dateStr).toBe('2026-03-09');
+    expect(result[2]!.dateStr).toBe('2026-03-08');
   });
 
   it('cached overwrites fresh for same date', () => {
@@ -222,7 +222,7 @@ describe('mergeNights', () => {
     const result = mergeNights(cached, fresh);
 
     expect(result).toHaveLength(1);
-    expect(result[0].durationHours).toBe(8.0);
+    expect(result[0]!.durationHours).toBe(8.0);
   });
 
   it('preserves fresh oximetry when cached has none', () => {
@@ -244,10 +244,10 @@ describe('mergeNights', () => {
 
     expect(result).toHaveLength(1);
     // Cached base data wins (durationHours)
-    expect(result[0].durationHours).toBe(8.0);
+    expect(result[0]!.durationHours).toBe(8.0);
     // But fresh oximetry is preserved
-    expect(result[0].oximetry).toBe(oximetry);
-    expect(result[0].oximetryTrace).toBe(oximetryTrace);
+    expect(result[0]!.oximetry).toBe(oximetry);
+    expect(result[0]!.oximetryTrace).toBe(oximetryTrace);
   });
 
   it('does NOT preserve fresh oximetry when cached already has oximetry', () => {
@@ -266,7 +266,7 @@ describe('mergeNights', () => {
 
     expect(result).toHaveLength(1);
     // Cached oximetry wins entirely
-    expect(result[0].oximetry!.odi3).toBe(99);
+    expect(result[0]!.oximetry!.odi3).toBe(99);
   });
 
   it('merges mixed dates correctly: some only cached, some only fresh, some overlap', () => {
@@ -283,12 +283,12 @@ describe('mergeNights', () => {
 
     expect(result).toHaveLength(3);
     // Sorted most-recent-first
-    expect(result[0].dateStr).toBe('2026-03-11');
-    expect(result[0].durationHours).toBe(7.0); // fresh-only
-    expect(result[1].dateStr).toBe('2026-03-10');
-    expect(result[1].durationHours).toBe(8.0); // cached wins
-    expect(result[2].dateStr).toBe('2026-03-09');
-    expect(result[2].durationHours).toBe(9.0); // cached-only
+    expect(result[0]!.dateStr).toBe('2026-03-11');
+    expect(result[0]!.durationHours).toBe(7.0); // fresh-only
+    expect(result[1]!.dateStr).toBe('2026-03-10');
+    expect(result[1]!.durationHours).toBe(8.0); // cached wins
+    expect(result[2]!.dateStr).toBe('2026-03-09');
+    expect(result[2]!.durationHours).toBe(9.0); // cached-only
   });
 
   it('returns empty array when both inputs are empty', () => {
@@ -301,11 +301,11 @@ describe('mergeNights', () => {
 
     const freshOnly = mergeNights([], [night]);
     expect(freshOnly).toHaveLength(1);
-    expect(freshOnly[0].dateStr).toBe('2026-03-10');
+    expect(freshOnly[0]!.dateStr).toBe('2026-03-10');
 
     const cachedOnly = mergeNights([night], []);
     expect(cachedOnly).toHaveLength(1);
-    expect(cachedOnly[0].dateStr).toBe('2026-03-10');
+    expect(cachedOnly[0]!.dateStr).toBe('2026-03-10');
   });
 });
 

@@ -125,8 +125,8 @@ export const FlowWaveform = memo(function FlowWaveform({
   const MAX_VISIBLE_EVENTS = 100;
   const { visibleEvents, eventsCapped } = useMemo(() => {
     if (!anyEventsVisible || data.length === 0) return { visibleEvents: [] as typeof events, eventsCapped: false };
-    const startT = data[0].t;
-    const endT = data[data.length - 1].t;
+    const startT = data[0]!.t;
+    const endT = data[data.length - 1]!.t;
     const filtered = events.filter(
       (e) => e.endSec >= startT && e.startSec <= endT && (activeTypes === null || activeTypes.has(e.type))
     );
@@ -134,7 +134,7 @@ export const FlowWaveform = memo(function FlowWaveform({
       return { visibleEvents: filtered, eventsCapped: false };
     }
     const step = filtered.length / MAX_VISIBLE_EVENTS;
-    const sampled = Array.from({ length: MAX_VISIBLE_EVENTS }, (_, i) => filtered[Math.round(i * step)]);
+    const sampled = Array.from({ length: MAX_VISIBLE_EVENTS }, (_, i) => filtered[Math.round(i * step)]!);
     return { visibleEvents: sampled, eventsCapped: true };
   }, [events, anyEventsVisible, activeTypes, data]);
 
@@ -257,7 +257,7 @@ export const FlowWaveform = memo(function FlowWaveform({
 
             {/* Event overlays */}
             {visibleEvents.map((event) => {
-              const colors = EVENT_COLORS[event.type] ?? EVENT_COLORS['flow-limitation'];
+              const colors = EVENT_COLORS[event.type] ?? EVENT_COLORS['flow-limitation']!;
               const labelText = EVENT_SHORT_LABELS[event.type] ?? event.type;
               return (
                 <ReferenceArea
@@ -265,8 +265,8 @@ export const FlowWaveform = memo(function FlowWaveform({
                   yAxisId="flow"
                   x1={event.startSec}
                   x2={event.endSec}
-                  fill={colors.fill}
-                  stroke={colors.stroke}
+                  fill={colors?.fill}
+                  stroke={colors?.stroke}
                   strokeWidth={0.5}
                   label={{
                     value: labelText,

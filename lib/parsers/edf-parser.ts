@@ -63,47 +63,47 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   offset += n * 16;
 
   for (let i = 0; i < n; i++) {
-    signals[i].transducer = readField(buffer, decoder, offset + i * 80, 80);
+    signals[i]!.transducer = readField(buffer, decoder, offset + i * 80, 80);
   }
   offset += n * 80;
 
   for (let i = 0; i < n; i++) {
-    signals[i].physicalDimension = readField(buffer, decoder, offset + i * 8, 8);
+    signals[i]!.physicalDimension = readField(buffer, decoder, offset + i * 8, 8);
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].physicalMin = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.physicalMin = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].physicalMax = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.physicalMax = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].digitalMin = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.digitalMin = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].digitalMax = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.digitalMax = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].prefiltering = readField(buffer, decoder, offset + i * 80, 80);
+    signals[i]!.prefiltering = readField(buffer, decoder, offset + i * 80, 80);
   }
   offset += n * 80;
 
   for (let i = 0; i < n; i++) {
-    signals[i].numSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.numSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += n * 8;
 
   for (let i = 0; i < n; i++) {
-    signals[i].reserved = readField(buffer, decoder, offset + i * 32, 32);
+    signals[i]!.reserved = readField(buffer, decoder, offset + i * 32, 32);
   }
 
   // --- Find flow and pressure signal indices ---
@@ -116,11 +116,11 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
 
   const pressIdx = signals.findIndex((s) => s.label.toLowerCase().includes('press'));
 
-  const flowSignal = signals[flowIdx];
+  const flowSignal = signals[flowIdx]!;
   const samplingRate = flowSignal.numSamples / header.recordDuration;
   const totalFlowSamples = header.numDataRecords * flowSignal.numSamples;
   const totalPressureSamples =
-    pressIdx >= 0 ? header.numDataRecords * signals[pressIdx].numSamples : 0;
+    pressIdx >= 0 ? header.numDataRecords * signals[pressIdx]!.numSamples : 0;
 
   // --- Validate buffer size ---
   const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);
@@ -150,7 +150,7 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   let pressOffset_ = 0;
   let pressDigMin = 0;
   if (pressIdx >= 0) {
-    const ps = signals[pressIdx];
+    const ps = signals[pressIdx]!;
     const pressDigRange = ps.digitalMax - ps.digitalMin;
     pressScale = pressDigRange === 0 ? 0 : (ps.physicalMax - ps.physicalMin) / pressDigRange;
     pressOffset_ = ps.physicalMin;
@@ -161,7 +161,7 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     let recordPtr = dataOffset;
 
     for (let sig = 0; sig < n; sig++) {
-      const samplesInRecord = signals[sig].numSamples;
+      const samplesInRecord = signals[sig]!.numSamples;
 
       if (sig === flowIdx) {
         for (let s = 0; s < samplesInRecord; s++) {
@@ -194,7 +194,7 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
 
   if (isPerSecond || (!isPerMinute && Math.abs(flowSignal.physicalMax) < 10)) {
     for (let i = 0; i < totalFlowSamples; i++) {
-      flowData[i] *= 60;
+      flowData[i] = flowData[i]! * 60;
     }
   }
 
@@ -292,15 +292,15 @@ export function parseSTR(buffer: ArrayBuffer): {
 
   for (let i = 0; i < n; i++) {
     rawSignals.push({
-      label: labels[i],
-      transducer: transducers[i],
-      physicalDimension: physDims[i],
-      physicalMin: physMins[i],
-      physicalMax: physMaxs[i],
-      digitalMin: digMins[i],
-      digitalMax: digMaxs[i],
-      prefiltering: prefilters[i],
-      numSamples: samplesPerRec[i],
+      label: labels[i]!,
+      transducer: transducers[i]!,
+      physicalDimension: physDims[i]!,
+      physicalMin: physMins[i]!,
+      physicalMax: physMaxs[i]!,
+      digitalMin: digMins[i]!,
+      digitalMax: digMaxs[i]!,
+      prefiltering: prefilters[i]!,
+      numSamples: samplesPerRec[i]!,
       reserved: '',
       digitalValues: [],
       physicalValues: [],
@@ -311,18 +311,19 @@ export function parseSTR(buffer: ArrayBuffer): {
   let dataPtr = header.headerBytes;
   for (let rec = 0; rec < header.numDataRecords; rec++) {
     for (let sig = 0; sig < n; sig++) {
-      const spr = rawSignals[sig].numSamples;
+      const sigData = rawSignals[sig]!;
+      const spr = sigData.numSamples;
       const scale =
-        rawSignals[sig].digitalMax !== rawSignals[sig].digitalMin
-          ? (rawSignals[sig].physicalMax - rawSignals[sig].physicalMin) /
-            (rawSignals[sig].digitalMax - rawSignals[sig].digitalMin)
+        sigData.digitalMax !== sigData.digitalMin
+          ? (sigData.physicalMax - sigData.physicalMin) /
+            (sigData.digitalMax - sigData.digitalMin)
           : 0;
       for (let s = 0; s < spr; s++) {
         const dv = view.getInt16(dataPtr, true);
         dataPtr += 2;
-        rawSignals[sig].digitalValues.push(dv);
-        rawSignals[sig].physicalValues.push(
-          (dv - rawSignals[sig].digitalMin) * scale + rawSignals[sig].physicalMin
+        sigData.digitalValues.push(dv);
+        sigData.physicalValues.push(
+          (dv - sigData.digitalMin) * scale + sigData.physicalMin
         );
       }
     }

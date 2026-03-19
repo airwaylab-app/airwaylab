@@ -11,7 +11,7 @@ const STORAGE_KEY = 'airwaylab_results';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const MAX_STORAGE_BYTES = 4 * 1024 * 1024; // 4 MB safety margin (most browsers allow 5-10 MB)
 
-export interface PersistResult {
+interface PersistResult {
   saved: boolean;
   nightsSaved: number;
   nightsDropped: number;
@@ -202,7 +202,7 @@ export function loadPersistedResults(): {
       !firstNight.wat ||
       !firstNight.ned
     ) {
-      console.warn('[persistence] Corrupted data detected. Clearing.');
+      Sentry.logger.warn('[persistence] Corrupted data detected, clearing');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
@@ -246,17 +246,6 @@ export function loadPersistedResults(): {
   } catch {
     return null;
   }
-}
-
-/**
- * Look up a single cached night by dateStr.
- * Useful for incremental analysis — pull unchanged nights from cache.
- */
-export function getCachedNights(dateStrs: string[]): NightResult[] {
-  const saved = loadPersistedResults();
-  if (!saved) return [];
-  const dateSet = new Set(dateStrs);
-  return saved.nights.filter((n) => dateSet.has(n.dateStr));
 }
 
 /**

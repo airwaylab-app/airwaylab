@@ -36,7 +36,7 @@ function LeakTooltipContent({ active, payload, label }: {
       <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: 'hsl(280 60% 55%)' }}>Leak:</span>{' '}
-        <span className="font-mono">{payload[0].value.toFixed(1)}</span> L/min
+        <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> L/min
       </p>
     </div>
   );
@@ -46,7 +46,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
   leak,
 }: Props) {
   const viewport = useSyncedViewport();
-  const bucketSeconds = leak.length > 1 ? leak[1].t - leak[0].t : 2;
+  const bucketSeconds = leak.length > 1 ? leak[1]!.t - leak[0]!.t : 2;
 
   const data = useMemo(() => {
     const sliced = downsampleForChart(sliceByTime(leak, viewport.clampedStartSec, viewport.clampedEndSec));

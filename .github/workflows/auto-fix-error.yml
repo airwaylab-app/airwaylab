@@ -10,10 +10,12 @@ concurrency:
 
 jobs:
   auto-fix:
-    # Only run for sentry-labelled issues, not opened by this workflow
+    # Only run for sentry-labelled issues from org members or bots (not external users).
+    # External users could create a fake "sentry" issue with injection payloads in the body.
     if: |
       contains(github.event.issue.labels.*.name, 'sentry') &&
-      github.event.issue.user.login != 'github-actions[bot]'
+      github.event.issue.user.login != 'github-actions[bot]' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,8 +26,10 @@ jobs:
 
       - name: Check for existing fix branch
         id: check-branch
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          BRANCH="fix/sentry-${{ github.event.issue.number }}"
+          BRANCH="fix/sentry-${ISSUE_NUMBER}"
           if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -37,11 +41,12 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const issueNumber = context.issue.number;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: 'A fix branch already exists for this issue (`fix/sentry-${{ github.event.issue.number }}`). Skipping auto-fix.'
+              issue_number: issueNumber,
+              body: `A fix branch already exists for this issue (\`fix/sentry-${issueNumber}\`). Skipping auto-fix.`
             });
 
       - name: Check daily run count
@@ -75,7 +80,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-6
+          model: claude-opus-4-6
           prompt_file: .github/prompts/fix-sentry-error.md
           issue_number: ${{ github.event.issue.number }}
 
@@ -86,12 +91,13 @@ jobs:
         id: file-gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          BRANCH="fix/sentry-${{ github.event.issue.number }}"
+          BRANCH="fix/sentry-${ISSUE_NUMBER}"
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null)
 
           if [ -z "$PR_NUMBER" ]; then
-            echo "No PR found — Claude Code may have applied needs-human label instead"
+            echo "No PR found -- Claude Code may have applied needs-human label instead"
             echo "has_pr=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -106,7 +112,7 @@ jobs:
           SENSITIVE=false
           for pattern in $SENSITIVE_PATTERNS; do
             if echo "$CHANGED_FILES" | grep -q "$pattern"; then
-              echo "⚠️  PR touches sensitive path: $pattern"
+              echo "PR touches sensitive path: $pattern"
               SENSITIVE=true
             fi
           done
@@ -127,29 +133,28 @@ jobs:
               done
             done <<< "$CHANGED_FILES"
 
-            COMMENT_BODY="⚠️ **Security gate triggered** — this auto-fix touches sensitive files (API routes, auth, config, or infrastructure).
+            COMMENT_BODY="**Security gate triggered** -- this auto-fix touches sensitive files (API routes, auth, config, or infrastructure).
 
-Auto-merge has been blocked. Manual review required before merging.
+          Auto-merge has been blocked. Manual review required before merging.
 
-**Changed files flagged:**
-$(echo -e "$FLAGGED")"
+          **Changed files flagged:**
+          $(echo -e "$FLAGGED")"
 
             gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" 2>/dev/null || true
           else
             echo "sensitive=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Notify — PR ready for review
+      - name: Notify -- PR ready for review
         if: |
           steps.file-gate.outputs.has_pr == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.file-gate.outputs.pr_number }}
+          SENSITIVE: ${{ steps.file-gate.outputs.sensitive }}
         run: |
-          PR_NUMBER="${{ steps.file-gate.outputs.pr_number }}"
-          SENSITIVE="${{ steps.file-gate.outputs.sensitive }}"
-
           if [ "$SENSITIVE" = "true" ]; then
-            echo "PR #$PR_NUMBER blocked — touches sensitive files. Review required."
+            echo "PR #$PR_NUMBER blocked -- touches sensitive files. Review required."
           else
             echo "PR #$PR_NUMBER ready for review on Vercel preview."
             gh pr comment "$PR_NUMBER" --body "Auto-fix PR is ready. Please verify the Vercel preview before merging." 2>/dev/null || true

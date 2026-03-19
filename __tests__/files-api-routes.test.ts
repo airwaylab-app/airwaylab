@@ -16,7 +16,9 @@ vi.mock('@/lib/rate-limit', () => {
   return {
     stripeRateLimiter: mockLimiter,
     aiRateLimiter: mockLimiter,
+    aiPremiumRateLimiter: mockLimiter,
     getRateLimitKey: vi.fn(() => '127.0.0.1'),
+    getUserRateLimitKey: vi.fn((id: string) => `user:${id}`),
     RateLimiter: class {
       isLimited(...args: Parameters<typeof mockIsLimited>) { return mockIsLimited(...args); }
     },
@@ -208,7 +210,8 @@ describe('POST /api/files/presign', () => {
   });
 
   it('returns 429 when rate limited', async () => {
-    mockValidateOrigin.mockReturnValue(true);
+    // Rate limit check happens after auth, so we need an authenticated user
+    setupAuthenticatedUser();
     mockIsLimited.mockReturnValue(true);
     const res = await callPresign(makePostRequest('/api/files/presign', validBody));
     expect(res.status).toBe(429);

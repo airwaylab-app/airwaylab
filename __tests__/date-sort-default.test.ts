@@ -95,8 +95,8 @@ describe('NightHeatmap sort logic', () => {
   it('defaults to date descending (newest first)', () => {
     const defaultConfig: SortConfig = { column: 'date', direction: 'desc' };
     const sorted = sortNightsHeatmap(NIGHTS, defaultConfig);
-    expect(sorted[0].dateStr).toBe('2025-01-15');
-    expect(sorted[sorted.length - 1].dateStr).toBe('2025-01-11');
+    expect(sorted[0]!.dateStr).toBe('2025-01-15');
+    expect(sorted[sorted.length - 1]!.dateStr).toBe('2025-01-11');
   });
 
   it('clicking Date after metric sort returns to newest-first', () => {
@@ -105,22 +105,22 @@ describe('NightHeatmap sort logic', () => {
     const afterMetricSort: SortConfig = { column: 'metric', metricKey: 'glasgow', direction: 'asc' };
     const metricSorted = sortNightsHeatmap(NIGHTS, afterMetricSort);
     // Lowest glasgow first
-    expect(metricSorted[0].glasgow.overall).toBe(1.2);
+    expect(metricSorted[0]!.glasgow.overall).toBe(1.2);
 
     // Now switch to date — should default to desc
     const dateConfig: SortConfig = { column: 'date', direction: 'desc' };
     const dateSorted = sortNightsHeatmap(NIGHTS, dateConfig);
-    expect(dateSorted[0].dateStr).toBe('2025-01-15');
+    expect(dateSorted[0]!.dateStr).toBe('2025-01-15');
   });
 
   it('clicking Date header toggles direction', () => {
     const descConfig: SortConfig = { column: 'date', direction: 'desc' };
     const descSorted = sortNightsHeatmap(NIGHTS, descConfig);
-    expect(descSorted[0].dateStr).toBe('2025-01-15');
+    expect(descSorted[0]!.dateStr).toBe('2025-01-15');
 
     const ascConfig: SortConfig = { column: 'date', direction: 'asc' };
     const ascSorted = sortNightsHeatmap(NIGHTS, ascConfig);
-    expect(ascSorted[0].dateStr).toBe('2025-01-11');
+    expect(ascSorted[0]!.dateStr).toBe('2025-01-11');
   });
 });
 
@@ -129,7 +129,7 @@ describe('NightHeatmap sort logic', () => {
 describe('MetricsTable sort logic', () => {
   it('defaults to date descending (newest at top)', () => {
     const sorted = sortNightsTable(NIGHTS, 'date', false);
-    expect(sorted[0].dateStr).toBe('2025-01-15');
+    expect(sorted[0]!.dateStr).toBe('2025-01-15');
   });
 
   it('re-selecting Date after Glasgow defaults to descending (newest first)', () => {
@@ -137,14 +137,14 @@ describe('MetricsTable sort logic', () => {
     // The fix: sortAsc should default to false for all columns
     const sortAsc = false; // Fixed default
     const sorted = sortNightsTable(NIGHTS, 'date', sortAsc);
-    expect(sorted[0].dateStr).toBe('2025-01-15');
+    expect(sorted[0]!.dateStr).toBe('2025-01-15');
   });
 
   it('toggling Date sort switches direction', () => {
     const descSorted = sortNightsTable(NIGHTS, 'date', false);
-    expect(descSorted[0].dateStr).toBe('2025-01-15');
+    expect(descSorted[0]!.dateStr).toBe('2025-01-15');
 
     const ascSorted = sortNightsTable(NIGHTS, 'date', true);
-    expect(ascSorted[0].dateStr).toBe('2025-01-11');
+    expect(ascSorted[0]!.dateStr).toBe('2025-01-11');
   });
 });

@@ -15,7 +15,7 @@ export function salvageTruncatedJSON<T = Record<string, unknown>>(text: string):
 
   // Strip markdown code fences if present
   const fenceMatch = input.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);
-  if (fenceMatch) {
+  if (fenceMatch?.[1]) {
     input = fenceMatch[1].trim();
   }
 

@@ -45,8 +45,8 @@ interface CleanedSample {
 function cleanSamples(samples: OximetrySample[]): CleanedSample[] {
   if (samples.length === 0) return [];
 
-  const startMs = samples[0].time.getTime();
-  const endMs = samples[samples.length - 1].time.getTime();
+  const startMs = samples[0]!.time.getTime();
+  const endMs = samples[samples.length - 1]!.time.getTime();
 
   const trimStart = startMs + BUFFER_START_MS;
   const trimEnd = endMs - BUFFER_END_MS;
@@ -76,7 +76,7 @@ function cleanSamples(samples: OximetrySample[]): CleanedSample[] {
  */
 function correctDoubleTracking(samples: CleanedSample[]): void {
   for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
+    const s = samples[i]!;
     if (s.hr <= 110) continue;
 
     // Build 30-second rolling baseline from preceding samples
@@ -84,9 +84,9 @@ function correctDoubleTracking(samples: CleanedSample[]): void {
     let sum = 0;
     let count = 0;
     for (let j = i - 1; j >= 0; j--) {
-      if (samples[j].timeMs < windowStart) break;
-      if (samples[j].hr > 0) {
-        sum += samples[j].hr;
+      if (samples[j]!.timeMs < windowStart) break;
+      if (samples[j]!.hr > 0) {
+        sum += samples[j]!.hr;
         count++;
       }
     }
@@ -119,7 +119,7 @@ function downsample(
     }));
   }
 
-  const durationMs = cleaned[cleaned.length - 1].timeMs - startMs;
+  const durationMs = cleaned[cleaned.length - 1]!.timeMs - startMs;
   const bucketMs = durationMs / MAX_TRACE_POINTS;
   const points: OximetryTracePoint[] = [];
 
@@ -192,12 +192,12 @@ function detectODIEvents(
   let windowHead = 0; // index of oldest sample in window
 
   for (let i = 0; i < cleaned.length; i++) {
-    const s = cleaned[i];
+    const s = cleaned[i]!;
     const elapsedS = (s.timeMs - startMs) / 1000;
     const windowStartMs = s.timeMs - ODI_BASELINE_WINDOW_S * 1000;
 
     // Advance windowHead past expired samples
-    while (windowHead < i && cleaned[windowHead].timeMs < windowStartMs) {
+    while (windowHead < i && cleaned[windowHead]!.timeMs < windowStartMs) {
       windowHead++;
     }
 
@@ -206,7 +206,7 @@ function detectODIEvents(
 
     const baselineValues: number[] = [];
     for (let j = windowHead; j < i; j++) {
-      baselineValues.push(cleaned[j].spo2);
+      baselineValues.push(cleaned[j]!.spo2);
     }
 
     if (baselineValues.length < 10) continue; // need reasonable baseline
@@ -232,9 +232,9 @@ function median(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
+    return (sorted[mid - 1]! + sorted[mid]!) / 2;
   }
-  return sorted[mid];
+  return sorted[mid]!;
 }
 
 // ------------------------------------------------------------------
@@ -252,8 +252,8 @@ export function buildOximetryTrace(
 
   if (cleaned.length < MIN_SAMPLES) return null;
 
-  const startMs = cleaned[0].timeMs;
-  const endMs = cleaned[cleaned.length - 1].timeMs;
+  const startMs = cleaned[0]!.timeMs;
+  const endMs = cleaned[cleaned.length - 1]!.timeMs;
   const durationSeconds = Math.round((endMs - startMs) / 1000);
 
   const trace = downsample(cleaned, startMs);

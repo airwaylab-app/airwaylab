@@ -112,7 +112,7 @@ describe('computeIFLRisk', () => {
   it('scores green for mild FL data', () => {
     const night = makeNight({ flScore: 25, nedMean: 15, fiMean: 0.60, glasgowOverall: 1.0 });
     const risk = computeIFLRisk(night);
-    const light = getTrafficLight(risk, THRESHOLDS.iflRisk);
+    const light = getTrafficLight(risk, THRESHOLDS.iflRisk!);
     expect(light).toBe('good');
     expect(risk).toBeLessThanOrEqual(20);
   });
@@ -120,7 +120,7 @@ describe('computeIFLRisk', () => {
   it('scores amber for moderate FL data', () => {
     const night = makeNight({ flScore: 45, nedMean: 28, fiMean: 0.7, glasgowOverall: 2.5 });
     const risk = computeIFLRisk(night);
-    const light = getTrafficLight(risk, THRESHOLDS.iflRisk);
+    const light = getTrafficLight(risk, THRESHOLDS.iflRisk!);
     expect(light).toBe('warn');
     expect(risk).toBeGreaterThan(20);
     expect(risk).toBeLessThanOrEqual(45);
@@ -129,7 +129,7 @@ describe('computeIFLRisk', () => {
   it('scores red for severe FL data', () => {
     const night = makeNight({ flScore: 70, nedMean: 55, fiMean: 0.95, glasgowOverall: 4.0 });
     const risk = computeIFLRisk(night);
-    const light = getTrafficLight(risk, THRESHOLDS.iflRisk);
+    const light = getTrafficLight(risk, THRESHOLDS.iflRisk!);
     expect(light).toBe('bad');
     expect(risk).toBeGreaterThan(45);
   });
@@ -172,8 +172,8 @@ describe('getIFLContextNote', () => {
 describe('THRESHOLDS.iflRisk', () => {
   it('is defined with correct values', () => {
     expect(THRESHOLDS.iflRisk).toBeDefined();
-    expect(THRESHOLDS.iflRisk.green).toBe(20);
-    expect(THRESHOLDS.iflRisk.amber).toBe(45);
-    expect(THRESHOLDS.iflRisk.lowerIsBetter).toBe(true);
+    expect(THRESHOLDS.iflRisk!.green).toBe(20);
+    expect(THRESHOLDS.iflRisk!.amber).toBe(45);
+    expect(THRESHOLDS.iflRisk!.lowerIsBetter).toBe(true);
   });
 });

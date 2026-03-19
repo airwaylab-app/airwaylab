@@ -55,5 +55,6 @@ CLAUDE.local.md
 CLAUDE.md
 .claude/commands/
 prompts/
+!.github/prompts/
 specs/
 cache/

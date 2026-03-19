@@ -3,6 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock Sentry before importing rate-limit
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 // Mock env to control Upstash availability

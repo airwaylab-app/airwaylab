@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
-import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
-const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 2000 });
+const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5000 });
 
 const presignSchema = z.object({
   filePath: z.string().min(1).max(500),
@@ -23,11 +23,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
   }
 
-  const ip = getRateLimitKey(request);
-  if (await rateLimiter.isLimited(ip)) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  }
-
   const supabase = await getSupabaseServer();
   if (!supabase) {
     return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
@@ -36,6 +31,14 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit by user ID (not IP) so shared-IP users get their own bucket
+  if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
+    return NextResponse.json(
+      { error: 'Too many upload requests. Please wait a few minutes and try again.' },
+      { status: 429 }
+    );
   }
 
   const serviceRole = getSupabaseServiceRole();
@@ -47,7 +50,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = presignSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+      const issue = parsed.error.issues[0];
+      const detail = issue ? `${issue.path.join('.')}: ${issue.message}` : 'unknown';
+      return NextResponse.json({ error: `Invalid request data: ${detail}` }, { status: 400 });
     }
 
     const { filePath, fileName, fileSize, fileHash, nightDate, mimeType } = parsed.data;

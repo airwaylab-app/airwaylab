@@ -171,7 +171,7 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
           />
         </div>
         <MetricExplanation
-          text={getODIExplanation(ox.odi3, THRESHOLDS.odi3)}
+          text={getODIExplanation(ox.odi3, THRESHOLDS.odi3!)}
         />
       </div>
 

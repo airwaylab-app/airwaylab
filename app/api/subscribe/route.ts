@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
-      console.warn(`[subscribe] 429 rate limited ip=${ip}`);
+      Sentry.logger.warn('[subscribe] 429 rate limited', { ip });
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = SubscribeSchema.safeParse(body);
     if (!parsed.success) {
-      console.warn('[subscribe] 400 invalid payload');
+      Sentry.logger.warn('[subscribe] 400 invalid payload');
       return NextResponse.json({ error: 'Invalid request data.' }, { status: 400 });
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      console.info(`[subscribe] ${cleanEmail} from ${cleanSource} (Supabase not configured)`);
+      Sentry.logger.info('[subscribe] Supabase not configured', { email: cleanEmail, source: cleanSource });
     }
 
     return NextResponse.json({ ok: true });

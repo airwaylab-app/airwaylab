@@ -165,13 +165,13 @@ function detectBreaths(flowData: Float32Array, samplingRate: number): Breath[] {
 
   while (i < len - 1) {
     // Find inspiration start: positive-going zero crossing
-    while (i < len - 1 && !(flowData[i] <= 0 && flowData[i + 1] > 0)) i++;
+    while (i < len - 1 && !(flowData[i]! <= 0 && flowData[i + 1]! > 0)) i++;
     if (i >= len - 1) break;
     const inspStart = i + 1;
     i = inspStart;
 
     // Find inspiration end: negative-going zero crossing
-    while (i < len - 1 && flowData[i] > 0) i++;
+    while (i < len - 1 && flowData[i]! > 0) i++;
     if (i >= len - 1) break;
     const inspEnd = i;
 
@@ -181,7 +181,7 @@ function detectBreaths(flowData: Float32Array, samplingRate: number): Breath[] {
     // Find expiration end: next positive-going zero crossing
     const expStart = inspEnd;
     let expEnd = expStart;
-    while (expEnd < len - 1 && flowData[expEnd] <= 0) expEnd++;
+    while (expEnd < len - 1 && flowData[expEnd]! <= 0) expEnd++;
     if (expEnd >= len - 1) break;
 
     // Extract inspiratory flow segment
@@ -190,19 +190,19 @@ function detectBreaths(flowData: Float32Array, samplingRate: number): Breath[] {
     // Find peak flow
     let qPeak = 0;
     for (let j = 0; j < inspFlow.length; j++) {
-      if (inspFlow[j] > qPeak) qPeak = inspFlow[j];
+      if (inspFlow[j]! > qPeak) qPeak = inspFlow[j]!;
     }
 
     if (qPeak < minQPeak) continue;
 
     // Flow at 50% of Ti
     const midIdx = Math.floor(inspFlow.length / 2);
-    const qMid = inspFlow[midIdx];
+    const qMid = inspFlow[midIdx]!;
 
     // Time to peak
     let peakIdx = 0;
     for (let j = 1; j < inspFlow.length; j++) {
-      if (inspFlow[j] > inspFlow[peakIdx]) peakIdx = j;
+      if (inspFlow[j]! > inspFlow[peakIdx]!) peakIdx = j;
     }
 
     const ti = inspFlow.length / samplingRate;
@@ -240,7 +240,7 @@ function computeBreathMetrics(breath: Breath, _samplingRate: number): void {
   // Flatness Index = mean_insp / peak_insp
   let sum = 0;
   for (let i = 0; i < inspFlow.length; i++) {
-    sum += inspFlow[i];
+    sum += inspFlow[i]!;
   }
   const meanFlow = inspFlow.length > 0 ? sum / inspFlow.length : 0;
   breath.fi = qPeak > 0 ? meanFlow / qPeak : 0;
@@ -267,14 +267,14 @@ function detectMShape(inspFlow: Float32Array, qPeak: number): boolean {
   // Look for a valley below threshold in the middle 50%
   let minInMiddle = qPeak;
   for (let i = start25; i < end75; i++) {
-    if (inspFlow[i] < minInMiddle) minInMiddle = inspFlow[i];
+    if (inspFlow[i]! < minInMiddle) minInMiddle = inspFlow[i]!;
   }
 
   if (minInMiddle < threshold) {
     // Verify there are peaks on both sides of the valley
     let valleyIdx = start25;
     for (let i = start25; i < end75; i++) {
-      if (inspFlow[i] === minInMiddle) {
+      if (inspFlow[i]! === minInMiddle) {
         valleyIdx = i;
         break;
       }
@@ -282,12 +282,12 @@ function detectMShape(inspFlow: Float32Array, qPeak: number): boolean {
 
     let leftPeak = 0;
     for (let i = 0; i < valleyIdx; i++) {
-      if (inspFlow[i] > leftPeak) leftPeak = inspFlow[i];
+      if (inspFlow[i]! > leftPeak) leftPeak = inspFlow[i]!;
     }
 
     let rightPeak = 0;
     for (let i = valleyIdx; i < len; i++) {
-      if (inspFlow[i] > rightPeak) rightPeak = inspFlow[i];
+      if (inspFlow[i]! > rightPeak) rightPeak = inspFlow[i]!;
     }
 
     // Both sides must have peaks above the threshold
@@ -312,7 +312,7 @@ function detectRERASequences(
   let runStart = -1;
 
   for (let i = 0; i < breaths.length; i++) {
-    const isFL = breaths[i].ned > 20 || breaths[i].fi >= 0.85;
+    const isFL = breaths[i]!.ned > 20 || breaths[i]!.fi >= 0.85;
 
     if (isFL) {
       if (runStart === -1) runStart = i;
@@ -353,8 +353,8 @@ function evaluateRERACandidate(
   let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
   for (let i = 0; i < breathCount; i++) {
     sumX += i;
-    sumY += seqBreaths[i].ned;
-    sumXY += i * seqBreaths[i].ned;
+    sumY += seqBreaths[i]!.ned;
+    sumXY += i * seqBreaths[i]!.ned;
     sumXX += i * i;
   }
   const nedSlope =
@@ -363,14 +363,14 @@ function evaluateRERACandidate(
       : 0;
 
   // Check recovery: next breath NED < 10%
-  const hasRecovery = end < breaths.length && breaths[end].ned < 10;
+  const hasRecovery = end < breaths.length && breaths[end]!.ned < 10;
 
   // Check sigh: post-sequence Qpeak > 1.5× sequence mean Qpeak
   let meanQPeak = 0;
   for (const b of seqBreaths) meanQPeak += b.qPeak;
   meanQPeak /= breathCount;
 
-  const hasSigh = end < breaths.length && breaths[end].qPeak > 1.5 * meanQPeak;
+  const hasSigh = end < breaths.length && breaths[end]!.qPeak > 1.5 * meanQPeak;
 
   // Max NED in sequence
   let maxNED = 0;
@@ -413,8 +413,8 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
   const breathData: { time: number; rate: number; volume: number; isFL: boolean }[] = [];
 
   for (let i = 1; i < breaths.length; i++) {
-    const prev = breaths[i - 1];
-    const curr = breaths[i];
+    const prev = breaths[i - 1]!;
+    const curr = breaths[i]!;
 
     // Breath period = time from one insp start to next
     const period = (curr.inspStart - prev.inspStart) / samplingRate;
@@ -425,7 +425,7 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
     // Tidal volume = integral of inspiratory flow
     let volume = 0;
     for (let j = 0; j < curr.inspFlow.length; j++) {
-      volume += curr.inspFlow[j] / samplingRate;
+      volume += curr.inspFlow[j]! / samplingRate;
     }
 
     // Flow limitation: NED >= 20% or FI >= 0.85
@@ -451,22 +451,22 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
   let lastArousalTime = -Infinity;
 
   for (let i = 0; i < breathData.length; i++) {
-    const current = breathData[i];
+    const current = breathData[i]!;
 
     // Check for preceding flow limitation: >= MIN_FL_PRECEDING of
     // the last 5 breaths must be flow-limited
     let flCount = 0;
     for (let k = Math.max(0, i - 5); k < i; k++) {
-      if (breathData[k].isFL) flCount++;
+      if (breathData[k]!.isFL) flCount++;
     }
     if (flCount < MIN_FL_PRECEDING) continue;
 
     // Compute rolling baseline from preceding window
     let rateSum = 0, volSum = 0, count = 0;
     for (let j = i - 1; j >= 0; j--) {
-      if (current.time - breathData[j].time > BASELINE_WINDOW) break;
-      rateSum += breathData[j].rate;
-      volSum += breathData[j].volume;
+      if (current.time - breathData[j]!.time > BASELINE_WINDOW) break;
+      rateSum += breathData[j]!.rate;
+      volSum += breathData[j]!.volume;
       count++;
     }
 
@@ -486,7 +486,7 @@ function computeEAI(breaths: Breath[], samplingRate: number): number {
   }
 
   const totalHours =
-    (breathData[breathData.length - 1].time - breathData[0].time) / 3600;
+    (breathData[breathData.length - 1]!.time - breathData[0]!.time) / 3600;
   if (totalHours <= 0) return 0;
 
   return round2(arousalCount / totalHours);
@@ -518,8 +518,8 @@ function detectHypopneas(
 
   const qPeaks = breaths.map((b) => b.qPeak);
   const totalSeconds =
-    (breaths[breaths.length - 1].inspStart - breaths[0].inspStart) / samplingRate;
-  const midTimeSec = totalSeconds / 2 + breaths[0].inspStart / samplingRate;
+    (breaths[breaths.length - 1]!.inspStart - breaths[0]!.inspStart) / samplingRate;
+  const midTimeSec = totalSeconds / 2 + breaths[0]!.inspStart / samplingRate;
 
   const hypopneas: HypopneaEvent[] = [];
   let briefObstructions = 0;
@@ -541,12 +541,12 @@ function detectHypopneas(
 
     const threshold = baseline * (1 - DROP_THRESHOLD);
 
-    if (qPeaks[i] < threshold) {
+    if (qPeaks[i]! < threshold) {
       // Start of potential event
       const eventStart = i;
       let j = i + 1;
 
-      while (j < breaths.length && qPeaks[j] < threshold) {
+      while (j < breaths.length && qPeaks[j]! < threshold) {
         j++;
       }
 
@@ -554,7 +554,7 @@ function detectHypopneas(
       const eventBreaths = breaths.slice(eventStart, eventEnd + 1);
 
       const durationS =
-        (eventBreaths[eventBreaths.length - 1].inspStart - eventBreaths[0].inspStart) / samplingRate;
+        (eventBreaths[eventBreaths.length - 1]!.inspStart - eventBreaths[0]!.inspStart) / samplingRate;
 
       // Mean drop from baseline
       let qPeakSum = 0;
@@ -573,7 +573,7 @@ function detectHypopneas(
       }
       const nedVisible = maxNedDuring >= 34;
 
-      const timestampS = eventBreaths[0].inspStart / samplingRate;
+      const timestampS = eventBreaths[0]!.inspStart / samplingRate;
       const half: 'H1' | 'H2' = timestampS < midTimeSec ? 'H1' : 'H2';
 
       if (durationS >= MIN_HYPOPNEA_DURATION_S) {
@@ -744,8 +744,8 @@ function summarize(
   const sortedNED = [...neds].sort((a, b) => a - b);
 
   const nedMean = mean(neds);
-  const nedMedian = sortedNED[Math.floor(sortedNED.length / 2)];
-  const nedP95 = sortedNED[Math.floor(sortedNED.length * 0.95)];
+  const nedMedian = sortedNED[Math.floor(sortedNED.length / 2)]!;
+  const nedP95 = sortedNED[Math.floor(sortedNED.length * 0.95)]!;
 
   // Classification percentages
   let clearFL = 0;
@@ -853,9 +853,9 @@ function median(arr: number[]): number {
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
+    return (sorted[mid - 1]! + sorted[mid]!) / 2;
   }
-  return sorted[mid];
+  return sorted[mid]!;
 }
 
 function round2(n: number): number {

@@ -16,7 +16,9 @@ vi.mock('@/lib/rate-limit', () => {
   return {
     stripeRateLimiter: mockLimiter,
     aiRateLimiter: mockLimiter,
+    aiPremiumRateLimiter: mockLimiter,
     getRateLimitKey: vi.fn(() => '127.0.0.1'),
+    getUserRateLimitKey: vi.fn((id: string) => `user:${id}`),
     RateLimiter: class {
       isLimited(...args: Parameters<typeof mockIsLimited>) { return mockIsLimited(...args); }
     },
@@ -27,6 +29,12 @@ vi.mock('@/lib/rate-limit', () => {
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 // Mock Supabase server clients
@@ -351,7 +359,7 @@ describe('POST /api/feedback', () => {
     const Sentry = await import('@sentry/nextjs');
     await callRoute({ message: 'Hello there test!', email: 'user@example.com', type: 'feedback' });
     const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(captureCall[1].extra).not.toHaveProperty('email');
+    expect(captureCall![1].extra).not.toHaveProperty('email');
   });
 });
 
@@ -407,7 +415,7 @@ describe('POST /api/submit-error-data', () => {
       email: 'user@example.com',
     });
     const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(captureCall[1].extra).not.toHaveProperty('email');
+    expect(captureCall![1].extra).not.toHaveProperty('email');
   });
 
   it('does not fire Sentry alert when rate limited', async () => {

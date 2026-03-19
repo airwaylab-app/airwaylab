@@ -97,14 +97,14 @@ function detectEventsFromFlow(
   const breaths: BreathCycle[] = [];
   let i = 0;
 
-  while (i < flow.length - 1 && flow[i] >= 0) i++;
-  while (i < flow.length - 1 && flow[i] < 0) i++;
+  while (i < flow.length - 1 && flow[i]! >= 0) i++;
+  while (i < flow.length - 1 && flow[i]! < 0) i++;
 
   while (i < flow.length - 1) {
     const inspStart = i;
-    while (i < flow.length - 1 && flow[i] >= 0) i++;
+    while (i < flow.length - 1 && flow[i]! >= 0) i++;
     const inspEnd = i;
-    while (i < flow.length - 1 && flow[i] < 0) i++;
+    while (i < flow.length - 1 && flow[i]! < 0) i++;
 
     const inspLength = inspEnd - inspStart;
     if (inspLength < 3) continue;
@@ -112,8 +112,8 @@ function detectEventsFromFlow(
     let peak = 0;
     let sum = 0;
     for (let j = inspStart; j < inspEnd; j++) {
-      if (flow[j] > peak) peak = flow[j];
-      sum += flow[j];
+      if (flow[j]! > peak) peak = flow[j]!;
+      sum += flow[j]!;
     }
     const mean = sum / inspLength;
     const flatness = peak > 0 ? mean / peak : 0;
@@ -124,7 +124,7 @@ function detectEventsFromFlow(
       const mid75 = inspStart + Math.round(inspLength * 0.75);
       let minMid = Infinity;
       for (let j = mid25; j < mid75; j++) {
-        if (flow[j] < minMid) minMid = flow[j];
+        if (flow[j]! < minMid) minMid = flow[j]!;
       }
       isMShape = minMid < peak * 0.85;
     }
@@ -138,13 +138,13 @@ function detectEventsFromFlow(
   let flRunStart = -1;
   let flRunCount = 0;
   for (let b = 0; b < breaths.length; b++) {
-    if (breaths[b].flatness > 0.7 && breaths[b].peak > 3) {
+    if (breaths[b]!.flatness > 0.7 && breaths[b]!.peak > 3) {
       if (flRunStart === -1) flRunStart = b;
       flRunCount++;
     } else {
       if (flRunCount >= 3) {
-        const startSec = breaths[flRunStart].inspStart / sampleRate;
-        const endSec = breaths[b - 1].inspEnd / sampleRate;
+        const startSec = breaths[flRunStart]!.inspStart / sampleRate;
+        const endSec = breaths[b - 1]!.inspEnd / sampleRate;
         const duration = endSec - startSec;
         if (duration >= 6 && duration <= 180) {
           events.push({
@@ -160,8 +160,8 @@ function detectEventsFromFlow(
     }
   }
   if (flRunCount >= 3 && flRunStart >= 0) {
-    const startSec = breaths[flRunStart].inspStart / sampleRate;
-    const endSec = breaths[breaths.length - 1].inspEnd / sampleRate;
+    const startSec = breaths[flRunStart]!.inspStart / sampleRate;
+    const endSec = breaths[breaths.length - 1]!.inspEnd / sampleRate;
     const duration = endSec - startSec;
     if (duration >= 6 && duration <= 180) {
       events.push({
@@ -207,7 +207,7 @@ describe('Tidal Volume computation', () => {
     expect(avgTV).toBeGreaterThan(200);
     expect(avgTV).toBeLessThan(800);
     // Each point should have a time value
-    expect(tv[0].t).toBe(0);
+    expect(tv[0]!.t).toBe(0);
   });
 
   it('returns empty array for empty flow data', () => {

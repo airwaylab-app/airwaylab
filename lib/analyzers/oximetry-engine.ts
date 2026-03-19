@@ -27,8 +27,8 @@ function cleanSamples(raw: OximetrySample[]): CleanedData {
   }
 
   // Step 1: Buffer zones — trim first 15 min + last 5 min
-  const startTime = raw[0].time.getTime();
-  const endTime = raw[raw.length - 1].time.getTime();
+  const startTime = raw[0]!.time.getTime();
+  const endTime = raw[raw.length - 1]!.time.getTime();
   const trimStart = startTime + 15 * 60 * 1000;
   const trimEnd = endTime - 5 * 60 * 1000;
 
@@ -102,19 +102,19 @@ function computeODI(
     let baselinePeak = 0;
     const start = Math.max(0, i - baselineWindow);
     for (let j = start; j < i; j++) {
-      if (samples[j].spo2 > baselinePeak) baselinePeak = samples[j].spo2;
+      if (samples[j]!.spo2 > baselinePeak) baselinePeak = samples[j]!.spo2;
     }
 
-    const drop = baselinePeak - samples[i].spo2;
+    const drop = baselinePeak - samples[i]!.spo2;
     if (drop >= threshold) {
-      events.push({ index: i, time: samples[i].time, drop });
+      events.push({ index: i, time: samples[i]!.time, drop });
       lastEventIdx = i;
     }
   }
 
   const durationHours =
     n > 0
-      ? (samples[n - 1].time.getTime() - samples[0].time.getTime()) /
+      ? (samples[n - 1]!.time.getTime() - samples[0]!.time.getTime()) /
         (1000 * 3600)
       : 1;
 
@@ -146,15 +146,15 @@ function computeHRClinical(
     let count = 0;
     const start = Math.max(0, i - baselineWindow);
     for (let j = start; j < i; j++) {
-      if (samples[j].hr > 0) {
-        sum += samples[j].hr;
+      if (samples[j]!.hr > 0) {
+        sum += samples[j]!.hr;
         count++;
       }
     }
     if (count === 0) continue;
     const baseline = sum / count;
 
-    if (samples[i].hr > baseline + threshold) {
+    if (samples[i]!.hr > baseline + threshold) {
       eventCount++;
       lastEventIdx = i;
     }
@@ -162,7 +162,7 @@ function computeHRClinical(
 
   const durationHours =
     n > 0
-      ? (samples[n - 1].time.getTime() - samples[0].time.getTime()) /
+      ? (samples[n - 1]!.time.getTime() - samples[0]!.time.getTime()) /
         (1000 * 3600)
       : 1;
 
@@ -192,8 +192,8 @@ function computeHRRollingMean(
     let count = 0;
     const start = Math.max(0, i - baselineWindow);
     for (let j = start; j < i; j++) {
-      if (samples[j].hr > 0) {
-        sum += samples[j].hr;
+      if (samples[j]!.hr > 0) {
+        sum += samples[j]!.hr;
         count++;
       }
     }
@@ -203,7 +203,7 @@ function computeHRRollingMean(
     // Check sustained elevation over 5s
     let sustained = true;
     for (let k = 0; k < sustainSamples; k++) {
-      if (samples[i + k].hr <= baseline + threshold) {
+      if (samples[i + k]!.hr <= baseline + threshold) {
         sustained = false;
         break;
       }
@@ -217,7 +217,7 @@ function computeHRRollingMean(
 
   const durationHours =
     n > 0
-      ? (samples[n - 1].time.getTime() - samples[0].time.getTime()) /
+      ? (samples[n - 1]!.time.getTime() - samples[0]!.time.getTime()) /
         (1000 * 3600)
       : 1;
 
@@ -252,15 +252,15 @@ function computeCoupledEvents(
       let count = 0;
       const bStart = Math.max(0, j - baselineWindow);
       for (let k = bStart; k < j; k++) {
-        if (samples[k].hr > 0) {
-          sum += samples[k].hr;
+        if (samples[k]!.hr > 0) {
+          sum += samples[k]!.hr;
           count++;
         }
       }
       if (count === 0) continue;
       const baseline = sum / count;
 
-      if (samples[j].hr > baseline + hrThreshold) {
+      if (samples[j]!.hr > baseline + hrThreshold) {
         hasSurge = true;
         break;
       }
@@ -271,8 +271,8 @@ function computeCoupledEvents(
 
   const durationHours =
     samples.length > 0
-      ? (samples[samples.length - 1].time.getTime() -
-          samples[0].time.getTime()) /
+      ? (samples[samples.length - 1]!.time.getTime() -
+          samples[0]!.time.getTime()) /
         (1000 * 3600)
       : 1;
 

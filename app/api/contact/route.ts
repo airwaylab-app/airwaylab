@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
-import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { validateOrigin } from '@/lib/csrf';
-import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
-import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
-import { serverEnv } from '@/lib/env';
+import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
+import { z } from 'zod'
+import { validateOrigin } from '@/lib/csrf'
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit'
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard'
+import { resultToResponse } from '@/lib/errors'
+import { submitContactForm } from '@/lib/services/contact-service'
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 })
 
 const ContactSchema = z.object({
   email: z.string().min(1).max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'A valid email address is required.'),
@@ -19,60 +19,9 @@ const ContactSchema = z.object({
     z.string().max(100).nullable()
   ),
   category: z.enum(['general', 'privacy', 'billing', 'accessibility', 'security'] as const).catch('general'),
-});
+})
 
-const CATEGORY_LABELS: Record<string, string> = {
-  general: 'General',
-  privacy: 'Privacy & Data',
-  billing: 'Billing',
-  accessibility: 'Accessibility',
-  security: 'Security',
-};
-const MAX_PAYLOAD_BYTES = 8_000;
-
-async function sendNotificationEmail(fields: {
-  category: string;
-  name: string | null;
-  email: string;
-  message: string;
-}) {
-  const apiKey = serverEnv.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  try {
-    const label = CATEGORY_LABELS[fields.category] ?? 'General';
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'AirwayLab <noreply@mail.airwaylab.app>',
-        to: ['dev@airwaylab.app'],
-        reply_to: fields.email,
-        subject: `[${label}] ${fields.message.slice(0, 60)}${fields.message.length > 60 ? '...' : ''}`,
-        text: [
-          `New contact form submission on airwaylab.app`,
-          '',
-          `Category: ${label}`,
-          `Name: ${fields.name ?? '\u2014'}`,
-          `Email: ${fields.email}`,
-          '',
-          `Message:`,
-          fields.message,
-        ].join('\n'),
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      console.error('[contact] Resend error:', res.status, body);
-    }
-  } catch (err) {
-    console.error('[contact] Notification email failed:', err);
-  }
-}
+const MAX_PAYLOAD_BYTES = 8_000
 
 /**
  * POST /api/contact
@@ -82,71 +31,35 @@ async function sendNotificationEmail(fields: {
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
-    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
   }
 
   try {
-    const ip = getRateLimitKey(request);
+    const ip = getRateLimitKey(request)
     if (await limiter.isLimited(ip)) {
-      console.warn(`[contact] 429 rate limited ip=${ip}`);
+      Sentry.logger.warn('[contact] 429 rate limited', { ip })
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },
         { status: 429 }
-      );
+      )
     }
 
-        if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.warn(`[contact] 413 payload too large: ${request.headers.get('content-length')} bytes`);
-      return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
+    if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+      Sentry.logger.warn('[contact] 413 payload too large', { contentLength: request.headers.get('content-length') })
+      return NextResponse.json({ error: 'Payload too large.' }, { status: 413 })
     }
 
-    const body = await request.json().catch(() => null);
-    const parsed = ContactSchema.safeParse(body);
+    const body = await request.json().catch(() => null)
+    const parsed = ContactSchema.safeParse(body)
     if (!parsed.success) {
-      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
-      return NextResponse.json({ error: firstError }, { status: 400 });
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.'
+      return NextResponse.json({ error: firstError }, { status: 400 })
     }
 
-    const { email, message, name: cleanName, category: cleanCategory } = parsed.data;
-
-    const supabase = getSupabaseAdmin();
-
-    if (supabase) {
-      const { error } = await supabase.from('feedback').insert({
-        message: `[contact:${cleanCategory}] ${cleanName ? `${cleanName}: ` : ''}${message.trim()}`,
-        email: email.trim().toLowerCase(),
-        page: '/contact',
-      });
-
-      if (error) {
-        console.error('[contact] Supabase error:', error.message);
-        Sentry.captureException(error, { tags: { route: 'contact' } });
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
-      }
-
-      // Fire-and-forget notification email
-      sendNotificationEmail({
-        category: cleanCategory,
-        name: cleanName,
-        email: email.trim().toLowerCase(),
-        message: message.trim(),
-      });
-    } else {
-      console.info(`[contact] ${cleanCategory}: ${message.slice(0, 100)} (Supabase not configured)`);
-    }
-
-    Sentry.captureMessage(`New contact form: ${cleanCategory}`, {
-      level: cleanCategory === 'security' ? 'warning' : 'info',
-      tags: { route: 'contact', contact_category: cleanCategory },
-      extra: {
-        message: message.trim().slice(0, 500),
-        category: cleanCategory,
-      },
-    });
-
-    return NextResponse.json({ ok: true });
+    const result = await submitContactForm(parsed.data)
+    return resultToResponse(result)
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: 'contact' } });
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    Sentry.captureException(err, { tags: { route: 'contact' } })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

@@ -46,6 +46,13 @@ Sentry.init({
     if (url.startsWith('file:')) {
       return null;
     }
+
+    // Filter out browser extension noise (password managers, ad blockers, etc.)
+    const message = event.exception?.values?.[0]?.value ?? event.message ?? '';
+    if (/Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/.test(message)) {
+      return null;
+    }
+
     return event;
   },
 });

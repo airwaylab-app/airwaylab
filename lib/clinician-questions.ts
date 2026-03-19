@@ -59,7 +59,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'fl-score',
     category: 'flow-limitation',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.wat.flScore, th.watFL);
+      const light = getTrafficLight(n.wat.flScore, th.watFL!);
       if (light === 'good') return null;
       return {
         id: 'fl-score',
@@ -74,7 +74,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'glasgow',
     category: 'flow-limitation',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.glasgow.overall, th.glasgowOverall);
+      const light = getTrafficLight(n.glasgow.overall, th.glasgowOverall!);
       if (light === 'good') return null;
       const elevated = [
         n.glasgow.skew > 0.5 ? 'skew' : null,
@@ -96,7 +96,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'ned-mean',
     category: 'flow-limitation',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.ned.nedMean, th.nedMean);
+      const light = getTrafficLight(n.ned.nedMean, th.nedMean!);
       if (light === 'good') return null;
       return {
         id: 'ned-mean',
@@ -113,7 +113,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'rera-index',
     category: 'arousals',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.ned.reraIndex, th.reraIndex);
+      const light = getTrafficLight(n.ned.reraIndex, th.reraIndex!);
       if (light === 'good') return null;
       const severity = n.ned.reraIndex > 10 ? 'frequent' : 'moderate';
       return {
@@ -130,7 +130,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     category: 'arousals',
     evaluate: (n, th) => {
       const eai = n.ned.estimatedArousalIndex ?? 0;
-      const light = getTrafficLight(eai, th.eai);
+      const light = getTrafficLight(eai, th.eai!);
       if (light === 'good') return null;
       return {
         id: 'eai',
@@ -147,7 +147,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'periodicity',
     category: 'breathing-stability',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.wat.periodicityIndex, th.watPeriodicity);
+      const light = getTrafficLight(n.wat.periodicityIndex, th.watPeriodicity!);
       if (light === 'good') return null;
       return {
         id: 'periodicity',
@@ -162,7 +162,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     id: 'regularity',
     category: 'breathing-stability',
     evaluate: (n, th) => {
-      const light = getTrafficLight(n.wat.regularityScore, th.watRegularity);
+      const light = getTrafficLight(n.wat.regularityScore, th.watRegularity!);
       if (light === 'good') return null;
       return {
         id: 'regularity',
@@ -180,7 +180,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     category: 'oximetry',
     evaluate: (n, th) => {
       if (!n.oximetry) return null;
-      const light = getTrafficLight(n.oximetry.odi3, th.odi3);
+      const light = getTrafficLight(n.oximetry.odi3, th.odi3!);
       if (light === 'good') return null;
       return {
         id: 'odi3',
@@ -233,7 +233,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     category: 'settings',
     evaluate: (n, th) => {
       if (!n.settingsMetrics) return null;
-      const light = getTrafficLight(n.settingsMetrics.prematureCyclePct, th.settingsPrematureCycle);
+      const light = getTrafficLight(n.settingsMetrics.prematureCyclePct, th.settingsPrematureCycle!);
       if (light === 'good') return null;
       return {
         id: 'premature-cycle',
@@ -249,7 +249,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     category: 'settings',
     evaluate: (n, th) => {
       if (!n.settingsMetrics) return null;
-      const light = getTrafficLight(n.settingsMetrics.lateCyclePct, th.settingsLateCycle);
+      const light = getTrafficLight(n.settingsMetrics.lateCyclePct, th.settingsLateCycle!);
       if (light === 'good') return null;
       return {
         id: 'late-cycle',
@@ -313,9 +313,9 @@ function trendQuestions(
 
   // Check key metrics for worsening trend (>20% increase over the period)
   const metrics: { name: string; accessor: (n: NightResult) => number; threshold: ThresholdDef }[] = [
-    { name: 'Glasgow Index', accessor: (n) => n.glasgow.overall, threshold: thresholds.glasgowOverall },
-    { name: 'FL Score', accessor: (n) => n.wat.flScore, threshold: thresholds.watFL },
-    { name: 'NED Mean', accessor: (n) => n.ned.nedMean, threshold: thresholds.nedMean },
+    { name: 'Glasgow Index', accessor: (n) => n.glasgow.overall, threshold: thresholds.glasgowOverall! },
+    { name: 'FL Score', accessor: (n) => n.wat.flScore, threshold: thresholds.watFL! },
+    { name: 'NED Mean', accessor: (n) => n.ned.nedMean, threshold: thresholds.nedMean! },
   ];
 
   for (const metric of metrics) {

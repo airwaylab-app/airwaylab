@@ -3,7 +3,7 @@ import { exportForumSingleNight, exportForumMultiNight } from '@/lib/forum-expor
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 
 describe('exportForumSingleNight', () => {
-  const night = SAMPLE_NIGHTS[0]; // night1 with oximetry
+  const night = SAMPLE_NIGHTS[0]!; // night1 with oximetry
 
   it('produces non-empty output', () => {
     const output = exportForumSingleNight(night);
@@ -12,25 +12,25 @@ describe('exportForumSingleNight', () => {
 
   it('includes date in header', () => {
     const output = exportForumSingleNight(night);
-    expect(output).toContain(night.dateStr);
+    expect(output).toContain(night!.dateStr);
   });
 
   it('includes machine info', () => {
     const output = exportForumSingleNight(night);
-    expect(output).toContain(night.settings.deviceModel);
-    expect(output).toContain(night.settings.papMode);
+    expect(output).toContain(night!.settings.deviceModel);
+    expect(output).toContain(night!.settings.papMode);
   });
 
   it('includes pressure settings', () => {
     const output = exportForumSingleNight(night);
-    expect(output).toContain(`EPAP ${night.settings.epap}`);
-    expect(output).toContain(`IPAP ${night.settings.ipap}`);
+    expect(output).toContain(`EPAP ${night!.settings.epap}`);
+    expect(output).toContain(`IPAP ${night!.settings.ipap}`);
   });
 
   it('includes Glasgow section', () => {
     const output = exportForumSingleNight(night);
     expect(output).toContain('Glasgow Index');
-    expect(output).toContain(night.glasgow.overall.toFixed(1));
+    expect(output).toContain(night!.glasgow.overall.toFixed(1));
   });
 
   it('includes WAT section', () => {
@@ -56,7 +56,7 @@ describe('exportForumSingleNight', () => {
   });
 
   it('omits oximetry when not present', () => {
-    const nightNoOx = SAMPLE_NIGHTS[2]; // night3 has no oximetry
+    const nightNoOx = SAMPLE_NIGHTS[2]!; // night3 has no oximetry
     const output = exportForumSingleNight(nightNoOx);
     expect(output).not.toContain('**Oximetry**');
     expect(output).not.toContain('ODI-3');
@@ -80,7 +80,7 @@ describe('exportForumSingleNight', () => {
   });
 
   it('pluralizes sessions correctly', () => {
-    const nightMultiSession = SAMPLE_NIGHTS[2]; // 2 sessions
+    const nightMultiSession = SAMPLE_NIGHTS[2]!; // 2 sessions
     const output = exportForumSingleNight(nightMultiSession);
     expect(output).toContain('2 sessions');
   });

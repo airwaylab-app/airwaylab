@@ -50,10 +50,10 @@ export function parseOximetryCSV(csvText: string): ParsedOximetry {
 
     if (parts.length < 4) continue;
 
-    const timeStr = parts[0];
-    const spo2Str = parts[1];
-    const hrStr = parts[2];
-    const motionStr = parts[3];
+    const timeStr = parts[0]!;
+    const spo2Str = parts[1]!;
+    const hrStr = parts[2]!;
+    const motionStr = parts[3]!;
 
     // Parse time
     const time = parseOximetryTime(timeStr);
@@ -80,8 +80,8 @@ export function parseOximetryCSV(csvText: string): ParsedOximetry {
     throw new Error('No valid oximetry samples found in CSV');
   }
 
-  const startTime = samples[0].time;
-  const endTime = samples[samples.length - 1].time;
+  const startTime = samples[0]!.time;
+  const endTime = samples[samples.length - 1]!.time;
   const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
   // Determine the sleep night date (using same heuristic as EDF)
@@ -127,15 +127,15 @@ function parseOximetryTime(timeStr: string): Date | null {
       Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
       Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
     };
-    const monthNum = monthNames[mon];
+    const monthNum = monthNames[mon!];
     if (monthNum !== undefined) {
       return new Date(
-        parseInt(year),
+        parseInt(year!),
         monthNum,
-        parseInt(day),
-        parseInt(h),
-        parseInt(m),
-        parseInt(s)
+        parseInt(day!),
+        parseInt(h!),
+        parseInt(m!),
+        parseInt(s!)
       );
     }
   }

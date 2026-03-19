@@ -211,7 +211,7 @@ function detectEventsFromFlow(
   let flRunCount = 0;
 
   for (let i = 0; i < breaths.length; i++) {
-    const b = breaths[i];
+    const b = breaths[i]!;
     const isFlat = b.flatness > 0.7 && b.amplitude > baselineAmp * 0.3;
 
     if (isFlat) {
@@ -219,8 +219,8 @@ function detectEventsFromFlow(
       flRunCount++;
     } else {
       if (flRunCount >= 3) {
-        const startSec = breaths[flRunStart].startSample / sampleRate;
-        const endSec = breaths[i - 1].endSample / sampleRate;
+        const startSec = breaths[flRunStart]!.startSample / sampleRate;
+        const endSec = breaths[i - 1]!.endSample / sampleRate;
         const duration = endSec - startSec;
         if (duration >= 10 && duration <= 180) {
           events.push({
@@ -237,8 +237,8 @@ function detectEventsFromFlow(
   }
   // Close any open FL run
   if (flRunCount >= 3) {
-    const startSec = breaths[flRunStart].startSample / sampleRate;
-    const endSec = breaths[breaths.length - 1].endSample / sampleRate;
+    const startSec = breaths[flRunStart]!.startSample / sampleRate;
+    const endSec = breaths[breaths.length - 1]!.endSample / sampleRate;
     const duration = endSec - startSec;
     if (duration >= 10 && duration <= 180) {
       events.push({
@@ -272,9 +272,9 @@ function detectEventsFromFlow(
       (sum: number, bw: BreathFeatures) => sum + bw.amplitude, 0
     ) / windowSize;
 
-    if (breaths[i].amplitude > baselineWindowAmp * 1.5 && baselineWindowAmp < baselineAmp * 0.7) {
-      const startSec = breaths[i].startSample / sampleRate;
-      const endSec = breaths[i].endSample / sampleRate;
+    if (breaths[i]!.amplitude > baselineWindowAmp * 1.5 && baselineWindowAmp < baselineAmp * 0.7) {
+      const startSec = breaths[i]!.startSample / sampleRate;
+      const endSec = breaths[i]!.endSample / sampleRate;
       events.push({
         startSec: +startSec.toFixed(0),
         endSec: +endSec.toFixed(0),
@@ -308,10 +308,10 @@ function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[
 
   // Find positive→negative zero-crossings (start of expiration)
   let breathStart = 0;
-  let prevPositive = flow[0] >= 0;
+  let prevPositive = flow[0]! >= 0;
 
   for (let i = 1; i < flow.length; i++) {
-    const positive = flow[i] >= 0;
+    const positive = flow[i]! >= 0;
 
     // Detect negative→positive crossing (start of inspiration = start of new breath)
     if (!prevPositive && positive) {
@@ -339,7 +339,7 @@ function computeBreathFeatures(
   // Find the inspiratory portion (positive flow from start)
   let inspEnd = start;
   for (let i = start; i < end; i++) {
-    if (flow[i] < 0) {
+    if (flow[i]! < 0) {
       inspEnd = i;
       break;
     }
@@ -353,8 +353,8 @@ function computeBreathFeatures(
   let sum = 0;
   let count = 0;
   for (let i = start; i < inspEnd; i++) {
-    if (flow[i] > peak) peak = flow[i];
-    sum += flow[i];
+    if (flow[i]! > peak) peak = flow[i]!;
+    sum += flow[i]!;
     count++;
   }
 
@@ -365,7 +365,7 @@ function computeBreathFeatures(
   // Amplitude (peak-to-trough)
   let trough = 0;
   for (let i = inspEnd; i < end; i++) {
-    if (flow[i] < trough) trough = flow[i];
+    if (flow[i]! < trough) trough = flow[i]!;
   }
   const amplitude = peak - trough;
 

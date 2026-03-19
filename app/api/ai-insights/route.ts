@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import type { Insight } from '@/lib/insights';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
-import { aiRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { aiRateLimiter, aiPremiumRateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
@@ -124,7 +124,7 @@ type RequestBody = z.infer<typeof RequestBodySchema>;
 
 function buildUserPrompt(body: RequestBody): string {
   const { nights, selectedNightIndex, therapyChangeDate, nightNotes } = body;
-  const selected = nights[selectedNightIndex];
+  const selected = nights[selectedNightIndex]!;
   const previous = selectedNightIndex < nights.length - 1 ? nights[selectedNightIndex + 1] : null;
 
   // When settings weren't extracted, tell the model instead of sending zeros
@@ -217,12 +217,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
   }
 
-  // Rate limiting (C3)
-  const ip = getRateLimitKey(request);
-  if (await aiRateLimiter.isLimited(ip)) {
-    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
-  }
-
   // Auth check — require signed-in user
   const supabase = await getSupabaseServer();
   if (!supabase) {
@@ -243,6 +237,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   const userTier = profile?.tier ?? 'community';
+
+  // Rate limiting by user ID — paid users get 3x the limit (C3)
+  const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
+  const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
+  if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
 
   if (userTier === 'community') {
     const adminClient = getSupabaseServiceRole();
@@ -375,7 +376,7 @@ export async function POST(request: NextRequest) {
       let jsonText = textBlock.text.trim();
       // Remove ```json ... ``` or ``` ... ``` wrappers
       const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (fenceMatch) {
+      if (fenceMatch?.[1]) {
         jsonText = fenceMatch[1].trim();
       }
       // If model included preamble text, extract the JSON array

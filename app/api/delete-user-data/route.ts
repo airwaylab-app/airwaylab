@@ -80,14 +80,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Delete from DB tables (service role to bypass RLS)
+    // 2. Delete user health data from DB (service role to bypass RLS)
+    //
+    // Excluded by design:
+    //   - data_contributions, waveform_contributions, symptom_contributions,
+    //     oximetry_trace_contributions: anonymised research data, no user_id
+    //   - ai_usage: usage counter, not user data (resetting would grant free credits)
+    //   - email_sequences: drip state (deleting re-triggers onboarding emails)
+    //   - consent_audit: legal compliance record, retained under GDPR Art. 17(3)(b)
     const tables = [
       'user_files',
       'user_storage_usage',
       'analysis_data',
-      'contributed_data',
-      'contributed_waveforms',
-      'ai_usage',
     ];
 
     for (const table of tables) {
@@ -109,23 +113,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Delete from consent_audit
-    try {
-      const { error: consentError } = await serviceRole
-        .from('consent_audit')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (consentError) {
-        Sentry.captureException(consentError, {
-          extra: { userId: user.id, step: 'delete_consent_audit' },
-        });
-      }
-    } catch (error) {
-      Sentry.captureException(error, {
-        extra: { userId: user.id, step: 'delete_consent_audit' },
-      });
-    }
+    // consent_audit is intentionally retained (GDPR Art. 17(3)(b) — legal compliance)
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

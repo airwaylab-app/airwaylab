@@ -171,7 +171,13 @@ class WaveformOrchestrator {
         return null;
       }
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
+      let error = err instanceof Error ? err.message : String(err);
+
+      // User-friendly message for SD card / file read failures
+      if (err instanceof DOMException && err.name === 'NotReadableError') {
+        error = 'Could not read your SD card files. Please check the card is still connected and try again.';
+      }
+
       console.error('[waveform] extraction failed:', error);
       Sentry.captureException(err, { extra: { context: 'waveform-extraction' } });
       this.setState({ status: 'error', waveform: null, error });

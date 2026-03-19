@@ -41,18 +41,18 @@ export function verifyUnsubscribeToken(token: string): string | null {
   if (parts.length !== 2) return null;
 
   try {
-    const userId = Buffer.from(parts[0], 'base64url').toString('utf-8');
+    const userId = Buffer.from(parts[0]!, 'base64url').toString('utf-8');
     const expectedSig = sign(userId);
 
     // Constant-time comparison
-    if (parts[1].length !== expectedSig.length) return null;
-    const a = Buffer.from(parts[1]);
+    if (parts[1]!.length !== expectedSig.length) return null;
+    const a = Buffer.from(parts[1]!);
     const b = Buffer.from(expectedSig);
     if (a.length !== b.length) return null;
 
     let diff = 0;
     for (let i = 0; i < a.length; i++) {
-      diff |= a[i] ^ b[i];
+      diff |= a[i]! ^ b[i]!;
     }
 
     return diff === 0 ? userId : null;

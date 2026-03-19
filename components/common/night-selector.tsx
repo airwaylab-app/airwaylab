@@ -14,7 +14,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getDayOfWeek(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
-  return DAY_NAMES[d.getDay()];
+  return DAY_NAMES[d.getDay()]!;
 }
 
 export function NightSelector({ dates, selectedIndex, onChange }: NightSelectorProps) {
@@ -42,7 +42,7 @@ export function NightSelector({ dates, selectedIndex, onChange }: NightSelectorP
 
   if (dates.length <= 1) return null;
 
-  const current = dates[selectedIndex];
+  const current = dates[selectedIndex]!;
   const dayOfWeek = getDayOfWeek(current);
 
   return (

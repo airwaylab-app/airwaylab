@@ -214,7 +214,7 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Verify subscription upsert
     expect(mockFrom).toHaveBeenCalledWith('subscriptions');
-    expect(builders['subscriptions'].upsert).toHaveBeenCalledWith(
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-uuid-1',
         stripe_subscription_id: 'sub_test_123',
@@ -227,7 +227,7 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Verify profile update
     expect(mockFrom).toHaveBeenCalledWith('profiles');
-    expect(builders['profiles'].update).toHaveBeenCalledWith(
+    expect(builders['profiles']!.update).toHaveBeenCalledWith(
       expect.objectContaining({
         tier: 'supporter',
         stripe_customer_id: 'cus_test_456',
@@ -236,7 +236,7 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Verify subscription_events log
     expect(mockFrom).toHaveBeenCalledWith('subscription_events');
-    expect(builders['subscription_events'].insert).toHaveBeenCalledWith(
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-uuid-1',
         event_type: 'created',
@@ -294,19 +294,19 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Verify subscription update
     expect(mockFrom).toHaveBeenCalledWith('subscriptions');
-    expect(builders['subscriptions'].update).toHaveBeenCalledWith(
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
       expect.objectContaining({
         stripe_price_id: 'price_supp_m',
         status: 'active',
         tier: 'supporter',
       })
     );
-    expect(builders['subscriptions'].eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
+    expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
 
     // Verify profile tier update (status is 'active')
     expect(mockFrom).toHaveBeenCalledWith('profiles');
-    expect(builders['profiles'].update).toHaveBeenCalledWith({ tier: 'supporter' });
-    expect(builders['profiles'].eq).toHaveBeenCalledWith('id', 'user-uuid-1');
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'supporter' });
+    expect(builders['profiles']!.eq).toHaveBeenCalledWith('id', 'user-uuid-1');
   });
 
   // ---------- 8. customer.subscription.updated: non-active status ----------
@@ -329,7 +329,7 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200);
 
     // Subscription record itself is updated
-    expect(builders['subscriptions'].update).toHaveBeenCalled();
+    expect(builders['subscriptions']!.update).toHaveBeenCalled();
 
     // Profile should NOT be updated for non-active status
     const profileCalls = mockFrom.mock.calls.filter(
@@ -362,15 +362,15 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200);
 
     // Verify subscription marked as canceled
-    expect(builders['subscriptions'].update).toHaveBeenCalledWith({ status: 'canceled' });
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'canceled' });
 
     // Verify remaining subs check
-    expect(builders['subscriptions'].select).toHaveBeenCalledWith('tier');
-    expect(builders['subscriptions'].in).toHaveBeenCalledWith('status', ['active', 'trialing']);
+    expect(builders['subscriptions']!.select).toHaveBeenCalledWith('tier');
+    expect(builders['subscriptions']!.in).toHaveBeenCalledWith('status', ['active', 'trialing']);
 
     // Verify profile downgraded to community (no active subs)
-    expect(builders['profiles'].update).toHaveBeenCalledWith({ tier: 'community' });
-    expect(builders['profiles'].eq).toHaveBeenCalledWith('id', 'user-uuid-1');
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'community' });
+    expect(builders['profiles']!.eq).toHaveBeenCalledWith('id', 'user-uuid-1');
   });
 
   // ---------- 10. customer.subscription.deleted: remaining active sub ----------
@@ -400,7 +400,7 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200);
 
     // Profile should be set to the remaining sub's tier, not 'community'
-    expect(builders['profiles'].update).toHaveBeenCalledWith({ tier: 'champion' });
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'champion' });
   });
 
   // ---------- 11. invoice.payment_failed ----------
@@ -429,11 +429,11 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200);
 
     // Verify subscription set to past_due
-    expect(builders['subscriptions'].update).toHaveBeenCalledWith({ status: 'past_due' });
-    expect(builders['subscriptions'].eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
+    expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
 
     // Verify subscription_events log
-    expect(builders['subscription_events'].insert).toHaveBeenCalledWith(
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'past_due',
         stripe_subscription_id: 'sub_test_123',

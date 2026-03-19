@@ -24,7 +24,7 @@ function getRedis(): Redis | null {
   if (url && token) {
     _redis = new Redis({ url, token });
   } else {
-    console.warn('[rate-limit] Upstash not configured — using in-memory fallback (resets on cold start)');
+    Sentry.logger.warn('[rate-limit] Upstash not configured, using in-memory fallback (resets on cold start)');
   }
 
   return _redis;
@@ -144,12 +144,29 @@ export function getRateLimitKey(request: Request): string {
   return `anon_${(hash >>> 0).toString(36)}`;
 }
 
+// ─── Rate limit key helpers ──────────────────────────────────
+
+/**
+ * Build a rate-limit key scoped to a specific user.
+ * Authenticated routes should use this instead of IP-based keys
+ * so users behind shared IPs (NAT, VPN) get their own bucket.
+ */
+export function getUserRateLimitKey(userId: string): string {
+  return `user:${userId}`;
+}
+
 // ─── Pre-configured limiters ─────────────────────────────────
 
-/** AI insights: 20 requests per hour per IP */
+/** AI insights — community tier: 20 requests per hour per user */
 export const aiRateLimiter = new RateLimiter({
   windowMs: 3_600_000,
   max: 20,
+});
+
+/** AI insights — paid tiers: 60 requests per hour per user */
+export const aiPremiumRateLimiter = new RateLimiter({
+  windowMs: 3_600_000,
+  max: 60,
 });
 
 /** Checkout/portal: 10 requests per 15 minutes per IP */

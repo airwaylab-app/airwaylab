@@ -18,7 +18,7 @@ interface FileGroup {
 export function extractFolderDate(filePath: string): string | null {
   const match = filePath.match(/DATALOG\/(\d{8})\//);
   if (match) {
-    const d = match[1];
+    const d = match[1]!;
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
   }
   return null;
@@ -30,7 +30,7 @@ export function extractFolderDate(filePath: string): string | null {
 function extractFilenameDate(filePath: string): string | null {
   const match = filePath.match(/(\d{8})_(\d{6})_BRP/i);
   if (match) {
-    const d = match[1];
+    const d = match[1]!;
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
   }
   return null;

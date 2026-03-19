@@ -38,35 +38,3 @@ export async function storeAnalysisData(nights: NightResult[]): Promise<void> {
   }
 }
 
-export async function fetchUserDataStats(): Promise<{
-  fileCount: number;
-  totalBytes: number;
-  nightCount: number;
-} | null> {
-  try {
-    const response = await fetch('/api/user-data-stats', {
-      credentials: 'same-origin',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-export async function deleteAllUserData(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/delete-user-data', {
-      method: 'POST',
-      credentials: 'same-origin',
-    });
-
-    return response.ok;
-  } catch {
-    return false;
-  }
-}

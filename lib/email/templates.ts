@@ -190,7 +190,7 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
 
 // ── Sequence 4: Activation (signed up, never uploaded) ───────
 
-export function activationStep1(unsubscribeUrl: string): { subject: string; html: string } {
+function activationStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
     subject: 'Need help uploading your SD card data?',
     html: layout(`
@@ -208,7 +208,7 @@ export function activationStep1(unsubscribeUrl: string): { subject: string; html
   };
 }
 
-export function activationStep2(unsubscribeUrl: string): { subject: string; html: string } {
+function activationStep2(unsubscribeUrl: string): { subject: string; html: string } {
   return {
     subject: 'Your CPAP data has insights waiting to be found',
     html: layout(`

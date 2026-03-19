@@ -7,10 +7,12 @@
     "build": "node scripts/check-version.mjs && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
+    "check": "tsc --noEmit && eslint . && vitest run",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "knip": "knip",
     "analyze": "ANALYZE=true next build --webpack",
     "prepare": "husky"
   },
@@ -26,11 +28,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
+    "neverthrow": "^8.2.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.8.0",
-    "shadcn": "^4.0.0",
     "stripe": "^20.4.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
@@ -42,8 +44,11 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.58.2",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
@@ -53,11 +58,13 @@
     "eslint-config-next": "^16.1.6",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "knip": "^5.88.0",
     "lint-staged": "^16.3.2",
     "postcss": "^8",
+    "postcss-load-config": "^6.0.1",
+    "shadcn": "^4.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
-    "vitest": "^4.0.18",
-    "@testing-library/dom": "^10.4.1"
+    "vitest": "^4.0.18"
   }
 }
