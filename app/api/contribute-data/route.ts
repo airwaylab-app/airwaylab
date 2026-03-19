@@ -7,7 +7,7 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
 
 // ── Validation ───────────────────────────────────────────────
 const MAX_NIGHTS_PER_CHUNK = 1000; // max nights per request (client chunks larger datasets)

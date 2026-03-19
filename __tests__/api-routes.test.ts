@@ -16,7 +16,9 @@ vi.mock('@/lib/rate-limit', () => {
   return {
     stripeRateLimiter: mockLimiter,
     aiRateLimiter: mockLimiter,
+    aiPremiumRateLimiter: mockLimiter,
     getRateLimitKey: vi.fn(() => '127.0.0.1'),
+    getUserRateLimitKey: vi.fn((id: string) => `user:${id}`),
     RateLimiter: class {
       isLimited(...args: Parameters<typeof mockIsLimited>) { return mockIsLimited(...args); }
     },
