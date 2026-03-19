@@ -66,7 +66,7 @@ describe('share — strip bulk data', () => {
     ];
 
     const stripped = stripForShare(nights);
-    expect(stripped[0].oximetryTrace).toBeNull();
+    expect(stripped[0]!.oximetryTrace).toBeNull();
   });
 
   it('removes ned.breaths from each night', () => {
@@ -75,7 +75,7 @@ describe('share — strip bulk data', () => {
     ];
     // Simulate runtime breaths array (not in TypeScript interface but present at runtime)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (nights[0].ned as any).breaths = Array.from({ length: 500 }, () => ({
+    (nights[0]!.ned as any).breaths = Array.from({ length: 500 }, () => ({
       inspStart: 0,
       inspEnd: 1,
       qPeak: 30,
@@ -83,18 +83,18 @@ describe('share — strip bulk data', () => {
 
     const stripped = stripForShare(nights);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((stripped[0].ned as any).breaths).toEqual([]);
+    expect((stripped[0]!.ned as any).breaths).toEqual([]);
   });
 
   it('preserves all other NED metrics', () => {
     const nights = [makeNight()];
     const stripped = stripForShare(nights);
 
-    expect(stripped[0].ned.nedMean).toBe(15);
-    expect(stripped[0].ned.estimatedArousalIndex).toBe(8);
-    expect(stripped[0].ned.combinedFLPct).toBe(35);
-    expect(stripped[0].glasgow.overall).toBe(3.2);
-    expect(stripped[0].wat.flScore).toBe(45);
+    expect(stripped[0]!.ned.nedMean).toBe(15);
+    expect(stripped[0]!.ned.estimatedArousalIndex).toBe(8);
+    expect(stripped[0]!.ned.combinedFLPct).toBe(35);
+    expect(stripped[0]!.glasgow.overall).toBe(3.2);
+    expect(stripped[0]!.wat.flScore).toBe(45);
   });
 
   it('handles multiple nights', () => {
@@ -125,7 +125,7 @@ describe('share — strip bulk data', () => {
       }),
     ];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (nights[0].ned as any).breaths = Array.from({ length: 500 }, () => ({
+    (nights[0]!.ned as any).breaths = Array.from({ length: 500 }, () => ({
       inspStart: 0, inspEnd: 1, qPeak: 30, qMid: 20, ned: 15, fi: 0.7,
     }));
 

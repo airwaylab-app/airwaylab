@@ -22,20 +22,20 @@ describe('bucketPressure', () => {
 
 describe('buildContributionPayload', () => {
   it('builds a valid payload from a night result', () => {
-    const night = SAMPLE_NIGHTS[0];
+    const night = SAMPLE_NIGHTS[0]!;
     const payload = buildContributionPayload(night, 4);
 
     expect(payload.symptom_rating).toBe(4);
     expect(payload.ifl_risk).toBeGreaterThanOrEqual(0);
     expect(payload.ifl_risk).toBeLessThanOrEqual(100);
-    expect(payload.glasgow_overall).toBe(Math.round(night.glasgow.overall * 100) / 100);
-    expect(payload.pap_mode).toBe(night.settings.papMode);
-    expect(payload.device_model).toBe(night.settings.deviceModel);
+    expect(payload.glasgow_overall).toBe(Math.round(night!.glasgow.overall * 100) / 100);
+    expect(payload.pap_mode).toBe(night!.settings.papMode);
+    expect(payload.device_model).toBe(night!.settings.deviceModel);
     expect(payload.pressure_bucket).toBe('10-12'); // EPAP = 10
   });
 
   it('rounds values appropriately', () => {
-    const night = SAMPLE_NIGHTS[0];
+    const night = SAMPLE_NIGHTS[0]!;
     const payload = buildContributionPayload(night, 3);
 
     // IFL risk should be rounded to 1 decimal
@@ -48,7 +48,7 @@ describe('buildContributionPayload', () => {
     const night = {
       ...SAMPLE_NIGHTS[0],
       ned: {
-        ...SAMPLE_NIGHTS[0].ned,
+        ...SAMPLE_NIGHTS[0]!.ned,
         hypopneaIndex: 2.345,
         amplitudeCvOverall: 31.678,
         unstableEpochPct: 15,
@@ -84,7 +84,7 @@ describe('buildContributionPayload', () => {
   });
 
   it('omits enhanced fields when not available', () => {
-    const night = SAMPLE_NIGHTS[0];
+    const night = SAMPLE_NIGHTS[0]!;
     const payload = buildContributionPayload(night, 3);
 
     expect(payload.hypopnea_index).toBeUndefined();

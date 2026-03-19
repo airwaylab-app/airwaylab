@@ -258,10 +258,10 @@ describe('enriched contribution payload', () => {
     const nights = [makeNight('2025-01-01')];
     await contributeNights(nights);
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
     // The payload sends raw NightResult — the server does anonymisation.
     // Verify the night has estimatedArousalIndex available.
-    expect(body.nights[0].ned.estimatedArousalIndex).toBe(12);
+    expect(body.nights[0]!.ned.estimatedArousalIndex).toBe(12);
   });
 
   it('contribution payload includes hypopnea fields when present', async () => {
@@ -269,11 +269,11 @@ describe('enriched contribution payload', () => {
     const nights = [makeNightWithHypopnea('2025-01-01')];
     await contributeNights(nights);
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
-    expect(body.nights[0].ned.hypopneaCount).toBe(12);
-    expect(body.nights[0].ned.hypopneaIndex).toBe(1.8);
-    expect(body.nights[0].ned.amplitudeCvOverall).toBe(32.1);
-    expect(body.nights[0].ned.briefObstructionCount).toBe(5);
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0]!.ned.hypopneaCount).toBe(12);
+    expect(body.nights[0]!.ned.hypopneaIndex).toBe(1.8);
+    expect(body.nights[0]!.ned.amplitudeCvOverall).toBe(32.1);
+    expect(body.nights[0]!.ned.briefObstructionCount).toBe(5);
   });
 
   it('contribution payload includes settingsMetrics when available', async () => {
@@ -281,11 +281,11 @@ describe('enriched contribution payload', () => {
     const nights = [makeNightWithSettings('2025-01-01')];
     await contributeNights(nights);
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
-    expect(body.nights[0].settingsMetrics).toBeDefined();
-    expect(body.nights[0].settingsMetrics.tidalVolumeCv).toBe(18.5);
-    expect(body.nights[0].settingsMetrics.triggerDelayMedianMs).toBe(85);
-    expect(body.nights[0].settingsMetrics.ieRatio).toBe(0.43);
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0]!.settingsMetrics).toBeDefined();
+    expect(body.nights[0]!.settingsMetrics.tidalVolumeCv).toBe(18.5);
+    expect(body.nights[0]!.settingsMetrics.triggerDelayMedianMs).toBe(85);
+    expect(body.nights[0]!.settingsMetrics.ieRatio).toBe(0.43);
   });
 
   it('contribution payload has settingsMetrics null when not available', async () => {
@@ -293,7 +293,7 @@ describe('enriched contribution payload', () => {
     const nights = [makeNight('2025-01-01')];
     await contributeNights(nights);
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
     expect(body.nights[0].settingsMetrics).toBeNull();
   });
 });

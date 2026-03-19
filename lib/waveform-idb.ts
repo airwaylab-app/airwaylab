@@ -128,7 +128,7 @@ export async function loadWaveform(dateStr: string): Promise<StoredWaveform | nu
 /**
  * Delete a specific waveform from IndexedDB.
  */
-export async function deleteWaveform(dateStr: string): Promise<void> {
+async function deleteWaveform(dateStr: string): Promise<void> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -196,38 +196,3 @@ export async function deleteExpired(): Promise<void> {
   }
 }
 
-/**
- * Clear all stored waveforms and oximetry traces.
- */
-export async function clearAll(): Promise<void> {
-  try {
-    const db = await openDB();
-    const storeNames = [STORE_NAME, OXIMETRY_STORE_NAME].filter(
-      (name) => db.objectStoreNames.contains(name)
-    );
-    if (storeNames.length === 0) {
-      db.close();
-      return;
-    }
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeNames, 'readwrite');
-      for (const name of storeNames) {
-        tx.objectStore(name).clear();
-      }
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  } catch {
-    // Non-fatal
-    Sentry.captureMessage('IndexedDB clearAll failed', {
-      level: 'warning',
-      tags: { module: 'waveform-idb' },
-    });
-  }
-}

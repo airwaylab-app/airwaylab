@@ -133,7 +133,7 @@ describe('persistent-contribution-consent', () => {
       const newNights = filterNewNights(allNights);
 
       expect(newNights).toHaveLength(1);
-      expect(newNights[0].dateStr).toBe(allDates[58]);
+      expect(newNights[0]!.dateStr).toBe(allDates[58]);
     });
 
     it('sends all nights when none were previously contributed', () => {

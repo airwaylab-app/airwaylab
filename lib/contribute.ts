@@ -8,7 +8,7 @@ import type { NightResult } from './types';
 
 const CHUNK_SIZE = 1000;
 
-export interface ContributionResult {
+interface ContributionResult {
   ok: boolean;
   totalSent: number;
   contributionId: string;

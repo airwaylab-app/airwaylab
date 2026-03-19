@@ -47,12 +47,12 @@ function makeBiPAPPressure(
 
   for (let i = 0; i < len; i++) {
     // Detect inspiration start (positive-going zero crossing)
-    if (i > 0 && flowData[i - 1] <= 0 && flowData[i] > 0) {
+    if (i > 0 && flowData[i - 1]! <= 0 && flowData[i]! > 0) {
       inInspiration = true;
       inspStartSample = i;
     }
     // Detect expiration start (negative-going zero crossing)
-    if (i > 0 && flowData[i - 1] > 0 && flowData[i] <= 0) {
+    if (i > 0 && flowData[i - 1]! > 0 && flowData[i]! <= 0) {
       inInspiration = false;
     }
 

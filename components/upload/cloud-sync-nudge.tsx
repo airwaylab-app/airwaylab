@@ -17,7 +17,7 @@ export function hasCloudSyncConsent(): boolean {
 }
 
 /** Set cloud sync consent state. */
-export function setCloudSyncConsent(enabled: boolean): void {
+function setCloudSyncConsent(enabled: boolean): void {
   try {
     localStorage.setItem(CONSENT_KEY, enabled ? '1' : '0');
   } catch { /* noop */ }

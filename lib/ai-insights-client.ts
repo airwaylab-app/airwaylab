@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { Insight } from './insights';
 import type { NightResult, NightNotes } from './types';
 
-export interface AIInsightsResult {
+interface AIInsightsResult {
   insights: Insight[];
   /** Server-side remaining credits for community tier. Undefined if not available. */
   remainingCredits?: number;
@@ -13,7 +13,7 @@ export interface AIInsightsResult {
 }
 
 /** Per-breath summary format stored in Supabase Storage */
-export interface BreathSummary {
+interface BreathSummary {
   ned: number;
   fi: number;
   mShape: boolean;
@@ -22,7 +22,7 @@ export interface BreathSummary {
   duration: number;
 }
 
-export interface PerBreathSummary {
+interface PerBreathSummary {
   breaths: BreathSummary[];
   breathCount: number;
   sampleRate: number;
@@ -88,7 +88,7 @@ function trimNightsForPayload(
   }
 
   const sortedIndices = Array.from(needed).sort((a, b) => a - b);
-  const trimmedNights = sortedIndices.map((i) => nights[i]);
+  const trimmedNights = sortedIndices.map((i) => nights[i]!);
   const adjustedIndex = sortedIndices.indexOf(selectedNightIndex);
 
   return { trimmedNights, adjustedIndex };

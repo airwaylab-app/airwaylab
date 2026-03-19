@@ -64,7 +64,7 @@ export const SpO2Trace = memo(function SpO2Trace({
     let hi = points.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (points[mid].t < timeStart) lo = mid + 1;
+      if (points[mid]!.t < timeStart) lo = mid + 1;
       else hi = mid;
     }
     const startIdx = lo;
@@ -73,7 +73,7 @@ export const SpO2Trace = memo(function SpO2Trace({
     hi = points.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (points[mid].t <= timeEnd) lo = mid + 1;
+      if (points[mid]!.t <= timeEnd) lo = mid + 1;
       else hi = mid;
     }
     const endIdx = lo;
@@ -89,14 +89,14 @@ export const SpO2Trace = memo(function SpO2Trace({
   const MAX_VISIBLE_ODI = 100;
   const { visibleODI3, odiCapped } = useMemo(() => {
     if (!showODIEvents || data.length === 0) return { visibleODI3: [] as number[], odiCapped: false };
-    const startT = data[0].t;
-    const endT = data[data.length - 1].t;
+    const startT = data[0]!.t;
+    const endT = data[data.length - 1]!.t;
     const filtered = trace.odi3Events.filter((t) => t >= startT && t <= endT);
     if (filtered.length <= MAX_VISIBLE_ODI) {
       return { visibleODI3: filtered, odiCapped: false };
     }
     const step = filtered.length / MAX_VISIBLE_ODI;
-    const sampled = Array.from({ length: MAX_VISIBLE_ODI }, (_, i) => filtered[Math.round(i * step)]);
+    const sampled = Array.from({ length: MAX_VISIBLE_ODI }, (_, i) => filtered[Math.round(i * step)]!);
     return { visibleODI3: sampled, odiCapped: true };
   }, [trace.odi3Events, showODIEvents, data]);
 

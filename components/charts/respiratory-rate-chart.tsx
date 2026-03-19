@@ -31,7 +31,7 @@ function RRTooltipContent({ active, payload, label }: {
       <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: CHART_COLORS[5] }}>Respiratory Rate:</span>{' '}
-        <span className="font-mono">{payload[0].value.toFixed(1)}</span> br/min
+        <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> br/min
       </p>
     </div>
   );

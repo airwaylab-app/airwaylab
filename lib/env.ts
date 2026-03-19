@@ -7,7 +7,7 @@
  */
 
 // ─── Client (NEXT_PUBLIC_*) ──────────────────────────────────────────
-export const env = {
+const env = {
   /** Plausible Analytics domain (omit to disable analytics) */
   NEXT_PUBLIC_PLAUSIBLE_DOMAIN:
     process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN ?? undefined,

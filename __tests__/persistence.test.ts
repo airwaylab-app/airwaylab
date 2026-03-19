@@ -64,7 +64,7 @@ describe('persistence', () => {
         ...SAMPLE_NIGHTS[0],
         dateStr: `2025-01-${String(i + 1).padStart(2, '0')}`,
         ned: {
-          ...SAMPLE_NIGHTS[0].ned,
+          ...SAMPLE_NIGHTS[0]!.ned,
           breaths: new Array(5000).fill({ nedPct: 10, fi: 0.5, tpeak: 0.3 }),
         },
       }));
@@ -110,11 +110,11 @@ describe('persistence', () => {
       persistResults(SAMPLE_NIGHTS, null);
       const result = loadPersistedResults();
       const first = result!.nights[0];
-      expect(first.dateStr).toBe(SAMPLE_NIGHTS[0].dateStr);
-      expect(first.durationHours).toBe(SAMPLE_NIGHTS[0].durationHours);
-      expect(first.glasgow.overall).toBe(SAMPLE_NIGHTS[0].glasgow.overall);
-      expect(first.wat.flScore).toBe(SAMPLE_NIGHTS[0].wat.flScore);
-      expect(first.ned.nedMean).toBe(SAMPLE_NIGHTS[0].ned.nedMean);
+      expect(first!.dateStr).toBe(SAMPLE_NIGHTS[0]!.dateStr);
+      expect(first!.durationHours).toBe(SAMPLE_NIGHTS[0]!.durationHours);
+      expect(first!.glasgow.overall).toBe(SAMPLE_NIGHTS[0]!.glasgow.overall);
+      expect(first!.wat.flScore).toBe(SAMPLE_NIGHTS[0]!.wat.flScore);
+      expect(first!.ned.nedMean).toBe(SAMPLE_NIGHTS[0]!.ned.nedMean);
     });
 
     it('returns null for expired data (>30 days)', () => {
@@ -158,7 +158,7 @@ describe('persistence', () => {
     it('restores Date objects from string serialization', () => {
       persistResults(SAMPLE_NIGHTS, null);
       const result = loadPersistedResults();
-      expect(result!.nights[0].date).toBeInstanceOf(Date);
+      expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
   });
 

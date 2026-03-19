@@ -36,7 +36,7 @@ const initialState: AnalysisState = {
   persistenceWarning: null,
 };
 
-export class AnalysisOrchestrator {
+class AnalysisOrchestrator {
   private worker: Worker | null = null;
   private state: AnalysisState = { ...initialState };
   private listeners: Set<StateListener> = new Set();
@@ -694,8 +694,8 @@ function detectTherapyChange(nights: NightResult[]): string | null {
 
   // Nights are sorted most-recent-first
   for (let i = 0; i < nights.length - 1; i++) {
-    const curr = nights[i].settings;
-    const prev = nights[i + 1].settings;
+    const curr = nights[i]!.settings;
+    const prev = nights[i + 1]!.settings;
 
     if (
       curr.epap !== prev.epap ||
@@ -703,7 +703,7 @@ function detectTherapyChange(nights: NightResult[]): string | null {
       curr.papMode !== prev.papMode ||
       curr.pressureSupport !== prev.pressureSupport
     ) {
-      return nights[i].dateStr;
+      return nights[i]!.dateStr;
     }
   }
 

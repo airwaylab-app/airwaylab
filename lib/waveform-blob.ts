@@ -12,12 +12,12 @@
 export const AWL2_MAGIC = 0x41574c32;
 
 /** Current format version */
-export const AWL2_VERSION = 2;
+const AWL2_VERSION = 2;
 
 /** Size of the AWL2 header in bytes */
 const HEADER_BYTES = 16;
 
-export interface ParsedWaveformBlob {
+interface ParsedWaveformBlob {
   formatVersion: number;
   channelCount: number;
   flow: Float32Array;
@@ -62,8 +62,8 @@ export function buildWaveformBlob(
   if (hasPressure) {
     // Interleave: [flow0, pressure0, flow1, pressure1, ...]
     for (let i = 0; i < flow.length; i++) {
-      data[i * 2] = flow[i];
-      data[i * 2 + 1] = pressure![i];
+      data[i * 2] = flow[i]!;
+      data[i * 2 + 1] = pressure![i]!;
     }
   } else {
     // Single channel: [flow0, flow1, ...]
@@ -96,8 +96,8 @@ export function parseWaveformBlob(buffer: ArrayBuffer): ParsedWaveformBlob {
         const pressure = new Float32Array(sampleCount);
 
         for (let i = 0; i < sampleCount; i++) {
-          flow[i] = data[i * 2];
-          pressure[i] = data[i * 2 + 1];
+          flow[i] = data[i * 2]!;
+          pressure[i] = data[i * 2 + 1]!;
         }
 
         return { formatVersion, channelCount, flow, pressure };

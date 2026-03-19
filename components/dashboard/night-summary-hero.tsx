@@ -45,10 +45,10 @@ function isEventControlGood(
   night: NightResult,
   thresholds: Record<string, { green: number; amber: number; lowerIsBetter: boolean }>,
 ): boolean {
-  const reraGreen = getTrafficLight(night.ned.reraIndex, thresholds.reraIndex) === 'good';
+  const reraGreen = getTrafficLight(night.ned.reraIndex, thresholds.reraIndex!) === 'good';
   const hypopneaIndex = night.ned.hypopneaIndex;
   if (hypopneaIndex != null) {
-    const hypGreen = getTrafficLight(hypopneaIndex, thresholds.hypopneaIndex) === 'good';
+    const hypGreen = getTrafficLight(hypopneaIndex, thresholds.hypopneaIndex!) === 'good';
     return reraGreen || hypGreen;
   }
   return reraGreen;
@@ -60,7 +60,7 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
 
   const { displayTier, headline, body } = useMemo(() => {
     const iflRisk = computeIFLRisk(n);
-    const iflTier = getTrafficLight(iflRisk, THRESHOLDS.iflRisk);
+    const iflTier = getTrafficLight(iflRisk, THRESHOLDS.iflRisk!);
     const hasFLConcern = iflTier === 'warn' || iflTier === 'bad';
     const eventGood = isEventControlGood(n, THRESHOLDS);
 

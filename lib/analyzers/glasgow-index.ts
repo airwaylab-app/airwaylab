@@ -68,7 +68,7 @@ export function computeGlasgowIndex(flowData: Float32Array, _samplingRate: numbe
 export function computeNightGlasgow(sessions: EDFFile[]): GlasgowComponents {
   if (sessions.length === 0) return emptyComponents();
   if (sessions.length === 1) {
-    return computeGlasgowIndex(sessions[0].flowData, sessions[0].samplingRate);
+    return computeGlasgowIndex(sessions[0]!.flowData, sessions[0]!.samplingRate);
   }
 
   // Duration-weighted average across sessions
@@ -149,13 +149,13 @@ function findMins(flowData: Float32Array): Uint8Array {
     const val = flowData[ptr];
 
     for (let winPtr = ptr - MIN_WINDOW; winPtr < ptr + MIN_WINDOW - 1; winPtr++) {
-      if (flowData[winPtr] < val) {
+      if (flowData[winPtr]! < val!) {
         minDetected = false;
         break;
       }
     }
 
-    if (minDetected && val < GREY_ZONE_LOWER) {
+    if (minDetected && val! < GREY_ZONE_LOWER) {
       isMin[ptr] = 1;
     }
   }
@@ -174,14 +174,14 @@ function findInspirations(flowData: Float32Array): Inspiration[] {
 
   for (let i = 0; i < len - 1; i++) {
     if (i < ignoreUntil) continue;
-    if (flowData[i] <= GREY_ZONE_UPPER) continue;
+    if (flowData[i]! <= GREY_ZONE_UPPER) continue;
     if (i === 0 || i === len - 1) continue;
 
     // Check if this is a local maximum
-    if (flowData[i - 1] > flowData[i] || flowData[i] < flowData[i + 1]) continue;
+    if (flowData[i - 1]! > flowData[i]! || flowData[i]! < flowData[i + 1]!) continue;
 
     const insp: Partial<Inspiration> = {
-      maxValue: flowData[i],
+      maxValue: flowData[i]!,
       multiPeak: false,
       preRest: 0,
       noExhale: false,
@@ -193,8 +193,8 @@ function findInspirations(flowData: Float32Array): Inspiration[] {
     // Look backwards for start (where flow crosses grey zone)
     let foundStart = false;
     for (let downPtr = i; downPtr > 0; downPtr--) {
-      if (flowData[downPtr] > flowData[i]) break;
-      if (flowData[downPtr] <= GREY_ZONE_UPPER) {
+      if (flowData[downPtr]! > flowData[i]!) break;
+      if (flowData[downPtr]! <= GREY_ZONE_UPPER) {
         insp.start = downPtr;
         foundStart = true;
         break;
@@ -205,8 +205,8 @@ function findInspirations(flowData: Float32Array): Inspiration[] {
     // Look forwards for end
     let foundEnd = false;
     for (let upPtr = i; upPtr < len - 1; upPtr++) {
-      if (flowData[upPtr] > flowData[i]) break;
-      if (flowData[upPtr] <= GREY_ZONE_UPPER) {
+      if (flowData[upPtr]! > flowData[i]!) break;
+      if (flowData[upPtr]! <= GREY_ZONE_UPPER) {
         insp.end = upPtr;
         foundEnd = true;
         break;
@@ -232,7 +232,7 @@ function findInspirations(flowData: Float32Array): Inspiration[] {
     let lowestPostFirstPeak = 0;
 
     for (let ptr = insp.start!; ptr < insp.end!; ptr++) {
-      const val = flowData[ptr];
+      const val = flowData[ptr]!;
 
       if (ptr < insp.midPoint!) {
         leftVol += val;
@@ -283,13 +283,13 @@ function findInspirations(flowData: Float32Array): Inspiration[] {
 
     let midSum = 0;
     for (let ptr = varStart; ptr < varEnd; ptr++) {
-      midSum += flowData[ptr];
+      midSum += flowData[ptr]!;
     }
     const midMean = midLen > 0 ? midSum / midLen : 0;
 
     let midVariance = 0;
     for (let ptr = varStart; ptr < varEnd; ptr++) {
-      midVariance += (midMean - flowData[ptr]) ** 2;
+      midVariance += (midMean - flowData[ptr]!) ** 2;
     }
     insp.midVar = midLen > 0 ? Math.round((100 * midVariance) / midLen) / 100 : 0;
 
@@ -324,29 +324,29 @@ function calcCycleBasedIndicators(
 
     let safetyCounter = 10;
     while (nextInspirIdx < inspirations.length && safetyCounter-- > 0) {
-      const insp = inspirations[nextInspirIdx];
+      const insp = inspirations[nextInspirIdx]!;
 
-      if (insp.start < indexOfMin) {
+      if (insp.start < indexOfMin!) {
         // Inspiration before this min — orphaned (multi-breath)
         insp.noExhale = true;
         nextInspirIdx++;
-      } else if (i < minsAtIndex.length - 1 && insp.start > minsAtIndex[i + 1]) {
+      } else if (i < minsAtIndex.length - 1 && insp.start > minsAtIndex[i + 1]!) {
         // Inspiration after next min — skip to next min
         break;
-      } else if (insp.start > indexOfMin) {
+      } else if (insp.start > indexOfMin!) {
         // Link this expiration to inspiration
         insp.noExhale = false;
-        insp.linkedMinAt = indexOfMin;
+        insp.linkedMinAt = indexOfMin!;
 
         // Compute pre-rest (pause between expiration and inspiration)
-        if (indexOfMin + EXTRAPOLATION_SAMPLES < flowData.length) {
-          const minValue = flowData[indexOfMin];
-          const minValuePlusOneSec = flowData[indexOfMin + EXTRAPOLATION_SAMPLES];
+        if (indexOfMin! + EXTRAPOLATION_SAMPLES < flowData.length) {
+          const minValue = flowData[indexOfMin!]!;
+          const minValuePlusOneSec = flowData[indexOfMin! + EXTRAPOLATION_SAMPLES]!;
 
           if (minValuePlusOneSec < 0) {
             // Extrapolate where expiration would cross zero
             const intersection =
-              indexOfMin +
+              indexOfMin! +
               Math.round((EXTRAPOLATION_SAMPLES * minValue) / (minValue - minValuePlusOneSec));
             insp.preRest = insp.start - intersection;
           } else {
@@ -375,22 +375,22 @@ function inspirationAmplitude(inspirations: Inspiration[]): void {
     // Mean amplitude over window
     let ampMean = 0;
     for (let cnt = 0; cnt < AMP_WINDOW_LEN; cnt++) {
-      ampMean += inspirations[i - cnt].maxValue;
+      ampMean += inspirations[i - cnt]!.maxValue;
     }
     ampMean /= AMP_WINDOW_LEN;
 
     // Variance of amplitude
     let ampVar = 0;
     for (let cnt = 0; cnt < AMP_WINDOW_LEN; cnt++) {
-      ampVar += (inspirations[i - cnt].maxValue - ampMean) ** 2;
+      ampVar += (inspirations[i - cnt]!.maxValue - ampMean) ** 2;
     }
     ampVar = Math.round((100 * ampVar) / AMP_WINDOW_LEN) / 100;
-    inspirations[i].ampVar = ampVar;
+    inspirations[i]!.ampVar = ampVar;
 
     // Inspiration rate (breaths per minute)
-    const samplesForBreaths = inspirations[i].start - inspirations[i - AMP_WINDOW_LEN].start;
+    const samplesForBreaths = inspirations[i]!.start - inspirations[i - AMP_WINDOW_LEN]!.start;
     if (samplesForBreaths > 0) {
-      inspirations[i].inspirPerMin = Math.round(
+      inspirations[i]!.inspirPerMin = Math.round(
         (AMP_WINDOW_LEN * 60 * 1000) / (samplesForBreaths * MILLIS_PER_SAMPLE)
       );
     }

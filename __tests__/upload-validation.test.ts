@@ -225,8 +225,8 @@ describe('checkOximetryFormats', () => {
     const file = new File([content], 'wellue.csv', { type: 'text/csv' });
     const result = await checkOximetryFormats([file]);
     expect(result).toHaveLength(1);
-    expect(result[0].fileName).toBe('wellue.csv');
-    expect(result[0].headerSample).toContain('timestamp,spo2,hr');
+    expect(result[0]!.fileName).toBe('wellue.csv');
+    expect(result[0]!.headerSample).toContain('timestamp,spo2,hr');
   });
 
   it('skips non-CSV files', async () => {
@@ -240,6 +240,6 @@ describe('checkOximetryFormats', () => {
     const unsupported = new File(['ts,o2,hr\n1,97,62'], 'bad.csv');
     const result = await checkOximetryFormats([supported, unsupported]);
     expect(result).toHaveLength(1);
-    expect(result[0].fileName).toBe('bad.csv');
+    expect(result[0]!.fileName).toBe('bad.csv');
   });
 });

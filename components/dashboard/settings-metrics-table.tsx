@@ -35,11 +35,11 @@ function getMetricColor(n: NightResult, key: SortKey, t: Record<string, Threshol
   if (key === 'date' || !n.settingsMetrics) return '';
   const sm = n.settingsMetrics;
   switch (key) {
-    case 'ti': return getTrafficColor(getTrafficLight(sm.tiMedianMs, t.settingsTi));
-    case 'dwell': return getTrafficColor(getTrafficLight(sm.ipapDwellMedianPct, t.settingsIpapDwell));
-    case 'premature': return getTrafficColor(getTrafficLight(sm.prematureCyclePct, t.settingsPrematureCycle));
-    case 'late': return getTrafficColor(getTrafficLight(sm.lateCyclePct, t.settingsLateCycle));
-    case 'vtCv': return getTrafficColor(getTrafficLight(sm.tidalVolumeCv, t.settingsVtCv));
+    case 'ti': return getTrafficColor(getTrafficLight(sm.tiMedianMs, t.settingsTi!));
+    case 'dwell': return getTrafficColor(getTrafficLight(sm.ipapDwellMedianPct, t.settingsIpapDwell!));
+    case 'premature': return getTrafficColor(getTrafficLight(sm.prematureCyclePct, t.settingsPrematureCycle!));
+    case 'late': return getTrafficColor(getTrafficLight(sm.lateCyclePct, t.settingsLateCycle!));
+    case 'vtCv': return getTrafficColor(getTrafficLight(sm.tidalVolumeCv, t.settingsVtCv!));
   }
 }
 

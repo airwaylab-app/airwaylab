@@ -121,16 +121,6 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
   return 'Significant flow limitation detected. Individual sensitivity varies, but research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
 }
 
-export function getEstimatedRDIExplanation(value: number, threshold: ThresholdDef): string {
-  const light = getTrafficLight(value, threshold);
-  if (light === 'good') {
-    return `Your estimated RDI of ${fmt(value)}/hr is low — few breathing disruptions detected from your flow data. Your therapy appears to be keeping your airway stable.`;
-  }
-  if (light === 'warn') {
-    return `Your estimated RDI of ${fmt(value)}/hr shows moderate breathing disruptions. This includes RERAs and hypopneas detected from flow patterns — events that don't appear in your machine's AHI. Consider discussing with your clinician, especially if you still feel tired despite a low AHI.`;
-  }
-  return `Your estimated RDI of ${fmt(value)}/hr is elevated — your breathing is being disrupted frequently during sleep. This includes events your machine's AHI may not capture. Discuss therapy optimisation with your clinician.`;
-}
 
 export function getODIExplanation(odi3: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(odi3, threshold);

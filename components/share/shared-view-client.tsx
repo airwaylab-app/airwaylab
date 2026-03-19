@@ -59,7 +59,7 @@ export function SharedViewClient({
     events.shareViewed();
   }, []);
 
-  const currentNight = nights[selectedNight] ?? nights[0];
+  const currentNight = nights[selectedNight] ?? nights[0]!;
   const previousNight = nights[selectedNight + 1] ?? null;
 
   const nightDates = useMemo(
@@ -177,7 +177,7 @@ export function SharedViewClient({
               <span className="text-[11px] sm:hidden">Flow</span>
               <span className="hidden sm:inline">Flow Analysis</span>
             </TabsTrigger>
-            {currentNight.oximetry && (
+            {currentNight?.oximetry && (
               <TabsTrigger value="oximetry" className="gap-1.5">
                 <HeartPulse className="h-3.5 w-3.5" />
                 <span className="text-[11px] sm:hidden">O&#8322;</span>
@@ -204,7 +204,7 @@ export function SharedViewClient({
             <ErrorBoundary context="Overview">
               <OverviewTab
                 nights={nights}
-                selectedNight={currentNight}
+                selectedNight={currentNight!}
                 previousNight={previousNight}
                 therapyChangeDate={null}
                 isDemo={false}
@@ -216,7 +216,7 @@ export function SharedViewClient({
             <ErrorBoundary context="Glasgow Index">
               <GlasgowTab
                 nights={nights}
-                selectedNight={currentNight}
+                selectedNight={currentNight!}
                 previousNight={previousNight}
                 therapyChangeDate={null}
               />
@@ -226,18 +226,18 @@ export function SharedViewClient({
           <TabsContent value="flow" className="mt-6">
             <ErrorBoundary context="Flow Analysis">
               <FlowAnalysisTab
-                selectedNight={currentNight}
+                selectedNight={currentNight!}
                 previousNight={previousNight}
                 nights={nights}
               />
             </ErrorBoundary>
           </TabsContent>
 
-          {currentNight.oximetry && (
+          {currentNight?.oximetry && (
             <TabsContent value="oximetry" className="mt-6">
               <ErrorBoundary context="Oximetry">
                 <OximetryTab
-                  selectedNight={currentNight}
+                  selectedNight={currentNight!}
                   previousNight={previousNight}
                   nights={nights}
                 />
@@ -251,7 +251,7 @@ export function SharedViewClient({
                 <SharedGraphsTab
                   shareId={shareId}
                   filePaths={filePaths}
-                  dateStr={currentNight.dateStr}
+                  dateStr={currentNight!.dateStr}
                 />
               </ErrorBoundary>
             </TabsContent>

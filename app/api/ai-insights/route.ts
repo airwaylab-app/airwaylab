@@ -124,7 +124,7 @@ type RequestBody = z.infer<typeof RequestBodySchema>;
 
 function buildUserPrompt(body: RequestBody): string {
   const { nights, selectedNightIndex, therapyChangeDate, nightNotes } = body;
-  const selected = nights[selectedNightIndex];
+  const selected = nights[selectedNightIndex]!;
   const previous = selectedNightIndex < nights.length - 1 ? nights[selectedNightIndex + 1] : null;
 
   // When settings weren't extracted, tell the model instead of sending zeros
@@ -375,7 +375,7 @@ export async function POST(request: NextRequest) {
       let jsonText = textBlock.text.trim();
       // Remove ```json ... ``` or ``` ... ``` wrappers
       const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (fenceMatch) {
+      if (fenceMatch?.[1]) {
         jsonText = fenceMatch[1].trim();
       }
       // If model included preamble text, extract the JSON array

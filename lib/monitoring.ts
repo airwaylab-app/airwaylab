@@ -431,8 +431,8 @@ export async function checkAll(supabase: SupabaseClient): Promise<ServiceCheck[]
   return results.map((r, i) => {
     if (r.status === 'fulfilled') return r.value;
     return {
-      service: services[i],
-      severity: severities[i],
+      service: services[i]!,
+      severity: severities[i]!,
       status: 'unavailable' as ServiceStatus,
       usage_pct: null,
       current: 'N/A',

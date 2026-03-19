@@ -91,30 +91,6 @@ export interface WaveformStats {
   leakP95: number | null;
 }
 
-/** Complete waveform data for a single night (view-ready, decimated) */
-export interface WaveformData {
-  /** Night date string (YYYY-MM-DD) */
-  dateStr: string;
-  /** Duration in seconds */
-  durationSeconds: number;
-  /** Original sampling rate (Hz) */
-  originalSampleRate: number;
-  /** Decimated flow samples (actual measured values) */
-  flow: FlowSample[];
-  /** Decimated pressure trace (if available) */
-  pressure: PressurePoint[];
-  /** Downsampled leak rate trace (if available) */
-  leak: LeakPoint[];
-  /** Detected events mapped to timeline */
-  events: WaveformEvent[];
-  /** Estimated tidal volume per bucket (if available) */
-  tidalVolume?: TidalVolumePoint[];
-  /** Estimated respiratory rate per bucket (if available) */
-  respiratoryRate?: RespiratoryRatePoint[];
-  /** Summary stats */
-  stats: WaveformStats;
-}
-
 /**
  * Raw waveform data stored in IndexedDB.
  * Contains full-resolution Float32Arrays for on-demand decimation.

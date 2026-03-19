@@ -116,12 +116,12 @@ function buildSummaryPage(nights: NightResult[]): string {
   const avgRDI = avg((n) => computeEstimatedRDI(n.ned));
   const avgReg = avg((n) => n.wat.regularityScore);
 
-  const iflTL = getTrafficLight(avgIFL, THRESHOLDS.iflRisk);
-  const glTL = getTrafficLight(avgGlasgow, THRESHOLDS.glasgowOverall);
-  const flTL = getTrafficLight(avgFL, THRESHOLDS.watFL);
-  const nedTL = getTrafficLight(avgNED, THRESHOLDS.nedMean);
-  const reraTL = getTrafficLight(avgRERA, THRESHOLDS.reraIndex);
-  const rdiTL = getTrafficLight(avgRDI, THRESHOLDS.estimatedRdi);
+  const iflTL = getTrafficLight(avgIFL, THRESHOLDS.iflRisk!);
+  const glTL = getTrafficLight(avgGlasgow, THRESHOLDS.glasgowOverall!);
+  const flTL = getTrafficLight(avgFL, THRESHOLDS.watFL!);
+  const nedTL = getTrafficLight(avgNED, THRESHOLDS.nedMean!);
+  const reraTL = getTrafficLight(avgRERA, THRESHOLDS.reraIndex!);
+  const rdiTL = getTrafficLight(avgRDI, THRESHOLDS.estimatedRdi!);
 
   function summaryMetric(label: string, value: string, tl: TrafficLight): string {
     return `<div style="text-align:center;padding:12px;">
@@ -130,14 +130,14 @@ function buildSummaryPage(nights: NightResult[]): string {
     </div>`;
   }
 
-  const mostRecent = nights[0];
+  const mostRecent = nights[0]!;
   const radarSVG = generateRadarSVG(mostRecent.glasgow);
 
   return `
     <div style="page-break-after:always;">
       <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 4px;">Summary — ${nights.length} Night${nights.length !== 1 ? 's' : ''}</h2>
       <p style="font-size:12px;color:#64748b;margin:0 0 20px;">
-        ${nights[nights.length - 1].dateStr} to ${nights[0].dateStr} &middot;
+        ${nights[nights.length - 1]!.dateStr} to ${nights[0]!.dateStr} &middot;
         ${mostRecent.settings.deviceModel} &middot; ${mostRecent.settings.papMode}
       </p>
 
@@ -148,7 +148,7 @@ function buildSummaryPage(nights: NightResult[]): string {
         ${summaryMetric('Avg NED Mean', fmt(avgNED, 2) + '%', nedTL)}
         ${summaryMetric('Avg RERA/hr', fmt(avgRERA, 2), reraTL)}
         ${summaryMetric('Avg Est. RDI', fmt(avgRDI, 2) + '/hr', rdiTL)}
-        ${summaryMetric('Avg Regularity', Math.round(avgReg) + '%', getTrafficLight(avgReg, THRESHOLDS.watRegularity))}
+        ${summaryMetric('Avg Regularity', Math.round(avgReg) + '%', getTrafficLight(avgReg, THRESHOLDS.watRegularity!))}
       </div>
 
       <h3 style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 8px;">Glasgow Radar — ${mostRecent.dateStr}</h3>

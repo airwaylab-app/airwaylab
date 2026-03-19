@@ -4,7 +4,7 @@
 // Extracts apnea, hypopnea, and other machine-scored events.
 // ============================================================
 
-export interface MachineEvent {
+interface MachineEvent {
   /** Seconds from session start */
   onsetSec: number;
   /** Duration in seconds */
@@ -73,13 +73,13 @@ function parseEVEUnsafe(buffer: ArrayBuffer): MachineEvent[] {
   }
 
   // Annotation signal bytes per record = numSamples * 2 (EDF stores as int16 but TAL uses raw bytes)
-  const annotBytesPerRecord = samplesPerSignal[annotIdx] * 2;
+  const annotBytesPerRecord = samplesPerSignal[annotIdx]! * 2;
   if (annotBytesPerRecord === 0) return [];
 
   // Compute byte offset of annotation signal within each data record
   let annotOffsetInRecord = 0;
   for (let i = 0; i < annotIdx; i++) {
-    annotOffsetInRecord += samplesPerSignal[i] * 2;
+    annotOffsetInRecord += samplesPerSignal[i]! * 2;
   }
 
   const recordSize = samplesPerSignal.reduce((sum, n) => sum + n * 2, 0);
