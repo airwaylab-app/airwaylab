@@ -3,6 +3,15 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "hooks/**"
+      - "supabase/**"
+      - "package.json"
+      - "tsconfig.json"
+      - "next.config.*"
 
 jobs:
   claude-review:
