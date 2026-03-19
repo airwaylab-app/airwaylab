@@ -10,6 +10,11 @@ on:
   pull_request_review:
     types: [submitted]
 
+# Prevent parallel runs on the same issue/PR to avoid duplicate responses
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   claude:
     # Only respond to @claude from org members, collaborators, or repo owners.
@@ -37,18 +42,40 @@ jobs:
       )
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
       id-token: write
       actions: read
     steps:
+      - name: Check daily run count
+        id: rate-limit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'claude.yml',
+              created: `>=${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`,
+              status: 'completed',
+            });
+            const count = runs.data.total_count;
+            if (count >= 20) {
+              core.setOutput('exceeded', 'true');
+              core.warning(`Daily @claude limit reached (${count}/20). Skipping.`);
+            } else {
+              core.setOutput('exceeded', 'false');
+            }
+
       - name: Checkout repository
+        if: steps.rate-limit.outputs.exceeded == 'false'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
+        if: steps.rate-limit.outputs.exceeded == 'false'
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
