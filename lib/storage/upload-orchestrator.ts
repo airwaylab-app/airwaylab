@@ -447,18 +447,22 @@ class UploadOrchestrator {
           result.failed++;
           result.errors.push(`${fileName}: ${errMsg}`);
 
-          // Fail-fast: track consecutive identical errors
-          const normalized = errMsg.replace(/^[^:]+:\s*/, '');
-          if (normalized === lastErrorMessage) {
-            consecutiveErrors++;
-          } else {
-            consecutiveErrors = 1;
-            lastErrorMessage = normalized;
-          }
+          // Fail-fast: only count systemic errors (auth, network, server),
+          // not per-file validation errors (400) which are expected for some files
+          const isValidation = retryErr instanceof Error && (retryErr as Error & { isValidation?: boolean }).isValidation === true;
+          if (!isValidation) {
+            const normalized = errMsg.replace(/^[^:]+:\s*/, '');
+            if (normalized === lastErrorMessage) {
+              consecutiveErrors++;
+            } else {
+              consecutiveErrors = 1;
+              lastErrorMessage = normalized;
+            }
 
-          // Abort if we've seen the same error too many times in a row
-          if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
-            this.abortController?.abort();
+            // Abort if we've seen the same systemic error too many times in a row
+            if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
+              this.abortController?.abort();
+            }
           }
         }
       }
@@ -520,7 +524,10 @@ class UploadOrchestrator {
       if (presignRes.status === 401 || presignRes.status === 403) {
         throw new Error(err.error || 'Cloud sync requires an active session. Please sign in again.');
       }
-      throw new Error(err.error || `Presign failed: ${presignRes.status}`);
+      const error = new Error(err.error || `Presign failed: ${presignRes.status}`);
+      // Tag validation errors (400) so fail-fast can distinguish them from systemic failures
+      (error as Error & { isValidation?: boolean }).isValidation = presignRes.status === 400;
+      throw error;
     }
 
     const presignData = await presignRes.json();

@@ -36,7 +36,10 @@ export async function contributeNights(
     });
 
     if (!res.ok) {
-      throw new Error(`Contribution failed (batch ${Math.floor(i / CHUNK_SIZE) + 1})`);
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(
+        `Contribution failed (batch ${Math.floor(i / CHUNK_SIZE) + 1}): ${body.error || res.status}`
+      );
     }
 
     totalSent += chunk.length;

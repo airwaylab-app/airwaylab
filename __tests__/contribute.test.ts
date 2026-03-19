@@ -150,10 +150,10 @@ describe('contributeNights', () => {
   it('throws on chunk failure but previous chunks were sent', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({ ok: false, status: 500 });
+      .mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.resolve({ error: 'Server error' }) });
 
     const nights = makeNights(1500);
-    await expect(contributeNights(nights)).rejects.toThrow('Contribution failed (batch 2)');
+    await expect(contributeNights(nights)).rejects.toThrow('Contribution failed (batch 2): Server error');
 
     // First chunk was still sent
     expect(fetchMock).toHaveBeenCalledTimes(2);

@@ -146,7 +146,7 @@ describe('Step 5: Account settings', () => {
     expect(src).toContain('STORAGE_BUCKET');
     expect(src).toContain('user_files');
     expect(src).toContain('analysis_data');
-    expect(src).toContain('contributed_data');
+    expect(src).toContain('ai_usage');
   });
 });
 

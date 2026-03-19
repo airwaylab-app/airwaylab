@@ -28,10 +28,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { data, error } = await adminClient.rpc('get_community_symptom_stats', {
+    const rpcParams = {
       p_ifl_risk: iflRisk ?? 0,
       p_pressure_bucket: pressureBucket ?? '',
-    });
+    };
+
+    let { data, error } = await adminClient.rpc('get_community_symptom_stats', rpcParams);
+
+    // Retry once on transient errors (ECONNRESET, timeout, etc.)
+    if (error && /fetch failed|ECONNRESET|timeout|socket hang up/i.test(error.message)) {
+      console.error('[community-insights] Transient RPC error, retrying:', error.message);
+      await new Promise((r) => setTimeout(r, 1000));
+      ({ data, error } = await adminClient.rpc('get_community_symptom_stats', rpcParams));
+    }
 
     if (error) {
       console.error('[community-insights] RPC error:', error.message);

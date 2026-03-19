@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = presignSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+      const issue = parsed.error.issues[0];
+      const detail = issue ? `${issue.path.join('.')}: ${issue.message}` : 'unknown';
+      return NextResponse.json({ error: `Invalid request data: ${detail}` }, { status: 400 });
     }
 
     const { filePath, fileName, fileSize, fileHash, nightDate, mimeType } = parsed.data;
