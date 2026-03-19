@@ -46,6 +46,9 @@ export function Footer() {
               <Link href="/changelog" className="transition-colors hover:text-foreground">
                 What&apos;s New
               </Link>
+              <Link href="/compare" className="transition-colors hover:text-foreground">
+                Compare Tools
+              </Link>
               <a
                 href="https://github.com/airwaylab-app/airwaylab"
                 target="_blank"
