@@ -63,9 +63,9 @@ export default function UnderstandingFlowLimitationPost() {
           </p>
           <p>
             The clinical term for these events is{' '}
-            <strong className="text-foreground">
+            <Link href="/glossary#rera" className="text-primary hover:text-primary/80">
               Respiratory Effort-Related Arousals (RERAs)
-            </strong>
+            </Link>
             . They&apos;re breathing disturbances that cause brief awakenings — enough to fragment
             your sleep architecture — but don&apos;t show up in the AHI. Some sleep physicians use
             the Respiratory Disturbance Index (RDI), which includes RERAs, but your PAP machine
@@ -92,7 +92,9 @@ export default function UnderstandingFlowLimitationPost() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Glasgow Index</p>
+              <p className="text-sm font-semibold text-foreground">
+                <Link href="/glossary#glasgow-index" className="hover:text-primary">Glasgow Index</Link>
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Developed at the University of Glasgow, this index scores breath shapes on a 0-1
                 scale. A score above 0.3 suggests significant flow limitation. It detects flattened
@@ -100,7 +102,9 @@ export default function UnderstandingFlowLimitationPost() {
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">NED (Negative Effort Dependence)</p>
+              <p className="text-sm font-semibold text-foreground">
+                <Link href="/glossary#ned" className="hover:text-primary">NED (Negative Effort Dependence)</Link>
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Measures whether increasing breathing effort actually decreases airflow — a
                 hallmark of a narrowed airway. Higher NED values indicate more severe limitation.
@@ -244,6 +248,27 @@ export default function UnderstandingFlowLimitationPost() {
             Clark et al. (2017). &quot;Automated detection of inspiratory flow limitation from
             CPAP devices.&quot; <em>Journal of Clinical Sleep Medicine</em>, 13(2).
           </p>
+          <div className="mt-4 border-t border-border/30 pt-4">
+            <p className="mb-2 text-xs font-semibold text-foreground">Related articles</p>
+            <p>
+              <Link href="/blog/beyond-ahi" className="text-primary hover:text-primary/80">
+                Beyond AHI: Why Your Sleep Apnea Score Might Be Misleading You
+              </Link>{' '}
+              -- the research case against relying on AHI alone.
+            </p>
+            <p className="mt-1">
+              <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
+                Your AHI Is Normal But You&apos;re Still Exhausted
+              </Link>{' '}
+              -- a practical guide to investigating persistent fatigue.
+            </p>
+            <p className="mt-1">
+              <Link href="/blog/flow-limitation-and-sleepiness" className="text-primary hover:text-primary/80">
+                Does Flow Limitation Drive Sleepiness?
+              </Link>{' '}
+              -- evidence linking flow limitation directly to daytime symptoms.
+            </p>
+          </div>
         </div>
       </section>
 

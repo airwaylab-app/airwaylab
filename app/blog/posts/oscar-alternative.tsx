@@ -103,7 +103,7 @@ export default function OSCARAlternativePost() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">No Flow Limitation Scoring</p>
+              <p className="text-sm font-semibold text-amber-400">No <Link href="/glossary#flow-limitation" className="hover:text-amber-300">Flow Limitation</Link> Scoring</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 OSCAR displays the raw flow waveform but doesn&apos;t compute flow limitation
                 metrics. You have to visually identify flat-topped breaths yourself, which requires
@@ -111,7 +111,7 @@ export default function OSCARAlternativePost() {
               </p>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">No RERA Detection</p>
+              <p className="text-sm font-semibold text-amber-400">No <Link href="/glossary#rera" className="hover:text-amber-300">RERA</Link> Detection</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 OSCAR can&apos;t identify sequences of flow-limited breaths that end in arousals.
                 AirwayLab&apos;s NED engine detects these automatically and estimates a RERA index
@@ -234,7 +234,10 @@ export default function OSCARAlternativePost() {
           <p>
             This stands in contrast to manufacturer apps (myAir, DreamMapper) that upload your
             data to corporate servers and may share it with insurance providers. Both open-source
-            tools give you the analysis without the privacy trade-off.
+            tools give you the analysis without the privacy trade-off. Read more about{' '}
+            <Link href="/blog/pap-data-privacy" className="text-primary hover:text-primary/80">
+              PAP data privacy and your rights
+            </Link>.
           </p>
         </div>
       </section>

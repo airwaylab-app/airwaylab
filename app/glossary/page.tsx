@@ -44,6 +44,7 @@ type GlossaryTerm = {
   category: GlossaryCategory;
   definition: string;
   link?: string;
+  blogLinks?: { slug: string; title: string }[];
 };
 
 const CATEGORY_STYLES: Record<
@@ -76,6 +77,10 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'sleep-disordered-breathing',
     definition:
       'The number of apneas and hypopneas per hour of sleep. AHI is the most widely used measure of sleep apnea severity, but it only counts complete or near-complete airflow reductions. Significant flow limitation and RERAs are not included in AHI, which is why a \u201cnormal\u201d AHI does not necessarily mean effective therapy. Severity scale: normal < 5/hr, mild 5\u201315/hr, moderate 15\u201330/hr, severe > 30/hr.',
+    blogLinks: [
+      { slug: 'beyond-ahi', title: 'Beyond AHI: Why Your Sleep Apnea Score Might Be Misleading You' },
+      { slug: 'ahi-normal-still-tired', title: 'Your AHI Is Normal But You\'re Still Exhausted' },
+    ],
   },
   {
     id: 'apnea',
@@ -90,6 +95,9 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'sleep-disordered-breathing',
     definition:
       'A brief shift in brain wave activity lasting at least 3 seconds, indicating a partial awakening from sleep. Respiratory arousals are triggered by breathing events (apneas, hypopneas, RERAs, or flow limitation). True arousals can only be measured by EEG. AirwayLab estimates arousal-like events from respiratory pattern changes (sudden increases in respiratory rate or tidal volume) as the Estimated Arousal Index (EAI).',
+    blogLinks: [
+      { slug: 'arousals-vs-flow-limitation', title: 'Why Flow Limitation May Matter More Than Arousals' },
+    ],
   },
   {
     id: 'flow-limitation',
@@ -98,6 +106,10 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'Partial narrowing of the upper airway during inspiration that restricts airflow without causing a complete collapse. On a flow waveform, flow limitation appears as a flattened inspiratory peak rather than the normal rounded shape. It is the core phenomenon that AirwayLab analyses. Flow limitation can cause sleep fragmentation and symptoms even when AHI is normal, because the increased respiratory effort triggers micro-arousals or activates the body\u2019s stress response.',
     link: '/about/flow-limitation',
+    blogLinks: [
+      { slug: 'understanding-flow-limitation', title: 'Understanding Flow Limitation: What Your PAP Machine Doesn\'t Tell You' },
+      { slug: 'flow-limitation-and-sleepiness', title: 'Does Flow Limitation Drive Sleepiness?' },
+    ],
   },
   {
     id: 'hypopnea',
@@ -114,6 +126,9 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'A sequence of breaths showing increasing respiratory effort (flow limitation) that does not meet the criteria for apnea or hypopnea, but terminates in a cortical arousal. RERAs are a hallmark of Upper Airway Resistance Syndrome (UARS). They are not counted in standard AHI but can significantly fragment sleep. AirwayLab\u2019s NED engine detects RERA-like events by identifying sequences of flow-limited breaths terminated by a recovery breath.',
     link: '/about',
+    blogLinks: [
+      { slug: 'hidden-respiratory-events', title: 'The Hidden Respiratory Events Your Flow Data Isn\'t Showing You' },
+    ],
   },
   {
     id: 'uars',
@@ -122,6 +137,10 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'A condition where the airway is narrowed enough to increase respiratory effort and cause arousals, but not enough to produce apneas or hypopneas that register on standard testing. People with UARS often have a normal or near-normal AHI but experience significant daytime symptoms \u2014 fatigue, unrefreshing sleep, morning headaches. Flow limitation analysis (Glasgow Index, FL Score, NED) is the primary tool for identifying UARS on PAP therapy.',
     link: '/about/flow-limitation',
+    blogLinks: [
+      { slug: 'what-is-cns-sensitization', title: 'Understanding CNS Sensitization in Sleep-Disordered Breathing' },
+      { slug: 'arousals-vs-flow-limitation', title: 'Why Flow Limitation May Matter More Than Arousals' },
+    ],
   },
 
   // ---- AirwayLab Metrics ----
@@ -244,6 +263,9 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'pap-therapy',
     definition:
       'A PAP device that provides two different pressures: a higher pressure during inspiration (IPAP) and a lower pressure during expiration (EPAP). The difference between IPAP and EPAP is called pressure support. BiPAP is used when CPAP alone cannot resolve flow limitation, when higher pressures are needed for comfort, or when ventilatory support is required. ResMed calls their bilevel devices VPAP.',
+    blogLinks: [
+      { slug: 'how-pap-therapy-works', title: 'How PAP Therapy Actually Works' },
+    ],
   },
   {
     id: 'cpap',
@@ -251,6 +273,9 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'pap-therapy',
     definition:
       'A therapy device that delivers a single fixed air pressure through a mask to keep the upper airway open during sleep. The pressure acts as a pneumatic splint, preventing the airway from collapsing. CPAP is the first-line treatment for obstructive sleep apnea. The prescribed pressure is typically determined by a titration study.',
+    blogLinks: [
+      { slug: 'how-pap-therapy-works', title: 'How PAP Therapy Actually Works' },
+    ],
   },
   {
     id: 'delivered-pressure',
@@ -330,6 +355,9 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'data-analysis',
     definition:
       'A free, open-source desktop application for reviewing PAP therapy data. OSCAR provides detailed session-by-session waveform browsing with interactive zoom and event marking. AirwayLab complements OSCAR by providing automated flow limitation analysis (Glasgow Index, WAT, NED) that OSCAR does not compute. Many PAP users benefit from using both tools together.',
+    blogLinks: [
+      { slug: 'oscar-alternative', title: 'AirwayLab vs OSCAR: What Each Tool Does Best' },
+    ],
   },
   {
     id: 'sampling-rate',
@@ -507,6 +535,19 @@ export default function GlossaryPage() {
                         <ArrowRight className="h-3 w-3" />
                       </Link>
                     )}
+                    {term.blogLinks && term.blogLinks.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                        {term.blogLinks.map((bl) => (
+                          <Link
+                            key={bl.slug}
+                            href={`/blog/${bl.slug}`}
+                            className="text-xs text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            Read: {bl.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -538,6 +579,34 @@ export default function GlossaryPage() {
           >
             <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Oximetry Analysis</h3>
             <p className="mt-1 text-xs text-muted-foreground">17-metric SpO2 and heart rate analysis framework.</p>
+          </Link>
+        </div>
+      </div>
+
+      {/* Blog links */}
+      <div className="mt-8 border-t border-border/50 pt-8">
+        <h2 className="mb-3 text-lg font-semibold">From the blog</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link
+            href="/blog/ahi-normal-still-tired"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">AHI Normal, Still Tired?</h3>
+            <p className="mt-1 text-xs text-muted-foreground">What your data is missing when AHI looks fine.</p>
+          </Link>
+          <Link
+            href="/blog/understanding-flow-limitation"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Understanding Flow Limitation</h3>
+            <p className="mt-1 text-xs text-muted-foreground">The subtle restriction your AHI completely ignores.</p>
+          </Link>
+          <Link
+            href="/blog/how-pap-therapy-works"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">How PAP Therapy Works</h3>
+            <p className="mt-1 text-xs text-muted-foreground">CPAP, BiPAP, and pressure support explained.</p>
           </Link>
         </div>
       </div>

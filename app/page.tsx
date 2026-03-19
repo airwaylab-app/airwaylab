@@ -139,9 +139,35 @@ const trustItems = [
   },
 ];
 
+const softwareAppJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AirwayLab',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Web browser',
+  url: 'https://airwaylab.app',
+  description:
+    'Free, open-source PAP therapy analysis tool. Detects flow limitation, RERAs, and breathing instability from ResMed SD card data using four research-grade engines, entirely in the browser.',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+  author: {
+    '@type': 'Organization',
+    name: 'AirwayLab',
+    url: 'https://airwaylab.app',
+  },
+};
+
 export default function Home() {
   return (
     <div className="flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
       {/* ─── Hero ─── */}
       <section className="relative flex min-h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:min-h-[calc(100vh-4rem)]">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />

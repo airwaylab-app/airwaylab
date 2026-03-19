@@ -95,10 +95,16 @@ export default function BeyondAHIPost() {
             spectrum of breathing disturbances.
           </p>
           <p>
-            Meanwhile, studies on Upper Airway Resistance Syndrome (UARS) have shown that patients
-            with normal AHI but significant flow limitation can experience the same degree of
-            daytime sleepiness and cognitive impairment as patients with moderate obstructive sleep
-            apnea.
+            Meanwhile, studies on{' '}
+            <Link href="/glossary#uars" className="text-primary hover:text-primary/80">
+              Upper Airway Resistance Syndrome (UARS)
+            </Link>{' '}
+            have shown that patients with normal AHI but significant{' '}
+            <Link href="/glossary#flow-limitation" className="text-primary hover:text-primary/80">
+              flow limitation
+            </Link>{' '}
+            can experience the same degree of daytime sleepiness and cognitive impairment as
+            patients with moderate obstructive sleep apnea.
           </p>
         </div>
       </section>
@@ -119,7 +125,9 @@ export default function BeyondAHIPost() {
             <div className="rounded-xl border border-border/50 p-4">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-blue-400" />
-                <p className="text-sm font-semibold text-foreground">Glasgow Index (Flow Shape Score)</p>
+                <p className="text-sm font-semibold text-foreground">
+                  <Link href="/glossary#glasgow-index" className="hover:text-primary">Glasgow Index</Link> (Flow Shape Score)
+                </p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 Quantifies the overall distortion of your breathing waveform on a 0-1 scale. Unlike
@@ -276,6 +284,21 @@ export default function BeyondAHIPost() {
             Punjabi et al. (2008). &quot;Sleep-disordered breathing and mortality: A prospective
             cohort study.&quot; <em>PLoS Medicine</em>, 5(8), e173.
           </p>
+          <div className="mt-4 border-t border-border/30 pt-4">
+            <p className="mb-2 text-xs font-semibold text-foreground">Related articles</p>
+            <p>
+              <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
+                Your AHI Is Normal But You&apos;re Still Exhausted
+              </Link>{' '}
+              -- a practical guide when AHI looks fine but symptoms persist.
+            </p>
+            <p className="mt-1">
+              <Link href="/blog/arousals-vs-flow-limitation" className="text-primary hover:text-primary/80">
+                Arousals Don&apos;t Tell the Whole Story
+              </Link>{' '}
+              -- why flow limitation may matter more than cortical arousals.
+            </p>
+          </div>
         </div>
       </section>
 

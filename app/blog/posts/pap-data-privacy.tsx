@@ -196,7 +196,15 @@ export default function PAPDataPrivacyPost() {
           <p>
             This means you can analyze your own data without it ever touching a third-party server.
             No manufacturer cloud, no DME portal, no insurance compliance system. Just your data,
-            on your device, under your control.
+            on your device, under your control. Your{' '}
+            <Link href="/glossary#brp-edf" className="text-primary hover:text-primary/80">
+              SD card&apos;s BRP.edf files
+            </Link>{' '}
+            contain breath-by-breath flow waveforms that tools like AirwayLab can analyse for{' '}
+            <Link href="/glossary#flow-limitation" className="text-primary hover:text-primary/80">
+              flow limitation
+            </Link>{' '}
+            and other metrics your manufacturer app never shows you.
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
@@ -309,6 +317,21 @@ export default function PAPDataPrivacyPost() {
             European Data Protection Board (2020). &quot;Guidelines on the processing of health
             data for scientific research purposes in the context of the COVID-19 outbreak.&quot;
           </p>
+          <div className="mt-4 border-t border-border/30 pt-4">
+            <p className="mb-2 text-xs font-semibold text-foreground">Related articles</p>
+            <p>
+              <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+                AirwayLab vs OSCAR: What Each Tool Does Best
+              </Link>{' '}
+              -- comparing the two privacy-respecting PAP analysis tools.
+            </p>
+            <p className="mt-1">
+              <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+                Understanding Flow Limitation
+              </Link>{' '}
+              -- what your SD card data can reveal about your therapy.
+            </p>
+          </div>
         </div>
       </section>
 
