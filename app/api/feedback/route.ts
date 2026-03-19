@@ -7,7 +7,7 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard'
 import { resultToResponse } from '@/lib/errors'
 import { submitFeedback } from '@/lib/services/feedback-service'
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 })
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 })
 
 const FeedbackSchema = z.object({
   message: z.string()
