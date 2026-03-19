@@ -202,7 +202,7 @@ export function loadPersistedResults(): {
       !firstNight.wat ||
       !firstNight.ned
     ) {
-      console.warn('[persistence] Corrupted data detected. Clearing.');
+      Sentry.logger.warn('[persistence] Corrupted data detected, clearing');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { captureApiError } from '@/lib/sentry-utils';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
+
+const ConsentSchema = z.object({
+  consent: z.boolean(),
+});
 
 /**
  * GET: Check storage consent status
@@ -69,8 +74,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const consent = body.consent === true;
+    const raw = await request.json().catch(() => null);
+    const parsed = ConsentSchema.safeParse(raw);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+      return NextResponse.json({ error: firstError }, { status: 400 });
+    }
+    const { consent } = parsed.data;
 
     const { error: updateError } = await serviceRole
       .from('profiles')

@@ -134,6 +134,8 @@ describe('store-analysis-data Zod error sanitisation', () => {
     }));
     vi.doMock('@sentry/nextjs', () => ({
       captureException: vi.fn(),
+      captureMessage: vi.fn(),
+      logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
     }));
 
     const { POST } = await import('@/app/api/store-analysis-data/route');

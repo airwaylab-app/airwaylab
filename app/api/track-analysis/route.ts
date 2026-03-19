@@ -33,20 +33,20 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
-      console.warn(`[track-analysis] 429 rate limited ip=${ip}`);
+      Sentry.logger.warn('[track-analysis] 429 rate limited', { ip });
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
     }
 
     // Size guard
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.warn(`[track-analysis] 413 payload too large: ${request.headers.get('content-length')} bytes`);
+      Sentry.logger.warn('[track-analysis] 413 payload too large', { contentLength: request.headers.get('content-length') });
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
     const body = await request.json().catch(() => null);
     const parsed = TrackAnalysisSchema.safeParse(body);
     if (!parsed.success) {
-      console.warn('[track-analysis] 400 invalid payload');
+      Sentry.logger.warn('[track-analysis] 400 invalid payload');
       return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
     }
 
@@ -71,9 +71,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      console.info(
-        `[track-analysis] ${nightCount} nights tracked (Supabase not configured)`
-      );
+      Sentry.logger.info('[track-analysis] Supabase not configured', { nightCount });
     }
 
     return NextResponse.json({ ok: true });

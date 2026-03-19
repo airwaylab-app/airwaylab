@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 
 const BASE_URL = 'https://airwaylab.app';
+
+const AnnounceSchema = z.object({
+  dry_run: z.boolean().optional(),
+  test_email: z.string().email().max(254).optional(),
+  send_to: z.array(z.string().email().max(254)).optional(),
+});
 
 /**
  * One-time product announcement email for existing users.
@@ -31,10 +38,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({}));
-  const dryRun = body.dry_run !== false; // default to dry run
-  const testEmail: string | undefined = body.test_email;
-  const sendTo: string[] | undefined = body.send_to; // optional: only send to these addresses
+  const raw = await request.json().catch(() => ({}));
+  const parsed = AnnounceSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+    return NextResponse.json({ error: firstError }, { status: 400 });
+  }
+  const dryRun = parsed.data.dry_run !== false; // default to dry run
+  const testEmail = parsed.data.test_email;
+  const sendTo = parsed.data.send_to;
 
   // Test mode: send to a single address for preview, no backfill or DB queries
   if (testEmail) {

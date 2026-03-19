@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -11,6 +12,11 @@ const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 // ── Validation ───────────────────────────────────────────────
 const MAX_NIGHTS_PER_CHUNK = 1000; // max nights per request (client chunks larger datasets)
 const MAX_PAYLOAD_BYTES = 3_145_728; // 3 MB (supports ~1000 anonymised nights with headroom)
+
+const ContributeDataSchema = z.object({
+  nights: z.array(z.unknown()).min(1).max(MAX_NIGHTS_PER_CHUNK),
+  contributionId: z.string().max(200).optional(),
+});
 
 function isValidNight(n: unknown): n is NightResult {
   if (!n || typeof n !== 'object') return false;
@@ -171,7 +177,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
-      console.warn(`[contribute-data] 429 rate limited ip=${ip}`);
+      Sentry.logger.warn('[contribute-data] 429 rate limited', { ip });
       return NextResponse.json(
         { error: 'Too many contributions. Please try again later.' },
         { status: 429 }
@@ -180,30 +186,24 @@ export async function POST(request: NextRequest) {
 
     // Size guard
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.warn(`[contribute-data] 413 payload too large: ${request.headers.get('content-length')} bytes`);
+      Sentry.logger.warn('[contribute-data] 413 payload too large', { contentLength: request.headers.get('content-length') });
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
       );
     }
 
-    const body = await request.json();
-    const { nights, contributionId: clientContributionId } = body as {
-      nights: unknown[];
-      contributionId?: string;
-    };
-
-    // Validate
-    if (!Array.isArray(nights) || nights.length === 0 || nights.length > MAX_NIGHTS_PER_CHUNK) {
-      console.warn(`[contribute-data] 400 invalid night count: ${Array.isArray(nights) ? nights.length : 'not array'}`);
-      return NextResponse.json(
-        { error: `Expected 1–${MAX_NIGHTS_PER_CHUNK} nights per request.` },
-        { status: 400 }
-      );
+    const raw = await request.json().catch(() => null);
+    const parsed = ContributeDataSchema.safeParse(raw);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+      Sentry.logger.warn('[contribute-data] 400 validation failed', { error: firstError });
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
+    const { nights, contributionId: clientContributionId } = parsed.data;
 
     if (!nights.every(isValidNight)) {
-      console.warn(`[contribute-data] 400 invalid night data format (${nights.length} nights)`);
+      Sentry.logger.warn('[contribute-data] 400 invalid night data format', { nightCount: nights.length });
       return NextResponse.json(
         { error: 'Invalid night data format.' },
         { status: 400 }
@@ -232,14 +232,12 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        console.error('[contribute-data] Supabase error:', error.message);
+        Sentry.logger.warn('[contribute-data] Supabase insert failed', { error: error.message });
         Sentry.captureException(error, { tags: { route: 'contribute-data' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      console.info(
-        `[contribute-data] ${anonymised.length} nights contributed (Supabase not configured)`
-      );
+      Sentry.logger.info('[contribute-data] Supabase not configured', { nightCount: anonymised.length });
     }
 
     return NextResponse.json({
