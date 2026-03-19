@@ -134,10 +134,10 @@ describe('parseSA2', () => {
 
     // Check sample structure
     const sample = result.samples[0];
-    expect(sample.spo2).toBe(97);
-    expect(sample.hr).toBe(72);
-    expect(sample.motion).toBe(0);
-    expect(sample.valid).toBe(true);
+    expect(sample!.spo2).toBe(97);
+    expect(sample!.hr).toBe(72);
+    expect(sample!.motion).toBe(0);
+    expect(sample!.valid).toBe(true);
   });
 
   // ── Test 2: SpO2 out of range → valid: false ──────────────
@@ -158,11 +158,11 @@ describe('parseSA2', () => {
 
     const result = parseSA2(buffer, 'DATALOG/20260311/test_SA2.edf');
 
-    expect(result.samples[0].valid).toBe(true);
-    expect(result.samples[1].valid).toBe(false);
-    expect(result.samples[1].spo2).toBe(-1);
-    expect(result.samples[2].valid).toBe(false);
-    expect(result.samples[3].valid).toBe(true);
+    expect(result.samples[0]!.valid).toBe(true);
+    expect(result.samples[1]!.valid).toBe(false);
+    expect(result.samples[1]!.spo2).toBe(-1);
+    expect(result.samples[2]!.valid).toBe(false);
+    expect(result.samples[3]!.valid).toBe(true);
   });
 
   // ── Test 3: No SpO2 signal → throws ───────────────────────
@@ -191,10 +191,10 @@ describe('parseSA2', () => {
     const result = parseSA2(buffer, 'DATALOG/20260311/test_SA2.edf');
 
     expect(result.samples).toHaveLength(3);
-    expect(result.samples[0].hr).toBe(-1);
-    expect(result.samples[0].spo2).toBe(97);
+    expect(result.samples[0]!.hr).toBe(-1);
+    expect(result.samples[0]!.spo2).toBe(97);
     // valid should still be true when SpO2 is in range (no pulse doesn't invalidate)
-    expect(result.samples[0].valid).toBe(true);
+    expect(result.samples[0]!.valid).toBe(true);
   });
 
   // ── Test 5: 0 data records → throws ───────────────────────
@@ -247,7 +247,7 @@ describe('parseSA2', () => {
       });
 
       const result = parseSA2(buffer, 'DATALOG/20260311/test_SA2.edf');
-      expect(result.samples[0].spo2).toBe(95);
+      expect(result.samples[0]!.spo2).toBe(95);
     }
   });
 
@@ -258,9 +258,9 @@ describe('parseSA2', () => {
     const result = parseSA2(buffer, 'DATALOG/20260311/test_SA2.edf');
 
     // At 1 Hz: samples at t=0s, 1s, 2s, 3s, 4s
-    const t0 = result.samples[0].time.getTime();
-    const t1 = result.samples[1].time.getTime();
-    const t4 = result.samples[4].time.getTime();
+    const t0 = result.samples[0]!.time.getTime();
+    const t1 = result.samples[1]!.time.getTime();
+    const t4 = result.samples[4]!.time.getTime();
 
     expect(t1 - t0).toBe(1000); // 1 second between samples
     expect(t4 - t0).toBe(4000); // 4 seconds total

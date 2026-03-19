@@ -55,8 +55,8 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].nightDate).toBe('2026-03-15');
-    expect(result[0].sessions).toHaveLength(1);
+    expect(result[0]!.nightDate).toBe('2026-03-15');
+    expect(result[0]!.sessions).toHaveLength(1);
   });
 
   it('groups multiple sessions on the same night together, sorted by recording time', () => {
@@ -67,8 +67,8 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].sessions[0].recordingDate.getHours()).toBe(21);
-    expect(result[0].sessions[1].recordingDate.getHours()).toBe(23);
+    expect(result[0]!.sessions[0]!.recordingDate.getHours()).toBe(21);
+    expect(result[0]!.sessions[1]!.recordingDate.getHours()).toBe(23);
   });
 
   it('sorts multiple nights most-recent-first', () => {
@@ -80,9 +80,9 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(3);
-    expect(result[0].nightDate).toBe('2026-03-15');
-    expect(result[1].nightDate).toBe('2026-03-14');
-    expect(result[2].nightDate).toBe('2026-03-13');
+    expect(result[0]!.nightDate).toBe('2026-03-15');
+    expect(result[1]!.nightDate).toBe('2026-03-14');
+    expect(result[2]!.nightDate).toBe('2026-03-13');
   });
 
   it('attributes a pre-midnight session (22:00) to the current date', () => {
@@ -91,7 +91,7 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].nightDate).toBe('2026-03-15');
+    expect(result[0]!.nightDate).toBe('2026-03-15');
   });
 
   it('attributes a post-midnight session (02:00) with filename date to the previous night', () => {
@@ -100,7 +100,7 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].nightDate).toBe('2026-03-15');
+    expect(result[0]!.nightDate).toBe('2026-03-15');
   });
 
   it('attributes a noon-6PM session to the current date', () => {
@@ -109,7 +109,7 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].nightDate).toBe('2026-03-15');
+    expect(result[0]!.nightDate).toBe('2026-03-15');
   });
 
   it('groups split sessions (two sessions same night with gap) into the same group', () => {
@@ -120,8 +120,8 @@ describe('groupByNight', () => {
     const result = groupByNight(edfs);
 
     expect(result).toHaveLength(1);
-    expect(result[0].nightDate).toBe('2026-03-15');
-    expect(result[0].sessions).toHaveLength(2);
+    expect(result[0]!.nightDate).toBe('2026-03-15');
+    expect(result[0]!.sessions).toHaveLength(2);
   });
 });
 

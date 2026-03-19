@@ -31,7 +31,7 @@ function CopyForumButton({ nights, selectedNight }: Props) {
     try {
       const text =
         nights.length === 1 || selectedNight
-          ? exportForumSingleNight(selectedNight ?? nights[0], tier)
+          ? exportForumSingleNight(selectedNight ?? nights[0]!, tier)
           : exportForumMultiNight(nights, tier);
       navigator.clipboard.writeText(text).then(
         () => {

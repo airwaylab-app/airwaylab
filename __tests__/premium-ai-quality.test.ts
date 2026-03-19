@@ -10,7 +10,9 @@ vi.mock('@/lib/csrf', () => ({
 const mockIsLimited = vi.fn(() => false);
 vi.mock('@/lib/rate-limit', () => ({
   aiRateLimiter: { isLimited: (...args: Parameters<typeof mockIsLimited>) => mockIsLimited(...args) },
+  aiPremiumRateLimiter: { isLimited: (...args: Parameters<typeof mockIsLimited>) => mockIsLimited(...args) },
   getRateLimitKey: vi.fn(() => '127.0.0.1'),
+  getUserRateLimitKey: vi.fn((id: string) => `user:${id}`),
 }));
 
 vi.mock('@sentry/nextjs', () => ({
@@ -126,7 +128,7 @@ describe('Premium AI Quality — Model Selection', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { model: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
     expect(createArgs.model).toBe('claude-haiku-4-5-20251001');
   });
 
@@ -135,7 +137,7 @@ describe('Premium AI Quality — Model Selection', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { model: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
     expect(createArgs.model).toBe('claude-sonnet-4-6');
   });
 
@@ -144,7 +146,7 @@ describe('Premium AI Quality — Model Selection', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { model: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
     expect(createArgs.model).toBe('claude-sonnet-4-6');
   });
 
@@ -160,7 +162,7 @@ describe('Premium AI Quality — Model Selection', () => {
       },
     }));
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { model: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
     expect(createArgs.model).toBe('claude-sonnet-4-6');
   });
 });
@@ -176,7 +178,7 @@ describe('Premium AI Quality — Token Budget', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { max_tokens: number };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { max_tokens: number };
     expect(createArgs.max_tokens).toBe(1024);
   });
 
@@ -185,7 +187,7 @@ describe('Premium AI Quality — Token Budget', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { max_tokens: number };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { max_tokens: number };
     expect(createArgs.max_tokens).toBe(4096);
   });
 
@@ -194,7 +196,7 @@ describe('Premium AI Quality — Token Budget', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { max_tokens: number };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { max_tokens: number };
     expect(createArgs.max_tokens).toBe(4096);
   });
 });
@@ -210,7 +212,7 @@ describe('Premium AI Quality — System Prompt', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { system: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
     expect(createArgs.system).toContain('6 to 10 clinical insights');
     expect(createArgs.system).toContain('"correlation"');
     expect(createArgs.system).toContain('"temporal"');
@@ -221,7 +223,7 @@ describe('Premium AI Quality — System Prompt', () => {
     mockAIResponse([validInsight()]);
     await callRoute(validBody());
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { system: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
     expect(createArgs.system).not.toContain('6 to 10 clinical insights');
     expect(createArgs.system).not.toContain('"correlation"');
     expect(createArgs.system).not.toContain('"temporal"');
@@ -239,7 +241,7 @@ describe('Premium AI Quality — System Prompt', () => {
       },
     }));
 
-    const createArgs = mockMessagesCreate.mock.calls[0][0] as { system: string };
+    const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
     expect(createArgs.system).toContain('RERA clustering');
     expect(createArgs.system).toContain('6 to 10 clinical insights');
   });

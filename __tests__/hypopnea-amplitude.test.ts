@@ -31,7 +31,7 @@ function _makeBeath(qPeak: number, inspStartSample: number, durationSamples: num
     expEnd: inspStartSample + durationSamples * 2,
     inspFlow,
     qPeak,
-    qMid: inspFlow[midIdx],
+    qMid: inspFlow[midIdx]!,
     ti: durationSamples / 25, // assume 25 Hz
     tPeakTi: 0.3,
     ned,
@@ -62,7 +62,7 @@ function buildFlowSignal(
   const flow = new Float32Array(total);
 
   for (let b = 0; b < amplitudes.length; b++) {
-    const amp = amplitudes[b];
+    const amp = amplitudes[b]!;
     const offset = b * samplesPerBreath;
     // Inspiration (positive half-sine)
     for (let i = 0; i < halfSamples; i++) {
@@ -384,21 +384,21 @@ describe('Hypopnea & Amplitude Stability Detection', () => {
   // Test 17: threshold bands
   // ----------------------------------------------------------
   it('threshold for briefObstructionIndex returns correct traffic lights', () => {
-    expect(getTrafficLight(2, THRESHOLDS.briefObstructionIndex)).toBe('good');
-    expect(getTrafficLight(4, THRESHOLDS.briefObstructionIndex)).toBe('warn');
-    expect(getTrafficLight(8, THRESHOLDS.briefObstructionIndex)).toBe('bad');
+    expect(getTrafficLight(2, THRESHOLDS.briefObstructionIndex!)).toBe('good');
+    expect(getTrafficLight(4, THRESHOLDS.briefObstructionIndex!)).toBe('warn');
+    expect(getTrafficLight(8, THRESHOLDS.briefObstructionIndex!)).toBe('bad');
   });
 
   it('threshold for hypopneaIndex returns correct traffic lights', () => {
-    expect(getTrafficLight(1, THRESHOLDS.hypopneaIndex)).toBe('good');
-    expect(getTrafficLight(3, THRESHOLDS.hypopneaIndex)).toBe('warn');
-    expect(getTrafficLight(7, THRESHOLDS.hypopneaIndex)).toBe('bad');
+    expect(getTrafficLight(1, THRESHOLDS.hypopneaIndex!)).toBe('good');
+    expect(getTrafficLight(3, THRESHOLDS.hypopneaIndex!)).toBe('warn');
+    expect(getTrafficLight(7, THRESHOLDS.hypopneaIndex!)).toBe('bad');
   });
 
   it('threshold for amplitudeCv returns correct traffic lights', () => {
-    expect(getTrafficLight(15, THRESHOLDS.amplitudeCv)).toBe('good');
-    expect(getTrafficLight(25, THRESHOLDS.amplitudeCv)).toBe('warn');
-    expect(getTrafficLight(35, THRESHOLDS.amplitudeCv)).toBe('bad');
+    expect(getTrafficLight(15, THRESHOLDS.amplitudeCv!)).toBe('good');
+    expect(getTrafficLight(25, THRESHOLDS.amplitudeCv!)).toBe('warn');
+    expect(getTrafficLight(35, THRESHOLDS.amplitudeCv!)).toBe('bad');
   });
 
   // ----------------------------------------------------------

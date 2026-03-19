@@ -32,7 +32,7 @@ describe('EVE Parser', () => {
       const events = parseEVE(buffer);
 
       for (let i = 1; i < events.length; i++) {
-        expect(events[i].onsetSec).toBeGreaterThanOrEqual(events[i - 1].onsetSec);
+        expect(events[i]!.onsetSec).toBeGreaterThanOrEqual(events[i - 1]!.onsetSec);
       }
     });
 
@@ -41,10 +41,10 @@ describe('EVE Parser', () => {
       const events = parseEVE(buffer);
 
       // From hexdump: +11954, +22791, +26424, +29628
-      expect(events[0].onsetSec).toBe(11954);
-      expect(events[1].onsetSec).toBe(22791);
-      expect(events[2].onsetSec).toBe(26424);
-      expect(events[3].onsetSec).toBe(29628);
+      expect(events[0]!.onsetSec).toBe(11954);
+      expect(events[1]!.onsetSec).toBe(22791);
+      expect(events[2]!.onsetSec).toBe(26424);
+      expect(events[3]!.onsetSec).toBe(29628);
     });
 
     it('has expected duration values', () => {
@@ -52,10 +52,10 @@ describe('EVE Parser', () => {
       const events = parseEVE(buffer);
 
       // From hexdump: 10, 13, 11, 14
-      expect(events[0].durationSec).toBe(10);
-      expect(events[1].durationSec).toBe(13);
-      expect(events[2].durationSec).toBe(11);
-      expect(events[3].durationSec).toBe(14);
+      expect(events[0]!.durationSec).toBe(10);
+      expect(events[1]!.durationSec).toBe(13);
+      expect(events[2]!.durationSec).toBe(11);
+      expect(events[3]!.durationSec).toBe(14);
     });
   });
 
@@ -77,9 +77,9 @@ describe('EVE Parser', () => {
       const events = parseEVE(buffer);
 
       // From hexdump: first events at +3960, +7831, +10183, +11860, ...
-      expect(events[0].onsetSec).toBe(3960);
-      expect(events[1].onsetSec).toBe(7831);
-      expect(events[2].onsetSec).toBe(10183);
+      expect(events[0]!.onsetSec).toBe(3960);
+      expect(events[1]!.onsetSec).toBe(7831);
+      expect(events[2]!.onsetSec).toBe(10183);
     });
   });
 
@@ -153,7 +153,7 @@ describe('filterEVEFiles', () => {
 
     const result = filterEVEFiles(files);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('20260111_210642_EVE.edf');
+    expect(result[0]!.name).toBe('20260111_210642_EVE.edf');
   });
 
   it('matches case-insensitively', () => {
@@ -186,6 +186,6 @@ describe('filterEVEFiles', () => {
     // EVELYN.edf does not end with EVE.edf
     const result = filterEVEFiles(files);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('PREVENT_EVE.edf');
+    expect(result[0]!.name).toBe('PREVENT_EVE.edf');
   });
 });

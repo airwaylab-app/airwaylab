@@ -5,7 +5,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 
-export interface SanitizeResult {
+interface SanitizeResult {
   text: string;
   flagged: boolean;
 }

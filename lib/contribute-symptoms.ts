@@ -16,7 +16,7 @@ export function bucketPressure(pressure: number): string {
   return '14+';
 }
 
-export interface SymptomContributionPayload {
+interface SymptomContributionPayload {
   symptom_rating: number;
   ifl_risk: number;
   glasgow_overall: number;

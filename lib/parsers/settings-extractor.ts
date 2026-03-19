@@ -139,7 +139,7 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
 
   const len = Math.min(dates.length, ipapValues.length, epapValues.length);
   for (let i = 0; i < len; i++) {
-    const dateNum = Math.round(dates[i]);
+    const dateNum = Math.round(dates[i]!);
     if (firstDateNum === null) firstDateNum = dateNum;
 
     // Calculate date string from offset
@@ -147,8 +147,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     const d = new Date(startDateTime.getTime() + daysDiff * 86400000);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    const ipap = ipapValues[i];
-    const epap = epapValues[i];
+    const ipap = ipapValues[i]!;
+    const epap = epapValues[i]!;
 
     if (isNaN(ipap) || isNaN(epap) || ipap <= 0 || epap <= 0) continue;
 
@@ -271,7 +271,7 @@ export function getSettingsForDate(
   if (available.length === 0) return null;
 
   // Find the closest date before or on the target
-  let closest = available[0];
+  let closest = available[0]!;
   for (const d of available) {
     if (d <= dateStr) closest = d;
     else break;

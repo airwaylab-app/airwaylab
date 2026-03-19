@@ -45,12 +45,12 @@ function getMetricValue(n: NightResult, key: SortKey): string {
 
 function getMetricColor(n: NightResult, key: SortKey, t: Record<string, ThresholdDef>): string {
   switch (key) {
-    case 'glasgow': return getTrafficColor(getTrafficLight(n.glasgow.overall, t.glasgowOverall));
-    case 'fl': return getTrafficColor(getTrafficLight(n.wat.flScore, t.watFL));
-    case 'regularity': return getTrafficColor(getTrafficLight(n.wat.regularityScore, t.watRegularity));
-    case 'periodicity': return getTrafficColor(getTrafficLight(n.wat.periodicityIndex, t.watPeriodicity));
-    case 'ned': return getTrafficColor(getTrafficLight(n.ned.nedMean, t.nedMean));
-    case 'rera': return getTrafficColor(getTrafficLight(n.ned.reraIndex, t.reraIndex));
+    case 'glasgow': return getTrafficColor(getTrafficLight(n.glasgow.overall, t.glasgowOverall!));
+    case 'fl': return getTrafficColor(getTrafficLight(n.wat.flScore, t.watFL!));
+    case 'regularity': return getTrafficColor(getTrafficLight(n.wat.regularityScore, t.watRegularity!));
+    case 'periodicity': return getTrafficColor(getTrafficLight(n.wat.periodicityIndex, t.watPeriodicity!));
+    case 'ned': return getTrafficColor(getTrafficLight(n.ned.nedMean, t.nedMean!));
+    case 'rera': return getTrafficColor(getTrafficLight(n.ned.reraIndex, t.reraIndex!));
     case 'boi': return t.briefObstructionIndex ? getTrafficColor(getTrafficLight(n.ned.briefObstructionIndex ?? 0, t.briefObstructionIndex)) : '';
     default: return '';
   }

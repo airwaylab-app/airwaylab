@@ -67,31 +67,31 @@ describe('getTrafficLight', () => {
 
   describe('real thresholds', () => {
     it('Glasgow overall: 0.5 is good', () => {
-      expect(getTrafficLight(0.5, THRESHOLDS.glasgowOverall)).toBe('good');
+      expect(getTrafficLight(0.5, THRESHOLDS.glasgowOverall!)).toBe('good');
     });
 
     it('Glasgow overall: 1.5 is warn', () => {
-      expect(getTrafficLight(1.5, THRESHOLDS.glasgowOverall)).toBe('warn');
+      expect(getTrafficLight(1.5, THRESHOLDS.glasgowOverall!)).toBe('warn');
     });
 
     it('Glasgow overall: 3.0 is bad', () => {
-      expect(getTrafficLight(3.0, THRESHOLDS.glasgowOverall)).toBe('bad');
+      expect(getTrafficLight(3.0, THRESHOLDS.glasgowOverall!)).toBe('bad');
     });
 
     it('SpO2 mean: 96 is good (higher-is-better)', () => {
-      expect(getTrafficLight(96, THRESHOLDS.spo2Mean)).toBe('good');
+      expect(getTrafficLight(96, THRESHOLDS.spo2Mean!)).toBe('good');
     });
 
     it('SpO2 mean: 90 is bad (higher-is-better)', () => {
-      expect(getTrafficLight(90, THRESHOLDS.spo2Mean)).toBe('bad');
+      expect(getTrafficLight(90, THRESHOLDS.spo2Mean!)).toBe('bad');
     });
 
     it('ODI-3: 3 is good', () => {
-      expect(getTrafficLight(3, THRESHOLDS.odi3)).toBe('good');
+      expect(getTrafficLight(3, THRESHOLDS.odi3!)).toBe('good');
     });
 
     it('RERA index: 12 is bad', () => {
-      expect(getTrafficLight(12, THRESHOLDS.reraIndex)).toBe('bad');
+      expect(getTrafficLight(12, THRESHOLDS.reraIndex!)).toBe('bad');
     });
   });
 });
@@ -140,21 +140,21 @@ describe('settings thresholds', () => {
   });
 
   it('settingsTriggerDelay: 200ms=good, 400ms=warn, 600ms=bad', () => {
-    expect(getTrafficLight(200, THRESHOLDS.settingsTriggerDelay)).toBe('good');
-    expect(getTrafficLight(400, THRESHOLDS.settingsTriggerDelay)).toBe('warn');
-    expect(getTrafficLight(600, THRESHOLDS.settingsTriggerDelay)).toBe('bad');
+    expect(getTrafficLight(200, THRESHOLDS.settingsTriggerDelay!)).toBe('good');
+    expect(getTrafficLight(400, THRESHOLDS.settingsTriggerDelay!)).toBe('warn');
+    expect(getTrafficLight(600, THRESHOLDS.settingsTriggerDelay!)).toBe('bad');
   });
 
   it('settingsTi: 1500ms=good, 1100ms=warn, 800ms=bad (higher-is-better)', () => {
-    expect(getTrafficLight(1500, THRESHOLDS.settingsTi)).toBe('good');
-    expect(getTrafficLight(1100, THRESHOLDS.settingsTi)).toBe('warn');
-    expect(getTrafficLight(800, THRESHOLDS.settingsTi)).toBe('bad');
+    expect(getTrafficLight(1500, THRESHOLDS.settingsTi!)).toBe('good');
+    expect(getTrafficLight(1100, THRESHOLDS.settingsTi!)).toBe('warn');
+    expect(getTrafficLight(800, THRESHOLDS.settingsTi!)).toBe('bad');
   });
 
   it('settingsIpapDwell: 50%=good, 40%=warn, 30%=bad (higher-is-better)', () => {
-    expect(getTrafficLight(50, THRESHOLDS.settingsIpapDwell)).toBe('good');
-    expect(getTrafficLight(40, THRESHOLDS.settingsIpapDwell)).toBe('warn');
-    expect(getTrafficLight(30, THRESHOLDS.settingsIpapDwell)).toBe('bad');
+    expect(getTrafficLight(50, THRESHOLDS.settingsIpapDwell!)).toBe('good');
+    expect(getTrafficLight(40, THRESHOLDS.settingsIpapDwell!)).toBe('warn');
+    expect(getTrafficLight(30, THRESHOLDS.settingsIpapDwell!)).toBe('bad');
   });
 });
 

@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-export interface ChangelogEntry {
+interface ChangelogEntry {
   title: string;
   description: string | null;
 }
 
-export interface ChangelogVersion {
+interface ChangelogVersion {
   version: string;
   date: string;
   dateFormatted: string;
@@ -45,7 +45,7 @@ function parseEntry(raw: string): ChangelogEntry {
 
   // Extract bold title: **Some Title**
   const boldMatch = line.match(/\*\*(.+?)\*\*/);
-  const title = boldMatch ? boldMatch[1] : line;
+  const title = boldMatch ? boldMatch[1]! : line;
 
   // Get description: text after the bold part, cleaned up
   let description: string | null = null;
@@ -56,7 +56,7 @@ function parseEntry(raw: string): ChangelogEntry {
     if (cleaned) {
       // Take only the first sentence and strip code/technical markers
       const firstSentence = cleaned
-        .split(/\.\s/)[0]
+        .split(/\.\s/)[0]!
         .replace(/`[^`]+`/g, '') // Remove inline code
         .replace(/\([^)]*\)/g, '') // Remove parenthetical technical refs
         .replace(/\s{2,}/g, ' ') // Collapse whitespace
@@ -103,13 +103,13 @@ export function parseChangelog(): ChangelogVersion[] {
     const versionMatch = line.match(/^## \[(\d+\.\d+\.\d+)\]\s*-\s*(\d{4}-\d{2}-\d{2})/);
     if (versionMatch) {
       flushEntry();
-      const [, version, date] = versionMatch;
-      const dateFormatted = new Date(`${date}T00:00:00`).toLocaleDateString('en-US', {
+      const [, version, date] = versionMatch as RegExpMatchArray;
+      const dateFormatted = new Date(`${date!}T00:00:00`).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      currentVersion = { version, date, dateFormatted, categories: [] };
+      currentVersion = { version: version!, date: date!, dateFormatted, categories: [] };
       currentCategory = null;
       versions.push(currentVersion);
       continue;
@@ -119,7 +119,7 @@ export function parseChangelog(): ChangelogVersion[] {
     const categoryMatch = line.match(/^### (.+)/);
     if (categoryMatch && currentVersion) {
       flushEntry();
-      const rawCategory = categoryMatch[1].trim();
+      const rawCategory = categoryMatch[1]!.trim();
       const label = CATEGORY_MAP[rawCategory] ?? rawCategory;
       currentCategory = label;
       currentVersion.categories.push({ label, entries: [] });

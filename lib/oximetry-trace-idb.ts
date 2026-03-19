@@ -120,7 +120,7 @@ export async function loadOximetryTrace(
 /**
  * Delete a specific oximetry trace from IndexedDB.
  */
-export async function deleteOximetryTrace(dateStr: string): Promise<void> {
+async function deleteOximetryTrace(dateStr: string): Promise<void> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -144,44 +144,3 @@ export async function deleteOximetryTrace(dateStr: string): Promise<void> {
   }
 }
 
-/**
- * Delete all expired or stale oximetry traces.
- */
-export async function deleteExpiredOximetryTraces(): Promise<void> {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.openCursor();
-
-      request.onsuccess = () => {
-        const cursor = request.result;
-        if (cursor) {
-          const entry = cursor.value as StoredOximetryTrace;
-          if (
-            Date.now() - entry.storedAt > TTL_MS ||
-            entry.engineVersion !== ENGINE_VERSION
-          ) {
-            cursor.delete();
-          }
-          cursor.continue();
-        }
-      };
-
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  } catch {
-    Sentry.captureMessage('IndexedDB oximetry trace cleanup failed', {
-      level: 'warning',
-      tags: { module: 'oximetry-trace-idb' },
-    });
-  }
-}

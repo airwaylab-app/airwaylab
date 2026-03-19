@@ -27,9 +27,9 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
   const THRESHOLDS = useThresholds();
   const steps: Step[] = [];
 
-  const gl = getTrafficLight(selectedNight.glasgow.overall, THRESHOLDS.glasgowOverall);
+  const gl = getTrafficLight(selectedNight.glasgow.overall, THRESHOLDS.glasgowOverall!);
   const eaiVal = selectedNight.ned.estimatedArousalIndex ?? 0;
-  const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai);
+  const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai!);
 
   if (gl === 'bad') {
     steps.push({

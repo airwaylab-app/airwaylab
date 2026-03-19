@@ -234,7 +234,7 @@ describe('generateClinicianQuestions', () => {
         glasgow: 3.0 + i * 0.5, // worsening
       })
     );
-    const questions = generateClinicianQuestions(nights, nights[2], nights[1], null);
+    const questions = generateClinicianQuestions(nights, nights[2]!, nights[1]!, null);
 
     const trendQ = questions.filter((q) => q.category === 'trend');
     expect(trendQ).toHaveLength(0);
@@ -253,9 +253,9 @@ describe('generateClinicianQuestions', () => {
     const flQuestions = questions.filter((q) => q.category === 'flow-limitation');
     expect(flQuestions).toHaveLength(1);
     // The consolidated question should reference multiple metrics
-    expect(flQuestions[0].rationale).toContain('FL Score');
-    expect(flQuestions[0].rationale).toContain('Glasgow');
-    expect(flQuestions[0].rationale).toContain('NED');
+    expect(flQuestions[0]!.rationale).toContain('FL Score');
+    expect(flQuestions[0]!.rationale).toContain('Glasgow');
+    expect(flQuestions[0]!.rationale).toContain('NED');
   });
 
   it('only generates BiPAP cycling question when settings metrics exist', () => {
@@ -309,7 +309,7 @@ describe('generateClinicianQuestions', () => {
     );
     const selected = nights[0]; // most recent
     const previous = nights[1];
-    const questions = generateClinicianQuestions(nights, selected, previous, null);
+    const questions = generateClinicianQuestions(nights, selected!, previous!, null);
 
     const trendQ = questions.filter((q) => q.category === 'trend');
     expect(trendQ.length).toBeGreaterThanOrEqual(1);

@@ -6,13 +6,13 @@
 
 const MANIFEST_KEY = 'airwaylab_file_manifest';
 
-export interface FileFingerprint {
+interface FileFingerprint {
   path: string;
   size: number;
   lastModified: number;
 }
 
-export interface NightManifest {
+interface NightManifest {
   nightDate: string; // YYYY-MM-DD
   files: FileFingerprint[];
 }
@@ -30,7 +30,7 @@ const DATE_FOLDER_RE = /(\d{8})\//;
 /**
  * Create a fingerprint from a File object.
  */
-export function fingerprintFile(file: File): FileFingerprint {
+function fingerprintFile(file: File): FileFingerprint {
   const path =
     (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
     file.name;
@@ -45,7 +45,7 @@ export function fingerprintFile(file: File): FileFingerprint {
 export function extractNightDate(path: string): string | null {
   const m = DATE_FOLDER_RE.exec(path);
   if (!m) return null;
-  const raw = m[1]; // YYYYMMDD
+  const raw = m[1]!; // YYYYMMDD
   return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
 }
 
@@ -53,7 +53,7 @@ export function extractNightDate(path: string): string | null {
  * Group File[] by night date extracted from their paths.
  * Files without a recognisable date are grouped under '__unknown__'.
  */
-export function groupFilesByNight(files: File[]): Map<string, File[]> {
+function groupFilesByNight(files: File[]): Map<string, File[]> {
   const groups = new Map<string, File[]>();
   for (const file of files) {
     const path =
@@ -189,13 +189,3 @@ export function loadManifest(): NightManifest[] | null {
   }
 }
 
-/**
- * Clear stored manifest.
- */
-export function clearManifest(): void {
-  try {
-    localStorage.removeItem(MANIFEST_KEY);
-  } catch {
-    // Silently ignore
-  }
-}

@@ -35,7 +35,7 @@ function PressureTooltipContent({ active, payload, label }: {
       <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: 'hsl(142 71% 45%)' }}>Pressure:</span>{' '}
-        <span className="font-mono">{payload[0].value.toFixed(1)}</span> cmH₂O
+        <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> cmH₂O
       </p>
     </div>
   );

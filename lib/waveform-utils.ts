@@ -50,7 +50,7 @@ export function decimateFlow(
     const idx = i * step;
     result[i] = {
       t: +(idx / sampleRate).toFixed(3),
-      value: +data[idx].toFixed(2),
+      value: +data[idx]!.toFixed(2),
     };
   }
 
@@ -82,7 +82,7 @@ export function decimateFlowRange(
     if (idx < 0) continue;
     result.push({
       t: +(idx / sampleRate).toFixed(3),
-      value: +data[idx].toFixed(2),
+      value: +data[idx]!.toFixed(2),
     });
   }
 
@@ -107,7 +107,7 @@ export function decimatePressure(
     const idx = i * step;
     result[i] = {
       t: +(idx / sampleRate).toFixed(3),
-      avg: +data[idx].toFixed(2),
+      avg: +data[idx]!.toFixed(2),
     };
   }
 
@@ -136,7 +136,7 @@ export function decimatePressureRange(
     if (idx < 0) continue;
     result.push({
       t: +(idx / sampleRate).toFixed(3),
-      avg: +data[idx].toFixed(2),
+      avg: +data[idx]!.toFixed(2),
     });
   }
 
@@ -161,7 +161,7 @@ export function sliceByTime<T extends { t: number }>(
   let hi = data.length;
   while (lo < hi) {
     const mid = (lo + hi) >>> 1;
-    if (data[mid].t < startSec) lo = mid + 1;
+    if (data[mid]!.t < startSec) lo = mid + 1;
     else hi = mid;
   }
   const startIdx = lo;
@@ -170,7 +170,7 @@ export function sliceByTime<T extends { t: number }>(
   hi = data.length;
   while (lo < hi) {
     const mid = (lo + hi) >>> 1;
-    if (data[mid].t <= endSec) lo = mid + 1;
+    if (data[mid]!.t <= endSec) lo = mid + 1;
     else hi = mid;
   }
   const endIdx = lo;
@@ -196,7 +196,7 @@ export function computeFlowStats(
   let fMax = -Infinity;
   let fSum = 0;
   let zeroCrossings = 0;
-  let prevSign = flow[0].value >= 0;
+  let prevSign = flow[0]!.value >= 0;
 
   for (const p of flow) {
     if (p.value < fMin) fMin = p.value;
@@ -227,8 +227,8 @@ export function computeFlowStats(
     }
     pMean = +(pSum / pValues.length).toFixed(1);
     const sorted = pValues.sort((a, b) => a - b);
-    pP10 = +sorted[Math.floor(sorted.length * 0.1)].toFixed(1);
-    pP90 = +sorted[Math.floor(Math.min(sorted.length * 0.9, sorted.length - 1))].toFixed(1);
+    pP10 = +sorted[Math.floor(sorted.length * 0.1)]!.toFixed(1);
+    pP90 = +sorted[Math.floor(Math.min(sorted.length * 0.9, sorted.length - 1))]!.toFixed(1);
   }
 
   let leakMean: number | null = null;
@@ -244,7 +244,7 @@ export function computeFlowStats(
     leakMean = +(lSum / leak.length).toFixed(1);
     leakMax = +lMax.toFixed(1);
     const sorted = leak.map((l) => l.avg).sort((a, b) => a - b);
-    leakP95 = +sorted[Math.floor(sorted.length * 0.95)].toFixed(1);
+    leakP95 = +sorted[Math.floor(sorted.length * 0.95)]!.toFixed(1);
   }
 
   return {
@@ -281,12 +281,12 @@ export function computeFlowStatsFromRaw(
   let fMax = -Infinity;
   let fSum = 0;
   let breathCount = 0;
-  let prevPositive = flow[0] >= 0;
+  let prevPositive = flow[0]! >= 0;
   const refractorySamples = Math.round(sampleRate * 1.5); // Min 1.5s between breaths
   let samplesSinceLastCrossing = refractorySamples; // Allow first crossing
 
   for (let i = 0; i < flow.length; i++) {
-    const v = flow[i];
+    const v = flow[i]!;
     if (v < fMin) fMin = v;
     if (v > fMax) fMax = v;
     fSum += v;
@@ -312,9 +312,9 @@ export function computeFlowStatsFromRaw(
     pMax = -Infinity;
     let pSum = 0;
     for (let i = 0; i < pressure.length; i++) {
-      const v = pressure[i];
-      if (v < pMin) pMin = v;
-      if (v > pMax) pMax = v;
+      const v = pressure[i]!;
+      if (v < pMin!) pMin = v;
+      if (v > pMax!) pMax = v;
       pSum += v;
     }
     pMean = +(pSum / pressure.length).toFixed(1);
@@ -328,7 +328,7 @@ export function computeFlowStatsFromRaw(
       // Deterministic reservoir sampling (Algorithm R)
       sample = new Array(RESERVOIR_SIZE);
       for (let i = 0; i < RESERVOIR_SIZE; i++) {
-        sample[i] = pressure[i];
+        sample[i] = pressure[i]!;
       }
       // Use a simple deterministic PRNG seeded from array length for reproducibility
       let seed = pressure.length;
@@ -337,13 +337,13 @@ export function computeFlowStatsFromRaw(
         seed = (seed * 1664525 + 1013904223) >>> 0;
         const j = seed % (i + 1);
         if (j < RESERVOIR_SIZE) {
-          sample[j] = pressure[i];
+          sample[j] = pressure[i]!;
         }
       }
     }
     sample.sort((a, b) => a - b);
-    pP10 = +sample[Math.floor(sample.length * 0.1)].toFixed(1);
-    pP90 = +sample[Math.floor(Math.min(sample.length * 0.9, sample.length - 1))].toFixed(1);
+    pP10 = +sample[Math.floor(sample.length * 0.1)]!.toFixed(1);
+    pP90 = +sample[Math.floor(Math.min(sample.length * 0.9, sample.length - 1))]!.toFixed(1);
   }
 
   let leakMean: number | null = null;
@@ -359,7 +359,7 @@ export function computeFlowStatsFromRaw(
     leakMean = +(lSum / leak.length).toFixed(1);
     leakMax = +lMax.toFixed(1);
     const sorted = leak.map((l) => l.avg).sort((a, b) => a - b);
-    leakP95 = +sorted[Math.floor(sorted.length * 0.95)].toFixed(1);
+    leakP95 = +sorted[Math.floor(sorted.length * 0.95)]!.toFixed(1);
   }
 
   return {
@@ -403,17 +403,17 @@ export function computeTidalVolume(
   const maxBreathSamples = Math.round(sampleRate * 15);
 
   let breathStart = 0;
-  let prevPositive = data[0] >= 0;
+  let prevPositive = data[0]! >= 0;
 
   for (let i = 1; i < data.length; i++) {
-    const positive = data[i] >= 0;
+    const positive = data[i]! >= 0;
 
     if (!prevPositive && positive) {
       const breathLen = i - breathStart;
       if (breathLen >= minBreathSamples && breathLen <= maxBreathSamples) {
         let positiveSum = 0;
         for (let j = breathStart; j < i; j++) {
-          if (data[j] > 0) positiveSum += data[j];
+          if (data[j]! > 0) positiveSum += data[j]!;
         }
 
         const volumeML = positiveSum * dt * (1000 / 60);
@@ -424,8 +424,8 @@ export function computeTidalVolume(
             Math.floor(breathMid / samplesPerBucket),
             totalBuckets - 1
           );
-          bucketSum[bucket] += volumeML;
-          bucketCount[bucket]++;
+          bucketSum[bucket]! += volumeML;
+          bucketCount[bucket]!++;
         }
       }
       breathStart = i;
@@ -437,19 +437,19 @@ export function computeTidalVolume(
   for (let b = 0; b < totalBuckets; b++) {
     points[b] = {
       t: +((b * samplesPerBucket) / sampleRate).toFixed(1),
-      avg: bucketCount[b] > 0 ? +(bucketSum[b] / bucketCount[b]).toFixed(0) : 0,
+      avg: bucketCount[b]! > 0 ? +(bucketSum[b]! / bucketCount[b]!).toFixed(0) : 0,
     };
   }
 
   for (let i = 0; i < points.length; i++) {
-    if (points[i].avg === 0) {
+    if (points[i]!.avg === 0) {
       for (let d = 1; d < points.length; d++) {
-        if (i - d >= 0 && points[i - d].avg > 0) {
-          points[i].avg = points[i - d].avg;
+        if (i - d >= 0 && points[i - d]!.avg > 0) {
+          points[i]!.avg = points[i - d]!.avg;
           break;
         }
-        if (i + d < points.length && points[i + d].avg > 0) {
-          points[i].avg = points[i + d].avg;
+        if (i + d < points.length && points[i + d]!.avg > 0) {
+          points[i]!.avg = points[i + d]!.avg;
           break;
         }
       }
@@ -483,11 +483,11 @@ export function computeRespiratoryRate(
     const wEnd = Math.min(data.length, center + Math.round(windowSamples / 2));
 
     let crossings = 0;
-    let prevPositive = data[wStart] >= 0;
+    let prevPositive = data[wStart]! >= 0;
     let samplesSinceLast = refractorySamples; // Allow first crossing
 
     for (let i = wStart + 1; i < wEnd; i++) {
-      const positive = data[i] >= 0;
+      const positive = data[i]! >= 0;
       samplesSinceLast++;
 
       // Count positive→negative crossings with refractory period
@@ -666,7 +666,7 @@ export function downsampleFlow(
     let sum = 0;
 
     for (let i = start; i < end; i++) {
-      const v = data[i];
+      const v = data[i]!;
       if (v < min) min = v;
       if (v > max) max = v;
       sum += v;
@@ -704,7 +704,7 @@ export function downsamplePressure(
 
     let sum = 0;
     for (let i = start; i < end; i++) {
-      sum += data[i];
+      sum += data[i]!;
     }
 
     points[b] = {
@@ -754,14 +754,14 @@ export function detectMShapeInWorker(inspFlow: Float32Array, qPeak: number): boo
   // Look for a valley below threshold in the middle 50%
   let minInMiddle = qPeak;
   for (let i = start25; i < end75; i++) {
-    if (inspFlow[i] < minInMiddle) minInMiddle = inspFlow[i];
+    if (inspFlow[i]! < minInMiddle) minInMiddle = inspFlow[i]!;
   }
 
   if (minInMiddle < threshold) {
     // Find valley index
     let valleyIdx = start25;
     for (let i = start25; i < end75; i++) {
-      if (inspFlow[i] === minInMiddle) {
+      if (inspFlow[i]! === minInMiddle) {
         valleyIdx = i;
         break;
       }
@@ -770,12 +770,12 @@ export function detectMShapeInWorker(inspFlow: Float32Array, qPeak: number): boo
     // Verify peaks on both sides of the valley
     let leftPeak = 0;
     for (let i = 0; i < valleyIdx; i++) {
-      if (inspFlow[i] > leftPeak) leftPeak = inspFlow[i];
+      if (inspFlow[i]! > leftPeak) leftPeak = inspFlow[i]!;
     }
 
     let rightPeak = 0;
     for (let i = valleyIdx; i < len; i++) {
-      if (inspFlow[i] > rightPeak) rightPeak = inspFlow[i];
+      if (inspFlow[i]! > rightPeak) rightPeak = inspFlow[i]!;
     }
 
     // Both sides must have peaks above the threshold

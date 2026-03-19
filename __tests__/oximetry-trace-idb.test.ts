@@ -112,19 +112,6 @@ describe('oximetry-trace-idb clearAll', () => {
   });
 });
 
-// ── Test 7: deleteExpiredOximetryTraces logic exists ─────────
-
-describe('oximetry-trace-idb cleanup', () => {
-  it('Test 7: deleteExpiredOximetryTraces checks TTL and engine version', async () => {
-    const { readFileSync } = await import('fs');
-    const { resolve } = await import('path');
-    const source = readFileSync(resolve(__dirname, '../lib/oximetry-trace-idb.ts'), 'utf-8');
-    expect(source).toContain('deleteExpiredOximetryTraces');
-    expect(source).toContain('entry.storedAt');
-    expect(source).toContain('entry.engineVersion');
-  });
-});
-
 // ── Test 8: storeOximetryTrace does not throw ────────────────
 
 describe('oximetry-trace-idb error handling', () => {
@@ -153,7 +140,7 @@ describe('oximetry-trace-idb error handling', () => {
     const source = readFileSync(resolve(__dirname, '../lib/oximetry-trace-idb.ts'), 'utf-8');
     const tagMatches = source.match(/module:\s*'oximetry-trace-idb'/g);
     expect(tagMatches).not.toBeNull();
-    expect(tagMatches!.length).toBeGreaterThanOrEqual(4);
+    expect(tagMatches!.length).toBeGreaterThanOrEqual(3);
   });
 });
 

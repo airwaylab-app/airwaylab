@@ -98,7 +98,7 @@ export function AIInsightsGate({
     const fetchFn = isDeepAccess
       ? () => {
           // Extract per-breath summary from NED engine breaths if available
-          const night = nights[nightIdx];
+          const night = nights[nightIdx]!;
           const nedData = night.ned as unknown as Record<string, unknown>;
           const nedBreaths = nedData.breaths as Array<Record<string, unknown>> | undefined;
           const perBreathSummary = nedBreaths && nedBreaths.length > 0

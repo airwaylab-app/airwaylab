@@ -8,7 +8,7 @@ import {
 import { THRESHOLDS } from '@/lib/thresholds';
 
 describe('getGlasgowExplanation', () => {
-  const threshold = THRESHOLDS.glasgowOverall;
+  const threshold = THRESHOLDS.glasgowOverall!;
 
   it('returns healthy explanation for good values', () => {
     const text = getGlasgowExplanation(0.5, threshold);
@@ -40,7 +40,7 @@ describe('getGlasgowExplanation', () => {
 });
 
 describe('getEAIExplanation', () => {
-  const threshold = THRESHOLDS.eai;
+  const threshold = THRESHOLDS.eai!;
 
   it('returns empty string for zero value', () => {
     expect(getEAIExplanation(0, threshold)).toBe('');
@@ -67,7 +67,7 @@ describe('getEAIExplanation', () => {
 });
 
 describe('getNEDExplanation', () => {
-  const threshold = THRESHOLDS.nedMean;
+  const threshold = THRESHOLDS.nedMean!;
 
   it('returns well-controlled for good NED and low RERA', () => {
     const text = getNEDExplanation(10, 3, threshold);
@@ -92,7 +92,7 @@ describe('getNEDExplanation', () => {
 });
 
 describe('getODIExplanation', () => {
-  const threshold = THRESHOLDS.odi3;
+  const threshold = THRESHOLDS.odi3!;
 
   it('returns stable explanation for good values', () => {
     const text = getODIExplanation(2, threshold);

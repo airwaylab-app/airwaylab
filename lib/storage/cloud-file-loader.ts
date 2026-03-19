@@ -100,21 +100,3 @@ export async function loadCloudFiles(
   return results;
 }
 
-/**
- * Check if the user has stored files for a specific night.
- * Lightweight check — doesn't download anything.
- */
-export async function hasCloudFiles(nightDate: string): Promise<boolean> {
-  try {
-    const res = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
-      credentials: 'same-origin',
-    });
-
-    if (!res.ok) return false;
-
-    const data = await res.json();
-    return Array.isArray(data?.files) && data.files.length > 0;
-  } catch {
-    return false;
-  }
-}

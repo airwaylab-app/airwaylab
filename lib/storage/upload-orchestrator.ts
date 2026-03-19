@@ -20,6 +20,10 @@ type UploadListener = (state: UploadState) => void;
 
 const CONCURRENCY = 10;
 const RETRY_DELAY_MS = 2000;
+/** Base delay for rate limit backoff (doubles each time) */
+const RATE_LIMIT_BASE_DELAY_MS = 5000;
+/** Maximum rate limit retries before giving up on a file */
+const RATE_LIMIT_MAX_RETRIES = 4;
 /** Abort after this many consecutive failures with the same error */
 const FAIL_FAST_THRESHOLD = 3;
 
@@ -170,7 +174,7 @@ class UploadOrchestrator {
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 3: Upload new files
-      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]));
+      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]!));
       const skipped = files.length - toUpload.length;
 
       this.setState({
@@ -258,7 +262,7 @@ class UploadOrchestrator {
     let cacheHits = 0;
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const file = files[i]!;
       const filePath = getFilePath(file);
       const cached = hashCache.get(filePath, file.size, file.lastModified);
       if (cached) {
@@ -324,7 +328,7 @@ class UploadOrchestrator {
             hashes[originalIndex] = msg.hash;
 
             // Cache the newly computed hash
-            const file = files[originalIndex];
+            const file = files[originalIndex]!;
             const filePath = getFilePath(file);
             hashCache.set(filePath, file.size, file.lastModified, msg.hash);
           } else if (msg.type === 'HASH_PROGRESS') {
@@ -371,7 +375,7 @@ class UploadOrchestrator {
   ): Promise<Set<string>> {
     const hashEntries = files.map((file, i) => ({
       filePath: getFilePath(file),
-      fileHash: hashes[i],
+      fileHash: hashes[i]!,
     }));
 
     const res = await fetch('/api/files/check-hashes', {
@@ -417,7 +421,7 @@ class UploadOrchestrator {
 
     const processOne = async (file: File) => {
       const originalIndex = allFiles.indexOf(file);
-      const hash = allHashes[originalIndex];
+      const hash = allHashes[originalIndex]!;
       const filePath = getFilePath(file);
       const nightDate = extractNightDate(filePath);
       const fileName = file.name;
@@ -432,36 +436,71 @@ class UploadOrchestrator {
         // Reset consecutive error counter on success
         consecutiveErrors = 0;
         lastErrorMessage = '';
-      } catch {
-        // Retry once
-        try {
-          await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
-          if (signal.aborted) throw new Error('Cancelled');
-          const uploaded = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
-          if (uploaded) result.uploaded++;
-          else result.skipped++;
-          consecutiveErrors = 0;
-          lastErrorMessage = '';
-        } catch (retryErr) {
-          const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-          result.failed++;
-          result.errors.push(`${fileName}: ${errMsg}`);
-
-          // Fail-fast: only count systemic errors (auth, network, server),
-          // not per-file validation errors (400) which are expected for some files
-          const isValidation = retryErr instanceof Error && (retryErr as Error & { isValidation?: boolean }).isValidation === true;
-          if (!isValidation) {
-            const normalized = errMsg.replace(/^[^:]+:\s*/, '');
-            if (normalized === lastErrorMessage) {
-              consecutiveErrors++;
-            } else {
-              consecutiveErrors = 1;
-              lastErrorMessage = normalized;
+      } catch (firstErr) {
+        // Rate limit: exponential backoff with multiple retries
+        const isRateLimit = firstErr instanceof Error && (firstErr as Error & { isRateLimit?: boolean }).isRateLimit === true;
+        if (isRateLimit) {
+          let uploaded = false;
+          for (let attempt = 0; attempt < RATE_LIMIT_MAX_RETRIES; attempt++) {
+            const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
+            await new Promise(r => setTimeout(r, delay));
+            if (signal.aborted) break;
+            try {
+              const ok = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
+              if (ok) result.uploaded++;
+              else result.skipped++;
+              uploaded = true;
+              consecutiveErrors = 0;
+              lastErrorMessage = '';
+              break;
+            } catch (retryErr) {
+              const stillRateLimited = retryErr instanceof Error && (retryErr as Error & { isRateLimit?: boolean }).isRateLimit === true;
+              if (!stillRateLimited) {
+                // Different error — record and stop retrying this file
+                const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+                result.failed++;
+                result.errors.push(`${fileName}: ${errMsg}`);
+                uploaded = true; // prevent double-counting
+                break;
+              }
+              // Still rate limited — continue backoff
             }
+          }
+          if (!uploaded) {
+            result.failed++;
+            result.errors.push(`${fileName}: Rate limited after retries`);
+          }
+        } else {
+          // Non-rate-limit error: retry once with flat delay
+          try {
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+            if (signal.aborted) throw new Error('Cancelled');
+            const uploaded = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
+            if (uploaded) result.uploaded++;
+            else result.skipped++;
+            consecutiveErrors = 0;
+            lastErrorMessage = '';
+          } catch (retryErr) {
+            const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            result.failed++;
+            result.errors.push(`${fileName}: ${errMsg}`);
 
-            // Abort if we've seen the same systemic error too many times in a row
-            if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
-              this.abortController?.abort();
+            // Fail-fast: only count systemic errors (auth, network, server),
+            // not per-file validation errors (400) which are expected for some files
+            const isValidation = retryErr instanceof Error && (retryErr as Error & { isValidation?: boolean }).isValidation === true;
+            if (!isValidation) {
+              const normalized = errMsg.replace(/^[^:]+:\s*/, '');
+              if (normalized === lastErrorMessage) {
+                consecutiveErrors++;
+              } else {
+                consecutiveErrors = 1;
+                lastErrorMessage = normalized;
+              }
+
+              // Abort if we've seen the same systemic error too many times in a row
+              if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
+                this.abortController?.abort();
+              }
             }
           }
         }
@@ -525,6 +564,8 @@ class UploadOrchestrator {
         throw new Error(err.error || 'Cloud sync requires an active session. Please sign in again.');
       }
       const error = new Error(err.error || `Presign failed: ${presignRes.status}`);
+      // Tag rate limit errors so retry logic uses exponential backoff
+      (error as Error & { isRateLimit?: boolean }).isRateLimit = presignRes.status === 429;
       // Tag validation errors (400) so fail-fast can distinguish them from systemic failures
       (error as Error & { isValidation?: boolean }).isValidation = presignRes.status === 400;
       throw error;

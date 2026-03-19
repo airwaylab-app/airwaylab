@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/nextjs';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
-export interface Profile {
+interface Profile {
   id: string;
   email: string;
   display_name: string | null;
@@ -18,7 +18,7 @@ export interface Profile {
   email_opt_in: boolean;
 }
 
-export interface Subscription {
+interface Subscription {
   id: string;
   stripe_subscription_id: string;
   stripe_price_id: string;

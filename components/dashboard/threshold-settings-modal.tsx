@@ -195,8 +195,8 @@ export function ThresholdSettingsModal() {
                   key={key}
                   metricKey={key}
                   label={label}
-                  current={thresholds[key]}
-                  defaultDef={THRESHOLDS[key]}
+                  current={thresholds[key]!}
+                  defaultDef={THRESHOLDS[key]!}
                   isCustom={isCustomised(key)}
                   onChange={setOverride}
                   onReset={resetOne}

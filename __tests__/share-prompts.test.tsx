@@ -75,7 +75,7 @@ function makeNight(dateStr: string): NightResult {
 
 describe('SharePrompts', () => {
   const nights = [makeNight('2025-01-01')];
-  const selectedNight = nights[0];
+  const selectedNight = nights[0]!;
   let onClose: () => void;
 
   beforeEach(() => {

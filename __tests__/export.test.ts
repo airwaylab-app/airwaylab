@@ -23,11 +23,11 @@ describe('exportCSV', () => {
   it('data rows contain numeric values', () => {
     const csv = exportCSV(SAMPLE_NIGHTS);
     const firstDataRow = csv.split('\n')[1];
-    const cols = firstDataRow.split(',');
+    const cols = firstDataRow!.split(',');
     // Date string in first column
     expect(cols[0]).toMatch(/\d{4}-\d{2}-\d{2}/);
     // Duration should be numeric
-    expect(parseFloat(cols[1])).toBeGreaterThan(0);
+    expect(parseFloat(cols[1]!)).toBeGreaterThan(0);
   });
 
   it('properly escapes fields containing commas', () => {
@@ -35,12 +35,12 @@ describe('exportCSV', () => {
     const csv = exportCSV(SAMPLE_NIGHTS);
     // Verify no unescaped commas break the CSV structure
     const lines = csv.split('\n');
-    const headerColCount = lines[0].split(',').length;
+    const headerColCount = lines[0]!.split(',').length;
     // Each data row should have the same number of columns
     for (let i = 1; i < lines.length; i++) {
       // Simple split check — escaped commas in quotes would be trickier
       // but our numeric data won't have commas
-      expect(lines[i].split(',').length).toBe(headerColCount);
+      expect(lines[i]!.split(',').length).toBe(headerColCount);
     }
   });
 

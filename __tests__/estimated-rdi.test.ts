@@ -66,22 +66,22 @@ describe('estimatedRdi threshold', () => {
   });
 
   it('returns green for value below 5', () => {
-    expect(getTrafficLight(3.0, THRESHOLDS.estimatedRdi)).toBe('good');
+    expect(getTrafficLight(3.0, THRESHOLDS.estimatedRdi!)).toBe('good');
   });
 
   it('returns amber for value between 5 and 15', () => {
-    expect(getTrafficLight(8.0, THRESHOLDS.estimatedRdi)).toBe('warn');
+    expect(getTrafficLight(8.0, THRESHOLDS.estimatedRdi!)).toBe('warn');
   });
 
   it('returns red for value above 15', () => {
-    expect(getTrafficLight(18.0, THRESHOLDS.estimatedRdi)).toBe('bad');
+    expect(getTrafficLight(18.0, THRESHOLDS.estimatedRdi!)).toBe('bad');
   });
 
   it('returns green at exactly 5 (boundary — threshold uses <=)', () => {
-    expect(getTrafficLight(5.0, THRESHOLDS.estimatedRdi)).toBe('good');
+    expect(getTrafficLight(5.0, THRESHOLDS.estimatedRdi!)).toBe('good');
   });
 
   it('returns amber just above 5', () => {
-    expect(getTrafficLight(5.1, THRESHOLDS.estimatedRdi)).toBe('warn');
+    expect(getTrafficLight(5.1, THRESHOLDS.estimatedRdi!)).toBe('warn');
   });
 });

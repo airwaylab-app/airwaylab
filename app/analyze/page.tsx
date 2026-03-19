@@ -652,8 +652,8 @@ function AnalyzePageInner() {
                 — {persistedData.nights.length} night{persistedData.nights.length !== 1 ? 's' : ''}
                 {persistedData.nights.length >= 2 && (() => {
                   const sorted = [...persistedData.nights].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                  const first = sorted[0].dateStr.slice(5); // MM-DD
-                  const last = sorted[sorted.length - 1].dateStr.slice(5);
+                  const first = sorted[0]!.dateStr.slice(5); // MM-DD
+                  const last = sorted[sorted.length - 1]!.dateStr.slice(5);
                   return ` (${first} – ${last})`;
                 })()}
                 . Upload new data to update.
@@ -673,7 +673,7 @@ function AnalyzePageInner() {
                 {' '}&mdash; {nights.length} night{nights.length !== 1 ? 's' : ''} analyzed
                 {nights.length >= 2 && (() => {
                   const sorted = [...nights].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                  return ` (${sorted[0].dateStr} to ${sorted[sorted.length - 1].dateStr})`;
+                  return ` (${sorted[0]!.dateStr} to ${sorted[sorted.length - 1]!.dateStr})`;
                 })()}
                 .
               </p>
@@ -746,8 +746,8 @@ function AnalyzePageInner() {
                   )}
                 </div>
               )}
-              {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]} sdFiles={sdFilesRef.current} />}
-              {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]} />}
+              {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]!} sdFiles={sdFilesRef.current} />}
+              {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]!} />}
               {!isNewUser && <ThresholdSettingsModal />}
               <Button variant="ghost" size="sm" onClick={handleReset}>
                 <RotateCcw className="mr-2 h-3 w-3" /> {isDemo ? 'Exit Demo' : 'New'}

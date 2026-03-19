@@ -12,6 +12,9 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
+  // Enable Sentry structured logging (Sentry.logger.info/warn/etc.)
+  _experiments: { enableLogs: true },
+
   beforeSend(event) {
     // Supabase storage rejects internally for duplicate uploads before our code handles it.
     // The contribute-waveforms endpoint treats duplicates as idempotent success (upsert: false by design).

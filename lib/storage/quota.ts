@@ -8,7 +8,7 @@ import type { Tier } from '@/lib/auth/auth-context';
 import type { StorageUsage } from './types';
 
 /** Storage quotas per tier in bytes — unlimited for all registered users */
-export const STORAGE_QUOTAS: Record<Tier, number> = {
+const STORAGE_QUOTAS: Record<Tier, number> = {
   community: Number.MAX_SAFE_INTEGER, // Unlimited — data is valuable for AI training
   supporter: Number.MAX_SAFE_INTEGER, // Unlimited
   champion: Number.MAX_SAFE_INTEGER,  // Unlimited

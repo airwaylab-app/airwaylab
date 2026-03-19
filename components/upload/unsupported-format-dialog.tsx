@@ -80,7 +80,7 @@ export function UnsupportedFormatDialog({ files, onClose }: Props) {
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
               {files.length === 1
-                ? `"${files[0].fileName}" doesn't match any supported pulse oximeter format.`
+                ? `"${files[0]!.fileName}" doesn't match any supported pulse oximeter format.`
                 : `${files.length} files don't match any supported format.`}
             </p>
           </div>
