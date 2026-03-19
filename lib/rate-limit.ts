@@ -24,7 +24,7 @@ function getRedis(): Redis | null {
   if (url && token) {
     _redis = new Redis({ url, token });
   } else {
-    console.warn('[rate-limit] Upstash not configured — using in-memory fallback (resets on cold start)');
+    Sentry.logger.warn('[rate-limit] Upstash not configured, using in-memory fallback (resets on cold start)');
   }
 
   return _redis;

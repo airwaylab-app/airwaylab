@@ -6,6 +6,8 @@
  * surfaces immediately in `next dev` / `next build`.
  */
 
+import * as Sentry from '@sentry/nextjs'
+
 // ─── Client (NEXT_PUBLIC_*) ──────────────────────────────────────────
 const env = {
   /** Plausible Analytics domain (omit to disable analytics) */
@@ -155,7 +157,7 @@ export function validateServerEnv() {
   }
 
   for (const w of warnings) {
-    console.warn(`[env] ⚠️  ${w}`);
+    Sentry.logger.warn('[env] validation warning', { detail: w });
   }
 
   if (errors.length > 0) {

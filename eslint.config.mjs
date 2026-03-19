@@ -21,6 +21,69 @@ const config = [
       'react-hooks/preserve-manual-memoization': 'off',
     },
   },
+  // ── Import boundary: Workers must not depend on React/Next.js ──
+  {
+    files: ['workers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'next', 'next/*'],
+              message:
+                'Workers must not import React or Next.js — they run in a Web Worker context.',
+            },
+            {
+              group: ['@/components/*', '@/hooks/*'],
+              message: 'Workers must not import UI-layer modules.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // ── Import boundary: API routes must not import client-side hooks ──
+  {
+    files: ['app/api/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/hooks/*'],
+              message:
+                'API routes run server-side — do not import client hooks.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // ── Import boundary: Analysis/parser modules must not depend on UI ──
+  {
+    files: ['lib/analyzers/**/*.ts', 'lib/parsers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'next', 'next/*'],
+              message:
+                'Analysis modules must not depend on React or Next.js.',
+            },
+            {
+              group: ['@/components/*', '@/hooks/*', '@/app/*'],
+              message:
+                'Analysis modules must not depend on UI-layer code.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default config;

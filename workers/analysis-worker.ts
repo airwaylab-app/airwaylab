@@ -250,7 +250,7 @@ async function processFiles(
           oximetryByDate.set(parsed.dateStr, parsed);
         }
 
-        console.info(`[sa2] Parsed ${parsed.samples.length} samples from ${filename} for night ${parsed.dateStr}`);
+        console.debug(`[sa2] Parsed ${parsed.samples.length} samples from ${filename} for night ${parsed.dateStr}`);
       } catch (err) {
         const filename = sa2Info.path.split('/').pop() || sa2Info.path;
         console.error(`[sa2] Failed to parse ${filename}: ${err instanceof Error ? err.message : String(err)}`);
@@ -264,7 +264,7 @@ async function processFiles(
       try {
         const parsed = parseOximetryCSV(csv);
         if (oximetryByDate.has(parsed.dateStr)) {
-          console.info(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
+          console.debug(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
         }
@@ -282,7 +282,7 @@ async function processFiles(
     if (matched.length === 0) {
       console.error(`[oximetry] No date matches. Oximetry dates: [${oxDates.join(', ')}], Night dates: [${nightDates.slice(0, 5).join(', ')}${nightDates.length > 5 ? '...' : ''}]`);
     } else {
-      console.info(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
+      console.debug(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
     }
   }
 

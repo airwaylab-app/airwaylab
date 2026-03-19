@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { stripeRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+const CheckoutSchema = z.object({
+  priceId: z.string({ error: 'Missing priceId' }).min(1, 'Missing priceId').max(200),
+});
 
 // M5: Whitelist of allowed price IDs
 function getAllowedPriceIds(): Set<string> {
@@ -46,16 +51,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Parse request
-  let priceId: string;
-  try {
-    const body = await request.json();
-    priceId = body.priceId;
-    if (!priceId || typeof priceId !== 'string') {
-      return NextResponse.json({ error: 'Missing priceId' }, { status: 400 });
-    }
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  const raw = await request.json().catch(() => null);
+  const parsed = CheckoutSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
+    return NextResponse.json({ error: firstError }, { status: 400 });
   }
+  const { priceId } = parsed.data;
 
   // M5: Validate priceId against allowed list
   const allowedPrices = getAllowedPriceIds();

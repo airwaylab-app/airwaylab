@@ -27,6 +27,12 @@ vi.mock('@/lib/rate-limit', () => {
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 // Mock Supabase server clients
