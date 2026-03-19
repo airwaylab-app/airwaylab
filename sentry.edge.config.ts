@@ -11,4 +11,7 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  // Enable Sentry structured logging (Sentry.logger.info/warn/etc.)
+  _experiments: { enableLogs: true },
 });
