@@ -165,9 +165,25 @@ export default function Home() {
                 <span className="text-primary">Is Actually Working</span>
               </h1>
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Shield className="h-4 w-4 shrink-0 text-emerald-400" />
-                <span>Your data never leaves your browser — unless you choose to share it</span>
+              {/* Trust signals — prominent above the fold */}
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-sm">
+                  <Shield className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <span className="text-emerald-300">Your data never leaves your browser</span>
+                  <span className="text-muted-foreground">— unless you choose to share it</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Don&apos;t trust us?{' '}
+                  <a
+                    href="https://github.com/airwaylab-app/airwaylab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground underline decoration-muted-foreground/40 underline-offset-2 transition-colors hover:decoration-foreground"
+                  >
+                    Check the code yourself
+                  </a>
+                  {' '}&mdash; it&apos;s open-source under GPL-3.0.
+                </p>
               </div>
 
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
