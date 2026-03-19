@@ -27,13 +27,13 @@ describe('Spec Test 1: decimateFlow factor 25', () => {
     // Every output should be an actual value from the input
     for (const sample of result) {
       const inputIdx = Math.round(sample.t * sampleRate);
-      expect(sample.value).toBeCloseTo(data[inputIdx], 1);
+      expect(sample.value).toBeCloseTo(data[inputIdx]!, 1);
     }
 
     // Timestamps should be 0, 1, 2, ..., 9
-    expect(result[0].t).toBe(0);
-    expect(result[1].t).toBe(1);
-    expect(result[9].t).toBe(9);
+    expect(result[0]!.t).toBe(0);
+    expect(result[1]!.t).toBe(1);
+    expect(result[9]!.t).toBe(9);
   });
 });
 
@@ -46,7 +46,7 @@ describe('Spec Test 2: decimateFlow factor 1 (full rate)', () => {
 
     expect(result).toHaveLength(5);
     for (let i = 0; i < 5; i++) {
-      expect(result[i].value).toBe(data[i]);
+      expect(result[i]!.value).toBe(data[i]);
     }
   });
 });
@@ -168,8 +168,8 @@ describe('Spec Test 9: decimateFlow short array', () => {
     const result = decimateFlow(data, 25, 1);
 
     expect(result).toHaveLength(1);
-    expect(result[0].value).toBe(10); // First sample
-    expect(result[0].t).toBe(0);
+    expect(result[0]!.value).toBe(10); // First sample
+    expect(result[0]!.t).toBe(0);
   });
 });
 

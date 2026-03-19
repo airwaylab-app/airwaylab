@@ -122,7 +122,7 @@ export function validateSDFiles(files: File[]): ValidationResult {
  * Detect whether a CSV header line matches a supported oximetry format.
  * Returns the format name or 'unknown'.
  */
-export type OximetryFormat = 'viatom' | 'unknown';
+type OximetryFormat = 'viatom' | 'unknown';
 
 export function detectOximetryFormat(headerLine: string): OximetryFormat {
   const lower = headerLine.toLowerCase();

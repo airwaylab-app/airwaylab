@@ -72,7 +72,7 @@ export function GuidedWalkthrough({ isComplete }: Props) {
     setCurrentStep(0);
     setPhase('touring');
     events.walkthroughStarted(source);
-    events.walkthroughStepViewed(1, STEPS[0].name);
+    events.walkthroughStepViewed(1, STEPS[0]!.name);
   }, []);
 
   const dismiss = useCallback((atStep: number) => {
@@ -90,7 +90,7 @@ export function GuidedWalkthrough({ isComplete }: Props) {
     } else {
       const nextIdx = currentStep + 1;
       setCurrentStep(nextIdx);
-      events.walkthroughStepViewed(nextIdx + 1, STEPS[nextIdx].name);
+      events.walkthroughStepViewed(nextIdx + 1, STEPS[nextIdx]!.name);
     }
   }, [currentStep, markWalkthroughComplete]);
 
@@ -156,7 +156,7 @@ export function GuidedWalkthrough({ isComplete }: Props) {
 
   // Active tour (portal to body for correct z-index stacking)
   if (phase === 'touring' && currentStep < STEPS.length) {
-    const step = STEPS[currentStep];
+    const step = STEPS[currentStep]!;
     return createPortal(
       <WalkthroughTooltip
         targetSelector={step.selector}

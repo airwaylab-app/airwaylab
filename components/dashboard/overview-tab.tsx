@@ -237,7 +237,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </div>
 
       <MetricExplanation
-        text={getIFLRiskExplanation(computeIFLRisk(n), THRESHOLDS.iflRisk)}
+        text={getIFLRiskExplanation(computeIFLRisk(n), THRESHOLDS.iflRisk!)}
         defaultExpanded={isNewUser}
       />
 
@@ -321,7 +321,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </details>
 
       <MetricExplanation
-        text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall)}
+        text={getGlasgowExplanation(n.glasgow.overall, THRESHOLDS.glasgowOverall!)}
         defaultExpanded={false}
       />
 
@@ -462,8 +462,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       </div>
       <MetricExplanation
         text={[
-          getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai),
-          getNEDExplanation(n.ned.nedMean, n.ned.reraIndex, THRESHOLDS.nedMean),
+          getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai!),
+          getNEDExplanation(n.ned.nedMean, n.ned.reraIndex, THRESHOLDS.nedMean!),
         ].filter(Boolean).join('\n\n')}
         defaultExpanded={isNewUser}
       />
@@ -590,7 +590,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       {/* Upgrade prompt for community users — contextual to their data */}
       {!isPaid && (() => {
         const ifl = computeIFLRisk(n);
-        const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk);
+        const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk!);
         const msg = iflTier === 'good'
           ? 'Your therapy looks effective. Supporters get deeper analysis to understand exactly why -- and what to watch for over time.'
           : 'Your flow limitation patterns suggest room for therapy optimisation. Get AI-powered analysis of what your breathing data means for your settings.';

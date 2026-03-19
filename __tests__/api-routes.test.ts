@@ -351,7 +351,7 @@ describe('POST /api/feedback', () => {
     const Sentry = await import('@sentry/nextjs');
     await callRoute({ message: 'Hello there test!', email: 'user@example.com', type: 'feedback' });
     const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(captureCall[1].extra).not.toHaveProperty('email');
+    expect(captureCall![1].extra).not.toHaveProperty('email');
   });
 });
 
@@ -407,7 +407,7 @@ describe('POST /api/submit-error-data', () => {
       email: 'user@example.com',
     });
     const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(captureCall[1].extra).not.toHaveProperty('email');
+    expect(captureCall![1].extra).not.toHaveProperty('email');
   });
 
   it('does not fire Sentry alert when rate limited', async () => {

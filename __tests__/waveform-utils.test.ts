@@ -52,8 +52,8 @@ describe('decimateFlow', () => {
     const result = decimateFlow(data, 25, 25);
 
     expect(result).toHaveLength(5);
-    expect(result[0].value).toBe(1);
-    expect(result[4].value).toBe(5);
+    expect(result[0]!.value).toBe(1);
+    expect(result[4]!.value).toBe(5);
   });
 
   it('output length equals ceil(input.length / step)', () => {
@@ -66,8 +66,8 @@ describe('decimateFlow', () => {
     const data = new Float32Array([42]);
     const result = decimateFlow(data, 25, 1);
     expect(result).toHaveLength(1);
-    expect(result[0].value).toBe(42);
-    expect(result[0].t).toBe(0);
+    expect(result[0]!.value).toBe(42);
+    expect(result[0]!.t).toBe(0);
   });
 
   it('preserves actual measured values (not computed aggregates)', () => {
@@ -121,8 +121,8 @@ describe('decimatePressure', () => {
 
     const result = decimatePressure(data, 10, 2); // step = 5
     expect(result).toHaveLength(2);
-    expect(result[0].avg).toBe(10);
-    expect(result[1].avg).toBe(12.5);
+    expect(result[0]!.avg).toBe(10);
+    expect(result[1]!.avg).toBe(12.5);
   });
 });
 
@@ -149,8 +149,8 @@ describe('sliceByTime', () => {
 
     const result = sliceByTime(data, 3, 7);
     expect(result).toHaveLength(5); // t=3,4,5,6,7
-    expect(result[0].t).toBe(3);
-    expect(result[result.length - 1].t).toBe(7);
+    expect(result[0]!.t).toBe(3);
+    expect(result[result.length - 1]!.t).toBe(7);
   });
 
   it('returns empty when range has no points', () => {
@@ -316,7 +316,7 @@ describe('generateSyntheticWaveform', () => {
   it('generates events sorted by start time', () => {
     const waveform = generateSyntheticWaveform(8, 4000, { reraCount: 20, flPct: 30 });
     for (let i = 1; i < waveform.events.length; i++) {
-      expect(waveform.events[i].startSec).toBeGreaterThanOrEqual(waveform.events[i - 1].startSec);
+      expect(waveform.events[i]!.startSec).toBeGreaterThanOrEqual(waveform.events[i - 1]!.startSec);
     }
   });
 
@@ -330,8 +330,8 @@ describe('generateSyntheticWaveform', () => {
     let min = Infinity;
     let max = -Infinity;
     for (let i = 0; i < waveform.flow.length; i++) {
-      if (waveform.flow[i] < min) min = waveform.flow[i];
-      if (waveform.flow[i] > max) max = waveform.flow[i];
+      if (waveform.flow[i]! < min) min = waveform.flow[i]!;
+      if (waveform.flow[i]! > max) max = waveform.flow[i]!;
     }
     expect(max).toBeLessThan(60);
     expect(min).toBeGreaterThan(-50);
@@ -343,8 +343,8 @@ describe('generateSyntheticWaveform', () => {
     let min = Infinity;
     let max = -Infinity;
     for (let i = 0; i < waveform.pressure!.length; i++) {
-      if (waveform.pressure![i] < min) min = waveform.pressure![i];
-      if (waveform.pressure![i] > max) max = waveform.pressure![i];
+      if (waveform.pressure![i]! < min) min = waveform.pressure![i]!;
+      if (waveform.pressure![i]! > max) max = waveform.pressure![i]!;
     }
     expect(min).toBeGreaterThanOrEqual(10);
     expect(max).toBeLessThanOrEqual(22);
@@ -394,7 +394,7 @@ describe('downsamplePressure (deprecated)', () => {
     const data = new Float32Array([10, 12, 14, 10, 12, 14, 10, 12, 14, 10]);
     const result = downsamplePressure(data, 5, 2);
     expect(result).toHaveLength(1);
-    expect(result[0].avg).toBeCloseTo(11.8, 1);
+    expect(result[0]!.avg).toBeCloseTo(11.8, 1);
   });
 });
 

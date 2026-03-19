@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
 
           const newTier = (!activeSubs || activeSubs.length === 0)
             ? 'community'
-            : activeSubs[0].tier as string;
+            : activeSubs[0]!.tier as string;
 
           const { error: downgradeErr } = await supabase
             .from('profiles')

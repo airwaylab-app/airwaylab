@@ -95,9 +95,9 @@ export const SettingsTimeline = memo(function SettingsTimeline({ nights, therapy
     const chrono = [...nights].reverse();
     const map = new Map<string, string[]>();
     for (let i = 1; i < chrono.length; i++) {
-      const changes = settingsChanged(chrono[i - 1].settings, chrono[i].settings);
+      const changes = settingsChanged(chrono[i - 1]!.settings, chrono[i]!.settings);
       if (changes.length > 0) {
-        map.set(chrono[i].dateStr, changes);
+        map.set(chrono[i]!.dateStr, changes);
       }
     }
     return map;

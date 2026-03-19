@@ -483,7 +483,7 @@ export default function GlossaryPage() {
                 {letter}
               </h2>
               <div className="flex flex-col gap-6">
-                {termsByLetter[letter].map((term) => (
+                {termsByLetter[letter]!.map((term) => (
                   <div key={term.id} id={term.id} className="scroll-mt-28">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-semibold text-foreground">

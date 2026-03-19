@@ -149,7 +149,7 @@ async function processFiles(
   // to prevent the worker from locking up the browser on large SD cards
   const parsedEdfs: EDFFile[] = [];
   for (let i = 0; i < brpFiles.length; i++) {
-    const brp = brpFiles[i];
+    const brp = brpFiles[i]!;
     const fileData = files.find((f) => f.path === brp.path);
     if (!fileData) continue;
     try {
@@ -244,7 +244,7 @@ async function processFiles(
         if (existing) {
           existing.samples.push(...parsed.samples);
           existing.samples.sort((a, b) => a.time.getTime() - b.time.getTime());
-          existing.endTime = existing.samples[existing.samples.length - 1].time;
+          existing.endTime = existing.samples[existing.samples.length - 1]!.time;
           existing.durationSeconds = (existing.endTime.getTime() - existing.startTime.getTime()) / 1000;
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
@@ -290,7 +290,7 @@ async function processFiles(
   const nights: NightResult[] = [];
 
   for (let i = 0; i < nightGroups.length; i++) {
-    const group = nightGroups[i];
+    const group = nightGroups[i]!;
     postProgress(i + 3, nightGroups.length + 2, `Analyzing night ${group.nightDate}...`);
 
     // Yield every ANALYZE_BATCH_SIZE nights to keep the worker responsive
@@ -355,7 +355,7 @@ async function processFiles(
     const ned = computeNED(combinedFlow, avgSamplingRate, machineHypopneas);
 
     // Recording date from first session
-    const recordingDate = group.sessions[0].recordingDate;
+    const recordingDate = group.sessions[0]!.recordingDate;
 
     // Settings validation (BiPAP only — requires pressure data)
     const settingsMetricsResult = combinedPressure
@@ -384,7 +384,7 @@ async function processFiles(
     // Emit incremental result so the orchestrator can persist progress
     const nightMsg: WorkerNightResult = {
       type: 'NIGHT_RESULT',
-      night: nights[nights.length - 1],
+      night: nights[nights.length - 1]!,
       nightIndex: i,
       totalNights: nightGroups.length,
     };

@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { Insight } from './insights';
 import type { NightResult, NightNotes } from './types';
 
-export interface AIInsightsResult {
+interface AIInsightsResult {
   insights: Insight[];
   /** Server-side remaining credits for community tier. Undefined if not available. */
   remainingCredits?: number;
@@ -13,7 +13,7 @@ export interface AIInsightsResult {
 }
 
 /** Per-breath summary format stored in Supabase Storage */
-export interface BreathSummary {
+interface BreathSummary {
   ned: number;
   fi: number;
   mShape: boolean;
@@ -22,7 +22,7 @@ export interface BreathSummary {
   duration: number;
 }
 
-export interface PerBreathSummary {
+interface PerBreathSummary {
   breaths: BreathSummary[];
   breathCount: number;
   sampleRate: number;
@@ -63,6 +63,37 @@ async function extractApiError(res: Response): Promise<string> {
  * Auth is session-based (cookies) — no API key needed.
  * Throws on failure with a user-facing error message.
  */
+/**
+ * Trim the nights array to only what the server needs:
+ * selected night, previous night, and up to 7 recent nights for trends.
+ * Returns { trimmedNights, adjustedIndex }.
+ */
+function trimNightsForPayload(
+  nights: NightResult[],
+  selectedNightIndex: number
+): { trimmedNights: NightResult[]; adjustedIndex: number } {
+  const needed = new Set<number>();
+
+  // Selected night
+  needed.add(selectedNightIndex);
+
+  // Previous night (next index in sorted-desc array)
+  if (selectedNightIndex + 1 < nights.length) {
+    needed.add(selectedNightIndex + 1);
+  }
+
+  // Up to 7 most recent (server uses nights.slice(0, 7) for trends)
+  for (let i = 0; i < Math.min(7, nights.length); i++) {
+    needed.add(i);
+  }
+
+  const sortedIndices = Array.from(needed).sort((a, b) => a - b);
+  const trimmedNights = sortedIndices.map((i) => nights[i]!);
+  const adjustedIndex = sortedIndices.indexOf(selectedNightIndex);
+
+  return { trimmedNights, adjustedIndex };
+}
+
 export async function fetchAIInsights(
   nights: NightResult[],
   selectedNightIndex: number,
@@ -76,14 +107,16 @@ export async function fetchAIInsights(
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
 
+  const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
+
   try {
     const res = await fetch('/api/ai-insights', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        nights,
-        selectedNightIndex,
+        nights: trimmedNights,
+        selectedNightIndex: adjustedIndex,
         therapyChangeDate,
         nightNotes,
       }),
@@ -121,6 +154,10 @@ export async function fetchAIInsights(
       console.error('[ai-insights] Request timed out after 15s');
       throw new Error('AI analysis timed out. Please try again.');
     }
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      console.error('[ai-insights] Network error (standard mode)');
+      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
+    }
     throw err;
   } finally {
     clearTimeout(timeout);
@@ -147,14 +184,16 @@ export async function fetchDeepAIInsights(
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
 
+  const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
+
   try {
     const res = await fetch('/api/ai-insights', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        nights,
-        selectedNightIndex,
+        nights: trimmedNights,
+        selectedNightIndex: adjustedIndex,
         therapyChangeDate,
         nightNotes,
         deep: true,
@@ -193,6 +232,10 @@ export async function fetchDeepAIInsights(
       }
       console.error('[ai-insights] Request timed out after 45s');
       throw new Error('AI analysis timed out. Please try again.');
+    }
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      console.error('[ai-insights] Network error (deep mode)');
+      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
     }
     throw err;
   } finally {

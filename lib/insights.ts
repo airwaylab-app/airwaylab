@@ -37,7 +37,7 @@ function trend(vals: number[]): 'improving' | 'stable' | 'worsening' {
   let num = 0;
   let den = 0;
   for (let i = 0; i < n; i++) {
-    num += (i - xMean) * (vals[i] - yMean);
+    num += (i - xMean) * (vals[i]! - yMean);
     den += (i - xMean) * (i - xMean);
   }
   const slope = den === 0 ? 0 : num / den;
@@ -66,13 +66,13 @@ const RATING_LABELS: Record<number, string> = {
 function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRating?: number | null): Insight[] {
   const THRESHOLDS = getStoredThresholds();
   const insights: Insight[] = [];
-  const gl = getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall);
-  const nedL = getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean);
-  const regL = getTrafficLight(n.wat.regularityScore, THRESHOLDS.watRegularity);
+  const gl = getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!);
+  const nedL = getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!);
+  const regL = getTrafficLight(n.wat.regularityScore, THRESHOLDS.watRegularity!);
 
   // IFL Symptom Risk composite
   const iflRisk = computeIFLRisk(n);
-  const iflL = getTrafficLight(iflRisk, THRESHOLDS.iflRisk);
+  const iflL = getTrafficLight(iflRisk, THRESHOLDS.iflRisk!);
   if (iflL === 'bad') {
     insights.push({
       id: 'ifl-risk-high',
@@ -176,7 +176,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
 
   // Respiratory Disruption Index
   const eaiVal = n.ned.estimatedArousalIndex ?? 0;
-  const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai);
+  const eaiL = getTrafficLight(eaiVal, THRESHOLDS.eai!);
   if (eaiL === 'bad') {
     insights.push({
       id: 'eai-high',
@@ -209,7 +209,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
   }
 
   // Metric divergence: Glasgow/NED low but WAT FL high (or vice versa)
-  const watFLL = getTrafficLight(n.wat.flScore, THRESHOLDS.watFL);
+  const watFLL = getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!);
   if (gl === 'good' && nedL === 'good' && (watFLL === 'bad' || watFLL === 'warn')) {
     insights.push({
       id: 'metric-divergence-wat-high',
@@ -458,7 +458,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
   // Oximetry insights
   if (n.oximetry) {
     const ox = n.oximetry;
-    const odiL = getTrafficLight(ox.odi3, THRESHOLDS.odi3);
+    const odiL = getTrafficLight(ox.odi3, THRESHOLDS.odi3!);
 
     if (odiL === 'bad') {
       insights.push({
@@ -541,7 +541,7 @@ function trendInsights(
       id: 'trend-ifl-improving',
       type: 'positive',
       title: 'IFL Symptom Risk trending down',
-      body: `Your flow limitation composite has been improving over recent nights \u2014 from ${fmt(iflVals[0])}% to ${fmt(iflVals[iflVals.length - 1])}%. Your current therapy settings appear to be reducing flow limitation.`,
+      body: `Your flow limitation composite has been improving over recent nights \u2014 from ${fmt(iflVals[0]!)}% to ${fmt(iflVals[iflVals.length - 1]!)}%. Your current therapy settings appear to be reducing flow limitation.`,
       category: 'trend',
     });
   } else if (iflTrend === 'worsening') {
@@ -549,7 +549,7 @@ function trendInsights(
       id: 'trend-ifl-worsening',
       type: 'actionable',
       title: 'IFL Symptom Risk trending upward',
-      body: `Your flow limitation composite is increasing over ${nights.length} nights (${fmt(iflVals[0])}% \u2192 ${fmt(iflVals[iflVals.length - 1])}%). Consider discussing pressure or settings adjustments with your clinician.`,
+      body: `Your flow limitation composite is increasing over ${nights.length} nights (${fmt(iflVals[0]!)}% \u2192 ${fmt(iflVals[iflVals.length - 1]!)}%). Consider discussing pressure or settings adjustments with your clinician.`,
       category: 'trend',
     });
   }
@@ -560,7 +560,7 @@ function trendInsights(
       id: 'trend-glasgow-improving',
       type: 'positive',
       title: 'Glasgow Index trending down over time',
-      body: `Flow limitation scores are improving across ${nights.length} nights (${fmt(glasgowVals[0])} → ${fmt(glasgowVals[glasgowVals.length - 1])}).`,
+      body: `Flow limitation scores are improving across ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}).`,
       category: 'trend',
     });
   } else if (gTrend === 'worsening') {
@@ -568,7 +568,7 @@ function trendInsights(
       id: 'trend-glasgow-worsening',
       type: 'actionable',
       title: 'Glasgow Index trending upward',
-      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0])} → ${fmt(glasgowVals[glasgowVals.length - 1])}). Review flow waveforms alongside this trend for context.`,
+      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}). Review flow waveforms alongside this trend for context.`,
       category: 'trend',
     });
   }
@@ -594,7 +594,7 @@ function trendInsights(
   }
 
   // Consistency check
-  const glasgowLights = chrono.map((n) => getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall));
+  const glasgowLights = chrono.map((n) => getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!));
   const allGood = glasgowLights.every((l) => l === 'good');
   const allBad = glasgowLights.every((l) => l === 'bad');
 

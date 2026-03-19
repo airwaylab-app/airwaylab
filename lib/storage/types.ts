@@ -23,12 +23,6 @@ export interface StorageUsage {
   isQuotaExceeded: boolean;
 }
 
-export interface PresignedUpload {
-  uploadUrl: string;
-  storagePath: string;
-  fileId: string;
-}
-
 export interface UploadProgress {
   current: number;
   total: number;

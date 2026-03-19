@@ -52,8 +52,8 @@ describe('Real EDF parsing', () => {
       let min = Infinity;
       let max = -Infinity;
       for (let i = 0; i < edf.flowData.length; i++) {
-        if (edf.flowData[i] < min) min = edf.flowData[i];
-        if (edf.flowData[i] > max) max = edf.flowData[i];
+        if (edf.flowData[i]! < min) min = edf.flowData[i]!;
+        if (edf.flowData[i]! > max) max = edf.flowData[i]!;
       }
       expect(min).toBeGreaterThanOrEqual(-200);
       expect(max).toBeLessThanOrEqual(200);

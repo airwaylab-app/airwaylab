@@ -20,6 +20,8 @@ import {
   clearContributedWaveformDates,
   getContributedWaveformEngine,
   setContributedWaveformEngine,
+  getFailedWaveformDates,
+  trackFailedWaveformDate,
 } from '@/components/upload/contribution-consent-utils';
 import { persistResults, loadPersistedResults } from '@/lib/persistence';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
@@ -76,6 +78,53 @@ describe('waveform date tracking', () => {
     clearContributedWaveformDates();
     expect(getContributedWaveformEngine()).toBeNull();
     expect(getContributedWaveformDates().size).toBe(0);
+  });
+});
+
+describe('waveform failure tracking', () => {
+  beforeEach(() => {
+    storage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('returns empty set when no failures tracked', () => {
+    expect(getFailedWaveformDates().size).toBe(0);
+  });
+
+  it('tracks failed dates', () => {
+    trackFailedWaveformDate('2025-11-12');
+    const failed = getFailedWaveformDates();
+    expect(failed.has('2025-11-12')).toBe(true);
+  });
+
+  it('expires failures after 24h cooldown', () => {
+    // Write a failure entry with a timestamp 25 hours ago
+    const staleEntry = [{ date: '2025-11-12', failedAt: Date.now() - 25 * 60 * 60 * 1000 }];
+    storage.set('airwaylab_waveform_upload_failures', JSON.stringify(staleEntry));
+
+    const failed = getFailedWaveformDates();
+    expect(failed.has('2025-11-12')).toBe(false);
+  });
+
+  it('keeps failures within cooldown window', () => {
+    // Write a failure entry with a timestamp 1 hour ago
+    const recentEntry = [{ date: '2025-11-12', failedAt: Date.now() - 60 * 60 * 1000 }];
+    storage.set('airwaylab_waveform_upload_failures', JSON.stringify(recentEntry));
+
+    const failed = getFailedWaveformDates();
+    expect(failed.has('2025-11-12')).toBe(true);
+  });
+
+  it('updates timestamp on re-failure', () => {
+    trackFailedWaveformDate('2025-11-12');
+    const raw1 = JSON.parse(storage.get('airwaylab_waveform_upload_failures')!);
+    const ts1 = raw1[0].failedAt;
+
+    // Small delay to ensure timestamp differs
+    trackFailedWaveformDate('2025-11-12');
+    const raw2 = JSON.parse(storage.get('airwaylab_waveform_upload_failures')!);
+    expect(raw2.length).toBe(1); // No duplicates
+    expect(raw2[0].failedAt).toBeGreaterThanOrEqual(ts1);
   });
 });
 

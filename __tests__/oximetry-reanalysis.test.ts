@@ -61,7 +61,7 @@ describe('oximetry-only reanalysis', () => {
       const loaded = loadPersistedResults();
       expect(loaded).not.toBeNull();
 
-      const loadedOx = loaded!.nights.find((n) => n.dateStr === nights[0].dateStr)?.oximetry;
+      const loadedOx = loaded!.nights.find((n) => n.dateStr === nights[0]!.dateStr)?.oximetry;
       expect(loadedOx).not.toBeNull();
 
       // Verify all 17 scalar metrics
@@ -119,7 +119,7 @@ describe('oximetry-only reanalysis', () => {
       persistResults(nights2, null);
 
       const loaded = loadPersistedResults();
-      const loadedOx = loaded!.nights.find((n) => n.dateStr === nights2[0].dateStr)?.oximetry;
+      const loadedOx = loaded!.nights.find((n) => n.dateStr === nights2[0]!.dateStr)?.oximetry;
       expect(loadedOx!.odi3).toBe(7.5);
     });
   });
@@ -150,7 +150,7 @@ describe('oximetry-only reanalysis', () => {
     it('merges oximetry into matching cached nights by date', () => {
       // Simulate the merge logic from analyzeOximetryOnly
       const cachedNights = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
-      const targetDate = cachedNights[0].dateStr;
+      const targetDate = cachedNights[0]!.dateStr;
       const oxResults = makeOximetryResults();
       const oximetryByDate: Record<string, OximetryResults> = {
         [targetDate]: oxResults,
@@ -163,13 +163,13 @@ describe('oximetry-only reanalysis', () => {
       });
 
       // Target night should have oximetry
-      expect(merged[0].oximetry).not.toBeNull();
-      expect(merged[0].oximetry!.odi3).toBe(oxResults.odi3);
+      expect(merged[0]!.oximetry).not.toBeNull();
+      expect(merged[0]!.oximetry!.odi3).toBe(oxResults.odi3);
 
       // Other nights should remain null
       for (let i = 1; i < merged.length; i++) {
-        if (cachedNights[i].oximetry === null) {
-          expect(merged[i].oximetry).toBeNull();
+        if (cachedNights[i]!.oximetry === null) {
+          expect(merged[i]!.oximetry).toBeNull();
         }
       }
     });
@@ -204,8 +204,8 @@ describe('oximetry-only reanalysis', () => {
       const ox2 = makeOximetryResults({ odi3: 7.0 });
 
       const oximetryByDate: Record<string, OximetryResults> = {
-        [cachedNights[0].dateStr]: ox1,
-        [cachedNights[1].dateStr]: ox2,
+        [cachedNights[0]!.dateStr]: ox1,
+        [cachedNights[1]!.dateStr]: ox2,
       };
 
       const merged = cachedNights.map((night) => {
@@ -214,8 +214,8 @@ describe('oximetry-only reanalysis', () => {
         return night;
       });
 
-      expect(merged[0].oximetry!.odi3).toBe(3.0);
-      expect(merged[1].oximetry!.odi3).toBe(7.0);
+      expect(merged[0]!.oximetry!.odi3).toBe(3.0);
+      expect(merged[1]!.oximetry!.odi3).toBe(7.0);
     });
 
     it('does not modify unmatched nights', () => {
@@ -224,7 +224,7 @@ describe('oximetry-only reanalysis', () => {
         i === 2 ? { ...n, oximetry: originalOx } : { ...n, oximetry: null }
       );
       const oximetryByDate: Record<string, OximetryResults> = {
-        [cachedNights[0].dateStr]: makeOximetryResults({ odi3: 1.0 }),
+        [cachedNights[0]!.dateStr]: makeOximetryResults({ odi3: 1.0 }),
       };
 
       const merged = cachedNights.map((night) => {
@@ -234,9 +234,9 @@ describe('oximetry-only reanalysis', () => {
       });
 
       // Night 0 gets new oximetry
-      expect(merged[0].oximetry!.odi3).toBe(1.0);
+      expect(merged[0]!.oximetry!.odi3).toBe(1.0);
       // Night 2 retains its original oximetry
-      expect(merged[2].oximetry!.odi3).toBe(99);
+      expect(merged[2]!.oximetry!.odi3).toBe(99);
     });
   });
 });

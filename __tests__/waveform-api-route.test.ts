@@ -96,11 +96,11 @@ describe('contribute-waveforms API route', () => {
     // Verify storage upload was called
     expect(mockUpload).toHaveBeenCalledTimes(1);
     const uploadArgs = mockUpload.mock.calls[0];
-    expect(uploadArgs[0]).toBe('test-contribution-id/2025-01-15.flow.gz');
+    expect(uploadArgs![0]).toBe('test-contribution-id/2025-01-15.flow.gz');
 
     // Verify DB insert was called with correct metadata
     expect(mockInsert).toHaveBeenCalledTimes(1);
-    const insertData = mockInsert.mock.calls[0][0];
+    const insertData = mockInsert.mock.calls[0]![0];
     expect(insertData.contribution_id).toBe('test-contribution-id');
     expect(insertData.night_date).toBe('2025-01-15');
     expect(insertData.engine_version).toBe(ENGINE_VERSION);
@@ -213,7 +213,7 @@ describe('contribute-waveforms API route', () => {
 
     // Should have attempted to clean up the orphaned storage file
     expect(mockRemove).toHaveBeenCalledTimes(1);
-    expect(mockRemove.mock.calls[0][0]).toEqual(['test-contribution-id/2025-01-15.flow.gz']);
+    expect(mockRemove.mock.calls[0]![0]).toEqual(['test-contribution-id/2025-01-15.flow.gz']);
   });
 
   it('rejects invalid JSON in analysis results header', async () => {

@@ -15,13 +15,22 @@ export async function loadCloudFiles(
   nightDate: string,
   fileFilter?: RegExp
 ): Promise<File[]> {
-  // Fetch file list for this night
-  const listRes = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
+  // Fetch file list for this night (retry once on server errors)
+  let listRes = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
     credentials: 'same-origin',
   });
 
+  if (listRes.status >= 500 && listRes.status < 600) {
+    await new Promise((r) => setTimeout(r, 1000));
+    listRes = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
+      credentials: 'same-origin',
+    });
+  }
+
   if (!listRes.ok) {
-    throw new Error('Failed to fetch file list from cloud');
+    const body = await listRes.text().catch(() => '');
+    const detail = body ? ': ' + body.slice(0, 200) : '';
+    throw new Error(`Failed to fetch file list from cloud (${listRes.status}${detail})`);
   }
 
   const listData = await listRes.json();
@@ -91,21 +100,3 @@ export async function loadCloudFiles(
   return results;
 }
 
-/**
- * Check if the user has stored files for a specific night.
- * Lightweight check — doesn't download anything.
- */
-export async function hasCloudFiles(nightDate: string): Promise<boolean> {
-  try {
-    const res = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
-      credentials: 'same-origin',
-    });
-
-    if (!res.ok) return false;
-
-    const data = await res.json();
-    return Array.isArray(data?.files) && data.files.length > 0;
-  } catch {
-    return false;
-  }
-}

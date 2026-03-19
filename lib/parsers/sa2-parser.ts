@@ -80,31 +80,31 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
 
   // Physical dimensions (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].physicalDimension = readField(buffer, decoder, offset + i * 8, 8);
+    signals[i]!.physicalDimension = readField(buffer, decoder, offset + i * 8, 8);
   }
   offset += numSignals * 8;
 
   // Physical min (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].physicalMin = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.physicalMin = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += numSignals * 8;
 
   // Physical max (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].physicalMax = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.physicalMax = parseFloat(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += numSignals * 8;
 
   // Digital min (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].digitalMin = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.digitalMin = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += numSignals * 8;
 
   // Digital max (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].digitalMax = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.digitalMax = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += numSignals * 8;
 
@@ -113,7 +113,7 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
 
   // Num samples per record (8 bytes each)
   for (let i = 0; i < numSignals; i++) {
-    signals[i].numSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.numSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
   }
   offset += numSignals * 8;
 
@@ -146,7 +146,7 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
   }
 
   // --- Precompute scaling ---
-  const spo2Sig = signals[spo2Idx];
+  const spo2Sig = signals[spo2Idx]!;
   const spo2DigRange = spo2Sig.digitalMax - spo2Sig.digitalMin;
   const spo2Scale = spo2DigRange === 0 ? 0 : (spo2Sig.physicalMax - spo2Sig.physicalMin) / spo2DigRange;
   const spo2Offset = spo2Sig.physicalMin;
@@ -156,7 +156,7 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
   let pulseOffset = 0;
   let pulseDigMin = 0;
   if (hasPulse) {
-    const pSig = signals[pulseIdx];
+    const pSig = signals[pulseIdx]!;
     const pDigRange = pSig.digitalMax - pSig.digitalMin;
     pulseScale = pDigRange === 0 ? 0 : (pSig.physicalMax - pSig.physicalMin) / pDigRange;
     pulseOffset = pSig.physicalMin;
@@ -178,7 +178,7 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
     const pulseValues: number[] = [];
 
     for (let sig = 0; sig < numSignals; sig++) {
-      const samplesInRecord = signals[sig].numSamples;
+      const samplesInRecord = signals[sig]!.numSamples;
 
       if (sig === spo2Idx) {
         for (let s = 0; s < samplesInRecord; s++) {
@@ -197,8 +197,8 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
 
     // Convert SpO2 samples (primary signal — one sample per record for 1Hz)
     for (let s = 0; s < spo2Values.length; s++) {
-      const rawSpo2 = Math.round(spo2Values[s]);
-      const rawHr = hasPulse && s < pulseValues.length ? Math.round(pulseValues[s]) : -1;
+      const rawSpo2 = Math.round(spo2Values[s]!);
+      const rawHr = hasPulse && s < pulseValues.length ? Math.round(pulseValues[s]!) : -1;
 
       const spo2InRange = rawSpo2 >= 50 && rawSpo2 <= 100;
       const spo2 = spo2InRange ? rawSpo2 : -1;
@@ -227,8 +227,8 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
   // --- Determine night date ---
   const dateStr = determineSA2NightDate(filePath, recordingDate);
 
-  const startTime = samples[0].time;
-  const endTime = samples[samples.length - 1].time;
+  const startTime = samples[0]!.time;
+  const endTime = samples[samples.length - 1]!.time;
   const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
   return {
@@ -250,7 +250,7 @@ function determineSA2NightDate(filePath: string, recordingDate: Date): string {
   // Try DATALOG folder date
   const folderMatch = filePath.match(/DATALOG\/(\d{8})\//);
   if (folderMatch) {
-    const d = folderMatch[1];
+    const d = folderMatch[1]!;
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
   }
 

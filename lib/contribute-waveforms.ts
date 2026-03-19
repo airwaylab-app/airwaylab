@@ -15,6 +15,8 @@ import {
   clearContributedWaveformDates,
   getContributedWaveformEngine,
   setContributedWaveformEngine,
+  getFailedWaveformDates,
+  trackFailedWaveformDate,
 } from '@/components/upload/contribution-consent-utils';
 import { buildWaveformBlob } from './waveform-blob';
 import type { NightResult, EDFFile } from './types';
@@ -254,7 +256,7 @@ async function uploadWaveform(
   contributionId: string,
   channelCount: number,
   hasPressure: boolean
-): Promise<boolean> {
+): Promise<{ ok: boolean; status?: number; detail?: string }> {
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/octet-stream',
@@ -282,9 +284,13 @@ async function uploadWaveform(
       body: compressedData,
     });
 
-    return res.ok;
-  } catch {
-    return false;
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      return { ok: false, status: res.status, detail: body.slice(0, 200) };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, detail: err instanceof Error ? err.message : 'network error' };
   }
 }
 
@@ -309,9 +315,12 @@ export async function contributeWaveformsBackground(
     clearContributedWaveformDates();
   }
 
-  // Filter to only new nights
+  // Filter to only new nights (skip already contributed and recently failed)
   const contributedDates = getContributedWaveformDates();
-  const newNights = nights.filter((n) => !contributedDates.has(n.dateStr));
+  const failedDates = getFailedWaveformDates();
+  const newNights = nights.filter(
+    (n) => !contributedDates.has(n.dateStr) && !failedDates.has(n.dateStr)
+  );
   if (newNights.length === 0) return;
 
   // Process and upload one night at a time to keep memory low
@@ -368,7 +377,7 @@ export async function contributeWaveformsBackground(
       });
 
       // Upload
-      const ok = await uploadWaveform(
+      const result = await uploadWaveform(
         night,
         compressed,
         isCompressed,
@@ -380,15 +389,21 @@ export async function contributeWaveformsBackground(
         hasPressure
       );
 
-      if (ok) {
+      if (result.ok) {
         trackContributedWaveformDate(night.dateStr);
       } else {
+        trackFailedWaveformDate(night.dateStr);
         Sentry.captureMessage(
           `Waveform upload failed for ${night.dateStr}`,
-          { level: 'warning', tags: { feature: 'waveform-contribution' } }
+          {
+            level: 'warning',
+            tags: { feature: 'waveform-contribution', status: String(result.status ?? 'unknown') },
+            extra: { detail: result.detail },
+          }
         );
       }
     } catch (err) {
+      trackFailedWaveformDate(night.dateStr);
       Sentry.captureException(err, {
         tags: { feature: 'waveform-contribution', nightDate: night.dateStr },
       });

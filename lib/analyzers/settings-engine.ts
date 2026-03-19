@@ -19,18 +19,18 @@ function round2(n: number): number {
 /** Linear interpolation percentile on a sorted array */
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
-  if (sorted.length === 1) return sorted[0];
+  if (sorted.length === 1) return sorted[0]!;
   const idx = (p / 100) * (sorted.length - 1);
   const lo = Math.floor(idx);
   const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  if (lo === hi) return sorted[lo]!;
+  return sorted[lo]! + (sorted[hi]! - sorted[lo]!) * (idx - lo);
 }
 
 function mean(values: number[]): number {
   if (values.length === 0) return 0;
   let sum = 0;
-  for (let i = 0; i < values.length; i++) sum += values[i];
+  for (let i = 0; i < values.length; i++) sum += values[i]!;
   return sum / values.length;
 }
 
@@ -39,7 +39,7 @@ function std(values: number[]): number {
   const m = mean(values);
   let sumSq = 0;
   for (let i = 0; i < values.length; i++) {
-    const d = values[i] - m;
+    const d = values[i]! - m;
     sumSq += d * d;
   }
   return Math.sqrt(sumSq / values.length);
@@ -61,14 +61,14 @@ interface DetectedPressures {
 function detectPressures(pressureData: Float32Array): DetectedPressures | null {
   const valid: number[] = [];
   for (let i = 0; i < pressureData.length; i++) {
-    const p = pressureData[i];
+    const p = pressureData[i]!;
     if (p > 3 && p < 30) valid.push(p);
   }
   if (valid.length < 1000) return null;
 
   valid.sort((a, b) => a - b);
-  const epap = valid[Math.floor(valid.length * 0.10)];
-  const ipap = valid[Math.floor(valid.length * 0.90)];
+  const epap = valid[Math.floor(valid.length * 0.10)]!;
+  const ipap = valid[Math.floor(valid.length * 0.90)]!;
   const ps = ipap - epap;
   if (ps < 1) return null;
 
@@ -91,7 +91,7 @@ function smoothFlow(flowData: Float32Array, samplingRate: number): Float32Array 
     const lo = Math.max(0, i - halfK);
     const hi = Math.min(len - 1, i + halfK);
     let sum = 0;
-    for (let j = lo; j <= hi; j++) sum += flowData[j];
+    for (let j = lo; j <= hi; j++) sum += flowData[j]!;
     smoothed[i] = sum / (hi - lo + 1);
   }
 
@@ -137,13 +137,13 @@ export function computeSettingsMetrics(
   const len = smoothed.length;
   const signs = new Int8Array(len);
   for (let i = 0; i < len; i++) {
-    if (smoothed[i] > 0) signs[i] = 1;
-    else if (smoothed[i] < 0) signs[i] = -1;
-    else signs[i] = i > 0 ? signs[i - 1] : 0;
+    if (smoothed[i]! > 0) signs[i] = 1;
+    else if (smoothed[i]! < 0) signs[i] = -1;
+    else signs[i] = i > 0 ? signs[i - 1]! : 0;
   }
 
   for (let i = 0; i < len - 1; i++) {
-    if (signs[i] <= 0 && signs[i + 1] > 0) {
+    if (signs[i]! <= 0 && signs[i + 1]! > 0) {
       inspStarts.push(i + 1);
     }
   }
@@ -162,8 +162,8 @@ export function computeSettingsMetrics(
   let totalBreaths = 0;
 
   for (let idx = 0; idx < inspStarts.length - 1; idx++) {
-    const start = inspStarts[idx];
-    const end = inspStarts[idx + 1];
+    const start = inspStarts[idx]!;
+    const end = inspStarts[idx + 1]!;
     const durS = (end - start) / samplingRate;
 
     // Validate breath duration (1.0-10.0s)
@@ -173,7 +173,7 @@ export function computeSettingsMetrics(
     let expStartRel: number | null = null;
     for (let j = 1; j < end - start; j++) {
       const absJ = start + j;
-      if (smoothed[absJ - 1] > 0 && smoothed[absJ] <= 0) {
+      if (smoothed[absJ - 1]! > 0 && smoothed[absJ]! <= 0) {
         expStartRel = j;
         break;
       }
@@ -184,7 +184,7 @@ export function computeSettingsMetrics(
     const inspLen = expStartRel;
     let peakFlow = 0;
     for (let j = 0; j < inspLen; j++) {
-      if (flowData[start + j] > peakFlow) peakFlow = flowData[start + j];
+      if (flowData[start + j]! > peakFlow) peakFlow = flowData[start + j]!;
     }
     if (peakFlow < 0.05) continue;
 
@@ -197,7 +197,7 @@ export function computeSettingsMetrics(
     // === TRIGGER METRICS ===
     let triggerSample: number | null = null;
     for (let k = 0; k < inspLen; k++) {
-      if (pressureData[start + k] >= pressRiseThreshold) {
+      if (pressureData[start + k]! >= pressRiseThreshold) {
         triggerSample = k;
         break;
       }
@@ -209,7 +209,7 @@ export function computeSettingsMetrics(
     }
 
     // Auto-trigger: pressure already above rise threshold at flow onset
-    if (inspLen > 2 && pressureData[start] > pressRiseThreshold) {
+    if (inspLen > 2 && pressureData[start]! > pressRiseThreshold) {
       autoTriggers++;
     }
 
@@ -217,7 +217,7 @@ export function computeSettingsMetrics(
     // Time at IPAP: count samples where pressure >= 90% IPAP threshold during inspiration
     let atIpapCount = 0;
     for (let k = 0; k < inspLen; k++) {
-      if (pressureData[start + k] >= pressIpapThreshold) atIpapCount++;
+      if (pressureData[start + k]! >= pressIpapThreshold) atIpapCount++;
     }
     const timeAtIpapMs = Math.round(atIpapCount / samplingRate * 1000);
     timeAtIpapValues.push(timeAtIpapMs);
@@ -229,8 +229,8 @@ export function computeSettingsMetrics(
     let pressDropSample: number | null = null;
     const searchStart = Math.max(Math.floor(inspLen / 3), 0);
     for (let k = inspLen - 1; k > searchStart; k--) {
-      if (pressureData[start + k] < pressCycleThreshold &&
-          k > 0 && pressureData[start + k - 1] >= pressCycleThreshold) {
+      if (pressureData[start + k]! < pressCycleThreshold &&
+          k > 0 && pressureData[start + k - 1]! >= pressCycleThreshold) {
         pressDropSample = k;
         break;
       }
@@ -240,7 +240,7 @@ export function computeSettingsMetrics(
       let remainingFlowSum = 0;
       let remainingCount = 0;
       for (let k = pressDropSample; k < inspLen; k++) {
-        remainingFlowSum += flowData[start + k];
+        remainingFlowSum += flowData[start + k]!;
         remainingCount++;
       }
       if (remainingCount > 0 && (remainingFlowSum / remainingCount) > flowThreshold) {
@@ -256,7 +256,7 @@ export function computeSettingsMetrics(
       const checkSamples = Math.min(Math.floor(0.1 * samplingRate), expLen);
       let earlyExpPressSum = 0;
       for (let k = 0; k < checkSamples; k++) {
-        earlyExpPressSum += pressureData[expAbsStart + k];
+        earlyExpPressSum += pressureData[expAbsStart + k]!;
       }
       if (checkSamples > 0 && (earlyExpPressSum / checkSamples) > pressCycleThreshold) {
         lateCycles++;
@@ -267,7 +267,7 @@ export function computeSettingsMetrics(
     // Tidal volume proxy: integral of inspiratory flow (L/min → litres)
     let flowSum = 0;
     for (let k = 0; k < inspLen; k++) {
-      flowSum += flowData[start + k];
+      flowSum += flowData[start + k]!;
     }
     const tv = flowSum / (60 * samplingRate);
     tidalVolumes.push(tv);
@@ -278,7 +278,7 @@ export function computeSettingsMetrics(
     if (start >= preInspSamples) {
       let eepSum = 0;
       for (let k = start - preInspSamples; k < start; k++) {
-        eepSum += pressureData[k];
+        eepSum += pressureData[k]!;
       }
       endExpPressures.push(eepSum / preInspSamples);
     }

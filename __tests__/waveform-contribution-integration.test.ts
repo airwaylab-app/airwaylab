@@ -161,9 +161,9 @@ describe('contributeWaveformsBackground — integration', () => {
 
     // Should have made one fetch call to the API
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][0]).toBe('/api/contribute-waveforms');
+    expect(fetchSpy.mock.calls[0]![0]).toBe('/api/contribute-waveforms');
 
-    const callArgs = fetchSpy.mock.calls[0][1];
+    const callArgs = fetchSpy.mock.calls[0]![1];
     expect(callArgs.method).toBe('POST');
     expect(callArgs.headers['X-Night-Date']).toBe('2025-01-15');
     expect(callArgs.headers['X-Contribution-Id']).toBe('test-contribution-id');
@@ -207,7 +207,7 @@ describe('contributeWaveformsBackground — integration', () => {
 
     // Should only upload the new night (2025-01-16)
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][1].headers['X-Night-Date']).toBe('2025-01-16');
+    expect(fetchSpy.mock.calls[0]![1].headers['X-Night-Date']).toBe('2025-01-16');
   });
 
   it('skips all nights when everything is already contributed', async () => {
@@ -238,7 +238,7 @@ describe('contributeWaveformsBackground — integration', () => {
 
     // Dates should have been cleared and re-uploaded
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][1].headers['X-Night-Date']).toBe('2025-01-15');
+    expect(fetchSpy.mock.calls[0]![1].headers['X-Night-Date']).toBe('2025-01-15');
   });
 
   it('does not clear dates when engine version matches', async () => {
@@ -254,7 +254,7 @@ describe('contributeWaveformsBackground — integration', () => {
 
     // Only the new night should be uploaded
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0][1].headers['X-Night-Date']).toBe('2025-01-16');
+    expect(fetchSpy.mock.calls[0]![1].headers['X-Night-Date']).toBe('2025-01-16');
   });
 
   it('records engine version after successful contribution', async () => {
@@ -308,7 +308,7 @@ describe('contributeWaveformsBackground — integration', () => {
 
     await contributeWaveformsBackground(nights, files, 'test-id');
 
-    const resultsHeader = fetchSpy.mock.calls[0][1].headers['X-Analysis-Results'];
+    const resultsHeader = fetchSpy.mock.calls[0]![1].headers['X-Analysis-Results'];
     const parsed = JSON.parse(resultsHeader);
 
     // Should contain anonymised scores

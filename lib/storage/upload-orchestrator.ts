@@ -170,7 +170,7 @@ class UploadOrchestrator {
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 3: Upload new files
-      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]));
+      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]!));
       const skipped = files.length - toUpload.length;
 
       this.setState({
@@ -258,7 +258,7 @@ class UploadOrchestrator {
     let cacheHits = 0;
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const file = files[i]!;
       const filePath = getFilePath(file);
       const cached = hashCache.get(filePath, file.size, file.lastModified);
       if (cached) {
@@ -324,7 +324,7 @@ class UploadOrchestrator {
             hashes[originalIndex] = msg.hash;
 
             // Cache the newly computed hash
-            const file = files[originalIndex];
+            const file = files[originalIndex]!;
             const filePath = getFilePath(file);
             hashCache.set(filePath, file.size, file.lastModified, msg.hash);
           } else if (msg.type === 'HASH_PROGRESS') {
@@ -371,7 +371,7 @@ class UploadOrchestrator {
   ): Promise<Set<string>> {
     const hashEntries = files.map((file, i) => ({
       filePath: getFilePath(file),
-      fileHash: hashes[i],
+      fileHash: hashes[i]!,
     }));
 
     const res = await fetch('/api/files/check-hashes', {
@@ -417,7 +417,7 @@ class UploadOrchestrator {
 
     const processOne = async (file: File) => {
       const originalIndex = allFiles.indexOf(file);
-      const hash = allHashes[originalIndex];
+      const hash = allHashes[originalIndex]!;
       const filePath = getFilePath(file);
       const nightDate = extractNightDate(filePath);
       const fileName = file.name;
@@ -447,18 +447,22 @@ class UploadOrchestrator {
           result.failed++;
           result.errors.push(`${fileName}: ${errMsg}`);
 
-          // Fail-fast: track consecutive identical errors
-          const normalized = errMsg.replace(/^[^:]+:\s*/, '');
-          if (normalized === lastErrorMessage) {
-            consecutiveErrors++;
-          } else {
-            consecutiveErrors = 1;
-            lastErrorMessage = normalized;
-          }
+          // Fail-fast: only count systemic errors (auth, network, server),
+          // not per-file validation errors (400) which are expected for some files
+          const isValidation = retryErr instanceof Error && (retryErr as Error & { isValidation?: boolean }).isValidation === true;
+          if (!isValidation) {
+            const normalized = errMsg.replace(/^[^:]+:\s*/, '');
+            if (normalized === lastErrorMessage) {
+              consecutiveErrors++;
+            } else {
+              consecutiveErrors = 1;
+              lastErrorMessage = normalized;
+            }
 
-          // Abort if we've seen the same error too many times in a row
-          if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
-            this.abortController?.abort();
+            // Abort if we've seen the same systemic error too many times in a row
+            if (consecutiveErrors >= FAIL_FAST_THRESHOLD) {
+              this.abortController?.abort();
+            }
           }
         }
       }
@@ -520,7 +524,10 @@ class UploadOrchestrator {
       if (presignRes.status === 401 || presignRes.status === 403) {
         throw new Error(err.error || 'Cloud sync requires an active session. Please sign in again.');
       }
-      throw new Error(err.error || `Presign failed: ${presignRes.status}`);
+      const error = new Error(err.error || `Presign failed: ${presignRes.status}`);
+      // Tag validation errors (400) so fail-fast can distinguish them from systemic failures
+      (error as Error & { isValidation?: boolean }).isValidation = presignRes.status === 400;
+      throw error;
     }
 
     const presignData = await presignRes.json();

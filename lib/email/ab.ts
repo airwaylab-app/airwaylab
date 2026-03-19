@@ -23,7 +23,7 @@ export type ABVariant = 'A' | 'B';
  */
 export function getABVariant(userId: string, testName: string): ABVariant {
   const hash = createHash('sha256').update(`${userId}:${testName}`).digest();
-  return hash[0] % 2 === 0 ? 'A' : 'B';
+  return hash[0]! % 2 === 0 ? 'A' : 'B';
 }
 
 // ── Active tests ────────────────────────────────────────────
@@ -61,7 +61,7 @@ type SubjectVariants = Partial<
  *
  * Only entries where A !== B are active (tested in getVariantSubject).
  */
-export const SUBJECT_VARIANTS: SubjectVariants = {
+const SUBJECT_VARIANTS: SubjectVariants = {
   post_upload: {
     1: {
       A: "Your first analysis is saved -- here's what to do next",

@@ -74,7 +74,7 @@ describe('Real oximetry CSV parsing', () => {
       const subset = result.samples.slice(0, 100);
       let totalGap = 0;
       for (let i = 1; i < subset.length; i++) {
-        totalGap += subset[i].time.getTime() - subset[i - 1].time.getTime();
+        totalGap += subset[i]!.time.getTime() - subset[i - 1]!.time.getTime();
       }
       const avgInterval = totalGap / (subset.length - 1) / 1000;
 

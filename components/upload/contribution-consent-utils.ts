@@ -88,6 +88,48 @@ export function setContributedWaveformEngine(version: string): void {
   } catch { /* noop */ }
 }
 
+// ── Waveform contribution failure tracking ───────────────────
+
+const WAVEFORM_FAILURES_KEY = 'airwaylab_waveform_upload_failures';
+const WAVEFORM_FAILURE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface WaveformFailure {
+  date: string;
+  failedAt: number;
+}
+
+/** Get dates that failed upload and are still in cooldown. */
+export function getFailedWaveformDates(): Set<string> {
+  try {
+    const raw = localStorage.getItem(WAVEFORM_FAILURES_KEY);
+    if (!raw) return new Set();
+    const entries: unknown = JSON.parse(raw);
+    if (!Array.isArray(entries)) return new Set();
+    const now = Date.now();
+    const active = (entries as WaveformFailure[]).filter(
+      (e) => typeof e.date === 'string' && typeof e.failedAt === 'number' && now - e.failedAt < WAVEFORM_FAILURE_COOLDOWN_MS
+    );
+    // Prune expired entries
+    if (active.length !== (entries as WaveformFailure[]).length) {
+      localStorage.setItem(WAVEFORM_FAILURES_KEY, JSON.stringify(active));
+    }
+    return new Set(active.map((e) => e.date));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Track a failed waveform upload date (24h cooldown before retry). */
+export function trackFailedWaveformDate(dateStr: string): void {
+  try {
+    const raw = localStorage.getItem(WAVEFORM_FAILURES_KEY);
+    const entries: WaveformFailure[] = raw ? JSON.parse(raw) : [];
+    const filtered = entries.filter((e) => e.date !== dateStr);
+    filtered.push({ date: dateStr, failedAt: Date.now() });
+    localStorage.setItem(WAVEFORM_FAILURES_KEY, JSON.stringify(filtered));
+  } catch { /* noop */ }
+}
+
 // ── Oximetry trace contribution date tracking ────────────────
 
 const OXTRACE_DATES_KEY = 'airwaylab_contributed_oxtrace_dates';

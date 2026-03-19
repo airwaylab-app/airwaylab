@@ -15,8 +15,8 @@ describe('Unsubscribe Token', () => {
     expect(token).toContain(':');
     const parts = token.split(':');
     expect(parts).toHaveLength(2);
-    expect(parts[0].length).toBeGreaterThan(0);
-    expect(parts[1].length).toBeGreaterThan(0);
+    expect(parts[0]!.length).toBeGreaterThan(0);
+    expect(parts[1]!.length).toBeGreaterThan(0);
   });
 
   it('verifies a valid token and returns the user ID', () => {

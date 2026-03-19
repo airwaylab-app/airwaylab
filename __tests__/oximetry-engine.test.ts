@@ -29,7 +29,7 @@ function addDesatEvents(samples: OximetrySample[], count: number): OximetrySampl
     const idx = spacing * (e + 1);
     // Drop SpO2 by 5% for 20 seconds (10 samples)
     for (let j = 0; j < 10 && idx + j < result.length; j++) {
-      result[idx + j] = { ...result[idx + j], spo2: 88 };
+      result[idx + j] = { ...result[idx + j]!, spo2: 88 };
     }
   }
   return result;
@@ -90,7 +90,7 @@ describe('Oximetry Engine', () => {
       const samples = makeNormalSamples(120);
       // Mark some as invalid
       for (let i = 0; i < 100; i++) {
-        samples[500 + i] = { ...samples[500 + i], valid: false };
+        samples[500 + i] = { ...samples[500 + i]!, valid: false };
       }
 
       const result = computeOximetry(samples);
@@ -101,7 +101,7 @@ describe('Oximetry Engine', () => {
       const samples = makeNormalSamples(120);
       // Add high motion to some samples
       for (let i = 0; i < 50; i++) {
-        samples[600 + i] = { ...samples[600 + i], motion: 10 };
+        samples[600 + i] = { ...samples[600 + i]!, motion: 10 };
       }
 
       const result = computeOximetry(samples);
@@ -112,7 +112,7 @@ describe('Oximetry Engine', () => {
       const samples = makeNormalSamples(120);
       // Simulate double-tracking: HR jumps to 2× normal
       for (let i = 0; i < 20; i++) {
-        samples[800 + i] = { ...samples[800 + i], hr: 130 };
+        samples[800 + i] = { ...samples[800 + i]!, hr: 130 };
       }
 
       const result = computeOximetry(samples);

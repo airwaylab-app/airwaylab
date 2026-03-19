@@ -6,7 +6,7 @@ import { useChartViewport, type ChartViewportReturn } from './use-chart-viewport
 
 // ── Context shape ────────────────────────────────────────────
 
-export type SyncedViewportValue = ChartViewportReturn;
+type SyncedViewportValue = ChartViewportReturn;
 
 const SyncedViewportContext = createContext<SyncedViewportValue | null>(null);
 

@@ -33,11 +33,11 @@ function analyzeFlowLimitation(flowData: Float32Array, _samplingRate: number): n
   let inspirationStart = 0;
 
   for (let i = 1; i < flowData.length; i++) {
-    if (flowData[i] > 0 && flowData[i - 1] <= 0) {
+    if (flowData[i]! > 0 && flowData[i - 1]! <= 0) {
       // Positive-going crossing → inspiration start
       inspirationStart = i;
       inInspiration = true;
-    } else if (flowData[i] <= 0 && flowData[i - 1] > 0 && inInspiration) {
+    } else if (flowData[i]! <= 0 && flowData[i - 1]! > 0 && inInspiration) {
       // Negative-going crossing → inspiration end
       const inspEnd = i;
       const inspLen = inspEnd - inspirationStart;
@@ -63,7 +63,7 @@ function scoreInspiration(
 ): number {
   let maxFlow = 0;
   for (let i = start; i < end; i++) {
-    if (flowData[i] > maxFlow) maxFlow = flowData[i];
+    if (flowData[i]! > maxFlow) maxFlow = flowData[i]!;
   }
   if (maxFlow < 0.1) return -1;
 
@@ -72,7 +72,7 @@ function scoreInspiration(
   let topEnd = -1;
 
   for (let i = start; i < end; i++) {
-    if (flowData[i] / maxFlow > 0.5) {
+    if (flowData[i]! / maxFlow > 0.5) {
       if (topStart === -1) topStart = i;
       topEnd = i;
     }
@@ -84,13 +84,13 @@ function scoreInspiration(
   const topLen = topEnd - topStart + 1;
   let sum = 0;
   for (let i = topStart; i <= topEnd; i++) {
-    sum += flowData[i] / maxFlow;
+    sum += flowData[i]! / maxFlow;
   }
   const mean = sum / topLen;
 
   let variance = 0;
   for (let i = topStart; i <= topEnd; i++) {
-    const diff = flowData[i] / maxFlow - mean;
+    const diff = flowData[i]! / maxFlow - mean;
     variance += diff * diff;
   }
   variance /= topLen;
@@ -115,14 +115,14 @@ function calculateMinuteVent(flowData: Float32Array, samplingRate: number): numb
 
     for (let j = 1; j < windowSize; j++) {
       const idx = i + j;
-      if (flowData[idx] > 0 && flowData[idx - 1] <= 0) {
+      if (flowData[idx]! > 0 && flowData[idx - 1]! <= 0) {
         _breathCount++;
         inInhalation = true;
       }
-      if (inInhalation && flowData[idx] > 0) {
-        tidalVolume += Math.abs(flowData[idx]) / samplingRate;
+      if (inInhalation && flowData[idx]! > 0) {
+        tidalVolume += Math.abs(flowData[idx]!) / samplingRate;
       }
-      if (flowData[idx] <= 0) {
+      if (flowData[idx]! <= 0) {
         inInhalation = false;
       }
     }
@@ -152,13 +152,13 @@ function analyzePeriodicBreathing(minuteVent: number[]): {
 
   const n = nextPow2(detrended.length);
   const padded = new Array<number>(n).fill(0);
-  for (let i = 0; i < detrended.length; i++) padded[i] = detrended[i];
+  for (let i = 0; i < detrended.length; i++) padded[i] = detrended[i]!;
 
   const complex = padded.map((v) => ({ re: v, im: 0 }));
   const spectrum = fft(complex);
   const power = new Float64Array(n / 2);
   for (let i = 0; i < n / 2; i++) {
-    power[i] = Math.sqrt(spectrum[i].re ** 2 + spectrum[i].im ** 2);
+    power[i] = Math.sqrt(spectrum[i]!.re ** 2 + spectrum[i]!.im ** 2);
   }
 
   const dt = 5; // 5-second steps
@@ -166,11 +166,11 @@ function analyzePeriodicBreathing(minuteVent: number[]): {
   let pbBandPower = 0;
 
   for (let i = 0; i < power.length; i++) {
-    totalPower += power[i];
+    totalPower += power[i]!;
     const freq = i / (n * dt);
     // Periodic breathing band: 0.01-0.03 Hz (~30-100 second cycles)
     if (freq >= 0.01 && freq <= 0.03) {
-      pbBandPower += power[i];
+      pbBandPower += power[i]!;
     }
   }
 
@@ -192,7 +192,7 @@ function calculateSampleEntropy(data: number[], m = 2, r: number | null = null):
     const mean = data.reduce((a, b) => a + b, 0) / N;
     let variance = 0;
     for (let i = 0; i < N; i++) {
-      variance += (data[i] - mean) ** 2;
+      variance += (data[i]! - mean) ** 2;
     }
     variance /= N;
     r = 0.2 * Math.sqrt(variance);
@@ -206,7 +206,7 @@ function calculateSampleEntropy(data: number[], m = 2, r: number | null = null):
       for (let j = i + 1; j < N - templateLen; j++) {
         let match = true;
         for (let k = 0; k < templateLen; k++) {
-          if (Math.abs(data[i + k] - data[j + k]) > r!) {
+          if (Math.abs(data[i + k]! - data[j + k]!) > r!) {
             match = false;
             break;
           }
@@ -239,8 +239,8 @@ function fft(x: Complex[]): Complex[] {
   const even: Complex[] = [];
   const odd: Complex[] = [];
   for (let i = 0; i < N; i++) {
-    if (i % 2 === 0) even.push(x[i]);
-    else odd.push(x[i]);
+    if (i % 2 === 0) even.push(x[i]!);
+    else odd.push(x[i]!);
   }
 
   const evenResult = fft(even);
@@ -250,11 +250,11 @@ function fft(x: Complex[]): Complex[] {
   for (let k = 0; k < N / 2; k++) {
     const angle = (-2 * Math.PI * k) / N;
     const t: Complex = {
-      re: Math.cos(angle) * oddResult[k].re - Math.sin(angle) * oddResult[k].im,
-      im: Math.cos(angle) * oddResult[k].im + Math.sin(angle) * oddResult[k].re,
+      re: Math.cos(angle) * oddResult[k]!.re - Math.sin(angle) * oddResult[k]!.im,
+      im: Math.cos(angle) * oddResult[k]!.im + Math.sin(angle) * oddResult[k]!.re,
     };
-    result[k] = { re: evenResult[k].re + t.re, im: evenResult[k].im + t.im };
-    result[k + N / 2] = { re: evenResult[k].re - t.re, im: evenResult[k].im - t.im };
+    result[k] = { re: evenResult[k]!.re + t.re, im: evenResult[k]!.im + t.im };
+    result[k + N / 2] = { re: evenResult[k]!.re - t.re, im: evenResult[k]!.im - t.im };
   }
   return result;
 }

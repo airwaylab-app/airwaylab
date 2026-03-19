@@ -58,8 +58,8 @@ export default function AccountPage() {
       setStatsLoading(true);
       setStatsError(false);
       try {
-        const res = await fetch('/api/user-data-stats');
-        if (!res.ok) throw new Error('Failed to fetch stats');
+        const res = await fetch('/api/user-data-stats', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`);
         const data = (await res.json()) as UserDataStats;
         setStats(data);
       } catch (err) {
@@ -77,8 +77,11 @@ export default function AccountPage() {
     setDeleteState('deleting');
     events.dataDeletionRequested(stats?.fileCount ?? 0, stats?.nightCount ?? 0);
     try {
-      const res = await fetch('/api/delete-user-data', { method: 'POST' });
-      if (!res.ok) throw new Error('Delete failed');
+      const res = await fetch('/api/delete-user-data', { method: 'POST', credentials: 'same-origin' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(body.error || `Delete failed (${res.status})`);
+      }
       setDeleteState('success');
       setShowDeleteConfirm(false);
       setStats({ fileCount: 0, totalBytes: 0, nightCount: 0 });
@@ -267,9 +270,10 @@ export default function AccountPage() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
                   <p className="text-sm text-muted-foreground">
-                    This permanently deletes all data on our servers &mdash; EDF
-                    files, analysis data, and contributions. Browser-local data
-                    is not affected. This cannot be undone.
+                    This permanently deletes your health data from our servers
+                    &mdash; uploaded EDF files and stored analysis results.
+                    Anonymised research contributions are not affected.
+                    Browser-local data is not affected. This cannot be undone.
                   </p>
                 </div>
                 <div className="flex gap-2">

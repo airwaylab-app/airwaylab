@@ -5,7 +5,7 @@
 
 const STORAGE_KEY = 'airwaylab_share_consent';
 
-export interface ShareConsentState {
+interface ShareConsentState {
   dataShareConsent: boolean;
   shareScope: 'single' | 'all';
   rememberedChoice: boolean;

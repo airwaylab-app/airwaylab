@@ -199,11 +199,11 @@ describe('TrendChart data preparation', () => {
     }));
 
     expect(data).toHaveLength(1);
-    expect(data[0].glasgow).toBe(3.2);
-    expect(data[0].flScore).toBe(25);
-    expect(data[0].nedMean).toBe(12);
-    expect(data[0].reraIndex).toBe(3);
-    expect(data[0].date).toBe('03-13');
+    expect(data[0]!.glasgow).toBe(3.2);
+    expect(data[0]!.flScore).toBe(25);
+    expect(data[0]!.nedMean).toBe(12);
+    expect(data[0]!.reraIndex).toBe(3);
+    expect(data[0]!.date).toBe('03-13');
   });
 
   it('should handle multiple nights in chronological order', () => {
@@ -219,9 +219,9 @@ describe('TrendChart data preparation', () => {
     }));
 
     expect(data).toHaveLength(3);
-    expect(data[0].date).toBe('03-11'); // oldest first
-    expect(data[2].date).toBe('03-13'); // newest last
-    expect(data[0].glasgow).toBe(4.1);
-    expect(data[2].glasgow).toBe(2.8);
+    expect(data[0]!.date).toBe('03-11'); // oldest first
+    expect(data[2]!.date).toBe('03-13'); // newest last
+    expect(data[0]!.glasgow).toBe(4.1);
+    expect(data[2]!.glasgow).toBe(2.8);
   });
 });

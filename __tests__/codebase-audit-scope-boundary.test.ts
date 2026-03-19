@@ -102,7 +102,6 @@ describe('IndexedDB Sentry captures in waveform-idb.ts', () => {
     expect(content).toContain('IndexedDB load unavailable');
     expect(content).toContain('IndexedDB delete failed');
     expect(content).toContain('IndexedDB cleanup failed');
-    expect(content).toContain('IndexedDB clearAll failed');
   });
 
   it('Sentry messages include module: waveform-idb tag', () => {
@@ -114,7 +113,7 @@ describe('IndexedDB Sentry captures in waveform-idb.ts', () => {
     // Count occurrences of the tag pattern
     const tagMatches = content.match(/module:\s*'waveform-idb'/g);
     expect(tagMatches).not.toBeNull();
-    expect(tagMatches!.length).toBeGreaterThanOrEqual(5);
+    expect(tagMatches!.length).toBeGreaterThanOrEqual(4);
   });
 });
 

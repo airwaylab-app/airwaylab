@@ -6,7 +6,7 @@
 import type { NightResult, MachineSettings, GlasgowComponents, WATResults, NEDResults, OximetryResults } from './types';
 
 function dateFromStr(s: string): Date {
-  const [y, m, d] = s.split('-').map(Number);
+  const [y, m, d] = s.split('-').map(Number) as [number, number, number];
   return new Date(y, m - 1, d);
 }
 

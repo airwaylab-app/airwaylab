@@ -14,15 +14,6 @@ export const CHART_COLORS = [
   'hsl(188 94% 43%)',  // chart-6: cyan (6th series)
 ] as const;
 
-/** Data status colors matching the traffic light system. */
-export const DATA_COLORS = {
-  good: 'hsl(142 71% 45%)',     // emerald — status-good
-  monitor: 'hsl(38 92% 50%)',   // amber — status-warn
-  elevated: 'hsl(0 84% 60%)',   // rose — status-bad
-} as const;
-
-/** Brand accent for decorative use (wordmark, highlights). */
-export const BRAND_TEAL = 'hsl(168 60% 45%)'; // #2DB89A
 
 /**
  * Apply alpha to an HSL color string.

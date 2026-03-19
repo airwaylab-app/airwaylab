@@ -14,9 +14,9 @@ export const ZOOM_PRESETS = [
 ] as const;
 
 /** Minimum visible time window in seconds (~20s shows individual breaths) */
-export const MIN_VISIBLE_SECONDS = 20;
+const MIN_VISIBLE_SECONDS = 20;
 export const PAN_STEP_FRACTION = 0.25;
-export const ZOOM_FACTOR = 0.8;
+const ZOOM_FACTOR = 0.8;
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -270,7 +270,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       if (e.touches.length === 2) {
         isPinching.current = true;
         isTouchPanning.current = false;
-        pinchStartDist.current = getTouchDistance(e.touches[0], e.touches[1]);
+        pinchStartDist.current = getTouchDistance(e.touches[0]!, e.touches[1]!);
         touchStartView.current = {
           start: clampedRef.current.start,
           end: clampedRef.current.end,
@@ -279,7 +279,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       } else if (e.touches.length === 1) {
         isTouchPanning.current = true;
         isPinching.current = false;
-        touchStartX.current = e.touches[0].clientX;
+        touchStartX.current = e.touches[0]!.clientX;
         touchStartView.current = {
           start: clampedRef.current.start,
           end: clampedRef.current.end,
@@ -291,7 +291,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     const handleTouchMove = (e: TouchEvent) => {
       if (isPinching.current && e.touches.length === 2) {
         e.preventDefault();
-        const dist = getTouchDistance(e.touches[0], e.touches[1]);
+        const dist = getTouchDistance(e.touches[0]!, e.touches[1]!);
         const ratio = dist / pinchStartDist.current;
         if (ratio > 1.05) {
           zoomInRef.current(0.5);
@@ -303,7 +303,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       } else if (isTouchPanning.current && e.touches.length === 1) {
         e.preventDefault();
         const rect = el.getBoundingClientRect();
-        const dx = e.touches[0].clientX - touchStartX.current;
+        const dx = e.touches[0]!.clientX - touchStartX.current;
         const visible = touchStartView.current.end - touchStartView.current.start;
         const timeDelta = (-dx / rect.width) * visible;
         const newStart = Math.max(0, Math.min(
@@ -322,7 +322,7 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
       } else if (e.touches.length === 1 && isPinching.current) {
         isPinching.current = false;
         isTouchPanning.current = true;
-        touchStartX.current = e.touches[0].clientX;
+        touchStartX.current = e.touches[0]!.clientX;
         touchStartView.current = {
           start: clampedRef.current.start,
           end: clampedRef.current.end,
