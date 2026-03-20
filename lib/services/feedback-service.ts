@@ -2,8 +2,8 @@ import { ResultAsync, okAsync } from 'neverthrow'
 import * as Sentry from '@sentry/nextjs'
 import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { serverEnv } from '@/lib/env'
 import { supabaseInsert } from './supabase-helpers'
+import { sendEmail } from '@/lib/email/send'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -21,52 +21,6 @@ const TYPE_LABELS: Record<string, string> = {
   bug: 'Bug report',
   support: 'Support request',
   feedback: 'Feedback',
-}
-
-// ── Notification email (fire-and-forget) ─────────────────────
-
-function sendNotificationEmail(fields: {
-  type: string
-  message: string
-  email: string | null
-  page: string | null
-}) {
-  const apiKey = serverEnv.RESEND_API_KEY
-  if (!apiKey) return
-
-  const label = TYPE_LABELS[fields.type] ?? 'Feedback'
-  fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      from: 'AirwayLab <noreply@mail.airwaylab.app>',
-      to: ['dev@airwaylab.app'],
-      subject: `${label}: ${fields.message.slice(0, 60)}${fields.message.length > 60 ? '...' : ''}`,
-      text: [
-        `New ${label.toLowerCase()} on airwaylab.app`,
-        '',
-        `Type: ${label}`,
-        `Page: ${fields.page ?? '\u2014'}`,
-        `Email: ${fields.email ?? '\u2014'}`,
-        '',
-        `Message:`,
-        fields.message,
-      ].join('\n'),
-    }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        res.text().then((body) => {
-          console.error('[feedback] Resend error:', res.status, body)
-        })
-      }
-    })
-    .catch((err) => {
-      console.error('[feedback] Notification email failed:', err)
-    })
 }
 
 // ── Service function ─────────────────────────────────────────
@@ -99,12 +53,23 @@ export function submitFeedback(
     }),
     'feedback',
   ).map((result) => {
-    // Side effects on success: notification email + Sentry breadcrumb
-    sendNotificationEmail({
-      type: input.type,
-      message: input.message.trim(),
-      email: input.email?.trim() || null,
-      page: input.page,
+    const label = TYPE_LABELS[input.type] ?? 'Feedback'
+
+    // Admin notification (fire-and-forget)
+    void sendEmail({
+      to: 'dev@airwaylab.app',
+      subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
+      text: [
+        `New ${label.toLowerCase()} on airwaylab.app`,
+        '',
+        `Type: ${label}`,
+        `Page: ${input.page ?? '\u2014'}`,
+        `Email: ${input.email?.trim() ?? '\u2014'}`,
+        '',
+        'Message:',
+        input.message.trim(),
+      ].join('\n'),
+      metadata: { emailType: 'admin_feedback' },
     })
 
     const isFormatRequest = input.message.startsWith('Oximetry format request')

@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
-import { serverEnv } from '@/lib/env';
+import { sendEmail } from '@/lib/email/send';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
@@ -27,47 +27,6 @@ const PRACTICE_TYPE_LABELS: Record<string, string> = {
   sleep_physician: 'Sleep Physician',
   other: 'Other',
 };
-
-async function sendNotificationEmail(fields: {
-  name: string;
-  email: string;
-  practiceType: string | null;
-  message: string | null;
-}) {
-  const apiKey = serverEnv.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'AirwayLab <noreply@mail.airwaylab.app>',
-        to: ['dev@airwaylab.app'],
-        subject: `New provider interest: ${fields.name}`,
-        text: [
-          `New provider interest submission on airwaylab.app/providers`,
-          '',
-          `Name: ${fields.name}`,
-          `Email: ${fields.email}`,
-          `Practice type: ${fields.practiceType ? PRACTICE_TYPE_LABELS[fields.practiceType] ?? fields.practiceType : '\u2014'}`,
-          `Message: ${fields.message ?? '\u2014'}`,
-        ].join('\n'),
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      console.error('[provider-interest] Resend error:', res.status, body);
-    }
-  } catch (err) {
-    // Non-critical -- don't fail the request if notification fails
-    console.error('[provider-interest] Notification email failed:', err);
-  }
-}
 
 const MAX_PAYLOAD_BYTES = 8_000; // 8 KB
 
@@ -126,11 +85,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Fire-and-forget notification email
-      sendNotificationEmail({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        practiceType: cleanPracticeType,
-        message: message?.trim() || null,
+      void sendEmail({
+        to: 'dev@airwaylab.app',
+        subject: `New provider interest: ${name.trim()}`,
+        text: [
+          'New provider interest submission on airwaylab.app/providers',
+          '',
+          `Name: ${name.trim()}`,
+          `Email: ${email.trim().toLowerCase()}`,
+          `Practice type: ${cleanPracticeType ? PRACTICE_TYPE_LABELS[cleanPracticeType] ?? cleanPracticeType : '\u2014'}`,
+          `Message: ${message?.trim() ?? '\u2014'}`,
+        ].join('\n'),
+        metadata: { emailType: 'admin_provider_interest' },
       });
     } else {
       console.error('[provider-interest] Supabase not configured -- submission not stored');
