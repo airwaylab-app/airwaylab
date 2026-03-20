@@ -216,10 +216,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        Sentry.captureException(error, {
-          tags: { context: 'auth-sign-in' },
-          extra: { emailDomain: email.split('@')[1] },
-        });
+        // Rate limits and security cooldowns are expected user behavior — not bugs
+        const msg = error.message.toLowerCase();
+        const isExpected = msg.includes('rate limit') || msg.includes('security purposes') || msg.includes('too many');
+        if (!isExpected) {
+          Sentry.captureException(error, {
+            tags: { context: 'auth-sign-in' },
+            extra: { emailDomain: email.split('@')[1] },
+          });
+        }
         return { error: error.message };
       }
       return { error: null };
