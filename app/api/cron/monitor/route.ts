@@ -2,45 +2,19 @@ import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { serverEnv } from '@/lib/env';
 import { checkAll, formatAlertEmail, writeSnapshot, buildCriticalAlerts } from '@/lib/monitoring';
+import { sendEmail } from '@/lib/email/send';
 
 export const dynamic = 'force-dynamic';
 
 async function sendAlert(subject: string, body: string) {
-  const apiKey = serverEnv.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('[cron/monitor] RESEND_API_KEY not configured -- cannot send alert');
-    return false;
-  }
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'AirwayLab <noreply@mail.airwaylab.app>',
-        to: ['dev@airwaylab.app'],
-        reply_to: 'dev@airwaylab.app',
-        subject,
-        text: body,
-      }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('[cron/monitor] Resend error:', res.status, text);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error('[cron/monitor] Alert email failed:', err);
-    Sentry.captureException(err, { tags: { route: 'cron-monitor', phase: 'send-alert' } });
-    return false;
-  }
+  const resendId = await sendEmail({
+    to: 'dev@airwaylab.app',
+    subject,
+    text: body,
+    metadata: { emailType: 'admin_monitor_alert' },
+  });
+  return resendId !== null;
 }
 
 /**
