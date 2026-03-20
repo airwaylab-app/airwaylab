@@ -2,8 +2,9 @@ import { ResultAsync, okAsync } from 'neverthrow'
 import * as Sentry from '@sentry/nextjs'
 import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { serverEnv } from '@/lib/env'
 import { supabaseInsert } from './supabase-helpers'
+import { sendEmail } from '@/lib/email/send'
+import { contactConfirmationEmail } from '@/lib/email/transactional'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -24,58 +25,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   security: 'Security',
 }
 
-// ── Notification email (fire-and-forget) ─────────────────────
-
-function sendNotificationEmail(fields: {
-  category: string
-  name: string | null
-  email: string
-  message: string
-}) {
-  const apiKey = serverEnv.RESEND_API_KEY
-  if (!apiKey) return
-
-  const label = CATEGORY_LABELS[fields.category] ?? 'General'
-  fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      from: 'AirwayLab <noreply@mail.airwaylab.app>',
-      to: ['dev@airwaylab.app'],
-      reply_to: fields.email,
-      subject: `[${label}] ${fields.message.slice(0, 60)}${fields.message.length > 60 ? '...' : ''}`,
-      text: [
-        `New contact form submission on airwaylab.app`,
-        '',
-        `Category: ${label}`,
-        `Name: ${fields.name ?? '\u2014'}`,
-        `Email: ${fields.email}`,
-        '',
-        `Message:`,
-        fields.message,
-      ].join('\n'),
-    }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        res.text().then((body) => {
-          console.error('[contact] Resend error:', res.status, body)
-        })
-      }
-    })
-    .catch((err) => {
-      console.error('[contact] Notification email failed:', err)
-    })
-}
-
 // ── Service function ─────────────────────────────────────────
 
 /**
- * Persists a contact form submission to Supabase and fires a
- * notification email.
+ * Persists a contact form submission to Supabase and fires
+ * an admin notification + submitter confirmation.
  *
  * HTTP concerns (CSRF, rate limiting, Zod validation) stay in the route.
  */
@@ -102,12 +56,33 @@ export function submitContactForm(
     }),
     'feedback',
   ).map((result) => {
-    // Side effects on success
-    sendNotificationEmail({
-      category: input.category,
-      name: input.name,
-      email: normalizedEmail,
-      message: input.message.trim(),
+    const label = CATEGORY_LABELS[input.category] ?? 'General'
+
+    // Admin notification (fire-and-forget)
+    void sendEmail({
+      to: 'dev@airwaylab.app',
+      subject: `[${label}] ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
+      text: [
+        'New contact form submission on airwaylab.app',
+        '',
+        `Category: ${label}`,
+        `Name: ${input.name ?? '\u2014'}`,
+        `Email: ${normalizedEmail}`,
+        '',
+        'Message:',
+        input.message.trim(),
+      ].join('\n'),
+      replyTo: normalizedEmail,
+      metadata: { emailType: 'admin_contact' },
+    })
+
+    // Submitter confirmation (fire-and-forget)
+    const confirmation = contactConfirmationEmail(input.name, input.category)
+    void sendEmail({
+      to: normalizedEmail,
+      subject: confirmation.subject,
+      html: confirmation.html,
+      metadata: { emailType: 'contact_confirmation' },
     })
 
     Sentry.captureMessage(`New contact form: ${input.category}`, {
