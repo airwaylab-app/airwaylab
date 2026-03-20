@@ -44,7 +44,6 @@ export function welcomeEmail(
   interval: string
 ): { subject: string; html: string } {
   const tierLabel = tier === 'supporter' ? 'Supporter' : 'Champion'
-  const intervalLabel = interval === 'year' ? 'yearly' : 'monthly'
 
   return {
     subject: `You're in. Here's what's unlocked.`,
