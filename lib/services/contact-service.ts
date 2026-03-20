@@ -4,6 +4,8 @@ import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { serverEnv } from '@/lib/env'
 import { supabaseInsert } from './supabase-helpers'
+import { sendEmail } from '@/lib/email/send'
+import { contactConfirmationEmail } from '@/lib/email/transactional'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -109,6 +111,11 @@ export function submitContactForm(
       email: normalizedEmail,
       message: input.message.trim(),
     })
+
+    // Send confirmation to the submitter (fire-and-forget)
+    const confirmation = contactConfirmationEmail(input.name, input.category)
+    void sendEmail({ to: normalizedEmail, subject: confirmation.subject, html: confirmation.html })
+      .catch((err) => console.error('[contact] Confirmation email failed:', err))
 
     Sentry.captureMessage(`New contact form: ${input.category}`, {
       level: input.category === 'security' ? 'warning' : 'info',

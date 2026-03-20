@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { sendEmail } from '@/lib/email/send';
+import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -51,6 +53,70 @@ function getTierFromPrice(priceId: string): 'supporter' | 'champion' {
   console.error(`[stripe-webhook] Unknown price ID: ${priceId}, defaulting to supporter`);
   Sentry.captureMessage(`Unknown Stripe price ID: ${priceId}`, 'warning');
   return 'supporter';
+}
+
+/** Look up a user's email from the profiles table. Returns null if not found. */
+async function getUserEmail(supabase: SupabaseClient, userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', userId)
+    .maybeSingle();
+  return data?.email ?? null;
+}
+
+/** Send welcome email after successful checkout. Fire-and-forget. */
+async function sendWelcomeNotification(
+  supabase: SupabaseClient,
+  userId: string,
+  tier: 'supporter' | 'champion',
+  interval: string
+): Promise<void> {
+  try {
+    const email = await getUserEmail(supabase, userId);
+    if (!email) {
+      console.error(`[stripe-webhook] No email found for user ${userId}, skipping welcome email`);
+      return;
+    }
+    const { subject, html } = welcomeEmail(tier, interval);
+    await sendEmail({ to: email, subject, html });
+  } catch (err) {
+    console.error('[stripe-webhook] Welcome email failed:', err);
+  }
+}
+
+/** Send cancellation confirmation email. Fire-and-forget. */
+async function sendCancellationNotification(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  try {
+    const email = await getUserEmail(supabase, userId);
+    if (!email) {
+      console.error(`[stripe-webhook] No email found for user ${userId}, skipping cancellation email`);
+      return;
+    }
+
+    // Look up period end from the subscription record
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('current_period_end')
+      .eq('user_id', userId)
+      .order('current_period_end', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const periodEnd = sub?.current_period_end
+      ? new Date(sub.current_period_end).toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        })
+      : null;
+
+    const { subject, html } = cancellationEmail(periodEnd);
+    await sendEmail({ to: email, subject, html });
+  } catch (err) {
+    console.error('[stripe-webhook] Cancellation email failed:', err);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -161,6 +227,9 @@ export async function POST(request: NextRequest) {
           throw new Error(`Profile update failed: ${profileErr.message}`);
         }
 
+        // Send welcome email (non-blocking)
+        void sendWelcomeNotification(supabase, userId, tier, interval);
+
         break;
       }
 
@@ -266,6 +335,9 @@ export async function POST(request: NextRequest) {
             Sentry.captureException(downgradeErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
             throw new Error(`Profile downgrade failed: ${downgradeErr.message}`);
           }
+
+          // Send cancellation email (non-blocking)
+          void sendCancellationNotification(supabase, userId);
         }
 
         break;
