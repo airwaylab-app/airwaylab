@@ -1,13 +1,13 @@
 /**
- * Email cron handler — called from the existing cleanup cron job.
+ * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Queries for due emails (scheduled_at <= now, status = pending)
- * 2. Sends each via Resend (with AB variant subjects where applicable)
- * 3. Updates status to 'sent' with Resend message ID
- * 4. Checks for newly dormant users and schedules dormancy sequences
- * 5. Checks for users who signed up but never uploaded (activation)
- * 6. Applies sunset policy for unengaged users
+ * 1. Discovers new candidates (dormancy, activation) -- schedule first so they
+ *    can be sent in the same run, avoiding a 24h delay until the next cron.
+ * 2. Queries for all due emails (scheduled_at <= now, status = pending)
+ * 3. Sends each via Resend (with AB variant subjects where applicable)
+ * 4. Updates status to 'sent' with Resend message ID
+ * 5. Applies sunset policy for unengaged users (with circuit breaker)
  *
  * Returns a summary for logging.
  */
@@ -42,7 +42,12 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     sunsetted: 0,
   };
 
-  // 1. Send pending emails
+  // 1. Discover new candidates first -- scheduling before sending ensures
+  //    newly discovered users get their first email in this run, not 24h later.
+  result.dormancyScheduled = await scheduleDormancySequences(supabase);
+  result.activationScheduled = await scheduleActivationSequences(supabase);
+
+  // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);
 
   for (const email of pendingEmails) {
@@ -74,13 +79,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     }
   }
 
-  // 2. Check for dormant users and schedule re-engagement
-  result.dormancyScheduled = await scheduleDormancySequences(supabase);
-
-  // 3. Check for users who signed up but never uploaded
-  result.activationScheduled = await scheduleActivationSequences(supabase);
-
-  // 4. Apply sunset policy for persistently unengaged users
+  // 3. Apply sunset policy for persistently unengaged users
   result.sunsetted = await applySunsetPolicy(supabase);
 
   return result;
