@@ -287,6 +287,18 @@ export async function scheduleActivationSequences(
 export async function applySunsetPolicy(
   supabase: SupabaseClient
 ): Promise<number> {
+  // Circuit breaker: if zero opens are tracked system-wide, open tracking
+  // is likely broken. Skip sunset to avoid mass-unsubscribing engaged users.
+  const { count: totalOpens } = await supabase
+    .from('email_sequences')
+    .select('*', { count: 'exact', head: true })
+    .not('opened_at', 'is', null);
+
+  if (!totalOpens || totalOpens === 0) {
+    console.error('[email-sequences] Sunset skipped: zero opens tracked system-wide (open tracking may be misconfigured)');
+    return 0;
+  }
+
   // Find users with 3+ delivered-but-unengaged emails
   const { data: candidates, error } = await supabase
     .from('email_sequences')
