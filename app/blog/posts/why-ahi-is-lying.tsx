@@ -5,7 +5,6 @@ import {
   BarChart3,
   BookOpen,
   Eye,
-  Lightbulb,
   Scale,
   ShieldAlert,
   Stethoscope,
