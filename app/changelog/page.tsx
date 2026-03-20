@@ -168,6 +168,29 @@ export default function ChangelogPage() {
           or check the{' '}
           <Link href="/glossary" className="text-primary hover:text-primary/80">metric glossary</Link> for definitions.
         </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <Link
+            href="/blog/understanding-flow-limitation"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Flow Limitation</h3>
+            <p className="mt-1 text-xs text-muted-foreground">What it is and why AHI misses it.</p>
+          </Link>
+          <Link
+            href="/blog/beyond-ahi"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Beyond AHI</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Why AHI alone is not enough.</p>
+          </Link>
+          <Link
+            href="/blog/oscar-alternative"
+            className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
+          >
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">AirwayLab vs OSCAR</h3>
+            <p className="mt-1 text-xs text-muted-foreground">How the two tools complement each other.</p>
+          </Link>
+        </div>
       </div>
     </div>
   );

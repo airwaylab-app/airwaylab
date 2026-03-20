@@ -1,4 +1,9 @@
-interface BlogPost {
+export interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+export interface BlogPost {
   slug: string;
   title: string;
   description: string;
@@ -6,6 +11,7 @@ interface BlogPost {
   readTime: string;
   tags: string[];
   ogDescription: string;
+  faqItems?: FAQItem[];
 }
 
 export const blogPosts: BlogPost[] = [
@@ -19,6 +25,20 @@ export const blogPosts: BlogPost[] = [
     tags: ['AHI', 'Fatigue', 'Flow Limitation', 'Getting Started'],
     ogDescription:
       'Your AHI is normal but you\'re still tired? Flow limitation and RERAs may be disrupting your sleep without triggering scored events. Learn how to check your PAP data.',
+    faqItems: [
+      {
+        question: 'Why am I still tired with a normal AHI on CPAP?',
+        answer: 'A normal AHI (under 5) only means your airway isn\'t fully collapsing often. Flow limitation -- partial airway narrowing that restricts airflow without triggering a scored event -- can still fragment your sleep and cause fatigue. RERAs, autonomic stress responses, and sleep architecture disruption are common causes that AHI completely misses.',
+      },
+      {
+        question: 'What is flow limitation in sleep apnea?',
+        answer: 'Flow limitation is partial narrowing of the upper airway during inspiration that restricts airflow without causing a complete collapse. On a flow waveform, it appears as a flattened inspiratory peak rather than the normal rounded shape. It can cause sleep fragmentation and symptoms even when AHI is normal.',
+      },
+      {
+        question: 'How can I check for flow limitation in my PAP data?',
+        answer: 'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab can analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED (Negative Effort Dependence) to detect flow limitation that your machine\'s app doesn\'t show you.',
+      },
+    ],
   },
   {
     slug: 'oscar-alternative',
@@ -30,6 +50,20 @@ export const blogPosts: BlogPost[] = [
     tags: ['OSCAR', 'CPAP Software', 'Flow Limitation', 'Comparison'],
     ogDescription:
       'Comparing OSCAR and AirwayLab for PAP therapy analysis. OSCAR excels at waveform browsing; AirwayLab adds automated flow limitation scoring, RERA detection, and AI insights.',
+    faqItems: [
+      {
+        question: 'What is the difference between OSCAR and AirwayLab?',
+        answer: 'OSCAR is a desktop application that provides interactive waveform browsing and event-by-event review of PAP data. AirwayLab is a browser-based tool that runs automated flow limitation analysis using four research-grade engines (Glasgow Index, WAT, NED, Oximetry). OSCAR shows your waveforms; AirwayLab analyses them with composite scoring.',
+      },
+      {
+        question: 'Can I use OSCAR and AirwayLab together?',
+        answer: 'Yes, they are complementary. Start with AirwayLab for automated scoring and the big picture (Glasgow Index, FL Score, RERA estimates). Then use OSCAR to zoom into specific waveforms and verify findings. Many users benefit from combining both tools.',
+      },
+      {
+        question: 'Is AirwayLab a replacement for OSCAR?',
+        answer: 'No. AirwayLab and OSCAR solve different problems. OSCAR excels at interactive waveform inspection and supports multiple device manufacturers. AirwayLab adds automated flow limitation analysis, composite metrics, and AI-powered insights that OSCAR does not compute. Both are free and open source.',
+      },
+    ],
   },
   {
     slug: 'how-pap-therapy-works',
@@ -41,6 +75,20 @@ export const blogPosts: BlogPost[] = [
     tags: ['PAP', 'CPAP', 'BiPAP', 'Getting Started'],
     ogDescription:
       'Your PAP machine blows air, but why does that keep your airway open? A visual guide to EPAP, IPAP, pressure support, and the physics of keeping a flexible airway splinted during sleep.',
+    faqItems: [
+      {
+        question: 'How does a CPAP machine keep your airway open?',
+        answer: 'CPAP delivers a single continuous air pressure through a mask that acts as a pneumatic splint, preventing the flexible upper airway (pharynx) from collapsing during sleep. The positive pressure counteracts the negative pressure created during inspiration that would otherwise pull the airway walls inward.',
+      },
+      {
+        question: 'What is the difference between CPAP and BiPAP?',
+        answer: 'CPAP delivers one fixed pressure for both inhaling and exhaling. BiPAP delivers two pressures: a higher pressure during inspiration (IPAP) and a lower pressure during expiration (EPAP). The difference between IPAP and EPAP is called pressure support, which helps push air through a narrowed airway during inhalation.',
+      },
+      {
+        question: 'What is pressure support on a BiPAP machine?',
+        answer: 'Pressure support is the difference between the inspiratory pressure (IPAP) and expiratory pressure (EPAP) on a bilevel device. For example, if IPAP is 14 cmH2O and EPAP is 10 cmH2O, pressure support is 4 cmH2O. Higher pressure support provides more assistance during inhalation and can help overcome flow limitation.',
+      },
+    ],
   },
   {
     slug: 'ifl-symptom-sensitivity',
@@ -118,6 +166,20 @@ export const blogPosts: BlogPost[] = [
     tags: ['Flow Limitation', 'PAP', 'Sleep Apnea'],
     ogDescription:
       'Your AHI might be low, but flow limitation could still be disrupting your sleep. Learn what flow limitation is and why it matters for PAP therapy.',
+    faqItems: [
+      {
+        question: 'What is flow limitation and why does my AHI miss it?',
+        answer: 'Flow limitation is partial airway narrowing that restricts airflow during inspiration without causing a complete collapse. AHI only counts apneas (complete stops) and hypopneas (significant reductions with oxygen drops). Flow limitation falls below these thresholds, so AHI stays low while your airway is still significantly narrowed.',
+      },
+      {
+        question: 'What causes flow limitation on PAP therapy?',
+        answer: 'Common causes include: pressure set too low (the most common cause), EPR (Expiratory Pressure Relief) set too high, sleeping on your back (supine position increases gravitational airway collapse), and significant mask leak that reduces effective pressure delivery.',
+      },
+      {
+        question: 'How do I detect flow limitation in my CPAP data?',
+        answer: 'Your ResMed SD card contains detailed flow waveforms that can be analysed for flow limitation patterns. Key metrics include the Glasgow Index (breath shape score), NED (Negative Effort Dependence), Flatness Index, and estimated RERA count. Tools like AirwayLab compute these automatically from your SD card data.',
+      },
+    ],
   },
   {
     slug: 'beyond-ahi',
@@ -129,6 +191,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['AHI', 'Sleep Metrics', 'Research'],
     ogDescription:
       'AHI is the most commonly used metric in sleep medicine, but research shows it misses important breathing patterns. Discover what metrics actually matter.',
+    faqItems: [
+      {
+        question: 'Why is AHI not a reliable measure of sleep apnea severity?',
+        answer: 'AHI counts all events equally regardless of duration (a 10-second apnea equals a 60-second one), ignores oxygen desaturation severity, misses flow limitation and RERAs entirely, and does not account for event clustering. Research shows AHI alone is a poor predictor of cardiovascular outcomes and daytime symptoms.',
+      },
+      {
+        question: 'What metrics should I track instead of AHI?',
+        answer: 'More informative metrics include the Glasgow Index (flow shape score that captures the full spectrum of airway narrowing), estimated RERA Index (respiratory events AHI misses), hypoxic burden (total oxygen desaturation load), and breath-to-breath variability. Several of these can be derived from your PAP SD card data.',
+      },
+    ],
   },
   {
     slug: 'pap-data-privacy',
@@ -140,6 +212,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['Privacy', 'Data Rights', 'ResMed'],
     ogDescription:
       'Your PAP device collects detailed health data every night. Learn who has access to it, what your rights are, and how to take control of your sleep data.',
+    faqItems: [
+      {
+        question: 'Who can see my CPAP data?',
+        answer: 'Your PAP data may be accessible to: the device manufacturer (ResMed, Philips) via their cloud servers, your DME (equipment provider) via platforms like AirView, your insurance company for compliance monitoring, and your sleep physician. Modern PAP machines with cellular modems transmit data automatically.',
+      },
+      {
+        question: 'Can I analyse my PAP data without uploading it to the cloud?',
+        answer: 'Yes. Your PAP machine stores detailed data locally on its SD card, which is actually more detailed than what gets transmitted to the cloud. Tools like AirwayLab process this data entirely in your browser without any server upload, giving you full analysis while keeping your data private.',
+      },
+    ],
   },
 ];
 
