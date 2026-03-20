@@ -92,7 +92,7 @@ test.describe('Conversion Funnel — Anonymous User', () => {
     await expect(modal).toBeVisible({ timeout: 3_000 });
 
     // Consent checkbox should be present
-    await expect(modal.locator('input[type="checkbox"]')).toBeVisible();
+    await expect(modal.locator('[data-testid="consent-checkbox"]')).toBeVisible();
 
     // Email input should be present
     await expect(modal.locator('input[type="email"]')).toBeVisible();
@@ -219,13 +219,13 @@ test.describe('Conversion Funnel — Signup Flow', () => {
     await expect(submitButton).toBeDisabled();
 
     // Check consent
-    await modal.locator('input[type="checkbox"]').check();
+    await modal.locator('[data-testid="consent-checkbox"]').check();
 
     // Button should now be enabled
     await expect(submitButton).toBeEnabled();
 
     // Uncheck consent — button should be disabled again
-    await modal.locator('input[type="checkbox"]').uncheck();
+    await modal.locator('[data-testid="consent-checkbox"]').uncheck();
     await expect(submitButton).toBeDisabled();
   });
 
@@ -265,7 +265,7 @@ test.describe('Conversion Funnel — Signup Flow', () => {
     await expect(modal).toBeVisible({ timeout: 3_000 });
 
     // Should have consent checkbox
-    await expect(modal.locator('input[type="checkbox"]')).toBeVisible();
+    await expect(modal.locator('[data-testid="consent-checkbox"]')).toBeVisible();
   });
 
   // ── Auth modal explains what registration includes ────────

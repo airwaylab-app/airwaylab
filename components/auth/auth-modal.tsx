@@ -150,6 +150,7 @@ export function AuthModal({ open, onClose }: Props) {
                       events.authConsentChecked();
                     }
                   }}
+                  data-testid="consent-checkbox"
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
                 />
                 <span className="text-[11px] leading-snug text-muted-foreground">

@@ -53,7 +53,7 @@ test.describe('Auth Modal', () => {
     await expect(submitButton).toBeDisabled();
 
     // Check the consent checkbox
-    await modal.locator('input[type="checkbox"]').check();
+    await modal.locator('[data-testid="consent-checkbox"]').check();
 
     // Submit button should now be enabled
     await expect(submitButton).toBeEnabled();
@@ -68,7 +68,7 @@ test.describe('Auth Modal', () => {
     await expect(modal).toBeVisible();
 
     // Check consent but leave email empty
-    await modal.locator('input[type="checkbox"]').check();
+    await modal.locator('[data-testid="consent-checkbox"]').check();
 
     // Submit should still be disabled (no email)
     const submitButton = modal.getByText('Send magic link');
