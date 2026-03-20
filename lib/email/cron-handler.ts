@@ -23,7 +23,6 @@ import {
 import { SEQUENCES } from './templates';
 import { getUnsubscribeUrl } from './unsubscribe-token';
 import { sendEmail } from './send';
-import { getABVariant, getVariantSubject, type ABVariant } from './ab';
 
 interface CronResult {
   sent: number;
@@ -58,15 +57,9 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     const template = config.getTemplate(email.step, unsubscribeUrl);
     if (!template) continue;
 
-    // Use variant subject if this email has an AB variant and a subject override exists
-    const variant = (email.ab_variant as ABVariant | null)
-      ?? getABVariant(email.user_id, 'post_upload_subject');
-    const variantSubject = getVariantSubject(email.sequence_name, email.step, variant);
-    const subject = variantSubject ?? template.subject;
-
     const resendId = await sendEmail({
       to: email.email,
-      subject,
+      subject: template.subject,
       html: template.html,
       unsubscribeUrl,
     });

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 
@@ -226,6 +227,15 @@ export async function POST(request: NextRequest) {
           Sentry.captureException(profileErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
           throw new Error(`Profile update failed: ${profileErr.message}`);
         }
+
+        // Cancel marketing drip sequences -- user just paid, stop selling
+        void Promise.all([
+          cancelSequence(supabase, userId, 'post_upload'),
+          cancelSequence(supabase, userId, 'feature_education'),
+          cancelSequence(supabase, userId, 'dormancy'),
+          cancelSequence(supabase, userId, 'activation'),
+          scheduleSequence(supabase, userId, 'premium_onboarding'),
+        ]).catch((err) => console.error('[stripe-webhook] Email sequence update failed:', err));
 
         // Send welcome email (non-blocking)
         void sendWelcomeNotification(supabase, userId, tier, interval);

@@ -10,20 +10,16 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SEQUENCES, type SequenceName } from './templates';
-import { type ABVariant } from './ab';
 
 /**
  * Schedule a full email sequence for a user.
  * Creates one row per step with the appropriate scheduled_at time.
  * Skips if the user already has this sequence (idempotent).
- *
- * @param variant - A/B variant for this user's sequence (stored for analysis)
  */
 export async function scheduleSequence(
   supabase: SupabaseClient,
   userId: string,
   sequenceName: SequenceName,
-  variant?: ABVariant
 ): Promise<void> {
   const config = SEQUENCES[sequenceName];
   if (!config) return;
@@ -35,7 +31,6 @@ export async function scheduleSequence(
     step: index + 1,
     status: 'pending' as const,
     scheduled_at: new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000).toISOString(),
-    ...(variant && { ab_variant: variant }),
   }));
 
   // upsert to make this idempotent — if sequence already exists, skip
@@ -164,23 +159,13 @@ export async function markSent(
 
 /**
  * Check for dormant users and schedule re-engagement sequences.
- * Called by the cron job.
- *
- * A/B test (dormancy_timing): variant A triggers at 3 days, variant B at 7 days.
- * Each user's variant is computed deterministically from their ID.
- *
- * The query uses the shorter threshold (3 days) to find all candidates,
- * then filters per-user based on their variant's threshold.
+ * Called by the cron job. Triggers after 7 days of inactivity.
  */
 export async function scheduleDormancySequences(
   supabase: SupabaseClient
 ): Promise<number> {
-  const { getABVariant, ACTIVE_TESTS } = await import('./ab');
-  const thresholds = ACTIVE_TESTS.dormancy_timing.dormancyDays;
-
-  // Use the shortest threshold to find all potential candidates
-  const minDays = Math.min(thresholds.A, thresholds.B);
-  const cutoff = new Date(Date.now() - minDays * 24 * 60 * 60 * 1000).toISOString();
+  const DORMANCY_DAYS = 7;
+  const cutoff = new Date(Date.now() - DORMANCY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // Find users who already have a dormancy sequence (to exclude them)
   const { data: existingDormancy } = await supabase
@@ -190,10 +175,10 @@ export async function scheduleDormancySequences(
 
   const excludeIds = existingDormancy?.map((r) => r.user_id) ?? [];
 
-  // Find users who are potentially dormant, opted in, and don't have a dormancy sequence
+  // Find users who are dormant (no upload in 7 days), opted in, no existing dormancy sequence
   let query = supabase
     .from('profiles')
-    .select('id, last_analysis_at')
+    .select('id')
     .eq('email_opt_in', true)
     .lt('last_analysis_at', cutoff);
 
@@ -209,19 +194,9 @@ export async function scheduleDormancySequences(
   }
 
   let scheduled = 0;
-  const now = Date.now();
-
   for (const user of candidates) {
-    const variant = getABVariant(user.id, 'dormancy_timing');
-    const requiredDays = thresholds[variant];
-    const requiredCutoff = now - requiredDays * 24 * 60 * 60 * 1000;
-    const lastAnalysis = new Date(user.last_analysis_at).getTime();
-
-    // Only schedule if this user has been inactive long enough for their variant
-    if (lastAnalysis <= requiredCutoff) {
-      await scheduleSequence(supabase, user.id, 'dormancy', variant);
-      scheduled++;
-    }
+    await scheduleSequence(supabase, user.id, 'dormancy');
+    scheduled++;
   }
 
   return scheduled;
