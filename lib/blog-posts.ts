@@ -16,6 +16,31 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'why-ahi-is-lying',
+    title: 'Why Your AHI Is Lying to You',
+    description:
+      'AHI was never designed to measure sleep quality. It misses flow limitation, RERAs, breathing irregularity, and the autonomic stress response. Here is the evidence -- and what you can track instead.',
+    date: '2026-03-20',
+    readTime: '11 min read',
+    tags: ['AHI', 'Flow Limitation', 'UARS', 'CPAP', 'Research'],
+    ogDescription:
+      'Your CPAP says AHI 1.2 but you feel terrible. AHI cannot see flow limitation, RERAs, or breathing irregularity. Learn what the research shows and what metrics actually matter.',
+    faqItems: [
+      {
+        question: 'Why does my AHI show normal but I still feel tired on CPAP?',
+        answer: 'AHI only counts complete breathing stops (apneas) and significant partial reductions (hypopneas). It cannot detect flow limitation -- partial airway narrowing that restricts airflow without meeting event thresholds. A night with hundreds of flow-limited breaths can produce an AHI of zero. Research shows flow limitation itself can drive fatigue through autonomic stress responses, even without cortical arousals.',
+      },
+      {
+        question: 'What are the limitations of AHI as a sleep apnea metric?',
+        answer: 'AHI has several design limitations: it requires a 10-second minimum event duration (shorter events are invisible), treats all events equally regardless of severity, cannot detect flow limitation or RERAs, ignores event clustering and sleep stage distribution, and has been shown to be a poor predictor of cardiovascular outcomes and symptom severity in multiple large studies including the SAVE trial.',
+      },
+      {
+        question: 'What metrics should I track besides AHI for CPAP therapy?',
+        answer: 'Research-grade metrics that capture what AHI misses include the Glasgow Index (breath shape distortion across 9 components), FL Score (percentage of flow-limited breaths), Negative Effort Dependence or NED (per-breath airway collapse detection), estimated RERA Index (respiratory effort-related arousals), Sample Entropy (breathing regularity), and Periodicity Index (cyclical breathing patterns). These can be derived from your PAP SD card data using tools like AirwayLab.',
+      },
+    ],
+  },
+  {
     slug: 'ahi-normal-still-tired',
     title: 'Your AHI Is Normal But You\'re Still Exhausted — Here\'s What Your Data Is Missing',
     description:
