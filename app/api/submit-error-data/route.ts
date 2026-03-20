@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
-import { serverEnv } from '@/lib/env';
+import { sendEmail } from '@/lib/email/send';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
 
@@ -20,44 +20,6 @@ const SubmitErrorSchema = z.object({
 });
 
 const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
-
-async function sendNotificationEmail(fields: {
-  fileNames: string[];
-  errorMessage: string;
-  email: string | null;
-}) {
-  const apiKey = serverEnv.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'AirwayLab <noreply@mail.airwaylab.app>',
-        to: ['dev@airwaylab.app'],
-        subject: `Unsupported format: ${fields.fileNames.slice(0, 3).join(', ')}`,
-        text: [
-          'New unsupported data format submission on airwaylab.app',
-          '',
-          `Files (${fields.fileNames.length}): ${fields.fileNames.slice(0, 10).join(', ')}`,
-          `Error: ${fields.errorMessage.slice(0, 500)}`,
-          `Email: ${fields.email ?? '\u2014'}`,
-        ].join('\n'),
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      console.error('[submit-error-data] Resend error:', res.status, body);
-    }
-  } catch (err) {
-    console.error('[submit-error-data] Notification email failed:', err);
-  }
-}
 
 /**
  * POST /api/submit-error-data
@@ -118,10 +80,17 @@ export async function POST(request: NextRequest) {
         Sentry.captureException(error, { tags: { route: 'submit-error-data' } });
       } else {
         // Fire-and-forget notification email
-        sendNotificationEmail({
-          fileNames: sanitizedFiles,
-          errorMessage: errorMessage.slice(0, 2000),
-          email: email?.trim() || null,
+        void sendEmail({
+          to: 'dev@airwaylab.app',
+          subject: `Unsupported format: ${sanitizedFiles.slice(0, 3).join(', ')}`,
+          text: [
+            'New unsupported data format submission on airwaylab.app',
+            '',
+            `Files (${sanitizedFiles.length}): ${sanitizedFiles.slice(0, 10).join(', ')}`,
+            `Error: ${errorMessage.slice(0, 500)}`,
+            `Email: ${email?.trim() ?? '\u2014'}`,
+          ].join('\n'),
+          metadata: { emailType: 'admin_error_data' },
         });
       }
     }
