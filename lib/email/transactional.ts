@@ -41,7 +41,7 @@ const TIER_BENEFITS: Record<'supporter' | 'champion', string[]> = {
 
 export function welcomeEmail(
   tier: 'supporter' | 'champion',
-  interval: string
+  _interval: string
 ): { subject: string; html: string } {
   const tierLabel = tier === 'supporter' ? 'Supporter' : 'Champion'
 
