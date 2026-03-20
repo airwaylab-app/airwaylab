@@ -112,6 +112,22 @@ export default async function BlogPostPage({
     keywords: post.tags.join(', '),
   };
 
+  // FAQ JSON-LD (only for posts with FAQ items)
+  const faqJsonLd = post.faqItems?.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: post.faqItems.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer,
+          },
+        })),
+      }
+    : null;
+
   // Breadcrumb JSON-LD
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
@@ -138,6 +154,12 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
 
       {/* Breadcrumb */}
       <nav className="mb-6">
