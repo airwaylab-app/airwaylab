@@ -20,6 +20,7 @@ export function AuthModal({ open, onClose }: Props) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [emailOptIn, setEmailOptIn] = useState(true);
   const focusTrapRef = useFocusTrap(open);
 
   const handleSubmit = useCallback(
@@ -30,6 +31,21 @@ export function AuthModal({ open, onClose }: Props) {
 
       setLoading(true);
       setError(null);
+
+      // Set email opt-in flag before signIn so the auth callback picks it up
+      if (emailOptIn) {
+        try {
+          localStorage.setItem('airwaylab_email_opt_in_pending', '1');
+        } catch {
+          // localStorage unavailable -- non-critical, skip silently
+        }
+      } else {
+        try {
+          localStorage.removeItem('airwaylab_email_opt_in_pending');
+        } catch {
+          // noop
+        }
+      }
 
       const { error: signInError } = await signIn(trimmed);
       setLoading(false);
@@ -52,7 +68,7 @@ export function AuthModal({ open, onClose }: Props) {
       setSent(true);
       events.authMagicLinkSent();
     },
-    [email, signIn]
+    [email, emailOptIn, signIn]
   );
 
   const handleClose = useCallback(() => {
@@ -61,6 +77,7 @@ export function AuthModal({ open, onClose }: Props) {
     setSent(false);
     setError(null);
     setConsentChecked(false);
+    setEmailOptIn(true);
     onClose();
   }, [onClose]);
 
@@ -133,6 +150,7 @@ export function AuthModal({ open, onClose }: Props) {
                       events.authConsentChecked();
                     }
                   }}
+                  data-testid="consent-checkbox"
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
                 />
                 <span className="text-[11px] leading-snug text-muted-foreground">
@@ -140,6 +158,19 @@ export function AuthModal({ open, onClose }: Props) {
                   <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
                     Privacy Policy
                   </a>
+                </span>
+              </label>
+
+              {/* Email opt-in checkbox (default checked) */}
+              <label className="flex cursor-pointer items-start gap-2.5 px-3 py-1">
+                <input
+                  type="checkbox"
+                  checked={emailOptIn}
+                  onChange={(e) => setEmailOptIn(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
+                />
+                <span className="text-xs leading-snug text-muted-foreground">
+                  Send me occasional therapy tips and analysis reminders. No health data in emails. Unsubscribe anytime.
                 </span>
               </label>
 
