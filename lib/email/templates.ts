@@ -223,7 +223,6 @@ function activationStep2(unsubscribeUrl: string): { subject: string; html: strin
   };
 }
 
-
 // ── Sequence 5: Premium Onboarding (after subscription) ──────
 
 function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html: string } {
@@ -262,6 +261,7 @@ function premiumOnboardingStep3(unsubscribeUrl: string): { subject: string; html
     `, unsubscribeUrl),
   };
 }
+
 // ── Template registry ────────────────────────────────────────
 
 export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding';
@@ -313,7 +313,7 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   premium_onboarding: {
     totalSteps: 3,
-    delays: [0, 3, 7], // after subscription: immediate, day 3, day 7
+    delays: [0, 3, 7],
     getTemplate: (step, url) => {
       if (step === 1) return premiumOnboardingStep1(url);
       if (step === 2) return premiumOnboardingStep2(url);

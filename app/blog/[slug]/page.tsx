@@ -17,8 +17,10 @@ import CNSSensitization from '../posts/what-is-cns-sensitization';
 import UnderstandingFlowLimitation from '../posts/understanding-flow-limitation';
 import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
+import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
   'how-pap-therapy-works': HowPAPTherapyWorks,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { GLOSSARY_TERMS } from '@/lib/glossary-data';
 
 const root = join(__dirname, '..');
 
@@ -41,32 +42,27 @@ describe('Glossary page', () => {
     expect(content).toContain('BreadcrumbList');
   });
 
-  it('every term has a unique id field', () => {
-    const content = readFile('app/glossary/page.tsx');
-    // Extract all id values from term definitions
-    const idMatches = content.match(/id:\s*'([^']+)'/g);
-    expect(idMatches).not.toBeNull();
-    const ids = idMatches!.map((m) => m.match(/id:\s*'([^']+)'/)![1]);
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
+  it('every term has a unique slug', () => {
+    const slugs = GLOSSARY_TERMS.map((t) => t.slug);
+    const uniqueSlugs = new Set(slugs);
+    expect(uniqueSlugs.size).toBe(slugs.length);
   });
 
-  it('every term id is valid as an HTML anchor (lowercase, kebab-case, no spaces)', () => {
-    const content = readFile('app/glossary/page.tsx');
-    const idMatches = content.match(/id:\s*'([^']+)'/g);
-    expect(idMatches).not.toBeNull();
-    const ids = idMatches!.map((m) => m.match(/id:\s*'([^']+)'/)![1]);
-    for (const id of ids) {
-      expect(id, `ID "${id}" is not valid kebab-case`).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  it('every term slug is valid as an HTML anchor (lowercase, kebab-case, no spaces)', () => {
+    for (const term of GLOSSARY_TERMS) {
+      expect(term.slug, `Slug "${term.slug}" is not valid kebab-case`).toMatch(
+        /^[a-z0-9]+(-[a-z0-9]+)*$/
+      );
     }
   });
 
-  it('all four category values are present', () => {
-    const content = readFile('app/glossary/page.tsx');
-    expect(content).toContain("'sleep-disordered-breathing'");
-    expect(content).toContain("'airwaylab-metrics'");
-    expect(content).toContain("'pap-therapy'");
-    expect(content).toContain("'data-analysis'");
+  it('all category values are present', () => {
+    const categories = new Set(GLOSSARY_TERMS.map((t) => t.category));
+    expect(categories.has('sleep-disordered-breathing')).toBe(true);
+    expect(categories.has('airwaylab-metrics')).toBe(true);
+    expect(categories.has('pap-therapy')).toBe(true);
+    expect(categories.has('data-analysis')).toBe(true);
+    expect(categories.has('oximetry')).toBe(true);
   });
 
   it('contains the standard medical disclaimer text', () => {
