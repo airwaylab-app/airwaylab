@@ -58,10 +58,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Notify via Sentry so the team sees it in monitoring
-    Sentry.captureMessage(`Account deletion requested by ${user.email}`, {
+    Sentry.captureMessage('Account deletion requested', {
       level: 'info',
       tags: { route: 'request-account-deletion' },
-      extra: { userId: user.id, email: user.email },
     });
 
     return NextResponse.json({ success: true });

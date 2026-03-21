@@ -51,7 +51,10 @@ function getTierFromPrice(priceId: string): 'supporter' | 'champion' {
   if (priceId === champion_monthly || priceId === champion_yearly) return 'champion';
 
   console.error(`[stripe-webhook] Unknown price ID: ${priceId}, defaulting to supporter`);
-  Sentry.captureMessage(`Unknown Stripe price ID: ${priceId}`, 'warning');
+  Sentry.captureMessage('Unknown Stripe price ID', {
+    level: 'warning',
+    extra: { priceId },
+  });
   return 'supporter';
 }
 

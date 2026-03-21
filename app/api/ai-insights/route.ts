@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
       Sentry.captureMessage(`AI insights: Zod validation failed — ${detail}`, {
         level: 'warning',
         tags: { route: 'ai-insights', error_type: 'validation' },
-        extra: { issues: parsed.error.issues.slice(0, 5), nightCount: Array.isArray(raw?.nights) ? raw.nights.length : 0 },
+        extra: { detail, issues: parsed.error.issues.slice(0, 5), nightCount: Array.isArray(raw?.nights) ? raw.nights.length : 0 },
       });
       return NextResponse.json({ error: `Invalid request data: ${detail}` }, { status: 400 });
     }

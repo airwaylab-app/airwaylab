@@ -65,9 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileError) {
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
-      Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
+      Sentry.captureMessage('Profile fetch failed', {
         level: 'warning',
         tags: { context: 'auth-profile-fetch' },
+        extra: { error: profileError.message },
       });
       return;
     }
@@ -100,9 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (subError) {
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
-      Sentry.captureMessage(`Subscription fetch failed: ${subError.message}`, {
+      Sentry.captureMessage('Subscription fetch failed', {
         level: 'warning',
         tags: { context: 'auth-subscription-fetch' },
+        extra: { error: subError.message },
       });
       setSubscription(null);
       return;

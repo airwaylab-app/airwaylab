@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
         await stripe.customers.retrieve(customerId);
       } catch (stripeErr) {
         console.error(`[create-checkout-session] Stale Stripe customer ${customerId}, will recreate:`, stripeErr);
-        Sentry.captureMessage(`Stale Stripe customer ID: ${customerId}`, {
+        Sentry.captureMessage('Stale Stripe customer ID', {
           level: 'warning',
           tags: { route: 'create-checkout-session' },
-          extra: { userId: user.id },
+          extra: { customerId },
         });
         customerId = undefined;
       }

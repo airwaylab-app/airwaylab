@@ -332,6 +332,7 @@ class AnalysisOrchestrator {
             Sentry.captureMessage(msg.detail, {
               level: 'warning',
               tags: { checkpoint: msg.checkpoint, ...msg.tags },
+              fingerprint: [msg.checkpoint, String(msg.tags?.error ?? 'unknown')],
             });
             break;
           case 'SETTINGS_DIAGNOSTIC':

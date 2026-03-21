@@ -396,14 +396,12 @@ export async function contributeWaveformsBackground(
         // Rate-limited (429) uploads are expected under heavy use -- log as info to reduce noise.
         // Actual failures (4xx/5xx) remain warnings.
         const isRateLimited = result.status === 429;
-        Sentry.captureMessage(
-          `Waveform upload failed for ${night.dateStr}`,
-          {
-            level: isRateLimited ? 'info' : 'warning',
-            tags: { feature: 'waveform-contribution', status: String(result.status ?? 'unknown') },
-            extra: { detail: result.detail },
-          }
-        );
+        Sentry.captureMessage('Waveform upload failed', {
+          level: isRateLimited ? 'info' : 'warning',
+          tags: { feature: 'waveform-contribution', status: String(result.status ?? 'unknown') },
+          extra: { nightDate: night.dateStr, detail: result.detail },
+          fingerprint: ['waveform-upload-failed', String(result.status ?? 'unknown')],
+        });
       }
     } catch (err) {
       trackFailedWaveformDate(night.dateStr);

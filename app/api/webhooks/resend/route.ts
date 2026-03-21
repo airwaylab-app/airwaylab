@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
         console.error(
           `[resend-webhook] ${type} for user ${seqRow.user_id}, cancelled pending emails`
         )
-        Sentry.captureMessage(`Email ${type}: ${data.email_id}`, {
+        Sentry.captureMessage(`Email ${type}`, {
           level: 'warning',
           tags: { route: 'resend-webhook', event_type: type },
-          extra: { userId: seqRow.user_id },
+          extra: { resendId: data.email_id },
         })
       }
 

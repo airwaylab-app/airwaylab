@@ -58,10 +58,10 @@ export async function POST(request: NextRequest) {
       }
     } catch {
       console.error(`[customer-portal] Stale Stripe customer: ${profile.stripe_customer_id}`);
-      Sentry.captureMessage(`Stale Stripe customer ID on portal access: ${profile.stripe_customer_id}`, {
+      Sentry.captureMessage('Stale Stripe customer ID on portal access', {
         level: 'warning',
         tags: { route: 'customer-portal' },
-        extra: { userId: user.id },
+        extra: { customerId: profile.stripe_customer_id },
       });
       return NextResponse.json(
         { error: 'Your billing account could not be found. Please contact us via the contact form at /contact.' },
