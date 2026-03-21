@@ -119,8 +119,7 @@ export function EmailOptInNudge() {
             Get therapy progress updates by email?
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Tips on reading your data, new feature announcements, and re-engagement reminders.
-            No health data in emails. Unsubscribe anytime.
+            We&apos;ll email you when your trends change, explain what your metrics mean, and share tips for getting the most from your therapy. No health data in emails.
           </p>
         </div>
       </div>
