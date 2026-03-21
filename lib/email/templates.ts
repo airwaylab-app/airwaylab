@@ -284,7 +284,7 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   dormancy: {
     totalSteps: 2,
-    delays: [0, 7], // step 1 at trigger (3d or 7d via AB test), step 2 at t+7
+    delays: [0, 7],
     getTemplate: (step, url) => {
       if (step === 1) return dormancyStep1(url);
       if (step === 2) return dormancyStep2(url);
@@ -311,7 +311,7 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   premium_onboarding: {
     totalSteps: 3,
-    delays: [0, 3, 7], // step 1 at subscription, steps 2-3 via cron
+    delays: [0, 3, 7],
     getTemplate: (step, url) => {
       if (step === 1) return premiumOnboardingStep1(url);
       if (step === 2) return premiumOnboardingStep2(url);

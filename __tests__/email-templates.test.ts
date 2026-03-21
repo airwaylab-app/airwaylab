@@ -132,7 +132,7 @@ describe('All templates — structural invariants', () => {
 // ── SEQUENCES registry ─────────────────────────────────────────
 
 describe('SEQUENCES registry', () => {
-  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education'];
+  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education', 'activation', 'premium_onboarding'];
 
   it.each(sequenceNames)('%s has correct totalSteps matching delays array', (name) => {
     const config = SEQUENCES[name];
@@ -168,5 +168,10 @@ describe('SEQUENCES registry', () => {
   it('feature_education has 2 steps with delays [10, 17]', () => {
     expect(SEQUENCES.feature_education.totalSteps).toBe(2);
     expect(SEQUENCES.feature_education.delays).toEqual([10, 17]);
+  });
+
+  it('premium_onboarding has 3 steps with delays [0, 3, 7]', () => {
+    expect(SEQUENCES.premium_onboarding.totalSteps).toBe(3);
+    expect(SEQUENCES.premium_onboarding.delays).toEqual([0, 3, 7]);
   });
 });

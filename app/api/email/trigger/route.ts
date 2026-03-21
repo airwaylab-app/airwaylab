@@ -7,7 +7,6 @@ import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 import { sendEmail } from '@/lib/email/send';
 import { validateOrigin } from '@/lib/csrf';
-import { getABVariant, getVariantSubject } from '@/lib/email/ab';
 
 const TriggerSchema = z.object({
   sequence: z.enum(['post_upload']),
@@ -70,14 +69,11 @@ export async function POST(request: NextRequest) {
     await cancelSequence(supabase, user.id, 'dormancy');
     await cancelSequence(supabase, user.id, 'activation');
 
-    // Compute AB variant for subject line test
-    const variant = getABVariant(user.id, 'post_upload_subject');
-
     // Schedule post_upload sequence (idempotent)
-    await scheduleSequence(supabase, user.id, 'post_upload', variant);
+    await scheduleSequence(supabase, user.id, 'post_upload');
 
     // Schedule feature_education to start after post_upload finishes (day 10)
-    await scheduleSequence(supabase, user.id, 'feature_education', variant);
+    await scheduleSequence(supabase, user.id, 'feature_education');
 
     // Send post_upload step 1 inline (immediately)
     const config = SEQUENCES.post_upload;
@@ -85,13 +81,9 @@ export async function POST(request: NextRequest) {
     const template = config.getTemplate(1, unsubscribeUrl);
 
     if (template) {
-      // Use variant subject if available
-      const variantSubject = getVariantSubject('post_upload', 1, variant);
-      const subject = variantSubject ?? template.subject;
-
       const resendId = await sendEmail({
         to: profile.email,
-        subject,
+        subject: template.subject,
         html: template.html,
         unsubscribeUrl,
       });
