@@ -8,6 +8,7 @@ import { aiRateLimiter, aiPremiumRateLimiter, getUserRateLimitKey } from '@/lib/
 import { validateOrigin } from '@/lib/csrf';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
+import { cancelSequence } from '@/lib/email/sequences';
 
 const AI_MONTHLY_LIMIT = 3;
 
@@ -464,6 +465,12 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         remainingCredits = Math.max(0, AI_MONTHLY_LIMIT - (updatedUsage?.count ?? 0));
       }
+    }
+
+    // User discovered AI insights -- cancel the education email about it
+    if (adminClient) {
+      void cancelSequence(adminClient, user.id, 'feature_education')
+        .catch(() => {}); // Non-blocking
     }
 
     return NextResponse.json({

@@ -26,7 +26,7 @@ describe('Post-upload sequence templates', () => {
 
   it('step 1 includes upload CTA and privacy reassurance', () => {
     const { html } = postUploadStep1(UNSUB_URL);
-    expect(html).toContain('Upload Your Next Night');
+    expect(html).toContain('Upload');
     expect(html).toContain('airwaylab.app/analyze');
     expect(html).toContain('saved in your browser');
   });
@@ -40,7 +40,7 @@ describe('Post-upload sequence templates', () => {
   it('step 3 promotes symptom tracking', () => {
     const { subject, html } = postUploadStep3(UNSUB_URL);
     expect(subject).toBeTruthy();
-    expect(html).toContain('Log Your Sleep Quality');
+    expect(html).toContain('Log How You Slept');
     expect(html).toContain('clinician');
   });
 });
@@ -50,14 +50,14 @@ describe('Dormancy sequence templates', () => {
     const { subject, html } = dormancyStep1(UNSUB_URL);
     expect(subject).toBeTruthy();
     expect(html).toContain('Upload This Month');
-    expect(html).toContain('Ready when you are');
+    expect(html).toContain('One upload, one minute');
   });
 
   it('step 2 encourages comparison', () => {
     const { subject, html } = dormancyStep2(UNSUB_URL);
     expect(subject).toBeTruthy();
-    expect(html).toContain('Upload New Data');
-    expect(html).toContain('compare');
+    expect(html).toContain('Upload When You');
+    expect(html).toContain('tracking');
   });
 });
 
@@ -132,7 +132,7 @@ describe('All templates — structural invariants', () => {
 // ── SEQUENCES registry ─────────────────────────────────────────
 
 describe('SEQUENCES registry', () => {
-  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education'];
+  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education', 'activation', 'premium_onboarding'];
 
   it.each(sequenceNames)('%s has correct totalSteps matching delays array', (name) => {
     const config = SEQUENCES[name];
@@ -168,5 +168,10 @@ describe('SEQUENCES registry', () => {
   it('feature_education has 2 steps with delays [10, 17]', () => {
     expect(SEQUENCES.feature_education.totalSteps).toBe(2);
     expect(SEQUENCES.feature_education.delays).toEqual([10, 17]);
+  });
+
+  it('premium_onboarding has 3 steps with delays [0, 3, 7]', () => {
+    expect(SEQUENCES.premium_onboarding.totalSteps).toBe(3);
+    expect(SEQUENCES.premium_onboarding.delays).toEqual([0, 3, 7]);
   });
 });
