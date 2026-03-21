@@ -80,11 +80,13 @@ export function SharedViewClient({
     }
   }, [shareUrl]);
 
-  const expiresDate = new Date(expiresAt).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  // Format date deterministically to avoid SSR/client hydration mismatch
+  // (toLocaleDateString output varies by runtime environment)
+  const expiresDate = (() => {
+    const d = new Date(expiresAt);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  })();
 
   return (
     <ThresholdsProvider>
