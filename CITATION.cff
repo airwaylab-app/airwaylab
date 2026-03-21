@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+title: AirwayLab
+message: >-
+  If you use AirwayLab in your research, please cite it using
+  the metadata from this file.
+type: software
+authors:
+  - name: AirwayLab Team
+    website: https://airwaylab.app
+repository-code: https://github.com/airwaylab-app/airwaylab
+url: https://airwaylab.app
+abstract: >-
+  AirwayLab is a free, open-source PAP therapy analysis tool
+  that detects flow limitation, RERAs, and breathing instability
+  from ResMed SD card data. It runs four research-grade analysis
+  engines (Glasgow Index, WAT, NED, Oximetry) entirely in the
+  browser, with no data transmitted by default. AirwayLab scores
+  9 breath shape components on a 0-1 scale, computes population-level
+  flow limitation percentages, detects per-breath negative effort
+  dependence, and provides a 17-metric oximetry framework.
+keywords:
+  - CPAP
+  - BiPAP
+  - PAP therapy
+  - sleep apnea
+  - flow limitation
+  - Glasgow Index
+  - UARS
+  - upper airway resistance syndrome
+  - RERA
+  - respiratory effort related arousal
+  - NED
+  - negative effort dependence
+  - oximetry
+  - EDF
+  - ResMed
+  - sleep-disordered breathing
+  - browser-based analysis
+  - privacy-first
+license: GPL-3.0

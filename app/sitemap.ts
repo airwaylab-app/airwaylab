@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { blogPosts } from '@/lib/blog-posts';
+import { GLOSSARY_TERMS } from '@/lib/glossary-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://airwaylab.app';
@@ -9,6 +10,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(post.date),
     changeFrequency: 'monthly' as const,
     priority: 0.8,
+  }));
+
+  const glossaryEntries: MetadataRoute.Sitemap = GLOSSARY_TERMS.map((term) => ({
+    url: `${baseUrl}/glossary/${term.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
   }));
 
   return [
@@ -121,6 +129,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    ...glossaryEntries,
     {
       url: `${baseUrl}/compare`,
       lastModified: new Date(),

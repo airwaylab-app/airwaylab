@@ -221,9 +221,48 @@ function activationStep2(unsubscribeUrl: string): { subject: string; html: strin
   };
 }
 
+// ── Sequence 5: Premium Onboarding (after subscription) ──────
+
+function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: "Here's what's different now",
+    html: layout(`
+      ${heading('Your analysis just got smarter')}
+      ${paragraph('Every time you upload now, you\'ll get AI-powered insights alongside the standard engine scores. The AI reads your Glasgow Index, FL Score, NED, and oximetry results together -- connecting patterns across engines that the individual scores can\'t show.')}
+      ${paragraph('It references your pressure settings and suggests specific adjustments to discuss with your clinician. Upload a night and see the difference.')}
+      ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_1`)}
+    `, unsubscribeUrl),
+  };
+}
+
+function premiumOnboardingStep2(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'The report your clinician wants to see',
+    html: layout(`
+      ${heading('Objective data for your next appointment')}
+      ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered interpretation.')}
+      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If you\'ve been struggling to explain why you still feel tired despite "normal" AHI, this report does it for you.')}
+      ${ctaButton('Generate Your PDF Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_2`)}
+    `, unsubscribeUrl),
+  };
+}
+
+function premiumOnboardingStep3(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'What your support makes possible',
+    html: layout(`
+      ${heading("You're funding better sleep analysis for everyone")}
+      ${paragraph('AirwayLab is open-source and GPL-licensed. Your subscription funds development of analysis engines that anyone can use, verify, and build on.')}
+      ${paragraph('If you have ideas for what would help your therapy most, reply to this email -- I read everything personally.')}
+      ${ctaButton('See the Roadmap', `${BASE_URL}/changelog?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_3`)}
+      ${paragraph('P.S. Your name is on the <a href="' + BASE_URL + '/supporters" style="color:#5eead4;text-decoration:underline;">supporters page</a> (unless you opted out in settings). Thank you.')}
+    `, unsubscribeUrl),
+  };
+}
+
 // ── Template registry ────────────────────────────────────────
 
-export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation';
+export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding';
 
 interface SequenceConfig {
   totalSteps: number;
@@ -267,6 +306,16 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
     getTemplate: (step, url) => {
       if (step === 1) return activationStep1(url);
       if (step === 2) return activationStep2(url);
+      return null;
+    },
+  },
+  premium_onboarding: {
+    totalSteps: 3,
+    delays: [0, 3, 7], // step 1 at subscription, steps 2-3 via cron
+    getTemplate: (step, url) => {
+      if (step === 1) return premiumOnboardingStep1(url);
+      if (step === 2) return premiumOnboardingStep2(url);
+      if (step === 3) return premiumOnboardingStep3(url);
       return null;
     },
   },
