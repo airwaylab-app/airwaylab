@@ -14,7 +14,10 @@ const presignSchema = z.object({
   fileName: z.string().min(1).max(255),
   fileSize: z.number().int().positive().max(MAX_FILE_SIZE),
   fileHash: z.string().length(64),
-  nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(
+    (d) => { const t = new Date(d); return !isNaN(t.getTime()) && t.toISOString().startsWith(d); },
+    { message: 'Invalid date' }
+  ).nullable(),
   mimeType: z.string().max(100).nullable().optional(),
 });
 
