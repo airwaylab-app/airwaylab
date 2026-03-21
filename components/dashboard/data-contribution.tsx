@@ -94,7 +94,12 @@ export function DataContribution({
       // Persist opt-in so the user isn't prompted again on future visits
       setConsentState(true);
     } catch (err) {
-      Sentry.captureException(err, { tags: { action: 'contribute-data' } });
+      // Rate limit errors are expected behavior — only report unexpected failures to Sentry
+      const isRateLimit = err instanceof Error &&
+        (err.message.includes('Rate limited') || err.message.includes('Too many'));
+      if (!isRateLimit) {
+        Sentry.captureException(err, { tags: { action: 'contribute-data' } });
+      }
       setStatus('error');
     }
   }, [nights]);

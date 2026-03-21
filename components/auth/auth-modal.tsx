@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth/auth-context';
 import { X, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 
@@ -36,13 +35,9 @@ export function AuthModal({ open, onClose }: Props) {
       setLoading(false);
 
       if (signInError) {
-        Sentry.captureMessage(`Auth modal sign-in error: ${signInError}`, {
-          level: 'warning',
-          tags: { context: 'auth-modal' },
-          extra: { emailDomain: trimmed.split('@')[1] },
-        });
+        // Auth-context already captures the exception to Sentry — no duplicate report here
 
-        if (signInError.toLowerCase().includes('rate limit') || signInError.toLowerCase().includes('too many')) {
+        if (signInError.toLowerCase().includes('rate limit') || signInError.toLowerCase().includes('too many') || signInError.toLowerCase().includes('security purposes')) {
           setError('Too many sign-in attempts. Please wait a minute and try again.');
         } else if (signInError.toLowerCase().includes('invalid') && signInError.toLowerCase().includes('email')) {
           setError('Please enter a valid email address.');
