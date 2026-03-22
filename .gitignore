@@ -58,3 +58,6 @@ prompts/
 !.github/prompts/
 specs/
 cache/
+
+# WIP files (untracked dev work, excluded from tsc)
+_wip/
