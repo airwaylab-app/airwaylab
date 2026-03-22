@@ -33,7 +33,7 @@ const SUPPORTER_FEATURES = [
   '6-10 deep AI insights per analysis (unlimited)',
   '90-day analysis history with AI re-analysis',
   'Cloud sync across devices',
-  'Full trend analysis (up to 90 nights)',
+  '90-day analysis history',
   'PDF clinician reports',
   'Enhanced export with annotations',
   'Detailed metric explanations',

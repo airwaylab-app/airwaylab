@@ -218,6 +218,10 @@ export function loadPersistedResults(): {
       if (night.settings && night.settings.settingsSource === undefined) {
         night.settings.settingsSource = 'extracted';
       }
+      // Migrate: crossDevice added in cross-device RERA-arousal matching
+      if (night.crossDevice === undefined) {
+        night.crossDevice = null;
+      }
       // Migrate: hypopnea & amplitude stability fields added in v0.7.0
       if (night.ned && night.ned.briefObstructionIndex === undefined) {
         night.ned.hypopneaCount = 0;

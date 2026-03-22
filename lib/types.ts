@@ -132,6 +132,8 @@ export interface RERACandidate {
   hasRecovery: boolean;
   hasSigh: boolean;
   maxNED: number;
+  startSec: number;
+  durationSec: number;
 }
 
 export interface NEDResults {
@@ -151,6 +153,7 @@ export interface NEDResults {
   h2NedMean: number;
   combinedFLPct: number;
   estimatedArousalIndex: number;
+  reras?: RERACandidate[];
 
   // Hypopnea aggregate metrics (v0.7.0+)
   hypopneaCount?: number;
@@ -272,6 +275,19 @@ export interface SettingsMetrics {
   minuteVentProxy: number;
 }
 
+export interface CrossDeviceResults {
+  couplingPct: number;
+  h1CouplingPct: number;
+  h2CouplingPct: number;
+  matchedCount: number;
+  totalCount: number;
+  clockOffsetSec: number;
+  offsetConfidence: 'high' | 'low';
+  reraCoupledRate: number;
+  nonReraRate: number;
+  reason?: string;
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -284,6 +300,7 @@ export interface NightResult {
   oximetry: OximetryResults | null;
   oximetryTrace: OximetryTraceData | null;
   settingsMetrics: SettingsMetrics | null;
+  crossDevice: CrossDeviceResults | null;
 }
 
 export interface AnalysisState {

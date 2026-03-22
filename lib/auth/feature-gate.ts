@@ -96,8 +96,6 @@ export function incrementAIUsage(): void {
   }
 }
 
-// ─── Analysis history window ─────────────────────────────────
-
 export function getAnalysisWindowDays(tier: Tier): number {
   if (tier === 'champion') return Infinity;
   if (tier === 'supporter') return 90;

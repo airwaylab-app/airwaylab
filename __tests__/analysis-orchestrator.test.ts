@@ -178,6 +178,7 @@ function makeNight(
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
     ...overrides,
   };
 }

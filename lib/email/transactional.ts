@@ -80,6 +80,41 @@ export function cancellationEmail(
   }
 }
 
+// ── Discord community launch (one-time announcement) ────────
+
+const DISCORD_TIER_BENEFITS: Record<'supporter' | 'champion', string[]> = {
+  supporter: [
+    'Community channels -- general discussion, help, and announcements',
+    'Connect with other PAP users who are digging into their data',
+    'Direct access to ask questions and share your analysis',
+  ],
+  champion: [
+    'Everything Supporters get, plus:',
+    'Exclusive Champion channels with direct developer access',
+    'Roadmap voting -- help decide what gets built next',
+  ],
+}
+
+export function discordLaunchEmail(
+  tier: 'supporter' | 'champion'
+): { subject: string; html: string } {
+  const tierLabel = tier === 'supporter' ? 'Supporter' : 'Champion'
+
+  return {
+    subject: "You've just unlocked something new",
+    html: transactionalLayout(`
+      ${heading("We built something the CPAP community has been missing")}
+      ${paragraph("As a " + tierLabel + " subscriber, you now have access to the AirwayLab Discord -- a place where users share analysis insights, ask questions, and help each other get better therapy.")}
+      ${paragraph("Here's what you get:")}
+      ${bulletList(DISCORD_TIER_BENEFITS[tier])}
+      ${paragraph("Connect your Discord account in your AirwayLab settings to get instant access.")}
+      ${ctaButton('Connect Discord', `${BASE_URL}/account?utm_source=email&utm_medium=transactional&utm_campaign=discord_launch`)}
+      ${paragraph("This is a small, early community. Your voice will shape what it becomes.")}
+      ${paragraph('Questions? Reply to this email or use the <a href="' + BASE_URL + '/contact" style="color:#5eead4;text-decoration:underline;">contact form</a>.')}
+    `, `You're receiving this because you're an AirwayLab ${tierLabel} subscriber. Manage your subscription in <a href="${BASE_URL}/account" style="color:#5eead4;text-decoration:none;">account settings</a>.`),
+  }
+}
+
 // ── Contact form confirmation ────────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {

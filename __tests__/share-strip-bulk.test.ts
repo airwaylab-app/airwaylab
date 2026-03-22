@@ -14,6 +14,7 @@ function stripForShare(nights: NightResult[]): NightResult[] {
     },
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   }));
 }
 
@@ -48,6 +49,7 @@ function makeNight(overrides: Partial<NightResult> = {}): NightResult {
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
     ...overrides,
   };
 }
