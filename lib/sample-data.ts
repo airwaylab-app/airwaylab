@@ -320,6 +320,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     oximetry: night1Ox,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   },
   {
     date: dateFromStr('2025-01-14'),
@@ -333,6 +334,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     oximetry: night2Ox,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   },
   {
     date: dateFromStr('2025-01-13'),
@@ -346,6 +348,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   },
   {
     date: dateFromStr('2025-01-12'),
@@ -359,6 +362,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   },
   {
     date: dateFromStr('2025-01-11'),
@@ -372,6 +376,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     oximetry: night5Ox,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   },
 ];
 

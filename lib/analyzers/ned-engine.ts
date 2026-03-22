@@ -344,7 +344,7 @@ function evaluateRERACandidate(
   breaths: Breath[],
   start: number,
   end: number,
-  _samplingRate: number
+  samplingRate: number
 ): RERACandidate | null {
   const seqBreaths = breaths.slice(start, end);
   const breathCount = seqBreaths.length;
@@ -384,6 +384,10 @@ function evaluateRERACandidate(
 
   if (!isRERA) return null;
 
+  const startSec = breaths[start]!.inspStart / samplingRate;
+  const endSec = breaths[end - 1]!.expEnd / samplingRate;
+  const durationSec = endSec - startSec;
+
   return {
     startBreathIdx: start,
     endBreathIdx: end - 1,
@@ -392,6 +396,8 @@ function evaluateRERACandidate(
     hasRecovery,
     hasSigh,
     maxNED,
+    startSec,
+    durationSec,
   };
 }
 
@@ -800,6 +806,7 @@ function summarize(
     mShapePct,
     reraIndex,
     reraCount,
+    reras,
     h1NedMean,
     h2NedMean,
     combinedFLPct,

@@ -17,6 +17,21 @@ export interface ParsedOximetry {
   endTime: Date;
   durationSeconds: number;
   dateStr: string; // YYYY-MM-DD for matching with EDF nights
+  intervalSeconds: number;
+}
+
+
+export function detectInterval(samples: OximetrySample[]): number {
+  if (samples.length < 3) return 2;
+  const gaps: number[] = [];
+  const limit = Math.min(samples.length - 1, 10);
+  for (let i = 0; i < limit; i++) {
+    const gap = (samples[i + 1]!.time.getTime() - samples[i]!.time.getTime()) / 1000;
+    if (gap > 0 && gap < 10) gaps.push(gap);
+  }
+  if (gaps.length === 0) return 2;
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)]!;
 }
 
 /**
@@ -99,12 +114,15 @@ export function parseOximetryCSV(csvText: string): ParsedOximetry {
   // off-by-one mismatches with DATALOG folder dates (stored in local time)
   const dateStr = `${nightDate.getFullYear()}-${String(nightDate.getMonth() + 1).padStart(2, '0')}-${String(nightDate.getDate()).padStart(2, '0')}`;
 
+  const intervalSeconds = detectInterval(samples);
+
   return {
     samples,
     startTime,
     endTime,
     durationSeconds,
     dateStr,
+    intervalSeconds,
   };
 }
 

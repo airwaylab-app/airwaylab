@@ -7,8 +7,6 @@
 import type { OximetryResults } from '../types';
 import type { OximetrySample } from '../parsers/oximetry-csv-parser';
 
-const SAMPLE_INTERVAL = 2; // seconds per sample (Checkme O2 Max)
-
 // ── Cleaning ─────────────────────────────────────────────────
 
 interface CleanedData {
@@ -84,15 +82,16 @@ interface ODIEvent {
 
 function computeODI(
   samples: OximetrySample[],
-  threshold: number
+  threshold: number,
+  interval: number
 ): { events: ODIEvent[]; index: number } {
   const events: ODIEvent[] = [];
   const n = samples.length;
   if (n === 0) return { events, index: 0 };
 
-  // Rolling 2-minute baseline (60 samples at 2s interval)
-  const baselineWindow = 60;
-  const cooldownSamples = Math.round(30 / SAMPLE_INTERVAL); // 30s cooldown
+  // Rolling 2-minute baseline
+  const baselineWindow = Math.round(120 / interval);
+  const cooldownSamples = Math.round(30 / interval); // 30s cooldown
   let lastEventIdx = -cooldownSamples;
 
   for (let i = baselineWindow; i < n; i++) {
@@ -128,13 +127,14 @@ function computeODI(
 
 function computeHRClinical(
   samples: OximetrySample[],
-  threshold: number
+  threshold: number,
+  interval: number
 ): number {
   const n = samples.length;
   if (n === 0) return 0;
 
-  const baselineWindow = Math.round(30 / SAMPLE_INTERVAL); // 15 samples
-  const cooldownSamples = Math.round(30 / SAMPLE_INTERVAL);
+  const baselineWindow = Math.round(30 / interval);
+  const cooldownSamples = Math.round(30 / interval);
   let eventCount = 0;
   let lastEventIdx = -cooldownSamples;
 
@@ -173,14 +173,15 @@ function computeHRClinical(
 
 function computeHRRollingMean(
   samples: OximetrySample[],
-  threshold: number
+  threshold: number,
+  interval: number
 ): number {
   const n = samples.length;
   if (n === 0) return 0;
 
-  const baselineWindow = Math.round(300 / SAMPLE_INTERVAL); // 5 min = 150 samples
-  const sustainSamples = Math.round(5 / SAMPLE_INTERVAL); // 5s = ~3 samples
-  const cooldownSamples = Math.round(30 / SAMPLE_INTERVAL);
+  const baselineWindow = Math.round(300 / interval);
+  const sustainSamples = Math.round(5 / interval);
+  const cooldownSamples = Math.round(30 / interval);
   let eventCount = 0;
   let lastEventIdx = -cooldownSamples;
 
@@ -229,15 +230,16 @@ function computeHRRollingMean(
 function computeCoupledEvents(
   samples: OximetrySample[],
   odiEvents: ODIEvent[],
-  hrThreshold: number
+  hrThreshold: number,
+  interval: number
 ): number {
   if (samples.length === 0 || odiEvents.length === 0) return 0;
 
-  const windowSamples = Math.round(30 / SAMPLE_INTERVAL); // ±30s
+  const windowSamples = Math.round(30 / interval); // ±30s
   let coupled = 0;
 
   // Pre-compute 30s rolling HR baseline for all samples
-  const baselineWindow = Math.round(30 / SAMPLE_INTERVAL);
+  const baselineWindow = Math.round(30 / interval);
 
   for (const event of odiEvents) {
     const idx = event.index;
@@ -341,9 +343,11 @@ function splitHalves(samples: OximetrySample[]): {
 
 // ── Main Entry Point ─────────────────────────────────────────
 
-export function computeOximetry(rawSamples: OximetrySample[]): OximetryResults {
+export function computeOximetry(rawSamples: OximetrySample[], intervalSeconds: number = 2): OximetryResults {
   const { samples, totalSamples, retainedSamples, doubleTrackingCorrected } =
     cleanSamples(rawSamples);
+
+  const iv = intervalSeconds;
 
   if (samples.length < 60) {
     // Not enough data for meaningful analysis
@@ -351,24 +355,24 @@ export function computeOximetry(rawSamples: OximetrySample[]): OximetryResults {
   }
 
   // SpO2 metrics
-  const odi3Result = computeODI(samples, 3);
-  const odi4Result = computeODI(samples, 4);
+  const odi3Result = computeODI(samples, 3, iv);
+  const odi4Result = computeODI(samples, 4, iv);
   const tBelow90 = computeDesatTime(samples, 90);
   const tBelow94 = computeDesatTime(samples, 94);
 
   // HR Clinical (30s baseline)
-  const hrClin8 = computeHRClinical(samples, 8);
-  const hrClin10 = computeHRClinical(samples, 10);
-  const hrClin12 = computeHRClinical(samples, 12);
-  const hrClin15 = computeHRClinical(samples, 15);
+  const hrClin8 = computeHRClinical(samples, 8, iv);
+  const hrClin10 = computeHRClinical(samples, 10, iv);
+  const hrClin12 = computeHRClinical(samples, 12, iv);
+  const hrClin15 = computeHRClinical(samples, 15, iv);
 
   // HR Rolling Mean (5min baseline, 5s sustain)
-  const hrMean10 = computeHRRollingMean(samples, 10);
-  const hrMean15 = computeHRRollingMean(samples, 15);
+  const hrMean10 = computeHRRollingMean(samples, 10, iv);
+  const hrMean15 = computeHRRollingMean(samples, 15, iv);
 
   // Coupled events
-  const coupled3_6 = computeCoupledEvents(samples, odi3Result.events, 6);
-  const coupled3_10 = computeCoupledEvents(samples, odi3Result.events, 10);
+  const coupled3_6 = computeCoupledEvents(samples, odi3Result.events, 6, iv);
+  const coupled3_10 = computeCoupledEvents(samples, odi3Result.events, 10, iv);
 
   // Coupled/HR ratio
   const totalHREvents = hrClin10;
@@ -380,11 +384,11 @@ export function computeOximetry(rawSamples: OximetrySample[]): OximetryResults {
 
   // H1/H2 splits
   const { h1, h2 } = splitHalves(samples);
-  const h1Odi3 = computeODI(h1, 3).index;
-  const h1HrClin10 = computeHRClinical(h1, 10);
+  const h1Odi3 = computeODI(h1, 3, iv).index;
+  const h1HrClin10 = computeHRClinical(h1, 10, iv);
   const h1TBelow94 = computeDesatTime(h1, 94);
-  const h2Odi3 = computeODI(h2, 3).index;
-  const h2HrClin10 = computeHRClinical(h2, 10);
+  const h2Odi3 = computeODI(h2, 3, iv).index;
+  const h2HrClin10 = computeHRClinical(h2, 10, iv);
   const h2TBelow94 = computeDesatTime(h2, 94);
 
   const r2 = (v: number) => Math.round(v * 100) / 100;

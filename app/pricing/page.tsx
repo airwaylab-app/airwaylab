@@ -32,7 +32,7 @@ const SUPPORTER_FEATURES = [
   'Everything in Community, plus:',
   '6-10 deep AI insights per analysis (unlimited)',
   'Cloud sync across devices',
-  'Full trend analysis (up to 90 nights)',
+  '90-day analysis history',
   'PDF clinician reports',
   'Enhanced export with annotations',
   'Detailed metric explanations',
@@ -41,6 +41,7 @@ const SUPPORTER_FEATURES = [
 
 const CHAMPION_FEATURES = [
   'Everything in Supporter, plus:',
+  'Lifetime analysis history',
   'Early access to new features',
   'Champion badge on forum posts',
   'Name on supporters page',

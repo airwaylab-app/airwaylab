@@ -57,6 +57,7 @@ function makeNight(overrides: {
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   };
 }
 
