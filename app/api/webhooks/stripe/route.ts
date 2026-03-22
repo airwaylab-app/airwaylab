@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
+import { isDiscordConfigured, syncRole } from '@/lib/discord';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -39,6 +40,57 @@ async function logSubscriptionEvent(
   if (error) {
     // Non-blocking — log but don't throw
     console.error('[stripe-webhook] subscription_events insert failed:', error);
+  }
+}
+
+/** Sync Discord role for a user after tier change. Non-blocking. */
+async function syncDiscordForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  tier: string,
+  stripeEventId?: string
+): Promise<void> {
+  if (!isDiscordConfigured()) return;
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('discord_id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile?.discord_id) {
+      await syncRole(profile.discord_id, tier);
+
+      // Log the role event
+      await supabase.from('discord_role_events').insert({
+        user_id: userId,
+        discord_id: profile.discord_id,
+        role_id: tier,
+        action: tier === 'community' ? 'revoke' : 'assign',
+        reason: `stripe_tier_change_to_${tier}`,
+        stripe_event_id: stripeEventId ?? null,
+      });
+    } else {
+      // User hasn't linked Discord yet -- queue the role for when they do
+      const { getTierRoleId } = await import('@/lib/discord');
+      const roleId = getTierRoleId(tier);
+      if (roleId) {
+        await supabase.from('discord_pending_roles').upsert(
+          { user_id: userId, role_id: roleId },
+          { onConflict: 'user_id,role_id' }
+        );
+      } else {
+        // Tier is community -- clear any pending roles
+        await supabase
+          .from('discord_pending_roles')
+          .delete()
+          .eq('user_id', userId);
+      }
+    }
+  } catch (err) {
+    // Non-blocking -- never fail the webhook over Discord
+    console.error('[stripe-webhook] Discord sync failed:', err);
   }
 }
 
@@ -240,6 +292,9 @@ export async function POST(request: NextRequest) {
         // Send welcome email (non-blocking)
         void sendWelcomeNotification(supabase, userId, tier, interval);
 
+        // Sync Discord role (non-blocking)
+        void syncDiscordForUser(supabase, userId, tier, event.id);
+
         break;
       }
 
@@ -296,6 +351,9 @@ export async function POST(request: NextRequest) {
             Sentry.captureException(profileUpdateErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
             throw new Error(`Profile tier update failed: ${profileUpdateErr.message}`);
           }
+
+          // Sync Discord role (non-blocking)
+          void syncDiscordForUser(supabase, userId, tier, event.id);
         }
 
         break;
@@ -348,6 +406,9 @@ export async function POST(request: NextRequest) {
 
           // Send cancellation email (non-blocking)
           void sendCancellationNotification(supabase, userId);
+
+          // Sync Discord role (revoke if downgraded to community)
+          void syncDiscordForUser(supabase, userId, newTier, event.id);
         }
 
         break;
