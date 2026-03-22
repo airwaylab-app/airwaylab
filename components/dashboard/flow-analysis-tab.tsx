@@ -9,6 +9,7 @@ import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
 import { computeEstimatedRDI } from '@/lib/derived-metrics';
+import { MachineSettingsBar } from '@/components/common/machine-settings-bar';
 
 interface Props {
   selectedNight: NightResult;
@@ -40,6 +41,9 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Machine settings context for FL/NED interpretation */}
+      <MachineSettingsBar settings={n.settings} />
+
       {/* WAT Section */}
       <div>
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">
