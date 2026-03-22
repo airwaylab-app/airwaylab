@@ -248,6 +248,75 @@ export function OximetryTab({ selectedNight, previousNight, nights = [], onUploa
         </div>
       </div>
 
+      {/* Arousal Matching */}
+      {selectedNight.crossDevice && (
+        <div>
+          <h3 className="mb-1 text-sm font-medium text-muted-foreground">
+            Arousal Matching
+          </h3>
+          <p className="mb-3 text-[11px] text-muted-foreground/70">
+            Which breathing events cause arousals?
+          </p>
+          {selectedNight.crossDevice.offsetConfidence === 'low' && (
+            <div className="mb-3 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-400">
+              Low clock sync confidence -- results are approximate. Upload more nights for better calibration.
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              label="Coupling"
+              value={selectedNight.crossDevice.couplingPct}
+              unit="%"
+              format="pct"
+              threshold={THRESHOLDS.couplingPct}
+              compact
+              tooltip="Percentage of RERA events that caused a heart rate arousal within 45 seconds. Lower means fewer events disrupt your sleep."
+            />
+            <MetricCard
+              label="H1 Coupling"
+              value={selectedNight.crossDevice.h1CouplingPct}
+              unit="%"
+              format="pct"
+              compact
+              tooltip="Arousal coupling rate in the first half of the night."
+            />
+            <MetricCard
+              label="H2 Coupling"
+              value={selectedNight.crossDevice.h2CouplingPct}
+              unit="%"
+              format="pct"
+              compact
+              tooltip="Arousal coupling rate in the second half. Higher H2 may indicate medication wearing off or REM-related changes."
+            />
+            <MetricCard
+              label="RERA-Coupled"
+              value={selectedNight.crossDevice.reraCoupledRate}
+              unit="/hr"
+              compact
+              tooltip="Portion of HRc10 surges attributable to RERA events. The remainder are non-RERA HR surges."
+            />
+          </div>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <MetricCard
+              label="Non-RERA HR"
+              value={selectedNight.crossDevice.nonReraRate}
+              unit="/hr"
+              compact
+              tooltip="HR surges not explained by RERA events. May reflect positional changes, periodic limb movements, or other non-respiratory causes."
+            />
+            <div className="flex items-center rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                Matched <strong className="text-foreground">{selectedNight.crossDevice.matchedCount}</strong>
+                {' / '}
+                {selectedNight.crossDevice.totalCount} events
+                {' '}
+                <span className="text-muted-foreground/70">(offset: {selectedNight.crossDevice.clockOffsetSec}s)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Coupled Events */}
       <div>
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">

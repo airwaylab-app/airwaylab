@@ -106,6 +106,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       oximetry: null,
       oximetryTrace: null,
       settingsMetrics: null,
+      crossDevice: null,
     }] as never[];
 
     const result = await fetchAIInsights(nights, 0, null);
@@ -140,6 +141,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       oximetry: null,
       oximetryTrace: null,
       settingsMetrics: null,
+      crossDevice: null,
     }] as never[];
 
     const result = await fetchAIInsights(nights, 0, null);
@@ -171,6 +173,7 @@ describe('AI Credits Tracking — API response parsing', () => {
       oximetry: null,
       oximetryTrace: null,
       settingsMetrics: null,
+      crossDevice: null,
     }] as never[];
 
     await expect(fetchAIInsights(nights, 0, null)).rejects.toThrow('AI service error');

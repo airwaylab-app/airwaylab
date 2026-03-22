@@ -231,12 +231,15 @@ export function parseSA2(buffer: ArrayBuffer, filePath: string): ParsedOximetry 
   const endTime = samples[samples.length - 1]!.time;
   const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
+  const intervalSeconds = spo2SamplingRate > 0 ? 1 / spo2SamplingRate : 2;
+
   return {
     samples,
     startTime,
     endTime,
     durationSeconds,
     dateStr,
+    intervalSeconds,
   };
 }
 

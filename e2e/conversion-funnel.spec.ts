@@ -325,14 +325,14 @@ test.describe('Conversion Funnel — Pricing Page', () => {
     await expect(page.getByText('Save 27%')).toBeVisible();
 
     // Switch to monthly
-    await page.getByText('Monthly').click();
+    await page.getByRole('button', { name: 'Monthly' }).click();
 
     // Monthly prices should appear
     await expect(page.getByText('$9')).toBeVisible();
     await expect(page.getByText('$25')).toBeVisible();
 
     // Switch back to yearly
-    await page.getByText('Yearly').click();
+    await page.getByRole('button', { name: /Yearly/ }).click();
     await expect(page.getByText('$79')).toBeVisible();
   });
 

@@ -42,6 +42,10 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   settingsLateCycle: { green: 2, amber: 10, lowerIsBetter: true },
   settingsVtCv: { green: 25, amber: 30, lowerIsBetter: true },
   settingsEpapDelta: { green: 0.5, amber: 1.0, lowerIsBetter: true },
+
+  // Cross-device RERA-arousal matching
+  couplingPct: { green: 30, amber: 50, lowerIsBetter: true },
+  h2CouplingGap: { green: 10, amber: 25, lowerIsBetter: true },
 };
 
 export type TrafficLight = 'good' | 'warn' | 'bad';

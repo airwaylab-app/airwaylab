@@ -14,6 +14,7 @@ import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
 import { computeOximetry } from '../lib/analyzers/oximetry-engine';
 import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
+import { computeCrossDevice } from '../lib/analyzers/cross-device-engine';
 import { buildOximetryTrace } from '../lib/oximetry-trace';
 import type {
   WorkerMessage,
@@ -30,6 +31,7 @@ import type {
   MachineHypopneaSummary,
   OximetryResults,
   OximetryTraceData,
+  CrossDeviceResults,
 } from '../lib/types';
 
 // Global error handler — catches uncaught errors and sends them as
@@ -364,8 +366,22 @@ async function processFiles(
 
     // Oximetry: match by night date
     const oxData = oximetryByDate.get(group.nightDate);
-    const oximetry = oxData ? computeOximetry(oxData.samples) : null;
+    const oxInterval = oxData?.intervalSeconds ?? 2;
+    const oximetry = oxData ? computeOximetry(oxData.samples, oxInterval) : null;
     const oximetryTrace = oxData ? buildOximetryTrace(oxData.samples) : null;
+
+    // Cross-device RERA-arousal matching
+    let crossDevice: CrossDeviceResults | null = null;
+    if (oximetry && oxData && ned.reras && ned.reras.length >= 10) {
+      crossDevice = computeCrossDevice(
+        ned.reras,
+        oxData.samples,
+        oxInterval,
+        totalDuration,
+        ned.reraIndex,
+        oximetry.hrClin10
+      );
+    }
 
     nights.push({
       date: recordingDate,
@@ -379,6 +395,7 @@ async function processFiles(
       oximetry,
       oximetryTrace,
       settingsMetrics: settingsMetricsResult,
+      crossDevice,
     });
 
     // Emit incremental result so the orchestrator can persist progress
@@ -422,7 +439,7 @@ function processOximetryOnly(oximetryCSVs: string[]): {
   for (const csv of oximetryCSVs) {
     try {
       const parsed = parseOximetryCSV(csv);
-      metrics[parsed.dateStr] = computeOximetry(parsed.samples);
+      metrics[parsed.dateStr] = computeOximetry(parsed.samples, parsed.intervalSeconds);
       const trace = buildOximetryTrace(parsed.samples);
       if (trace) {
         traces[parsed.dateStr] = trace;

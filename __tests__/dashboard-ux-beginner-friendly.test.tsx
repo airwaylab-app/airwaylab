@@ -73,6 +73,7 @@ function makeNight(overrides: {
     } : null,
     oximetryTrace: null,
     settingsMetrics: null,
+    crossDevice: null,
   };
 }
 

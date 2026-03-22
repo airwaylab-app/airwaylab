@@ -514,6 +514,38 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
     }
   }
 
+  // Cross-device insights
+  if (n.crossDevice) {
+    const cd = n.crossDevice;
+    if (cd.couplingPct > 50) {
+      insights.push({
+        id: 'coupling-high',
+        type: 'info',
+        title: 'Most breathing events cause arousals',
+        body: `${fmt(cd.couplingPct)}% of your breathing events caused heart rate arousals. This suggests your arousal threshold may benefit from clinical review.`,
+        category: 'correlation',
+      });
+    } else if (cd.couplingPct < 25 && cd.totalCount >= 10) {
+      insights.push({
+        id: 'coupling-low',
+        type: 'positive',
+        title: 'Low arousal coupling',
+        body: `Only ${fmt(cd.couplingPct)}% of your breathing events caused arousals -- your arousal threshold appears well-managed.`,
+        category: 'correlation',
+      });
+    }
+    const h2Gap = cd.h2CouplingPct - cd.h1CouplingPct;
+    if (h2Gap > 15 && cd.h2CouplingPct > 40) {
+      insights.push({
+        id: 'coupling-h2-gap',
+        type: 'warning',
+        title: 'Arousal coupling increases in second half',
+        body: `Your arousal coupling is ${fmt(cd.h2CouplingPct)}% in the second half vs ${fmt(cd.h1CouplingPct)}% in the first half. This pattern can indicate medication wearing off -- discuss timing with your clinician.`,
+        category: 'correlation',
+      });
+    }
+  }
+
   return insights;
 }
 

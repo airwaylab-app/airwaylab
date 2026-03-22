@@ -333,7 +333,7 @@ describe('generateInsights', () => {
     });
 
     it('does not generate settings insights when settingsMetrics is null', () => {
-      const night = { ...SAMPLE_NIGHTS[0]!, settingsMetrics: null } as NightResult;
+      const night = { ...SAMPLE_NIGHTS[0]!, settingsMetrics: null, crossDevice: null } as NightResult;
       const result = generateInsights([night], night, null, null);
       const settingsInsights = result.filter((i) => i.category === 'settings');
       expect(settingsInsights).toHaveLength(0);
