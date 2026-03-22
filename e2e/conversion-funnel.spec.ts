@@ -277,8 +277,8 @@ test.describe('Conversion Funnel — Signup Flow', () => {
     await expect(modal).toBeVisible();
 
     // Should mention cloud backup and AI
-    await expect(modal.getByText(/cloud backup/i)).toBeVisible();
-    await expect(modal.getByText(/AI insights/i)).toBeVisible();
+    await expect(modal.getByText(/cloud backup/i).first()).toBeVisible();
+    await expect(modal.getByText(/AI insights/i).first()).toBeVisible();
   });
 });
 
