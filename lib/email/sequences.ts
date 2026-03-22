@@ -253,28 +253,29 @@ export async function scheduleActivationSequences(
  * Sunset policy: opt out users who haven't engaged with 3+ consecutive emails.
  * Called by the cron job. Requires webhook tracking data (opened_at, clicked_at).
  *
- * A user is sunsetted if they have >= 3 sent emails where:
- * - delivered_at is not null (email arrived)
- * - opened_at is null AND clicked_at is null (no engagement)
+ * A user is sunsetted if ALL of the following are true:
+ * - They have >= 3 delivered emails with no opens AND no clicks
+ * - They are NOT a paying subscriber (supporter/champion)
+ * - They have NOT logged in within the last 14 days
  *
  * Sunsetted users get email_opt_in = false and all pending emails cancelled.
  */
 export async function applySunsetPolicy(
   supabase: SupabaseClient
 ): Promise<number> {
-  // Circuit breaker: if zero opens are tracked system-wide, open tracking
-  // is likely broken. Skip sunset to avoid mass-unsubscribing engaged users.
-  const { count: totalOpens } = await supabase
+  // Circuit breaker: if zero opens AND zero clicks are tracked system-wide,
+  // tracking may be misconfigured. Skip sunset to avoid mass-unsubscribing.
+  const { count: totalEngagement } = await supabase
     .from('email_sequences')
     .select('*', { count: 'exact', head: true })
-    .not('opened_at', 'is', null);
+    .or('opened_at.not.is.null,clicked_at.not.is.null');
 
-  if (!totalOpens || totalOpens === 0) {
-    console.error('[email-sequences] Sunset skipped: zero opens tracked system-wide (open tracking may be misconfigured)');
+  if (!totalEngagement || totalEngagement === 0) {
+    console.error('[email-sequences] Sunset skipped: zero engagement tracked system-wide (tracking may be misconfigured)');
     return 0;
   }
 
-  // Find users with 3+ delivered-but-unengaged emails
+  // Find users with 3+ delivered-but-unengaged emails (no opens, no clicks)
   const { data: candidates, error } = await supabase
     .from('email_sequences')
     .select('user_id')
@@ -294,22 +295,38 @@ export async function applySunsetPolicy(
     countByUser.set(row.user_id, (countByUser.get(row.user_id) ?? 0) + 1);
   }
 
-  let sunsetted = 0;
-  for (const [userId, count] of countByUser) {
-    if (count >= 3) {
-      // Opt out and cancel pending
-      await supabase
-        .from('profiles')
-        .update({ email_opt_in: false })
-        .eq('id', userId);
+  // Filter to users with 3+ unengaged emails
+  const userIds = [...countByUser.entries()]
+    .filter(([, count]) => count >= 3)
+    .map(([userId]) => userId);
 
-      await cancelAllPending(supabase, userId);
-      sunsetted++;
-    }
+  if (userIds.length === 0) return 0;
+
+  // Exclude paying subscribers and recently active users (logged in within 14 days)
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: protectedUsers } = await supabase
+    .from('profiles')
+    .select('id')
+    .in('id', userIds)
+    .or(`tier.neq.community,last_sign_in_at.gte.${fourteenDaysAgo}`);
+
+  const protectedIds = new Set(protectedUsers?.map((u) => u.id) ?? []);
+
+  let sunsetted = 0;
+  for (const userId of userIds) {
+    if (protectedIds.has(userId)) continue;
+
+    await supabase
+      .from('profiles')
+      .update({ email_opt_in: false })
+      .eq('id', userId);
+
+    await cancelAllPending(supabase, userId);
+    sunsetted++;
   }
 
   if (sunsetted > 0) {
-    console.error(`[email-sequences] Sunset policy: opted out ${sunsetted} users with ${sunsetted} unengaged emails`);
+    console.error(`[email-sequences] Sunset policy: opted out ${sunsetted} unengaged users (${protectedIds.size} protected)`);
   }
 
   return sunsetted;
