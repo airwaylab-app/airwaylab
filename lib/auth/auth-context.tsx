@@ -16,6 +16,8 @@ interface Profile {
   show_on_supporters: boolean;
   walkthrough_completed: boolean;
   email_opt_in: boolean;
+  discord_id: string | null;
+  discord_username: string | null;
 }
 
 interface Subscription {
@@ -59,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // M1: Handle query errors instead of swallowing them
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in')
+      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
       .eq('id', userId)
       .single();
 
@@ -85,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         show_on_supporters: profileData.show_on_supporters,
         walkthrough_completed: profileData.walkthrough_completed ?? false,
         email_opt_in: profileData.email_opt_in ?? false,
+        discord_id: profileData.discord_id ?? null,
+        discord_username: profileData.discord_username ?? null,
       });
     }
 
