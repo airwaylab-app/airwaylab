@@ -16,6 +16,7 @@ import { ChartInteractionHint } from '@/components/charts/chart-interaction-hint
 import { SyncedViewportProvider, useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { useWaveform } from '@/hooks/use-waveform';
 import { ErrorBoundary } from '@/components/common/error-boundary';
+import { MachineSettingsBar } from '@/components/common/machine-settings-bar';
 import { formatElapsedTimeShort, decimateFlowRange, decimatePressureRange, getTargetRate } from '@/lib/waveform-utils';
 import type { StoredWaveform } from '@/lib/waveform-types';
 import type { NightResult } from '@/lib/types';
@@ -24,8 +25,8 @@ import {
   AlertCircle,
   Waves,
   HeartPulse,
-  Eye,
-  EyeOff,
+
+
   Cloud,
 } from 'lucide-react';
 
@@ -64,7 +65,7 @@ const ALL_EVENT_TYPES: EventType[] = [
 function WaveformCharts({
   storedWaveform,
   selectedNight,
-  showFlowPressure,
+
   visibleTypes,
   showODIEvents,
   showHR,
@@ -73,7 +74,6 @@ function WaveformCharts({
 }: {
   storedWaveform: StoredWaveform;
   selectedNight: NightResult;
-  showFlowPressure: boolean;
   visibleTypes: Set<EventType>;
   showODIEvents: boolean;
   showHR: boolean;
@@ -137,7 +137,7 @@ function WaveformCharts({
             flow={flowData}
             pressure={pressureData}
             events={storedWaveform.events}
-            showPressure={showFlowPressure}
+
             visibleEventTypes={visibleTypes}
           />
         </ErrorBoundary>
@@ -247,7 +247,6 @@ export function GraphsTab({
   onUploadOximetry,
 }: Props) {
   const { state, cloudLoading, cloudAttempted, retry } = useWaveform(selectedNight, isDemo, sdFiles);
-  const [showFlowPressure, setShowFlowPressure] = useState(false);
   const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(
     () => new Set(ALL_EVENT_TYPES.filter((t) => t !== 'm-shape'))
   );
@@ -255,7 +254,6 @@ export function GraphsTab({
   const [showHR, setShowHR] = useState(true);
 
   const storedWaveform = state.waveform;
-  const hasPressure = storedWaveform ? storedWaveform.pressure !== null && storedWaveform.pressure.length > 0 : false;
   const hasFlowData = storedWaveform ? storedWaveform.flow.length > 0 : false;
   const isFromCloud = sdFiles.length === 0 && !isDemo && cloudAttempted;
 
@@ -364,18 +362,9 @@ export function GraphsTab({
         >
           <div className="flex flex-col gap-3">
             {/* Toggle buttons — grouped by source */}
+            {/* Machine settings reference for waveform context */}
+            <MachineSettingsBar settings={selectedNight.settings} />
             <div className="flex flex-wrap items-center gap-1.5">
-              {/* Pressure toggle */}
-              <Button
-                variant={showFlowPressure ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setShowFlowPressure(!showFlowPressure)}
-                disabled={!hasPressure}
-                className="gap-1.5 text-xs"
-              >
-                {showFlowPressure ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                Pressure Overlay
-              </Button>
 
               <div className="mx-1 h-4 w-px bg-border/50" />
 
@@ -484,7 +473,7 @@ export function GraphsTab({
             <WaveformCharts
               storedWaveform={storedWaveform}
               selectedNight={selectedNight}
-              showFlowPressure={showFlowPressure}
+
               visibleTypes={visibleTypes}
               showODIEvents={showODIEvents}
               showHR={showHR}

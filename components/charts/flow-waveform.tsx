@@ -27,7 +27,6 @@ interface Props {
   pressure: PressurePoint[];
   /** All events for the night */
   events: WaveformEvent[];
-  showPressure?: boolean;
   /** Set of visible event types. If undefined, all events are shown. Empty set = no events. */
   visibleEventTypes?: Set<EventType>;
 }
@@ -93,10 +92,11 @@ export const FlowWaveform = memo(function FlowWaveform({
   flow,
   pressure,
   events,
-  showPressure = false,
+
   visibleEventTypes,
 }: Props) {
   const viewport = useSyncedViewport();
+  const hasPressure = pressure.length > 0;
 
   // Determine which types are active
   const activeTypes: Set<EventType> | null = visibleEventTypes ?? null;
@@ -105,7 +105,7 @@ export const FlowWaveform = memo(function FlowWaveform({
   // Build chart data from pre-decimated flow + pressure
   const allData = useMemo(() => {
     const pressureMap = new Map<number, number>();
-    if (showPressure) {
+    if (hasPressure) {
       for (const p of pressure) {
         pressureMap.set(p.t, p.avg);
       }
@@ -116,7 +116,7 @@ export const FlowWaveform = memo(function FlowWaveform({
       flow: f.value,
       pressure: pressureMap.get(f.t) ?? undefined,
     }));
-  }, [flow, pressure, showPressure]);
+  }, [flow, pressure, hasPressure]);
 
   // Apply downsampleForChart (1,500-point Recharts cap)
   const data = useMemo(() => downsampleForChart(allData), [allData]);
@@ -197,7 +197,7 @@ export const FlowWaveform = memo(function FlowWaveform({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
-            margin={{ top: 5, right: showPressure ? 50 : 10, left: 0, bottom: 5 }}
+            margin={{ top: 5, right: hasPressure ? 50 : 10, left: 0, bottom: 5 }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -226,7 +226,7 @@ export const FlowWaveform = memo(function FlowWaveform({
                 style: { fill: 'hsl(215 20% 45%)', fontSize: 9 },
               }}
             />
-            {showPressure && (
+            {hasPressure && (
               <YAxis
                 yAxisId="pressure"
                 orientation="right"
@@ -291,7 +291,7 @@ export const FlowWaveform = memo(function FlowWaveform({
               name="Flow"
             />
 
-            {showPressure && (
+            {hasPressure && (
               <Area
                 yAxisId="pressure"
                 type="monotone"
