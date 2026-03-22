@@ -37,11 +37,13 @@ const SUPPORTER_FEATURES = [
   'Enhanced export with annotations',
   'Detailed metric explanations',
   'Supporter badge on forum posts',
+  'AirwayLab Discord community access',
 ];
 
 const CHAMPION_FEATURES = [
   'Everything in Supporter, plus:',
   'Lifetime analysis history',
+  'Exclusive Discord channels + developer access',
   'Early access to new features',
   'Champion badge on forum posts',
   'Name on supporters page',

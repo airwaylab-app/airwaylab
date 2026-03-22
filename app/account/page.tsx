@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import { CloudSyncToggle } from '@/components/upload/cloud-sync-nudge';
+import { DiscordCard } from '@/components/auth/discord-card';
 import {
   User,
   CreditCard,
@@ -34,6 +36,21 @@ interface UserDataStats {
 
 function formatMB(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
+}
+
+const DISCORD_STATUS_MESSAGES: Record<string, { text: string; color: string }> = {
+  connected: { text: 'Discord connected successfully.', color: 'text-emerald-400' },
+  error: { text: 'Could not connect Discord. Please try again.', color: 'text-red-400' },
+  cancelled: { text: 'Discord connection cancelled.', color: 'text-muted-foreground' },
+  already_linked: { text: 'This Discord account is already linked to another user.', color: 'text-red-400' },
+};
+
+function DiscordStatusBanner() {
+  const searchParams = useSearchParams();
+  const status = searchParams.get('discord');
+  if (!status || !DISCORD_STATUS_MESSAGES[status]) return null;
+  const { text, color } = DISCORD_STATUS_MESSAGES[status]!;
+  return <p className={`text-sm ${color}`}>{text}</p>;
 }
 
 export default function AccountPage() {
@@ -109,6 +126,11 @@ export default function AccountPage() {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-16 space-y-6">
       <h1 className="text-2xl font-bold">Account Settings</h1>
+
+      {/* Discord OAuth callback status */}
+      <Suspense>
+        <DiscordStatusBanner />
+      </Suspense>
 
       {/* Profile */}
       <Card>
@@ -195,6 +217,9 @@ export default function AccountPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Discord Community */}
+      <DiscordCard />
 
       {/* Your Data */}
       <Card>
