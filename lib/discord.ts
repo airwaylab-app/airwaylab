@@ -1,0 +1,151 @@
+/**
+ * Discord REST API utility for AirwayLab community integration.
+ *
+ * Handles role assignment/revocation, guild member management,
+ * and tier-to-role mapping. All operations are non-blocking
+ * and fail gracefully (never block Stripe webhook processing).
+ */
+
+import * as Sentry from '@sentry/nextjs';
+
+const API = 'https://discord.com/api/v10';
+
+function getConfig() {
+  return {
+    botToken: process.env.DISCORD_BOT_TOKEN ?? '',
+    guildId: process.env.DISCORD_GUILD_ID ?? '',
+    supporterRoleId: process.env.DISCORD_SUPPORTER_ROLE_ID ?? '',
+    championRoleId: process.env.DISCORD_CHAMPION_ROLE_ID ?? '',
+  };
+}
+
+/** Check if Discord integration is configured (all env vars present). */
+export function isDiscordConfigured(): boolean {
+  const c = getConfig();
+  return !!(c.botToken && c.guildId && c.supporterRoleId && c.championRoleId);
+}
+
+async function discordFetch(
+  path: string,
+  method: 'GET' | 'PUT' | 'DELETE' | 'POST' | 'PATCH' = 'GET',
+  body?: Record<string, unknown>
+): Promise<Response> {
+  const { botToken } = getConfig();
+  const opts: RequestInit = {
+    method,
+    headers: {
+      'Authorization': `Bot ${botToken}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(`${API}${path}`, opts);
+}
+
+/** Map a subscription tier to the corresponding Discord role ID. */
+export function getTierRoleId(tier: string): string | null {
+  const c = getConfig();
+  if (tier === 'supporter') return c.supporterRoleId;
+  if (tier === 'champion') return c.championRoleId;
+  return null;
+}
+
+/** Get all paid role IDs. */
+function getAllPaidRoleIds(): string[] {
+  const c = getConfig();
+  return [c.supporterRoleId, c.championRoleId].filter(Boolean);
+}
+
+/** Add a role to a guild member. */
+export async function addMemberRole(discordId: string, roleId: string): Promise<boolean> {
+  const { guildId } = getConfig();
+  const res = await discordFetch(
+    `/guilds/${guildId}/members/${discordId}/roles/${roleId}`,
+    'PUT'
+  );
+  return res.ok || res.status === 204;
+}
+
+/** Remove a role from a guild member. */
+export async function removeMemberRole(discordId: string, roleId: string): Promise<boolean> {
+  const { guildId } = getConfig();
+  const res = await discordFetch(
+    `/guilds/${guildId}/members/${discordId}/roles/${roleId}`,
+    'DELETE'
+  );
+  return res.ok || res.status === 204;
+}
+
+/**
+ * Add a user to the guild using their OAuth2 access token.
+ * Requires the `guilds.join` scope. Assigns roles in the same call.
+ */
+export async function addMemberToGuild(
+  discordId: string,
+  accessToken: string,
+  roleIds: string[] = []
+): Promise<boolean> {
+  const { guildId } = getConfig();
+  const body: Record<string, unknown> = { access_token: accessToken };
+  if (roleIds.length > 0) body.roles = roleIds;
+
+  const res = await discordFetch(
+    `/guilds/${guildId}/members/${discordId}`,
+    'PUT',
+    body
+  );
+
+  // 201 = added, 204 = already in guild
+  if (res.status === 201 || res.status === 204) {
+    // If 204 (already in guild), roles weren't set by the PUT -- add them manually
+    if (res.status === 204 && roleIds.length > 0) {
+      for (const roleId of roleIds) {
+        await addMemberRole(discordId, roleId);
+      }
+    }
+    return true;
+  }
+
+  const text = await res.text();
+  console.error(`[discord] addMemberToGuild failed (${res.status}): ${text}`);
+  return false;
+}
+
+/**
+ * Sync a user's Discord roles to match their subscription tier.
+ * Removes all paid roles first, then adds the correct one.
+ */
+export async function syncRole(discordId: string, tier: string): Promise<boolean> {
+  if (!isDiscordConfigured()) return false;
+
+  try {
+    const allPaidRoles = getAllPaidRoleIds();
+    const targetRoleId = getTierRoleId(tier);
+
+    // Remove all paid roles
+    for (const roleId of allPaidRoles) {
+      await removeMemberRole(discordId, roleId);
+    }
+
+    // Add the correct role (if any -- community tier gets no role)
+    if (targetRoleId) {
+      return await addMemberRole(discordId, targetRoleId);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[discord] syncRole failed:', err);
+    Sentry.captureException(err, {
+      tags: { action: 'discord-sync-role' },
+      extra: { discordId, tier },
+    });
+    return false;
+  }
+}
+
+/**
+ * Remove all paid roles from a user (on subscription cancellation).
+ */
+export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
+  return syncRole(discordId, 'community');
+}
