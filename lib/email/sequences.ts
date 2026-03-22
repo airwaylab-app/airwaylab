@@ -255,32 +255,32 @@ export async function scheduleActivationSequences(
  *
  * A user is sunsetted if they have >= 3 sent emails where:
  * - delivered_at is not null (email arrived)
- * - opened_at is null AND clicked_at is null (no engagement)
+ * - clicked_at is null (no engagement -- clicks are the primary signal
+ *   since open tracking is disabled for deliverability reasons)
  *
  * Sunsetted users get email_opt_in = false and all pending emails cancelled.
  */
 export async function applySunsetPolicy(
   supabase: SupabaseClient
 ): Promise<number> {
-  // Circuit breaker: if zero opens are tracked system-wide, open tracking
-  // is likely broken. Skip sunset to avoid mass-unsubscribing engaged users.
-  const { count: totalOpens } = await supabase
+  // Circuit breaker: if zero clicks are tracked system-wide, click tracking
+  // may be misconfigured. Skip sunset to avoid mass-unsubscribing engaged users.
+  const { count: totalClicks } = await supabase
     .from('email_sequences')
     .select('*', { count: 'exact', head: true })
-    .not('opened_at', 'is', null);
+    .not('clicked_at', 'is', null);
 
-  if (!totalOpens || totalOpens === 0) {
-    console.error('[email-sequences] Sunset skipped: zero opens tracked system-wide (open tracking may be misconfigured)');
+  if (!totalClicks || totalClicks === 0) {
+    console.error('[email-sequences] Sunset skipped: zero clicks tracked system-wide (click tracking may be misconfigured)');
     return 0;
   }
 
-  // Find users with 3+ delivered-but-unengaged emails
+  // Find users with 3+ delivered-but-unengaged emails (no clicks)
   const { data: candidates, error } = await supabase
     .from('email_sequences')
     .select('user_id')
     .eq('status', 'sent')
     .not('delivered_at', 'is', null)
-    .is('opened_at', null)
     .is('clicked_at', null);
 
   if (error || !candidates) {
