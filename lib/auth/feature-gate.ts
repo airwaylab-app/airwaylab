@@ -14,7 +14,9 @@ type Feature =
   | 'pdf_report'
   | 'enhanced_export'
   | 'early_access'
-  | 'supporter_badge';
+  | 'supporter_badge'
+  | 'discord_community'
+  | 'analysis_window';
 
 // metric_explanations and next_steps intentionally removed —
 // both are free for all users (data visibility + appointment prep).
@@ -29,6 +31,8 @@ const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   enhanced_export: ['supporter', 'champion'],
   early_access: ['champion'],
   supporter_badge: ['supporter', 'champion'],
+  discord_community: ['supporter', 'champion'],
+  analysis_window: ['supporter', 'champion'],
 };
 
 const AI_MONTHLY_LIMIT = 3;
@@ -90,4 +94,12 @@ export function incrementAIUsage(): void {
   } catch {
     // localStorage unavailable — fail silently
   }
+}
+
+// ─── Analysis history window ─────────────────────────────────
+
+export function getAnalysisWindowDays(tier: Tier): number {
+  if (tier === 'champion') return Infinity;
+  if (tier === 'supporter') return 90;
+  return 0; // community: current session only
 }
