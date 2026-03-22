@@ -262,9 +262,9 @@ describe('Step 9: Privacy and pricing updates', () => {
     expect(src).toContain('Delete all server-stored data instantly');
   });
 
-  it('pricing page includes unlimited cloud storage for community', () => {
+  it('pricing page includes free cloud backup for community', () => {
     const src = readSource('app/pricing/page.tsx');
-    expect(src).toContain('Unlimited cloud storage for your EDF files');
+    expect(src).toContain('Free cloud backup -- never lose your SD card data');
   });
 
   it('pricing page shows deep AI insights for supporters', () => {
