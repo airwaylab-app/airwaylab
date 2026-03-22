@@ -27,9 +27,9 @@ function transactionalLayout(content: string, footerText: string): string {
 
 const TIER_BENEFITS: Record<'supporter' | 'champion', string[]> = {
   supporter: [
-    'Unlimited AI-powered insights for every night',
-    'Cloud sync -- access your results on any device',
-    'Priority support',
+    'Unlimited AI insights -- every night, automatically',
+    'Cloud sync -- upload on your laptop, review on your phone',
+    'Priority support -- reply to any email and I\'ll respond personally',
   ],
   champion: [
     'Everything in Supporter',
@@ -41,19 +41,18 @@ const TIER_BENEFITS: Record<'supporter' | 'champion', string[]> = {
 
 export function welcomeEmail(
   tier: 'supporter' | 'champion',
-  interval: string
+  _interval: string
 ): { subject: string; html: string } {
   const tierLabel = tier === 'supporter' ? 'Supporter' : 'Champion'
-  const intervalLabel = interval === 'year' ? 'yearly' : 'monthly'
 
   return {
-    subject: `Welcome to AirwayLab ${tierLabel}`,
+    subject: `You're in. Here's what's unlocked.`,
     html: transactionalLayout(`
-      ${heading(`Welcome to AirwayLab ${tierLabel}`)}
-      ${paragraph(`Thanks for supporting AirwayLab with a ${intervalLabel} ${tierLabel} subscription. Your support funds ongoing development of open-source sleep analysis tools.`)}
-      ${paragraph('Your account has been upgraded. Here\'s what you now have access to:')}
+      ${heading('Your analysis just got a lot smarter')}
+      ${paragraph('Every time you upload, you\'ll now get AI-powered insights that explain your metrics in plain language -- what your Glasgow Index means for your therapy, whether your flow limitation is improving, and specific settings adjustments to discuss with your clinician.')}
+      ${paragraph(`Here's what your ${tierLabel} subscription unlocks:`)}
       ${bulletList(TIER_BENEFITS[tier])}
-      ${ctaButton('Go to AirwayLab', `${BASE_URL}/analyze?utm_source=email&utm_medium=transactional&utm_campaign=welcome`)}
+      ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=transactional&utm_campaign=welcome`)}
       ${paragraph('If you have any questions, reply to this email or use the <a href="' + BASE_URL + '/contact" style="color:#5eead4;text-decoration:underline;">contact form</a>.')}
     `, `You're receiving this because you subscribed to AirwayLab ${tierLabel}. Manage your subscription in <a href="${BASE_URL}/account" style="color:#5eead4;text-decoration:none;">account settings</a>.`),
   }
@@ -65,15 +64,15 @@ export function cancellationEmail(
   periodEnd: string | null
 ): { subject: string; html: string } {
   const endNote = periodEnd
-    ? `Your ${periodEnd} access continues until the end of your current billing period.`
-    : 'Your premium features have been deactivated.'
+    ? `You'll keep premium access until ${periodEnd}. After that, you'll be on the free Community tier.`
+    : 'Your premium features have been deactivated. You\'re now on the free Community tier.'
 
   return {
     subject: 'Your AirwayLab subscription has been cancelled',
     html: transactionalLayout(`
       ${heading('Subscription cancelled')}
       ${paragraph(`Your AirwayLab subscription has been cancelled. ${endNote}`)}
-      ${paragraph('All core analysis features remain free and available -- four engines, insights, exports, and local persistence. Your existing results are still saved in your browser.')}
+      ${paragraph('All four analysis engines, rule-based insights, exports, and local persistence remain free and available. Your existing results are still saved in your browser.')}
       ${paragraph('If you change your mind, you can resubscribe at any time.')}
       ${ctaButton('View plans', `${BASE_URL}/pricing?utm_source=email&utm_medium=transactional&utm_campaign=cancellation`)}
       ${paragraph('We\'d love to know why you cancelled. If you have a moment, reply to this email or use the <a href="' + BASE_URL + '/contact" style="color:#5eead4;text-decoration:underline;">contact form</a>.')}

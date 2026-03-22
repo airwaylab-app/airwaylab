@@ -77,7 +77,7 @@ function bulletList(items: string[]): string {
 
 export function postUploadStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: "Your first analysis is saved -- here's what to do next",
+    subject: '4 engines just decoded your breathing data',
     html: layout(`
       ${heading('Your breathing data has been analysed')}
       ${paragraph('Four research-grade engines just scored your flow limitation, breathing regularity, and airway resistance. Your results are saved in your browser -- no one sees them but you.')}
@@ -89,17 +89,17 @@ export function postUploadStep1(unsubscribeUrl: string): { subject: string; html
 
 export function postUploadStep2(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'One night tells part of the story -- trends tell the rest',
+    subject: 'One night is a snapshot -- here\'s why that matters',
     html: layout(`
-      ${heading('Why multi-night analysis matters')}
-      ${paragraph('Sleep-disordered breathing varies from night to night. Body position, alcohol, stress, and nasal congestion all affect your airway. A single night\'s Glasgow Index might be 1.2 (green) or 2.8 (amber) depending on circumstances.')}
-      ${paragraph('That\'s why trends matter. When you upload multiple nights, AirwayLab tracks how your metrics change over time. You can see:')}
+      ${heading('What changes between nights -- and why it matters')}
+      ${paragraph('Sleep breathing varies with body position, alcohol, congestion, and stress. A Glasgow Index of 1.2 one night and 2.8 the next is normal. The question isn\'t "what was my score" -- it\'s "is my therapy trending in the right direction?"')}
+      ${paragraph('Trends answer that. Each upload adds another data point to the picture your clinician needs:')}
       ${bulletList([
-        'Whether a pressure adjustment actually improved your flow limitation',
-        'Night-to-night variability in your breathing patterns',
-        'First-half vs second-half differences (H1/H2 split)',
-        'The overall direction of your therapy',
+        'See if a pressure adjustment actually reduced your flow limitation',
+        'Catch gradual worsening before it shows up as daytime symptoms',
+        'First-half vs second-half patterns that reveal positional or REM-related issues',
       ])}
+      ${paragraph('Supporters get AI-powered insights that explain what these trends mean for your specific therapy -- plain language, not just numbers.')}
       ${ctaButton('Upload Your Next Night', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_2`)}
     `, unsubscribeUrl),
   };
@@ -107,13 +107,14 @@ export function postUploadStep2(unsubscribeUrl: string): { subject: string; html
 
 export function postUploadStep3(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Quick question: how is your therapy going?',
+    subject: 'The metric your clinician actually wants to see',
     html: layout(`
-      ${heading('Track how you feel, not just the numbers')}
-      ${paragraph('AirwayLab measures what your airway does. But symptoms are personal -- two people with the same flow limitation can feel completely different.')}
-      ${paragraph('That\'s why we added symptom self-reporting. After each analysis, you can log how you feel on a simple scale. Over time, this builds a picture of your personal sensitivity to flow limitation.')}
-      ${paragraph('It takes 5 seconds. And it\'s the data your clinician actually wants to see alongside your metrics.')}
-      ${ctaButton('Log Your Sleep Quality', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3`)}
+      ${heading('Numbers tell half the story')}
+      ${paragraph('Two people with identical flow limitation scores can feel completely different. Your sensitivity to airway resistance, your arousal threshold, your REM patterns -- all of these factor in.')}
+      ${paragraph('AirwayLab measures your airway. Symptom logging measures you. Together, they give your clinician something no AHI printout can: the full picture.')}
+      ${paragraph('After each analysis, you can log how you slept on a simple scale. It takes 5 seconds, and it builds a picture of your personal sensitivity over time.')}
+      ${ctaButton('Log How You Slept', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3`)}
+      ${paragraph('P.S. AI insights can connect your symptoms to your metrics -- suggesting specific patterns to discuss with your clinician. Available with a <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3_upgrade" style="color:#5eead4;text-decoration:underline;">Supporter subscription</a>.')}
     `, unsubscribeUrl),
   };
 }
@@ -122,15 +123,15 @@ export function postUploadStep3(unsubscribeUrl: string): { subject: string; html
 
 export function dormancyStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Your therapy data is still here',
+    subject: 'How\'s your therapy going this month?',
     html: layout(`
-      ${heading('Ready when you are')}
-      ${paragraph('Your previous analysis results are saved. When you upload new SD card data, AirwayLab compares it against your earlier nights so you can see what\'s changed.')}
-      ${paragraph('Even one new night gives you:')}
+      ${heading('One upload, one minute, one more data point')}
+      ${paragraph('Sleep therapy is a long game. Night-to-night scores fluctuate -- that\'s normal. But monthly trends reveal whether your pressure settings are actually helping, slowly drifting, or masking a positional issue that only shows up in certain sleep stages.')}
+      ${paragraph('Your clinician can\'t act on a single night. They need the trend line. Each upload adds to that picture:')}
       ${bulletList([
-        'A before-and-after comparison of your flow limitation scores',
-        'Whether your breathing patterns are improving or drifting',
-        'Updated trend data to bring to your next clinic visit',
+        'See if last month\'s pressure change actually reduced flow limitation',
+        'Catch gradual worsening before it shows up as daytime symptoms',
+        'Build an evidence trail for your next clinic visit',
       ])}
       ${ctaButton('Upload This Month\'s Data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_1`)}
     `, unsubscribeUrl),
@@ -139,13 +140,12 @@ export function dormancyStep1(unsubscribeUrl: string): { subject: string; html: 
 
 export function dormancyStep2(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Last check-in: are you still tracking your therapy?',
+    subject: 'Gaps in your data? That\'s normal.',
     html: layout(`
-      ${heading('No pressure -- just checking in')}
-      ${paragraph('We send occasional emails to help you get the most out of AirwayLab. If you\'re no longer tracking your PAP therapy, no worries -- this is the last email we\'ll send unless you upload new data.')}
-      ${paragraph('If you are still on therapy, your previous results are waiting. Upload your latest SD card data and see how your metrics compare.')}
-      ${ctaButton('Upload New Data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2`)}
-      ${paragraph('If you\'d rather not hear from us, <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">unsubscribe here</a>. One click, no questions.')}
+      ${heading('Every month of data makes the picture clearer')}
+      ${paragraph('Tracking therapy isn\'t all-or-nothing. Even uploading once a month gives you and your clinician something to work with. If you\'ve had a break, that\'s fine -- AirwayLab compares whatever data you have, whenever you\'re ready.')}
+      ${paragraph('If you\'ve moved on from tracking, no hard feelings. This is the last email in this sequence, and we won\'t send more unless you upload new data.')}
+      ${ctaButton('Upload When You\'re Ready', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2`)}
     `, unsubscribeUrl),
   };
 }
@@ -164,7 +164,7 @@ export function featureEducationStep1(unsubscribeUrl: string): { subject: string
         '"Your RERA index of 6.2 is above the normal range, which may explain persistent fatigue despite a low AHI..."',
         '"Consider discussing an EPR reduction with your clinician, as your flow limitation worsens with higher expiratory pressure relief..."',
       ])}
-      ${paragraph('Free users get 3 AI analyses per month. Supporters get unlimited.')}
+      ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and suggests adjustments to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
       ${ctaButton('Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1`)}
     `, unsubscribeUrl),
   };
@@ -183,6 +183,7 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
         '<strong style="color:#fff;">Forum post</strong> -- formatted for ApneaBoard or r/SleepApnea, with traffic-light indicators.',
       ])}
       ${paragraph('The more data you bring, the better the conversation. Your clinician can\'t act on symptoms alone -- they need objective evidence.')}
+      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get AI-powered recommendations that connect your FL Score trends to specific pressure settings and suggest changes based on your breathing patterns. It\'s the difference between seeing the numbers and understanding what to do about them.')}
       ${ctaButton('Export Your Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2`)}
     `, unsubscribeUrl),
   };
@@ -202,6 +203,7 @@ function activationStep1(unsubscribeUrl: string): { subject: string; html: strin
         '<strong style="color:#fff;">Select the DATALOG folder</strong> -- AirwayLab will find and parse all the EDF files automatically',
       ])}
       ${paragraph('Everything runs in your browser. Your data never leaves your device unless you choose to share it.')}
+      ${paragraph('Within seconds, you\'ll see scores from four research-grade engines: flow limitation patterns your machine\'s AHI doesn\'t capture, breathing regularity, airway resistance, and arousal indicators. These are the metrics that explain why you might still feel tired despite "normal" numbers.')}
       ${ctaButton('Upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_1`)}
       ${paragraph('Having trouble? Reply to this email and we\'ll help you get started.')}
     `, unsubscribeUrl),

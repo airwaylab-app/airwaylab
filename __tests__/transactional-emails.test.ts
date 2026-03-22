@@ -54,18 +54,18 @@ describe('email helpers', () => {
 describe('welcomeEmail', () => {
   it('includes Supporter tier name and benefits', () => {
     const { subject, html } = welcomeEmail('supporter', 'month')
-    expect(subject).toBe('Welcome to AirwayLab Supporter')
+    expect(subject).toBe("You're in. Here's what's unlocked.")
     expect(html).toContain('Supporter')
-    expect(html).toContain('monthly')
-    expect(html).toContain('Unlimited AI-powered insights')
+    expect(html).toContain('Supporter')
+    expect(html).toContain('Unlimited AI insights')
     expect(html).toContain('Cloud sync')
   })
 
   it('includes Champion tier name and benefits', () => {
     const { subject, html } = welcomeEmail('champion', 'year')
-    expect(subject).toBe('Welcome to AirwayLab Champion')
+    expect(subject).toBe("You're in. Here's what's unlocked.")
     expect(html).toContain('Champion')
-    expect(html).toContain('yearly')
+    expect(html).toContain('Champion')
     expect(html).toContain('Everything in Supporter')
     expect(html).toContain('Early access')
   })
