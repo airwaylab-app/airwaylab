@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -45,9 +45,16 @@ const DISCORD_STATUS_MESSAGES: Record<string, { text: string; color: string }> =
   already_linked: { text: 'This Discord account is already linked to another user.', color: 'text-red-400' },
 };
 
+function DiscordStatusBanner() {
+  const searchParams = useSearchParams();
+  const status = searchParams.get('discord');
+  if (!status || !DISCORD_STATUS_MESSAGES[status]) return null;
+  const { text, color } = DISCORD_STATUS_MESSAGES[status]!;
+  return <p className={`text-sm ${color}`}>{text}</p>;
+}
+
 export default function AccountPage() {
   const { user, profile, tier, isPaid } = useAuth();
-  const searchParams = useSearchParams();
 
   const [stats, setStats] = useState<UserDataStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -121,11 +128,9 @@ export default function AccountPage() {
       <h1 className="text-2xl font-bold">Account Settings</h1>
 
       {/* Discord OAuth callback status */}
-      {searchParams.get('discord') && DISCORD_STATUS_MESSAGES[searchParams.get('discord')!] && (
-        <p className={`text-sm ${DISCORD_STATUS_MESSAGES[searchParams.get('discord')!]!.color}`}>
-          {DISCORD_STATUS_MESSAGES[searchParams.get('discord')!]!.text}
-        </p>
-      )}
+      <Suspense>
+        <DiscordStatusBanner />
+      </Suspense>
 
       {/* Profile */}
       <Card>
