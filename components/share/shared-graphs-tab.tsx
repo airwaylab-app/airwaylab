@@ -9,7 +9,7 @@ import { SyncedViewportProvider, useSyncedViewport } from '@/hooks/use-synced-vi
 import { useSharedWaveform } from '@/hooks/use-shared-waveform';
 import { formatElapsedTimeShort, decimateFlowRange, decimatePressureRange, getTargetRate } from '@/lib/waveform-utils';
 import type { StoredWaveform } from '@/lib/waveform-types';
-import { Eye, EyeOff, Loader2, AlertCircle, Waves } from 'lucide-react';
+import { Loader2, AlertCircle, Waves } from 'lucide-react';
 
 interface Props {
   shareId: string;
@@ -42,7 +42,6 @@ const ALL_EVENT_TYPES: EventType[] = [
  */
 export function SharedGraphsTab({ shareId, filePaths, dateStr }: Props) {
   const { state, downloading, retry } = useSharedWaveform({ shareId, filePaths, dateStr });
-  const [showPressure, setShowPressure] = useState(false);
   const [visibleTypes, setVisibleTypes] = useState<Set<EventType>>(() => new Set(ALL_EVENT_TYPES));
 
   const waveform = state.waveform;
@@ -130,18 +129,6 @@ export function SharedGraphsTab({ shareId, filePaths, dateStr }: Props) {
     <div className="flex flex-col gap-4">
       {/* Controls — per-type toggles */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <Button
-          variant={showPressure ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => setShowPressure(!showPressure)}
-          disabled={!waveform.pressure || waveform.pressure.length === 0}
-          className="gap-1.5 text-xs"
-        >
-          {showPressure ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-          Pressure
-        </Button>
-
-        <div className="mx-1 h-4 w-px bg-border/50" />
 
         {/* Machine event toggles */}
         <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">Machine</span>
@@ -211,7 +198,7 @@ export function SharedGraphsTab({ shareId, filePaths, dateStr }: Props) {
       >
         <SharedWaveformCharts
           waveform={waveform}
-          showPressure={showPressure}
+
           visibleTypes={visibleTypes}
         />
       </SyncedViewportProvider>
@@ -260,11 +247,10 @@ export function SharedGraphsTab({ shareId, filePaths, dateStr }: Props) {
  */
 function SharedWaveformCharts({
   waveform,
-  showPressure,
+
   visibleTypes,
 }: {
   waveform: StoredWaveform;
-  showPressure: boolean;
   visibleTypes: Set<EventType>;
 }) {
   const viewport = useSyncedViewport();
@@ -299,7 +285,7 @@ function SharedWaveformCharts({
         flow={flowData}
         pressure={pressureData}
         events={waveform.events}
-        showPressure={showPressure}
+
         visibleEventTypes={visibleTypes}
       />
     </div>

@@ -15,7 +15,8 @@ type Feature =
   | 'enhanced_export'
   | 'early_access'
   | 'supporter_badge'
-  | 'analysis_window';
+  | 'analysis_window'
+  | 'discord_community';
 
 // metric_explanations and next_steps intentionally removed —
 // both are free for all users (data visibility + appointment prep).
@@ -31,6 +32,7 @@ const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   early_access: ['champion'],
   supporter_badge: ['supporter', 'champion'],
   analysis_window: ['supporter', 'champion'],
+  discord_community: ['supporter', 'champion'],
 };
 
 const AI_MONTHLY_LIMIT = 3;
