@@ -20,17 +20,17 @@ export async function loadCloudFiles(
     credentials: 'same-origin',
   });
 
-  if (listRes.status >= 500 && listRes.status < 600) {
-    await new Promise((r) => setTimeout(r, 1000));
+  // Retry once on server errors (5xx) or rate limits (429) after a delay
+  if (listRes.status >= 500 || listRes.status === 429) {
+    const delay = listRes.status === 429 ? 3000 : 1000;
+    await new Promise((r) => setTimeout(r, delay));
     listRes = await fetch(`/api/files/list?nightDate=${encodeURIComponent(nightDate)}`, {
       credentials: 'same-origin',
     });
   }
 
   if (!listRes.ok) {
-    const body = await listRes.text().catch(() => '');
-    const detail = body ? ': ' + body.slice(0, 200) : '';
-    throw new Error(`Failed to fetch file list from cloud (${listRes.status}${detail})`);
+    throw new Error(`Failed to fetch file list from cloud (${listRes.status})`);
   }
 
   const listData = await listRes.json();
