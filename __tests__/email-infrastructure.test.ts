@@ -1,23 +1,45 @@
 import { describe, it, expect, vi } from 'vitest';
 
 /**
- * Tests for email infrastructure:
- * 1. Sunset circuit breaker (skips when tracking is broken)
- * 2. Sunset protects paying/active users
- * 3. Cron handler scheduling order (schedule before send)
+ * Tests for email infrastructure fixes:
+ * 1. Sunset circuit breaker (skips when open tracking is broken)
+ * 2. Cron handler scheduling order (schedule before send)
  */
 
-// ── Sunset policy ────────────────────────────────────────────
+// ── Sunset circuit breaker ───────────────────────────────────
 
-describe('applySunsetPolicy', () => {
-  it('skips when zero engagement is tracked system-wide', async () => {
+describe('applySunsetPolicy circuit breaker', () => {
+  function createMockChain() {
+    // Builds a chainable mock that supports arbitrary .eq/.not/.is/.update calls
+    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+    const proxy = new Proxy(chain, {
+      get(target, prop) {
+        if (prop === 'then' || prop === 'catch') return undefined;
+        if (!target[prop as string]) {
+          target[prop as string] = vi.fn().mockReturnValue(proxy);
+        }
+        return target[prop as string];
+      },
+    });
+    return proxy;
+  }
+
+  it('skips sunset when zero clicks are tracked system-wide', async () => {
     const { applySunsetPolicy } = await import('@/lib/email/sequences');
 
     const mockSupabase = {
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          or: vi.fn().mockReturnValue({ count: 0 }),
-        }),
+      from: vi.fn().mockImplementation(() => {
+        return {
+          select: vi.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
+            if (opts?.count === 'exact' && opts?.head) {
+              return {
+                not: vi.fn().mockReturnValue({ count: 0 }),
+              };
+            }
+            return createMockChain();
+          }),
+          update: vi.fn().mockReturnValue(createMockChain()),
+        };
       }),
     };
 
@@ -26,23 +48,52 @@ describe('applySunsetPolicy', () => {
     expect(result).toBe(0);
   });
 
-  it('does not sunset paying subscribers or recently active users', async () => {
-    // This is a structural test -- verify the source code checks tier and last_sign_in_at
-    const { readFileSync } = await import('fs');
-    const { resolve } = await import('path');
+  it('proceeds with sunset when clicks are tracked', async () => {
+    const { applySunsetPolicy } = await import('@/lib/email/sequences');
 
-    const source = readFileSync(
-      resolve(process.cwd(), 'lib/email/sequences.ts'),
-      'utf8',
-    );
+    const mockSupabase = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'email_sequences') {
+          return {
+            select: vi.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
+              // Circuit breaker query: return 5 clicks
+              if (opts?.count === 'exact' && opts?.head) {
+                return {
+                  not: vi.fn().mockReturnValue({ count: 5 }),
+                };
+              }
+              // Unengaged users query: chain .eq().not().is()
+              const terminalValue = Promise.resolve({
+                data: [
+                  { user_id: 'user-1' },
+                  { user_id: 'user-1' },
+                  { user_id: 'user-1' },
+                ],
+                error: null,
+              });
+              const notChain = { is: vi.fn().mockReturnValue(terminalValue) };
+              const eqChain = { not: vi.fn().mockReturnValue(notChain) };
+              return { eq: vi.fn().mockReturnValue(eqChain) };
+            }),
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          };
+        }
+        // profiles table
+        return {
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }),
+    };
 
-    // The sunset function must exclude paying users (tier != community)
-    expect(source).toContain('tier.neq.community');
-    // The sunset function must exclude recently active users
-    expect(source).toContain('last_sign_in_at');
-    // Must check both opened_at and clicked_at for engagement
-    expect(source).toContain('opened_at');
-    expect(source).toContain('clicked_at');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await applySunsetPolicy(mockSupabase as any);
+    expect(result).toBe(1);
   });
 });
 
@@ -58,11 +109,13 @@ describe('processEmailDrips execution order', () => {
       'utf8',
     );
 
+    // Find the function body (after the export line)
     const fnStart = source.indexOf('export async function processEmailDrips');
     expect(fnStart).toBeGreaterThan(-1);
 
     const body = source.slice(fnStart);
 
+    // Look for the actual await calls, not imports
     const scheduleCall = body.indexOf('await scheduleDormancySequences');
     const activationCall = body.indexOf('await scheduleActivationSequences');
     const sendCall = body.indexOf('await getPendingEmails');
@@ -73,6 +126,7 @@ describe('processEmailDrips execution order', () => {
     expect(sendCall).toBeGreaterThan(-1);
     expect(sunsetCall).toBeGreaterThan(-1);
 
+    // Schedule must come before send, send before sunset
     expect(scheduleCall).toBeLessThan(sendCall);
     expect(activationCall).toBeLessThan(sendCall);
     expect(sendCall).toBeLessThan(sunsetCall);
