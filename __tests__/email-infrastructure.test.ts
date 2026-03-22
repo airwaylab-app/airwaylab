@@ -24,7 +24,7 @@ describe('applySunsetPolicy circuit breaker', () => {
     return proxy;
   }
 
-  it('skips sunset when zero opens are tracked system-wide', async () => {
+  it('skips sunset when zero clicks are tracked system-wide', async () => {
     const { applySunsetPolicy } = await import('@/lib/email/sequences');
 
     const mockSupabase = {
@@ -48,7 +48,7 @@ describe('applySunsetPolicy circuit breaker', () => {
     expect(result).toBe(0);
   });
 
-  it('proceeds with sunset when opens are tracked', async () => {
+  it('proceeds with sunset when clicks are tracked', async () => {
     const { applySunsetPolicy } = await import('@/lib/email/sequences');
 
     const mockSupabase = {
@@ -56,13 +56,13 @@ describe('applySunsetPolicy circuit breaker', () => {
         if (table === 'email_sequences') {
           return {
             select: vi.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-              // Circuit breaker query: return 5 opens
+              // Circuit breaker query: return 5 clicks
               if (opts?.count === 'exact' && opts?.head) {
                 return {
                   not: vi.fn().mockReturnValue({ count: 5 }),
                 };
               }
-              // Unengaged users query: chain .eq().not().is().is()
+              // Unengaged users query: chain .eq().not().is()
               const terminalValue = Promise.resolve({
                 data: [
                   { user_id: 'user-1' },
@@ -71,8 +71,7 @@ describe('applySunsetPolicy circuit breaker', () => {
                 ],
                 error: null,
               });
-              const isChain = { is: vi.fn().mockReturnValue(terminalValue) };
-              const notChain = { is: vi.fn().mockReturnValue(isChain) };
+              const notChain = { is: vi.fn().mockReturnValue(terminalValue) };
               const eqChain = { not: vi.fn().mockReturnValue(notChain) };
               return { eq: vi.fn().mockReturnValue(eqChain) };
             }),
