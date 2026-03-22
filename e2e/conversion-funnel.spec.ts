@@ -276,9 +276,9 @@ test.describe('Conversion Funnel — Signup Flow', () => {
     const modal = page.getByRole('dialog').filter({ hasText: /sign in to airwaylab/i });
     await expect(modal).toBeVisible();
 
-    // Should mention cloud storage and AI
-    await expect(modal.getByText(/cloud storage/i)).toBeVisible();
-    await expect(modal.getByText(/AI insights/i)).toBeVisible();
+    // Should mention cloud backup and AI
+    await expect(modal.getByText(/cloud backup/i).first()).toBeVisible();
+    await expect(modal.getByText(/AI insights/i).first()).toBeVisible();
   });
 });
 
@@ -298,14 +298,14 @@ test.describe('Conversion Funnel — Pricing Page', () => {
     await page.goto('/pricing');
 
     await expect(page.getByText('$0')).toBeVisible();
-    await expect(page.getByText('Full analysis, free forever')).toBeVisible();
+    await expect(page.getByText(/Full analysis.*free forever/)).toBeVisible();
   });
 
   // ── Community features include cloud storage ──────────────
   test('community tier lists cloud storage and AI insights', async ({ page }) => {
     await page.goto('/pricing');
 
-    await expect(page.getByText('Unlimited cloud storage for your EDF files')).toBeVisible();
+    await expect(page.getByText(/cloud backup/i).first()).toBeVisible();
     await expect(page.getByText('3-6 AI insights per month').first()).toBeVisible();
   });
 

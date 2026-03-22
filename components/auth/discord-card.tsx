@@ -87,7 +87,7 @@ export function DiscordCard() {
           </div>
           <p className="text-xs text-muted-foreground">
             You have access to the AirwayLab Discord
-            {tier === 'champion' ? ', including exclusive Champion channels' : ''}.
+            {tier === 'champion' ? ', including the feature request channel' : ''}.
           </p>
           <div className="flex gap-2">
             {DISCORD_INVITE_URL && (

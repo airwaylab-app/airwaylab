@@ -77,7 +77,7 @@ export function PostAnalysisUpgrade({ isComplete }: Props) {
             </div>
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <Cloud className="h-3 w-3 shrink-0 text-primary/50" />
-              <span>Cloud sync across devices</span>
+              <span>90-day analysis history</span>
             </div>
           </div>
           <div className="mt-3 flex items-center gap-3">

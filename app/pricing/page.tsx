@@ -23,7 +23,7 @@ const COMMUNITY_FEATURES = [
   'All 4 analysis engines (Glasgow, WAT, NED, Oximetry)',
   'Up to 3 nights per analysis',
   '3-6 AI insights per month',
-  'Unlimited cloud storage for your EDF files',
+  'Free cloud backup -- never lose your SD card data',
   'CSV & JSON export',
   'Forum-formatted summaries',
 ];
@@ -31,23 +31,24 @@ const COMMUNITY_FEATURES = [
 const SUPPORTER_FEATURES = [
   'Everything in Community, plus:',
   '6-10 deep AI insights per analysis (unlimited)',
+  '90-day analysis history with AI re-analysis',
   'Cloud sync across devices',
   '90-day analysis history',
   'PDF clinician reports',
   'Enhanced export with annotations',
   'Detailed metric explanations',
   'Supporter badge on forum posts',
-  'AirwayLab Discord community access',
+  'AirwayLab Discord community',
 ];
 
 const CHAMPION_FEATURES = [
   'Everything in Supporter, plus:',
-  'Lifetime analysis history',
-  'Exclusive Discord channels + developer access',
+  'Lifetime analysis history -- never lose a night',
+  'Direct feature request channel on Discord',
   'Early access to new features',
   'Champion badge on forum posts',
   'Name on supporters page',
-  'Priority feature requests',
+  'Vote on the development roadmap',
 ];
 
 const FAQ_ITEMS = [
@@ -57,7 +58,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens to my data?',
-    a: 'Your sleep data is analysed entirely in your browser — no account required. Registered users get unlimited cloud storage and AI insights. Your data can be deleted anytime from Account Settings.',
+    a: 'Your sleep data is analysed entirely in your browser — no account required. Create a free account to get automatic cloud backup of your SD card files, so you never lose your data even if your card fails. Your data can be deleted anytime from Account Settings.',
   },
   {
     q: 'Can I cancel anytime?',
@@ -196,7 +197,7 @@ export default function PricingPage() {
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Community</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Full analysis, free forever
+                Full analysis + cloud backup, free forever
               </p>
             </div>
             <div className="mb-6">
@@ -236,7 +237,7 @@ export default function PricingPage() {
                 <h2 className="text-lg font-semibold">Supporter</h2>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Unlimited AI + cloud sync
+                Unlimited AI insights + 90-day history
               </p>
             </div>
             <div className="mb-6">
@@ -301,7 +302,7 @@ export default function PricingPage() {
                 <h2 className="text-lg font-semibold">Champion</h2>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Maximum impact + early access
+                Lifetime history + shape the roadmap
               </p>
             </div>
             <div className="mb-6">

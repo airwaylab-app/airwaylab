@@ -124,7 +124,8 @@ export function AuthModal({ open, onClose }: Props) {
             <div className="mb-5 flex flex-col gap-1">
               <h2 className="text-lg font-semibold">Sign in to AirwayLab</h2>
               <p className="text-sm text-muted-foreground">
-                Enter your email and we&apos;ll send you a magic link — no password needed.
+                Free cloud backup for your SD card data, AI insights, and more.
+                Enter your email — no password needed.
               </p>
             </div>
 
@@ -193,7 +194,7 @@ export function AuthModal({ open, onClose }: Props) {
             <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2.5">
               <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
               <p className="text-[11px] leading-snug text-muted-foreground/80">
-                Your analysis runs in your browser. Registered accounts get cloud storage and AI insights. All data can be deleted anytime from Account Settings.
+                Your analysis runs locally in your browser. A free account adds cloud backup — your SD card data is encrypted and stored on EU servers, accessible only by you. Delete anytime from Account Settings.
               </p>
             </div>
           </>
