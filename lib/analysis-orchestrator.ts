@@ -68,7 +68,9 @@ class AnalysisOrchestrator {
    */
   async analyze(
     sdFiles: FileList | File[],
-    oximetryFiles?: FileList | File[]
+    oximetryFiles?: FileList | File[],
+    deviceType?: string,
+    bmcSerial?: string
   ): Promise<NightResult[]> {
     this.terminate();
     const sdArr = Array.from(sdFiles);
@@ -219,7 +221,7 @@ class AnalysisOrchestrator {
       const newNights = await this.runWorker(files, oximetryCSVs, (night) => {
         this.incrementalNights.push(night);
         this.debouncedPersist();
-      });
+      }, deviceType, bmcSerial);
 
       // ── Clean up incremental state ──
       this.clearIncrementalState();
@@ -273,7 +275,9 @@ class AnalysisOrchestrator {
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
     oximetryCSVs?: string[],
-    onNightComplete?: (night: NightResult) => void
+    onNightComplete?: (night: NightResult) => void,
+    deviceType?: string,
+    bmcSerial?: string
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
       // Progress-aware timeout: resets on any worker message.
@@ -379,7 +383,7 @@ class AnalysisOrchestrator {
       // Transfer ArrayBuffers for zero-copy
       const transferable = files.map((f) => f.buffer);
       this.worker.postMessage(
-        { type: 'ANALYZE', files, oximetryCSVs },
+        { type: 'ANALYZE', files, oximetryCSVs, deviceType, bmcSerial },
         transferable
       );
     });
