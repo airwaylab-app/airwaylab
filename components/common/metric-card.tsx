@@ -16,6 +16,8 @@ interface MetricCardProps {
   tooltip?: string;
   methodology?: string;
   onClick?: () => void;
+  /** Short context hint shown below value for amber/red metrics */
+  contextHint?: string;
 }
 
 function formatValue(value: number, format?: string): string {
@@ -117,6 +119,7 @@ export const MetricCard = memo(function MetricCard({
   tooltip,
   methodology,
   onClick,
+  contextHint,
 }: MetricCardProps) {
   const light = threshold ? getTrafficLight(value, threshold) : null;
   const dotColor = light ? getTrafficDotColor(light) : '';
@@ -177,6 +180,9 @@ export const MetricCard = memo(function MetricCard({
           </span>
         )}
       </div>
+      {contextHint && light && light !== 'good' && (
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{contextHint}</p>
+      )}
     </div>
   );
 });
