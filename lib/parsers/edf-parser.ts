@@ -118,9 +118,6 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
 
   const flowSignal = signals[flowIdx]!;
   const samplingRate = flowSignal.numSamples / header.recordDuration;
-  const totalFlowSamples = header.numDataRecords * flowSignal.numSamples;
-  const totalPressureSamples =
-    pressIdx >= 0 ? header.numDataRecords * signals[pressIdx]!.numSamples : 0;
 
   // --- Validate buffer size ---
   const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);
