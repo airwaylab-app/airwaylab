@@ -53,6 +53,27 @@ function DiscordStatusBanner() {
   return <p className={`text-sm ${color}`}>{text}</p>;
 }
 
+/**
+ * Auto-initiate Discord OAuth when arriving from email CTA (?connect=discord).
+ * Only triggers for paid users who haven't connected Discord yet.
+ */
+function DiscordAutoConnect() {
+  const searchParams = useSearchParams();
+  const { profile, isPaid } = useAuth();
+  const connectParam = searchParams.get('connect');
+
+  useEffect(() => {
+    if (connectParam !== 'discord') return;
+    if (!isPaid) return;
+    if (profile?.discord_id) return; // Already connected
+
+    // Auto-redirect to Discord OAuth
+    window.location.href = '/api/auth/discord';
+  }, [connectParam, isPaid, profile?.discord_id]);
+
+  return null;
+}
+
 export default function AccountPage() {
   const { user, profile, tier, isPaid } = useAuth();
 
@@ -127,9 +148,10 @@ export default function AccountPage() {
     <main className="container mx-auto max-w-2xl px-4 py-16 space-y-6">
       <h1 className="text-2xl font-bold">Account Settings</h1>
 
-      {/* Discord OAuth callback status */}
+      {/* Discord OAuth callback status + auto-connect from email */}
       <Suspense>
         <DiscordStatusBanner />
+        <DiscordAutoConnect />
       </Suspense>
 
       {/* Profile */}
