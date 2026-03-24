@@ -66,11 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (profileError) {
-      console.error('[auth-context] Failed to fetch profile:', profileError.message);
-      Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
-        level: 'warning',
-        tags: { context: 'auth-profile-fetch' },
-      });
+      // "Lock was stolen" is transient Supabase SSR lock contention -- suppress
+      const isLockError = profileError.message?.includes('Lock was stolen');
+      if (!isLockError) {
+        console.error('[auth-context] Failed to fetch profile:', profileError.message);
+        Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
+          level: 'warning',
+          tags: { context: 'auth-profile-fetch' },
+        });
+      }
       return;
     }
 
@@ -141,9 +145,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(async (result: { data: { session: Session | null } }) => {
-      let initialSession = result.data.session;
+    // Get initial session (with retry for Supabase lock contention)
+    async function initSession() {
+      let initialSession: Session | null = null;
+
+      try {
+        const result = await supabase.auth.getSession();
+        initialSession = result.data.session;
+      } catch (err) {
+        // "Lock was stolen by another request" is a transient Supabase SSR
+        // error from navigator.locks contention across tabs/concurrent requests.
+        // The token refresh still succeeds via the winning request -- retry once.
+        if (err instanceof Error && err.message.includes('Lock was stolen')) {
+          await new Promise((r) => setTimeout(r, 100));
+          const retry = await supabase.auth.getSession();
+          initialSession = retry.data.session;
+        } else {
+          throw err;
+        }
+      }
 
       // If we just came back from a magic link redirect (auth=success param),
       // but getSession() didn't find a session yet, retry with getUser()
@@ -185,7 +205,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setIsLoading(false);
       }
-    });
+    }
+
+    initSession();
 
     // Listen for auth changes
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
