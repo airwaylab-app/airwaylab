@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as Sentry from '@sentry/nextjs';
+import { Loader2 } from 'lucide-react';
 
 const DISCORD_INVITE_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL ?? '';
 
@@ -17,13 +18,66 @@ function DiscordIcon({ className }: { className?: string }) {
   );
 }
 
+type LinkStatus = 'idle' | 'loading' | 'connected' | 'not_found' | 'already_linked' | 'discord_error' | 'error';
+
 export function DiscordCard() {
   const { profile, tier, isPaid, refreshProfile } = useAuth();
+  const [username, setUsername] = useState(profile?.discord_username ?? '');
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
   const [unlinkLoading, setUnlinkLoading] = useState(false);
   const [unlinkError, setUnlinkError] = useState(false);
 
   const isConnected = !!profile?.discord_id;
   const isFreeUser = !isPaid;
+
+  async function handleLink() {
+    const trimmed = username.trim();
+    if (!trimmed) return;
+
+    setLinkStatus('loading');
+    setStatusMessage('');
+    try {
+      const res = await fetch('/api/auth/discord/link-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username: trimmed }),
+      });
+
+      const data = await res.json() as {
+        status?: string;
+        message?: string;
+        error?: string;
+        discord_username?: string;
+      };
+
+      if (!res.ok) {
+        setLinkStatus('error');
+        setStatusMessage(data.error ?? 'Something went wrong. Please try again.');
+        return;
+      }
+
+      if (data.status === 'connected') {
+        setLinkStatus('connected');
+        setStatusMessage('');
+        await refreshProfile();
+      } else if (data.status === 'not_found') {
+        setLinkStatus('not_found');
+        setStatusMessage(data.message ?? 'Username not found in the Discord server.');
+      } else if (data.status === 'already_linked') {
+        setLinkStatus('already_linked');
+        setStatusMessage(data.message ?? 'This Discord account is already linked to another user.');
+      } else if (data.status === 'discord_error') {
+        setLinkStatus('discord_error');
+        setStatusMessage(data.message ?? 'Could not reach Discord. Please try again in a few minutes.');
+      }
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'discord-link-username' } });
+      setLinkStatus('error');
+      setStatusMessage('Could not connect to Discord. Please try again.');
+    }
+  }
 
   async function handleUnlink() {
     setUnlinkLoading(true);
@@ -34,6 +88,9 @@ export function DiscordCard() {
         credentials: 'same-origin',
       });
       if (!res.ok) throw new Error(`Unlink failed (${res.status})`);
+      setUsername('');
+      setLinkStatus('idle');
+      setStatusMessage('');
       await refreshProfile();
     } catch (err) {
       Sentry.captureException(err, { tags: { action: 'discord-unlink' } });
@@ -43,7 +100,7 @@ export function DiscordCard() {
     }
   }
 
-  // State 1: Free user — faded card with upgrade nudge
+  // State 1: Free user -- faded card with upgrade nudge
   if (isFreeUser) {
     return (
       <Card className="opacity-60 border-border">
@@ -70,7 +127,7 @@ export function DiscordCard() {
     );
   }
 
-  // State 3: Connected — show username + disconnect
+  // State 3: Connected -- show username + disconnect
   if (isConnected) {
     return (
       <Card className="border-emerald-500/30">
@@ -115,7 +172,7 @@ export function DiscordCard() {
     );
   }
 
-  // State 2: Paid user, not connected — active card with connect button
+  // State 2: Paid user, not connected -- username entry form
   return (
     <Card className="border-[hsl(var(--brand))]/30">
       <CardHeader>
@@ -124,16 +181,92 @@ export function DiscordCard() {
           Community
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Join the AirwayLab Discord. Share insights, get help, and connect with the AirwayLab community.
         </p>
-        <a href="/api/auth/discord">
-          <Button size="sm" className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white">
-            <DiscordIcon className="h-4 w-4 mr-2" />
-            Connect Discord
-          </Button>
-        </a>
+
+        {/* Step 1: Join the server */}
+        {DISCORD_INVITE_URL && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Step 1: Join the server</p>
+            <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white">
+                <DiscordIcon className="h-4 w-4 mr-2" />
+                Join Discord Server
+              </Button>
+            </a>
+          </div>
+        )}
+
+        {/* Step 2: Enter username */}
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">
+            {DISCORD_INVITE_URL ? 'Step 2: Enter your Discord username' : 'Enter your Discord username'}
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                // Reset status when user edits
+                if (linkStatus !== 'idle' && linkStatus !== 'loading') {
+                  setLinkStatus('idle');
+                  setStatusMessage('');
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && username.trim() && linkStatus !== 'loading') {
+                  handleLink();
+                }
+              }}
+              placeholder="your_username"
+              className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={linkStatus === 'loading'}
+              aria-label="Discord username"
+            />
+            <Button
+              size="sm"
+              onClick={handleLink}
+              disabled={!username.trim() || linkStatus === 'loading'}
+              className="shrink-0"
+            >
+              {linkStatus === 'loading' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Connect'
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Your Discord username (not your display name). Find it in Discord under Settings &gt; My Account.
+          </p>
+        </div>
+
+        {/* Status messages */}
+        {linkStatus === 'not_found' && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+            <p className="text-sm text-amber-400">{statusMessage}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your username has been saved. Once you join the server, come back and click Connect again.
+            </p>
+          </div>
+        )}
+
+        {linkStatus === 'discord_error' && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+            <p className="text-sm text-amber-400">{statusMessage}</p>
+          </div>
+        )}
+
+        {linkStatus === 'already_linked' && (
+          <p className="text-sm text-red-400">{statusMessage}</p>
+        )}
+
+        {linkStatus === 'error' && (
+          <p className="text-sm text-red-400">{statusMessage}</p>
+        )}
       </CardContent>
     </Card>
   );
