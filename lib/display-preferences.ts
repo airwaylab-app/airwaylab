@@ -3,29 +3,34 @@ import { safeGetItem, safeSetItem, safeRemoveItem } from './safe-local-storage';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY';
 export type TimeFormat = '24h' | '12h';
 export type NumberFormat = 'comma' | 'dot';
+export type Theme = 'dark' | 'light';
 
 export interface DisplayPreferences {
   dateFormat: DateFormat;
   timeFormat: TimeFormat;
   numberFormat: NumberFormat;
+  theme: Theme;
 }
 
 const KEYS = {
   dateFormat: 'airwaylab_date_format',
   timeFormat: 'airwaylab_time_format',
   numberFormat: 'airwaylab_number_format',
+  theme: 'airwaylab_theme',
 } as const;
 
 export const DEFAULTS: DisplayPreferences = {
   dateFormat: 'DD/MM/YYYY',
   timeFormat: '24h',
   numberFormat: 'comma',
+  theme: 'dark',
 };
 
 export function loadDisplayPreferences(): DisplayPreferences {
   const dateRaw = safeGetItem(KEYS.dateFormat);
   const timeRaw = safeGetItem(KEYS.timeFormat);
   const numberRaw = safeGetItem(KEYS.numberFormat);
+  const themeRaw = safeGetItem(KEYS.theme);
 
   return {
     dateFormat:
@@ -40,6 +45,10 @@ export function loadDisplayPreferences(): DisplayPreferences {
       numberRaw === 'comma' || numberRaw === 'dot'
         ? numberRaw
         : DEFAULTS.numberFormat,
+    theme:
+      themeRaw === 'dark' || themeRaw === 'light'
+        ? themeRaw
+        : DEFAULTS.theme,
   };
 }
 
@@ -55,8 +64,22 @@ export function saveNumberFormat(value: NumberFormat): void {
   safeSetItem(KEYS.numberFormat, value);
 }
 
+export function saveTheme(value: Theme): void {
+  safeSetItem(KEYS.theme, value);
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute(
+      'data-theme',
+      value === 'light' ? 'light' : ''
+    );
+  }
+}
+
 export function clearDisplayPreferences(): void {
   safeRemoveItem(KEYS.dateFormat);
   safeRemoveItem(KEYS.timeFormat);
   safeRemoveItem(KEYS.numberFormat);
+  safeRemoveItem(KEYS.theme);
+  if (typeof document !== 'undefined') {
+    document.documentElement.removeAttribute('data-theme');
+  }
 }
