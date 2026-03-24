@@ -157,6 +157,17 @@ async function processFiles(
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
       parsedEdfs.push(edf);
+      // Report truncated files as warnings (file was partially parsed, not an error)
+      if (edf.truncated) {
+        const filename = brp.path.split('/').pop() || brp.path;
+        const truncWarning: WorkerWarning = {
+          type: 'WARNING',
+          checkpoint: 'truncated_edf',
+          detail: `Truncated EDF file ${filename}: parsed ${edf.recordsParsed} of ${edf.recordsExpected} records`,
+          tags: { file: filename, records_parsed: String(edf.recordsParsed ?? 0), records_expected: String(edf.recordsExpected ?? 0) },
+        };
+        self.postMessage(truncWarning);
+      }
     } catch (err) {
       const filename = brp.path.split('/').pop() || brp.path;
       const detail = err instanceof Error ? err.message : String(err);

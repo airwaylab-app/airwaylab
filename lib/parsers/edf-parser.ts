@@ -124,16 +124,35 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
 
   // --- Validate buffer size ---
   const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);
-  const expectedBytes = header.headerBytes + header.numDataRecords * samplesPerRecord * 2;
+  const bytesPerRecord = samplesPerRecord * 2;
+  const expectedBytes = header.headerBytes + header.numDataRecords * bytesPerRecord;
+  let truncated = false;
+  let actualNumRecords = header.numDataRecords;
+
   if (buffer.byteLength < expectedBytes) {
-    throw new Error(
-      `Truncated EDF file: expected ${expectedBytes} bytes but got ${buffer.byteLength}`
-    );
+    // Calculate how many COMPLETE data records fit in the actual buffer
+    const availableDataBytes = buffer.byteLength - header.headerBytes;
+    const completeRecords = bytesPerRecord > 0
+      ? Math.floor(availableDataBytes / bytesPerRecord)
+      : 0;
+
+    if (completeRecords === 0) {
+      throw new Error(
+        `Truncated EDF file: expected ${expectedBytes} bytes but got ${buffer.byteLength} (zero complete data records)`
+      );
+    }
+
+    // Parse available complete records instead of throwing
+    truncated = true;
+    actualNumRecords = completeRecords;
   }
 
   // --- Read data records ---
-  const flowData = new Float32Array(totalFlowSamples);
-  const pressureData: Float32Array | null = pressIdx >= 0 ? new Float32Array(totalPressureSamples) : null;
+  const actualFlowSamples = actualNumRecords * flowSignal.numSamples;
+  const actualPressureSamples =
+    pressIdx >= 0 ? actualNumRecords * signals[pressIdx]!.numSamples : 0;
+  const flowData = new Float32Array(actualFlowSamples);
+  const pressureData: Float32Array | null = pressIdx >= 0 ? new Float32Array(actualPressureSamples) : null;
 
   let dataOffset = header.headerBytes;
   let flowWriteIdx = 0;
@@ -157,7 +176,7 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     pressDigMin = ps.digitalMin;
   }
 
-  for (let rec = 0; rec < header.numDataRecords; rec++) {
+  for (let rec = 0; rec < actualNumRecords; rec++) {
     let recordPtr = dataOffset;
 
     for (let sig = 0; sig < n; sig++) {
@@ -193,14 +212,14 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   const isPerMinute = flowUnit.includes('/min') || flowUnit.includes('/m');
 
   if (isPerSecond || (!isPerMinute && Math.abs(flowSignal.physicalMax) < 10)) {
-    for (let i = 0; i < totalFlowSamples; i++) {
+    for (let i = 0; i < actualFlowSamples; i++) {
       flowData[i] = flowData[i]! * 60;
     }
   }
 
-  const durationSeconds = header.numDataRecords * header.recordDuration;
+  const durationSeconds = actualNumRecords * header.recordDuration;
 
-  return {
+  const result: EDFFile = {
     header,
     signals,
     recordingDate,
@@ -210,6 +229,14 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     durationSeconds,
     filePath,
   };
+
+  if (truncated) {
+    result.truncated = true;
+    result.recordsParsed = actualNumRecords;
+    result.recordsExpected = header.numDataRecords;
+  }
+
+  return result;
 }
 
 /**
