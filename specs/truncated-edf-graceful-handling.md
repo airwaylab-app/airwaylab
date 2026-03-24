@@ -10,50 +10,59 @@ Sentry shows ~20 "Truncated EDF file" errors from a single user uploading incomp
 
 ## Root cause
 
-The EDF parser (`lib/parsers/edf-parser.ts`) validates that the file contains the expected number of data records based on the header. When the file is shorter than expected, it throws. This is correct behavior -- the data genuinely is incomplete. But the error handling doesn't distinguish between "file is corrupt" and "file is truncated but partially usable."
+The EDF parser (`lib/parsers/edf-parser.ts`, lines 125-132) validates that the file buffer matches the expected byte count from the header. When the file is shorter, it throws `"Truncated EDF file: expected {N} bytes but got {M}"`. This is all-or-nothing -- the file is entirely skipped.
+
+**Current pipeline behavior (from codebase exploration):**
+- The analysis worker (`workers/analysis-worker.ts`, lines 157-170) catches per-file parse errors and posts a `WorkerWarning` message with `checkpoint: 'parse_file_failed'`
+- **The worker already gracefully skips failed files and continues with others** -- partial analysis works
+- The orchestrator (`lib/analysis-orchestrator.ts`, lines 331-336) receives `WorkerWarning` and sends to Sentry but **never surfaces it to the UI**
+- If ALL files fail, the worker throws and the error UI shows
+
+So the pipeline already handles the "skip and continue" part. The gaps are:
+1. The parser throws on truncated files instead of parsing available records
+2. The UI never tells the user which files were skipped or why
 
 ## Solution
 
-1. Detect truncated files (header says N records, file has fewer)
-2. Parse what's available instead of throwing
-3. Mark the result as truncated so the UI can warn the user
-4. Improve the error message for genuinely corrupt files (bad header)
+1. In the EDF parser: parse available complete records from truncated files instead of throwing
+2. Surface file warnings to the UI (the worker already posts `WorkerWarning` messages -- the UI just ignores them)
+3. Downgrade Sentry level
 
 ## Implementation Steps
 
-### Step 1: Detect and handle truncation in EDF parser
+### Step 1: Parse available records from truncated EDF files
 
-**File:** `lib/parsers/edf-parser.ts` (protected module -- logic change, needs discussion)
+**File:** `lib/parsers/edf-parser.ts` (protected module, lines 125-132)
 
-When the file is shorter than the header-declared record count:
-- Calculate how many complete records ARE available
-- Parse those records normally
-- Return a `truncated: true` flag and `recordsParsed` / `recordsExpected` counts
-- Only throw for files with an invalid/unreadable header (genuinely corrupt)
+Replace the truncation throw with partial parsing:
+- Calculate bytes per record from header (`numSignals * samplesPerRecord * 2`)
+- Calculate how many **complete** records fit in the actual buffer
+- If at least 1 complete record exists: parse those, set `truncated: true` on the result
+- If zero complete records: throw as before (genuinely unusable)
+- Add `truncated` and `recordsParsed`/`recordsExpected` to the return type
 
-**Note:** This touches a protected module. The change is isolated to error handling, not analysis logic. The parsed flow data from complete records is identical whether the file was truncated or not.
+**Note:** This touches a protected module. The change only affects the buffer length check (error handling), not how records are parsed. Complete records from a truncated file contain identical flow data.
 
-### Step 2: Propagate truncation info through the pipeline
+### Step 2: Surface file warnings in the UI
 
-**File:** `workers/analysis-worker.ts`
+**File:** `lib/analysis-orchestrator.ts` (lines 331-336)
 
-When the worker encounters a truncated EDF file:
-- Include it in analysis (partial data is better than no data)
-- Add a warning to the worker's progress messages
-- Track which files were truncated
+The orchestrator already receives `WorkerWarning` messages but only sends them to Sentry. Add:
+- Accumulate warnings in an array on the orchestrator result
+- Pass warnings through to the analysis page component
 
-### Step 3: Show truncation warning in UI
+**File:** `app/analyze/page.tsx` (or relevant results component)
 
-**File:** `components/upload/` (upload results area)
+After analysis completes, if warnings exist:
+- Show a yellow info banner: "X file(s) had incomplete data and were partially analyzed. For complete results, re-copy the SD card."
+- Collapsible list of affected filenames + reason
+- Do not block results
 
-After analysis completes, if any files were truncated:
-- Show a yellow warning banner: "X file(s) were partially uploaded from your SD card. Analysis used available data. For complete results, re-copy the SD card ensuring the copy finishes fully."
-- List the truncated filenames
-- Don't block the results -- show them with the warning
+### Step 3: Downgrade Sentry level
 
-### Step 4: Downgrade Sentry level
+**File:** `lib/analysis-orchestrator.ts`
 
-Truncated files are a user-side data issue, not a bug. Change from `error` to `info` level with a `truncated_edf` tag for monitoring volume.
+Change `WorkerWarning` Sentry capture from implicit `error` to `info` level. Add `truncated_edf` tag. Truncated files are user-side data issues (incomplete SD card copy), not bugs.
 
 ### Step 5: Tests
 
