@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NightResult } from '@/lib/types';
 import { sanitizeNumber } from '@/lib/chart-downsample';
+import { findSettingsChangeBoundaries } from '@/lib/comparison-guard';
 
 interface Props {
   nights: NightResult[];
@@ -57,6 +58,15 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
   }, [data]);
 
   const therapyChangeDateShort = therapyChangeDate?.slice(5);
+
+  // Detect settings change boundaries for reference lines
+  const settingsChanges = useMemo(() => {
+    const reversed = [...nights].reverse();
+    return findSettingsChangeBoundaries(reversed).map((b) => ({
+      dateShort: reversed[b.index]?.dateStr.slice(5) ?? '',
+      label: b.label,
+    }));
+  }, [nights]);
 
   const toggleMetric = useCallback((key: MetricKey) => {
     setVisible((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -146,6 +156,22 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
                   }}
                 />
               )}
+              {/* Settings change boundary markers */}
+              {settingsChanges.map((sc, idx) => (
+                <ReferenceLine
+                  key={`sc-${idx}`}
+                  x={sc.dateShort}
+                  stroke="hsl(280 60% 55%)"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: sc.label,
+                    fill: 'hsl(280 60% 65%)',
+                    fontSize: 9,
+                    position: 'insideTopRight',
+                  }}
+                />
+              ))}
               {/* Threshold reference lines for visible metrics */}
               {METRICS.filter((m) => visible[m.key]).map((m) => (
                 <ReferenceLine
