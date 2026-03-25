@@ -308,13 +308,13 @@ function AnalyzePageInner() {
   }, []);
 
   const handleFiles = useCallback(
-    (sdFiles: File[], oxFiles: File[]) => {
+    (sdFiles: File[], oxFiles: File[], deviceType?: string, bmcSerial?: string) => {
       setIsDemo(false);
       sdFilesRef.current = sdFiles;
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial);
     },
     [lifetimeNights]
   );

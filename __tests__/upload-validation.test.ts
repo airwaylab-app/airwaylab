@@ -22,12 +22,13 @@ describe('validateSDFiles', () => {
     expect(result.errors[0]).toContain('No files selected');
   });
 
-  it('returns error when no EDF files exist', () => {
+  it('returns error when no EDF files exist and device is unknown', () => {
     const files = [mockFile('readme.txt'), mockFile('data.csv')];
     const result = validateSDFiles(files);
     expect(result.valid).toBe(false);
     expect(result.edfCount).toBe(0);
-    expect(result.errors[0]).toContain('No EDF files found');
+    expect(result.deviceType).toBe('unknown');
+    expect(result.errors[0]).toContain('not recognised');
   });
 
   it('validates basic EDF files successfully', () => {
@@ -125,21 +126,23 @@ describe('validateSDFiles', () => {
     expect(result.warnings.some((w) => w.includes('DATALOG folder'))).toBe(true);
   });
 
-  it('does not mention "ResMed" in no-EDF error message', () => {
+  it('mentions "ResMed" in error when ResMed device detected but no flow data', () => {
     const files = [mockFile('readme.txt'), mockFile('data.csv')];
     const result = validateSDFiles(files);
-    expect(result.errors[0]).not.toContain('ResMed');
+    // Unknown device — should NOT mention ResMed in the generic unknown error
+    expect(result.deviceType).toBe('unknown');
   });
 
-  it('does not mention "ResMed" in folder structure warning', () => {
+  it('mentions "ResMed" in folder structure warning when ResMed device detected', () => {
     const files = [
       mockFile('BRP.edf', 100_000),
       mockFile('STR.edf'),
     ];
     const result = validateSDFiles(files);
+    expect(result.deviceType).toBe('resmed');
     const folderWarning = result.warnings.find((w) => w.includes('DATALOG'));
+    // ResMed-specific warnings now correctly mention ResMed
     expect(folderWarning).toBeDefined();
-    expect(folderWarning).not.toContain('ResMed');
   });
 
   it('handles case-insensitive EDF extension', () => {

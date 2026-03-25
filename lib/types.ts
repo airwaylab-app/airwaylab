@@ -2,6 +2,82 @@
 // AirwayLab — Core Type Definitions
 // ============================================================
 
+// ============================================================
+// Multi-device support types
+// ============================================================
+
+export type DeviceType = 'resmed' | 'bmc' | 'unknown';
+
+/**
+ * Unified session representation produced by device-specific parsers.
+ * Analysis engines consume this — they never see device-specific formats.
+ */
+export interface ParsedSession {
+  deviceType: DeviceType;
+  deviceModel: string;
+  filePath: string;
+  flowData: Float32Array;
+  pressureData: Float32Array | null;
+  samplingRate: number;
+  durationSeconds: number;
+  recordingDate: Date;
+  machineEvents?: ParsedMachineEvent[];
+  deviceMeta?: Record<string, unknown>;
+}
+
+export interface ParsedMachineEvent {
+  type: 'OSA' | 'CSA' | 'HYP' | 'RERA' | 'FL';
+  onsetSec: number;
+  durationSec: number;
+}
+
+// BMC-specific types (Luna 2 / RESmart G2/G3)
+
+export type BMCTherapyMode = 'CPAP' | 'AutoCPAP' | 'S' | 'S/T' | 'T' | 'Titration' | 'AutoS';
+
+export interface BMCIdxRecord {
+  sequence: number;
+  date: string;
+  startFileExt: number;
+  startPacketOffset: number;
+  endFileExt: number;
+  endPacketOffset: number;
+  mode: BMCTherapyMode;
+  initialPressure: number;
+  treatPressure: number;
+  maxPressure: number;
+  rampTime: number | null;
+  humidifier: number | null;
+  maskType: string;
+  reslexLevel: number;
+}
+
+export interface BMCEvtRecord {
+  session: number;
+  eventType: number;
+  timestampSecs: number;
+  durationSecs: number;
+  value: number;
+}
+
+export interface BMCDeviceInfo {
+  serial: string;
+  model: string;
+  firmware: string;
+}
+
+export interface BMCSessionSummary {
+  date: string;
+  durationMinutes: number;
+  osaCount: number;
+  csaCount: number;
+  hypCount: number;
+}
+
+// ============================================================
+// EDF types (ResMed)
+// ============================================================
+
 export interface EDFHeader {
   version: string;
   patientId: string;
@@ -75,6 +151,15 @@ export interface MachineSettings {
   extendedSettings?: Record<string, number>;
   /** Whether settings were actually extracted from STR.edf or are fallback defaults. */
   settingsSource: 'extracted' | 'unavailable';
+  // BMC-specific settings (optional, only populated for BMC devices)
+  /** BMC Reslex (EPR equivalent) level: 0=Off, 1-3 */
+  reslexLevel?: number;
+  /** BMC auto-titration sensitivity (AutoCPAP mode) */
+  autoSensitivity?: number;
+  /** BMC tube type */
+  tubeType?: string;
+  /** BMC heated tube level */
+  heatedTubeLevel?: number | null;
 }
 
 export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';
@@ -327,6 +412,8 @@ export interface WorkerAnalyzeMessage {
   type: 'ANALYZE';
   files: { buffer: ArrayBuffer; path: string }[];
   oximetryCSVs?: string[];
+  deviceType?: DeviceType;
+  bmcSerial?: string;
 }
 
 export interface WorkerOximetryOnlyMessage {

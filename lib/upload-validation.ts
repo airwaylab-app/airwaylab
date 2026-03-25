@@ -3,47 +3,69 @@
 // Quick checks before sending files to the analysis worker.
 // ============================================================
 
+import type { DeviceType } from './types';
+import { detectDeviceType, type DeviceDetectionResult } from './parsers/device-detector';
+
 export interface ValidationResult {
   valid: boolean;
   edfCount: number;
   warnings: string[];
   errors: string[];
+  deviceType: DeviceType;
+  deviceLabel: string;
+  /** BMC serial prefix (only set when deviceType === 'bmc') */
+  bmcSerial?: string;
 }
 
 /**
  * Validate selected SD card files before analysis.
- * Checks for presence of EDF files, expected folder structure,
- * and common mistakes (wrong folder, unsupported data).
+ * First detects device type, then applies device-specific validation.
  */
 export function validateSDFiles(files: File[]): ValidationResult {
   const warnings: string[] = [];
   const errors: string[] = [];
 
   if (files.length === 0) {
-    return { valid: false, edfCount: 0, warnings, errors: ['No files selected.'] };
+    return { valid: false, edfCount: 0, warnings, errors: ['No files selected.'], deviceType: 'unknown', deviceLabel: 'Unknown' };
   }
 
-  // Count EDF files
-  const edfFiles = files.filter(
-    (f) => f.name.toLowerCase().endsWith('.edf')
-  );
+  // Detect device type from file structure
+  const fileInfos = files.map((f) => ({
+    name: f.name,
+    path: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name,
+    size: f.size,
+  }));
+  const detection = detectDeviceType(fileInfos);
 
-  // Check for DATALOG folder structure
+  if (detection.deviceType === 'resmed') {
+    return validateResMedFiles(files, detection, warnings, errors);
+  }
+
+  if (detection.deviceType === 'bmc') {
+    return validateBMCFiles(files, detection, warnings, errors);
+  }
+
+  // Unknown device
+  errors.push(
+    'This SD card format is not recognised. AirwayLab currently supports ResMed (AirSense 10/11) and BMC (Luna 2, RESmart G2/G3) devices.'
+  );
+  return { valid: false, edfCount: 0, warnings, errors, deviceType: 'unknown', deviceLabel: detection.deviceLabel };
+}
+
+function validateResMedFiles(
+  files: File[],
+  detection: DeviceDetectionResult,
+  warnings: string[],
+  errors: string[]
+): ValidationResult {
+  const edfFiles = files.filter((f) => f.name.toLowerCase().endsWith('.edf'));
   const paths = files.map((f) => {
     const rel = (f as unknown as { webkitRelativePath?: string }).webkitRelativePath;
     return rel || f.name;
   });
+  const hasDatalog = paths.some((p) => p.toUpperCase().includes('DATALOG'));
+  const hasSTR = edfFiles.some((f) => f.name.toUpperCase().startsWith('STR'));
 
-  const hasDatalog = paths.some((p) =>
-    p.toUpperCase().includes('DATALOG')
-  );
-
-  const hasSTR = edfFiles.some(
-    (f) => f.name.toUpperCase().startsWith('STR')
-  );
-
-  // Look for flow data files using the same matching as the worker's filterBRPFiles:
-  // files ending with brp.edf / _brp.edf and larger than 50KB
   const MIN_FLOW_SIZE = 50 * 1024;
   const hasFlowData = edfFiles.some((f) => {
     const name = f.name.toLowerCase();
@@ -52,69 +74,85 @@ export function validateSDFiles(files: File[]): ValidationResult {
       f.size > MIN_FLOW_SIZE;
   });
 
-  // Check for common mistakes
   if (edfFiles.length === 0) {
-    errors.push(
-      'No EDF files found. Make sure you selected the root folder or DATALOG folder from your PAP machine\'s SD card.'
-    );
-    return { valid: false, edfCount: 0, warnings, errors };
+    errors.push('No EDF files found. Make sure you selected the root folder or DATALOG folder from your ResMed SD card.');
+    return { valid: false, edfCount: 0, warnings, errors, deviceType: 'resmed', deviceLabel: 'ResMed' };
   }
 
   if (!hasDatalog && edfFiles.length < 5) {
-    warnings.push(
-      'Folder structure doesn\'t match a recognised PAP SD card layout. Expected a DATALOG folder with dated subfolders.'
-    );
+    warnings.push('Folder structure doesn\'t match a recognised ResMed SD card layout. Expected a DATALOG folder with dated subfolders.');
   }
-
   if (!hasSTR) {
-    warnings.push(
-      'No STR.edf settings file found. Machine settings won\'t be available.'
-    );
+    warnings.push('No STR.edf settings file found. Machine settings won\'t be available.');
   }
 
   if (!hasFlowData) {
-    // Check if flow files exist but are too small (short sessions filtered out)
     const hasSmallFlowFiles = edfFiles.some((f) => {
       const name = f.name.toLowerCase();
       return (name.endsWith('brp.edf') || name.endsWith('_brp.edf') ||
               name.endsWith('flw.edf') || name.endsWith('_flw.edf')) &&
         f.size <= MIN_FLOW_SIZE;
     });
-
     if (hasSmallFlowFiles) {
-      errors.push(
-        'Flow data files were found but are too small to contain usable data (< 50KB). This usually means the recording sessions were very short. Try uploading more nights of data.'
-      );
+      errors.push('Flow data files were found but are too small to contain usable data (< 50KB). Try uploading more nights of data.');
     } else {
-      errors.push(
-        'No flow data files (BRP/FLW) found. Breath-by-breath analysis requires flow signal data from your PAP machine\'s SD card.'
-      );
+      errors.push('No flow data files (BRP/FLW) found. Breath-by-breath analysis requires flow signal data from your ResMed SD card.');
     }
   }
 
-  // Check for SA2 oximetry data (integrated/paired pulse oximeter)
   const hasSA2 = edfFiles.some((f) => /sa2\.edf$/i.test(f.name));
   if (hasSA2) {
-    warnings.push(
-      'Pulse oximetry data detected on your SD card (SpO2 + heart rate will be included in your analysis).'
-    );
+    warnings.push('Pulse oximetry data detected on your SD card (SpO2 + heart rate will be included in your analysis).');
   }
 
-  // Check for Identification file (device info — lives in parent folder)
-  const hasIdentification = files.some(
-    (f) => f.name.toUpperCase().startsWith('IDENTIFICATION')
-  );
+  const hasIdentification = files.some((f) => f.name.toUpperCase().startsWith('IDENTIFICATION'));
   if (!hasIdentification) {
-    warnings.push(
-      'No Identification file found. Select the SD card root folder (one level above DATALOG) so we can identify your device model.'
-    );
+    warnings.push('No Identification file found. Select the SD card root folder (one level above DATALOG) so we can identify your device model.');
   }
+
+  return { valid: errors.length === 0, edfCount: edfFiles.length, warnings, errors, deviceType: 'resmed', deviceLabel: 'ResMed' };
+}
+
+function validateBMCFiles(
+  files: File[],
+  detection: DeviceDetectionResult,
+  warnings: string[],
+  errors: string[]
+): ValidationResult {
+  const serial = detection.bmcSerial!;
+  const lowerSerial = serial.toLowerCase();
+
+  // Count data files
+  const dataFiles = files.filter((f) => {
+    const name = f.name.toLowerCase();
+    return name.startsWith(lowerSerial) && /\.\d{3}$/.test(name);
+  });
+
+  if (dataFiles.length === 0) {
+    errors.push(`BMC device detected (${serial}) but no waveform data files found.`);
+    return { valid: false, edfCount: 0, warnings, errors, deviceType: 'bmc', deviceLabel: 'BMC / Luna', bmcSerial: serial };
+  }
+
+  const hasIdx = files.some((f) => f.name.toLowerCase() === `${lowerSerial}.idx`);
+  const hasUsr = files.some((f) => f.name.toLowerCase() === `${lowerSerial}.usr`);
+
+  if (!hasIdx) {
+    warnings.push('No index file found. Session metadata will be limited.');
+  }
+  if (!hasUsr) {
+    warnings.push('No device info file found. Device model identification may be incomplete.');
+  }
+
+  warnings.push(`BMC device detected with ${dataFiles.length} data file${dataFiles.length !== 1 ? 's' : ''}.`);
 
   return {
     valid: errors.length === 0,
-    edfCount: edfFiles.length,
+    edfCount: dataFiles.length,
     warnings,
     errors,
+    deviceType: 'bmc',
+    deviceLabel: 'BMC / Luna',
+    bmcSerial: serial,
   };
 }
 
@@ -174,7 +212,7 @@ export function validateOximetryFiles(files: File[]): ValidationResult {
 
   if (csvFiles.length === 0) {
     errors.push('No CSV files found. Oximetry data should be in .csv format.');
-    return { valid: false, edfCount: 0, warnings, errors };
+    return { valid: false, edfCount: 0, warnings, errors, deviceType: 'unknown', deviceLabel: 'Oximetry' };
   }
 
   // Check for extremely large files (>50MB probably not oximetry)
@@ -190,5 +228,7 @@ export function validateOximetryFiles(files: File[]): ValidationResult {
     edfCount: csvFiles.length,
     warnings,
     errors,
+    deviceType: 'unknown',
+    deviceLabel: 'Oximetry',
   };
 }
