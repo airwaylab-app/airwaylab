@@ -51,6 +51,17 @@ export function exportForumSingleNight(n: NightResult, tier?: Tier): string {
     }
   }
   lines.push(`Duration: ${fmtHrs(n.durationHours)} (${n.sessionCount} session${n.sessionCount !== 1 ? 's' : ''})`);
+  if (n.settingsFingerprint) {
+    lines.push(`Settings hash: ${n.settingsFingerprint.hash}`);
+  }
+  if (n.machineSummary) {
+    const ms = n.machineSummary;
+    const parts: string[] = [];
+    if (ms.ahi != null) parts.push(`AHI ${fmt(ms.ahi)}`);
+    if (ms.leak95 != null) parts.push(`Leak P95 ${fmt(ms.leak95, 0)} L/min`);
+    if (ms.spontCycPct != null) parts.push(`Spont ${fmt(ms.spontCycPct, 0)}%`);
+    if (parts.length > 0) lines.push(`Machine stats: ${parts.join(' | ')}`);
+  }
   lines.push('');
 
   // IFL Symptom Risk
