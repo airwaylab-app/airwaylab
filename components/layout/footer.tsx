@@ -13,7 +13,7 @@ export function Footer() {
                 <Moon className="h-3.5 w-3.5 text-primary" />
               </div>
               <span className="text-sm font-bold tracking-tight">
-                <span className="text-white">Airway</span>
+                <span className="text-foreground">Airway</span>
                 <span className="font-normal text-brand-teal">Lab</span>
               </span>
             </div>

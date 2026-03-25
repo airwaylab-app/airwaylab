@@ -11,6 +11,11 @@
     {
       "path": "/api/cron/monitor",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/discord-sync",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
+

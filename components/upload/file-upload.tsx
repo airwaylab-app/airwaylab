@@ -5,11 +5,13 @@ import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle } from 'luci
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
+import { UnsupportedDeviceDialog } from './unsupported-device-dialog';
+import { getFileStructureMetadata } from '@/lib/parsers/device-detector';
 import { events } from '@/lib/analytics';
 import * as Sentry from '@sentry/nextjs';
 
 interface FileUploadProps {
-  onFilesSelected: (sdFiles: File[], oximetryFiles: File[]) => void;
+  onFilesSelected: (sdFiles: File[], oximetryFiles: File[], deviceType?: string, bmcSerial?: string) => void;
   disabled?: boolean;
 }
 
@@ -22,6 +24,12 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
   const [sdValidation, setSdValidation] = useState<ValidationResult | null>(null);
   const [oxValidation, setOxValidation] = useState<ValidationResult | null>(null);
   const [unsupportedFiles, setUnsupportedFiles] = useState<{ fileName: string; headerSample: string }[]>([]);
+  const [unsupportedDevice, setUnsupportedDevice] = useState<{
+    totalFiles: number;
+    extensions: Record<string, number>;
+    folderStructure: string[];
+    totalSizeBytes: number;
+  } | null>(null);
 
   const handleSDChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +40,18 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
         setSdFiles(files);
         if (result.valid) {
           events.uploadStart();
-          onFilesSelected(files, oxFiles);
+          onFilesSelected(files, oxFiles, result.deviceType, result.bmcSerial);
+        } else if (result.deviceType === 'unknown') {
+          const fileInfos = files.map((f) => ({
+            name: f.name,
+            path: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name,
+            size: f.size,
+          }));
+          setUnsupportedDevice(getFileStructureMetadata(fileInfos));
+          Sentry.captureMessage('Upload: unsupported device detected', {
+            level: 'info',
+            tags: { checkpoint: 'unsupported_device', file_count: files.length },
+          });
         } else if (result.edfCount === 0) {
           const extensions = Array.from(new Set(files.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
           Sentry.captureMessage('Upload: all files rejected by validation', {
@@ -83,7 +102,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           setSdValidation(result);
           setSdFiles(edfFiles);
           if (result.valid) {
-            onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : oxFiles);
+            onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : oxFiles, result.deviceType, result.bmcSerial);
           } else if (result.edfCount === 0) {
             const extensions = Array.from(new Set(edfFiles.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
             Sentry.captureMessage('Upload: all files rejected by validation', {
@@ -148,7 +167,9 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
             <p className="text-sm font-medium">
               {sdFiles.length > 0
                 ? sdValidation
-                  ? `${sdValidation.edfCount} EDF files found`
+                  ? sdValidation.deviceType === 'bmc'
+                    ? `BMC / Luna device detected (${sdValidation.edfCount} data files)`
+                    : `${sdValidation.edfCount} EDF files found`
                   : `${sdFiles.length} files selected`
                 : 'Upload SD Card'}
             </p>
@@ -193,7 +214,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
               ))}
               <div className="mt-2 space-y-0.5">
                 <p className="text-[10px] text-muted-foreground/70">
-                  Currently supports ResMed AirSense 10/11 and AirCurve 10.
+                  Supports ResMed AirSense 10/11, AirCurve 10, and BMC Luna 2 / RESmart G2.
                 </p>
                 <p className="text-[10px] text-muted-foreground/70">
                   Using another device? Upload your data and enable data sharing so we can analyse the structure and add support.
@@ -287,6 +308,13 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
         <UnsupportedFormatDialog
           files={unsupportedFiles}
           onClose={() => setUnsupportedFiles([])}
+        />
+      )}
+      {/* Unsupported Device Dialog */}
+      {unsupportedDevice && (
+        <UnsupportedDeviceDialog
+          fileStructure={unsupportedDevice}
+          onClose={() => setUnsupportedDevice(null)}
         />
       )}
     </div>

@@ -25,7 +25,7 @@ describe('generateInsights', () => {
       expect(['positive', 'warning', 'actionable', 'info']).toContain(insight.type);
       expect(insight.title.length).toBeGreaterThan(0);
       expect(insight.body.length).toBeGreaterThan(0);
-      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'settings']).toContain(insight.category);
+      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'settings', 'correlation', 'temporal']).toContain(insight.category);
     }
   });
 

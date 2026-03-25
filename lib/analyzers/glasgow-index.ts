@@ -3,7 +3,14 @@
 // Ported from DaveSkvn/GlasgowIndex FlowLimits.js (GPL-3.0)
 // ============================================================
 
-import type { GlasgowComponents, EDFFile } from '../types';
+import type { GlasgowComponents } from '../types';
+
+/** Minimal session interface — accepts both EDFFile and ParsedSession */
+interface FlowSession {
+  flowData: Float32Array;
+  samplingRate: number;
+  durationSeconds: number;
+}
 
 // --- Constants (from FlowLimits.js) ---
 const MIN_WINDOW = 25;
@@ -65,7 +72,7 @@ export function computeGlasgowIndex(flowData: Float32Array, _samplingRate: numbe
 /**
  * Compute weighted Glasgow Index for a multi-session night.
  */
-export function computeNightGlasgow(sessions: EDFFile[]): GlasgowComponents {
+export function computeNightGlasgow(sessions: FlowSession[]): GlasgowComponents {
   if (sessions.length === 0) return emptyComponents();
   if (sessions.length === 1) {
     return computeGlasgowIndex(sessions[0]!.flowData, sessions[0]!.samplingRate);
