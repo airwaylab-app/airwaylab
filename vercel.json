@@ -14,7 +14,8 @@
     },
     {
       "path": "/api/cron/discord-sync",
-      "schedule": "0 */6 * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }
+
