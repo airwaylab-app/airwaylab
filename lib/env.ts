@@ -83,6 +83,9 @@ export const serverEnv = {
 
   /** Discord webhook URL for #ops-alerts channel (optional) */
   DISCORD_OPS_WEBHOOK_URL: process.env.DISCORD_OPS_WEBHOOK_URL ?? undefined,
+
+  /** Sentry webhook secret for authenticating alert forwards to Discord */
+  SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET ?? undefined,
 } as const;
 
 /**
