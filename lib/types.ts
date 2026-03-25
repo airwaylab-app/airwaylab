@@ -37,6 +37,12 @@ export interface EDFFile {
   samplingRate: number;
   durationSeconds: number;
   filePath: string;
+  /** True when the file was shorter than expected and only partial records were parsed. */
+  truncated?: boolean;
+  /** Number of complete data records successfully parsed (set when truncated). */
+  recordsParsed?: number;
+  /** Number of data records expected per the EDF header (set when truncated). */
+  recordsExpected?: number;
 }
 
 export interface MachineSettings {
@@ -313,6 +319,8 @@ export interface AnalysisState {
   warning: string | null;
   /** Warning from persistence layer (e.g. oldest nights dropped due to storage cap) */
   persistenceWarning: string | null;
+  /** Accumulated non-fatal warnings from analysis (e.g. truncated EDF files) */
+  warnings: string[];
 }
 
 export interface WorkerAnalyzeMessage {

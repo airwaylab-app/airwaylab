@@ -34,6 +34,7 @@ const initialState: AnalysisState = {
   therapyChangeDate: null,
   warning: null,
   persistenceWarning: null,
+  warnings: [],
 };
 
 class AnalysisOrchestrator {
@@ -328,12 +329,22 @@ class AnalysisOrchestrator {
             this.terminate();
             resolve(msg.nights);
             break;
-          case 'WARNING':
+          case 'WARNING': {
+            const isTruncated = msg.detail.includes('Truncated');
             Sentry.captureMessage(msg.detail, {
-              level: 'warning',
-              tags: { checkpoint: msg.checkpoint, ...msg.tags },
+              level: isTruncated ? 'info' : 'warning',
+              tags: {
+                checkpoint: msg.checkpoint,
+                ...(isTruncated ? { truncated_edf: 'true' } : {}),
+                ...msg.tags,
+              },
+            });
+            // Accumulate warnings on state for UI display
+            this.setState({
+              warnings: [...this.state.warnings, msg.detail],
             });
             break;
+          }
           case 'SETTINGS_DIAGNOSTIC':
             this.settingsDiagnostic = msg;
             Sentry.captureMessage('settings_extraction_failed', {
