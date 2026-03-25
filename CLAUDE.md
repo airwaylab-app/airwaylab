@@ -151,7 +151,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 8. **Open-core model (GPL-3.0).** The Glasgow Index engine is ported from DaveSkvn/Glasgow-Index (GPL-3.0), which requires the entire project to be GPL-3.0. This aligns with the mission: open data, open code, verifiable trust.
 
-9. **Dark-only theme.** No light mode. Clinical aesthetic with HSL CSS variables defined in `globals.css` and referenced in `tailwind.config.ts`.
+9. **Dark-default theme with light option.** Dark is the default clinical aesthetic. A light theme is available via Settings > Display Preferences for accessibility. Both themes use HSL CSS variables defined in `globals.css` (`:root` for dark, `[data-theme="light"]` for light) and referenced in `tailwind.config.ts`. Preference persists in `airwaylab_theme` localStorage key.
 
 10. **Rule-based insights before AI.** The insight generator (`lib/insights.ts`) uses deterministic rules and clinical thresholds, not ML. AI insights (Claude Haiku) are an optional enhancement, not a replacement.
 
