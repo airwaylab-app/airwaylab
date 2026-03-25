@@ -37,7 +37,7 @@ function makeMinimalNight(dateStr: string) {
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
-    crossDevice: null,
+    crossDevice: null, machineSummary: null, settingsFingerprint: null,
     settings: { deviceModel: 'AirSense 10', papMode: 'APAP', epap: 6, ipap: 12 },
   };
 }

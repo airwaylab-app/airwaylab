@@ -396,6 +396,8 @@ async function processFiles(
       oximetryTrace,
       settingsMetrics: settingsMetricsResult,
       crossDevice,
+      machineSummary: null,
+      settingsFingerprint: null,
     });
 
     // Emit incremental result so the orchestrator can persist progress

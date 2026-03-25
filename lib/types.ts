@@ -65,6 +65,10 @@ export interface MachineSettings {
   maskType?: string | null;
   /** Smart start enabled (from S.SmartStart) */
   smartStart?: boolean | null;
+  /** Maximum inspiratory time in seconds (from S.TiMax) */
+  tiMax?: number | null;
+  /** Minimum inspiratory time in seconds (from S.TiMin) */
+  tiMin?: number | null;
   /** All additional S.* signals not captured in typed fields above. */
   extendedSettings?: Record<string, number>;
   /** Whether settings were actually extracted from STR.edf or are fallback defaults. */
@@ -288,6 +292,71 @@ export interface CrossDeviceResults {
   reason?: string;
 }
 
+export interface MachineSummaryStats {
+  // Event indices (Tier 1-asymmetric: high = guaranteed problem, low = not reassuring)
+  ahi: number | null;
+  hi: number | null;
+  oai: number | null;
+  cai: number | null;
+  uai: number | null;
+
+  // Leak statistics (data quality indicator)
+  leak50: number | null;
+  leak70: number | null;
+  leak95: number | null;
+  leakMax: number | null;
+
+  // Breathing stats (cross-validate with engine-computed values)
+  minVent50: number | null;
+  minVent95: number | null;
+  respRate50: number | null;
+  respRate95: number | null;
+  tidVol50: number | null;
+  tidVol95: number | null;
+  ti50: number | null;
+  ti95: number | null;
+  ieRatio50: number | null;
+  spontCycPct: number | null;
+
+  // Actual delivered pressure (may differ from settings in auto modes)
+  tgtIpap50: number | null;
+  tgtIpap95: number | null;
+  tgtEpap50: number | null;
+  tgtEpap95: number | null;
+  maskPress50: number | null;
+  maskPress95: number | null;
+
+  // Session metadata
+  durationMin: number | null;
+  maskOnMin: number | null;
+  maskOffMin: number | null;
+  maskEvents: number | null;
+
+  // Built-in SpO2 (if device has oximetry, e.g. ResMed with SA2)
+  spo2_50: number | null;
+  spo2_95: number | null;
+
+  // Faults
+  faultDevice: boolean;
+  faultAlarm: boolean;
+  faultHumidifier: boolean;
+  faultHeatedTube: boolean;
+  anyFault: boolean;
+
+  // Environmental (measured, not settings)
+  ambHumidity50: number | null;
+}
+
+export interface SettingsFingerprint {
+  epap: number;
+  ps: number;
+  cycle: string;
+  riseTime: number;
+  triggerSensitivity: string;
+  tiMax: number;
+  hash: string;
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -301,6 +370,8 @@ export interface NightResult {
   oximetryTrace: OximetryTraceData | null;
   settingsMetrics: SettingsMetrics | null;
   crossDevice: CrossDeviceResults | null;
+  machineSummary: MachineSummaryStats | null;
+  settingsFingerprint: SettingsFingerprint | null;
 }
 
 export interface AnalysisState {

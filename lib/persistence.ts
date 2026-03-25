@@ -222,6 +222,13 @@ export function loadPersistedResults(): {
       if (night.crossDevice === undefined) {
         night.crossDevice = null;
       }
+      // Migrate: machineSummary + settingsFingerprint added in comprehensive-settings-extraction
+      if ((night as Record<string, unknown>).machineSummary === undefined) {
+        night.machineSummary = null;
+      }
+      if ((night as Record<string, unknown>).settingsFingerprint === undefined) {
+        night.settingsFingerprint = null;
+      }
       // Migrate: hypopnea & amplitude stability fields added in v0.7.0
       if (night.ned && night.ned.briefObstructionIndex === undefined) {
         night.ned.hypopneaCount = 0;
