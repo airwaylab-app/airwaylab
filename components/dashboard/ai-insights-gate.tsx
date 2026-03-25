@@ -74,10 +74,15 @@ export function AIInsightsGate({
   const aiRemaining = user ? (isPaid ? Infinity : getAIRemaining(tier)) : 0;
   const isExhausted = !isPaid && aiRemaining <= 0 && !!user;
 
-  // Check localStorage results for returning user detection
-  const isReturning = typeof window !== 'undefined' && (() => {
-    try { return !!localStorage.getItem('airwaylab_results'); } catch { return false; }
-  })();
+  // Check localStorage results for returning user detection.
+  // Deferred to useEffect to avoid SSR/client hydration mismatch
+  // (localStorage is unavailable during server rendering).
+  const [isReturning, setIsReturning] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('airwaylab_results')) setIsReturning(true);
+    } catch { /* noop */ }
+  }, []);
 
   const handleGenerate = useCallback(() => {
     abortRef.current?.abort();

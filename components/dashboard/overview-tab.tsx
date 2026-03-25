@@ -59,9 +59,11 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const p = previousNight;
 
   const [symptomRating, setSymptomRating] = useState<number | null>(null);
-  const [isContributeConsented, setIsContributeConsented] = useState(() => getConsentState());
+  // Initialize to false to match SSR (localStorage is unavailable during
+  // server rendering). Actual consent state is loaded in the useEffect below.
+  const [isContributeConsented, setIsContributeConsented] = useState(false);
 
-  // Reload symptom rating when night changes
+  // Load symptom rating and consent state after mount (and when night changes)
   useEffect(() => {
     const notes = loadNightNotes(n.dateStr);
     setSymptomRating(notes.symptomRating);
