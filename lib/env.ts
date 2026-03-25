@@ -80,6 +80,9 @@ export const serverEnv = {
 
   /** Sentry auth token for stats API (optional) */
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN ?? undefined,
+
+  /** Discord webhook URL for #ops-alerts channel (optional) */
+  DISCORD_OPS_WEBHOOK_URL: process.env.DISCORD_OPS_WEBHOOK_URL ?? undefined,
 } as const;
 
 /**
