@@ -239,6 +239,20 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
     });
   }
 
+  // Strong event control with residual flow limitation
+  if (
+    n.ned.reraIndex < 5 &&
+    (n.wat.flScore > 50 || n.glasgow.overall > 2.0 || n.ned.nedMean > 25)
+  ) {
+    insights.push({
+      id: 'event-control-residual-fl',
+      type: 'info',
+      title: 'Strong event control with residual flow limitation',
+      body: 'Your therapy effectively controls respiratory events. Red flow limitation metrics show room for further optimisation, not treatment failure. Discuss with your clinician.',
+      category: 'therapy',
+    });
+  }
+
   // NED RERA
   if (n.ned.reraIndex >= 10) {
     insights.push({
