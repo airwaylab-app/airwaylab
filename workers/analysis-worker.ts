@@ -588,6 +588,8 @@ async function processBMCFiles(
       oximetry, oximetryTrace,
       settingsMetrics: settingsMetricsResult,
       crossDevice,
+      machineSummary: null,
+      settingsFingerprint: computeFingerprint(nightSettings),
     };
     nights.push(night);
 
