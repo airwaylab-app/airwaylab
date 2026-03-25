@@ -46,6 +46,11 @@ export const THRESHOLDS: Record<string, ThresholdDef> = {
   // Cross-device RERA-arousal matching
   couplingPct: { green: 30, amber: 50, lowerIsBetter: true },
   h2CouplingGap: { green: 10, amber: 25, lowerIsBetter: true },
+
+  // Machine-reported summary stats
+  machineAhi: { green: 5, amber: 10, lowerIsBetter: true },
+  leak95: { green: 24, amber: 40, lowerIsBetter: true },
+  spontCycPct: { green: 80, amber: 60, lowerIsBetter: false },
 };
 
 export type TrafficLight = 'good' | 'warn' | 'bad';

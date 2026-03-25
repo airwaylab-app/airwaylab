@@ -143,9 +143,12 @@ function buildUserPrompt(body: RequestBody): string {
       wat: selected.wat,
       ned: selected.ned,
       oximetry: selected.oximetry,
+      machineSummary: selected.machineSummary ?? undefined,
+      settingsFingerprint: selected.settingsFingerprint ?? undefined,
     },
     nightCount: nights.length,
     therapyChangeDate,
+    metricHierarchyNote: 'When comparing across nights with different Rise Time settings, do NOT reference NED or RERA differences. Use only oximetry metrics (HRc10, ODI3, T<94%) for cross-settings comparisons. Machine AHI is only meaningful when elevated -- do not cite low AHI as evidence of good therapy.',
   };
 
   // Include user-reported night context if available

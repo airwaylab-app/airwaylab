@@ -8,6 +8,7 @@ import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { computeIFLRisk, getIFLContextNote } from './ifl-risk';
 import { fmt, mean } from './format-utils';
+import { findSettingsChangeBoundaries } from './comparison-guard';
 
 export interface Insight {
   /** Unique key for React rendering */
@@ -560,6 +561,66 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
     }
   }
 
+  // Machine summary insights
+  const ms = n.machineSummary;
+  if (ms) {
+    if (ms.ahi != null && ms.ahi > 5) {
+      insights.push({
+        id: 'machine-ahi-elevated',
+        type: ms.ahi > 10 ? 'warning' : 'actionable',
+        title: `Machine AHI is ${fmt(ms.ahi)}`,
+        body: `Your device reported ${fmt(ms.ahi)} apnea/hypopnea events per hour. ${ms.ahi > 10 ? 'This is significantly elevated and indicates your current therapy may not be adequately controlling obstructive events.' : 'This is moderately elevated.'} Discuss with your clinician.`,
+        category: 'therapy',
+      });
+    }
+
+    if (ms.leak95 != null && ms.leak95 > 40) {
+      insights.push({
+        id: 'machine-leak-high',
+        type: 'warning',
+        title: 'High mask leak detected',
+        body: `95th percentile leak of ${fmt(ms.leak95, 0)} L/min. High leak can reduce therapy effectiveness and make flow data unreliable. Check mask fit and seal.`,
+        category: 'therapy',
+      });
+    }
+
+    if (ms.spontCycPct != null && ms.spontCycPct < 60) {
+      insights.push({
+        id: 'machine-low-spont',
+        type: 'info',
+        title: `Machine triggered ${fmt(100 - ms.spontCycPct, 0)}% of breaths`,
+        body: `Only ${fmt(ms.spontCycPct, 0)}% of breaths were patient-triggered. Consider adjusting Trigger sensitivity if you feel the machine is breathing for you.`,
+        category: 'settings',
+      });
+    }
+
+    if (ms.anyFault) {
+      const faultTypes = [
+        ms.faultDevice && 'device',
+        ms.faultAlarm && 'alarm',
+        ms.faultHumidifier && 'humidifier',
+        ms.faultHeatedTube && 'heated tube',
+      ].filter(Boolean).join(', ');
+      insights.push({
+        id: 'machine-fault',
+        type: 'warning',
+        title: 'Device fault reported',
+        body: `Your device reported a ${faultTypes} fault on this night. Check your equipment.`,
+        category: 'therapy',
+      });
+    }
+
+    if (ms.oai != null && ms.cai != null && ms.oai > 2 && ms.cai > 2) {
+      insights.push({
+        id: 'machine-mixed-events',
+        type: 'info',
+        title: 'Both obstructive and central events',
+        body: `OAI ${fmt(ms.oai)}/hr and CAI ${fmt(ms.cai)}/hr -- both are elevated. This mixed pattern may indicate complex sleep apnea. Discuss with your clinician.`,
+        category: 'therapy',
+      });
+    }
+  }
+
   return insights;
 }
 
@@ -658,6 +719,19 @@ function trendInsights(
       type: 'actionable',
       title: 'Persistent flow limitation across all nights',
       body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern.`,
+      category: 'trend',
+    });
+  }
+
+  // Settings change detection
+  const boundaries = findSettingsChangeBoundaries(chrono);
+  if (boundaries.length > 0) {
+    const latest = boundaries[boundaries.length - 1]!;
+    insights.push({
+      id: 'settings-change-detected',
+      type: 'info',
+      title: 'Settings changed during this period',
+      body: `Settings changed (${latest.label}) between nights. Oximetry comparisons are valid across this change; NED/RERA trends may reflect the settings change rather than therapy improvement.`,
       category: 'trend',
     });
   }
