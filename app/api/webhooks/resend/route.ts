@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getSupabaseServiceRole } from '@/lib/supabase/server'
 import { serverEnv } from '@/lib/env'
 import { cancelAllPending } from '@/lib/email/sequences'
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook'
 
 /**
  * POST /api/webhooks/resend?secret=<RESEND_WEBHOOK_SECRET>
@@ -88,6 +89,13 @@ export async function POST(request: NextRequest) {
             .update({ email_opt_in: false })
             .eq('id', seqRow.user_id)
         }
+
+        // Discord #ops-alerts (fire-and-forget)
+        void sendAlert('ops', '', [formatUserSignalEmbed({
+          type: 'feedback',
+          category: type === 'email.complained' ? 'Spam Complaint' : 'Email Bounce',
+          message: `User ${seqRow.user_id} — pending emails cancelled${type === 'email.complained' ? ', email_opt_in set to false' : ''}`,
+        })])
 
         console.error(
           `[resend-webhook] ${type} for user ${seqRow.user_id}, cancelled pending emails`
