@@ -86,10 +86,10 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      // Unconfirmed rows older than 1 hour are definitively orphaned —
+      // Unconfirmed rows older than 10 minutes are definitively orphaned —
       // delete without checking storage (the PUT never completed)
       const ageMs = Date.now() - new Date(existing.uploaded_at).getTime();
-      const isStaleOrphan = !existing.upload_confirmed && ageMs > 60 * 60 * 1000;
+      const isStaleOrphan = !existing.upload_confirmed && ageMs > 10 * 60 * 1000;
 
       if (isStaleOrphan) {
         await serviceRole.from('user_files').delete().eq('id', existing.id);
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         // Storage file missing despite confirmed — delete orphaned row
         await serviceRole.from('user_files').delete().eq('id', existing.id);
       } else {
-        // Unconfirmed but recent (< 1 hour) — another upload may be in progress.
+        // Unconfirmed but recent (< 10 min) — another upload may be in progress.
         // Delete and re-create to avoid blocking this upload attempt.
         // Also remove any partial storage object to avoid signed URL conflicts.
         await serviceRole.from('user_files').delete().eq('id', existing.id);
