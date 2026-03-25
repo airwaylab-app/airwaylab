@@ -7,6 +7,7 @@ import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
+import { sendAlert, formatRevenueEmbed } from '@/lib/discord-webhook';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -329,6 +330,14 @@ export async function POST(request: NextRequest) {
         // Sync Discord role (non-blocking)
         void syncDiscordForUser(supabase, userId, tier, event.id);
 
+        // Discord #revenue alert (non-blocking)
+        void sendAlert('revenue', '', [formatRevenueEmbed({
+          event: 'new_subscription',
+          tier,
+          interval,
+          mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
+        })]);
+
         break;
       }
 
@@ -390,6 +399,14 @@ export async function POST(request: NextRequest) {
           void syncDiscordForUser(supabase, userId, tier, event.id);
         }
 
+        // Discord #revenue alert (non-blocking)
+        void sendAlert('revenue', '', [formatRevenueEmbed({
+          event: 'tier_change',
+          tier,
+          interval: updatedInterval,
+          mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+        })]);
+
         break;
       }
 
@@ -443,6 +460,12 @@ export async function POST(request: NextRequest) {
 
           // Sync Discord role (revoke if downgraded to community)
           void syncDiscordForUser(supabase, userId, newTier, event.id);
+
+          // Discord #revenue alert (non-blocking)
+          void sendAlert('revenue', '', [formatRevenueEmbed({
+            event: 'cancellation',
+            tier: newTier,
+          })]);
         }
 
         break;
@@ -467,6 +490,11 @@ export async function POST(request: NextRequest) {
             .from('subscriptions')
             .update({ status: 'past_due' })
             .eq('stripe_subscription_id', subscriptionId);
+
+          // Discord #revenue alert (non-blocking)
+          void sendAlert('revenue', '', [formatRevenueEmbed({
+            event: 'payment_failed',
+          })]);
         }
 
         break;
