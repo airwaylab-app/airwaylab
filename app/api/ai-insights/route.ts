@@ -9,8 +9,35 @@ import { validateOrigin } from '@/lib/csrf';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 import { cancelSequence } from '@/lib/email/sequences';
+import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
 const AI_MONTHLY_LIMIT = 3;
+
+// Dedup rate-limit alerts: one alert per user per hour max
+const rateLimitAlertCache = new Map<string, number>();
+
+async function sendOpsRateLimitAlert(userId: string, tier: string) {
+  const now = Date.now();
+  const lastAlert = rateLimitAlertCache.get(userId) ?? 0;
+  if (now - lastAlert < 3_600_000) return; // 1 hour dedup
+  rateLimitAlertCache.set(userId, now);
+  // Prune stale entries
+  if (rateLimitAlertCache.size > 100) {
+    for (const [key, ts] of rateLimitAlertCache) {
+      if (now - ts > 3_600_000) rateLimitAlertCache.delete(key);
+    }
+  }
+  await sendAlert('ops', '', [{
+    title: ':warning: AI Rate Limit Hit',
+    color: COLORS.amber,
+    fields: [
+      { name: 'User', value: userId.slice(0, 8) + '...', inline: true },
+      { name: 'Tier', value: tier, inline: true },
+    ],
+    footer: { text: 'AI Insights' },
+    timestamp: new Date().toISOString(),
+  }]);
+}
 
 const DEEP_SYSTEM_PROMPT_EXTENSION = `
 
@@ -243,6 +270,7 @@ export async function POST(request: NextRequest) {
   const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
   const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
   if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
+    void sendOpsRateLimitAlert(user.id, userTier);
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
@@ -265,6 +293,7 @@ export async function POST(request: NextRequest) {
 
     const currentCount = usage?.count ?? 0;
     if (currentCount >= AI_MONTHLY_LIMIT) {
+      void sendOpsRateLimitAlert(user.id, 'community (monthly limit)');
       return NextResponse.json(
         { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
         { status: 403 }
