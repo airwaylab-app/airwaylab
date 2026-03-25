@@ -7,8 +7,11 @@ import { parseEDF } from '../lib/parsers/edf-parser';
 import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
+import { extractMachineSummary } from '../lib/parsers/machine-summary-extractor';
+import { computeFingerprint } from '../lib/settings-fingerprint';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
 import { parseEVE } from '../lib/parsers/eve-parser';
+import { parseBMCFiles, bmcSessionNightDate } from '../lib/parsers/bmc-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
@@ -27,6 +30,7 @@ import type {
   WorkerSettingsDiagnostic,
   NightResult,
   EDFFile,
+  ParsedSession,
   MachineSettings,
   MachineHypopneaSummary,
   OximetryResults,
@@ -53,8 +57,9 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       const response: WorkerOximetryResult = { type: 'OXIMETRY_RESULTS', oximetryByDate: metrics, oximetryTraceByDate: traces };
       self.postMessage(response);
     } else {
-      const { files, oximetryCSVs } = e.data;
-      const results = await processFiles(files, oximetryCSVs);
+      const { files, oximetryCSVs, deviceType } = e.data;
+      const bmcSerial = (e.data as unknown as { bmcSerial?: string }).bmcSerial;
+      const results = await processFiles(files, oximetryCSVs, deviceType, bmcSerial);
       const response: WorkerResult = { type: 'RESULTS', nights: results };
       self.postMessage(response);
     }
@@ -88,8 +93,16 @@ const ANALYZE_BATCH_SIZE = 10;
 
 async function processFiles(
   files: { buffer: ArrayBuffer; path: string }[],
-  oximetryCSVs?: string[]
+  oximetryCSVs?: string[],
+  deviceType?: string,
+  bmcSerial?: string
 ): Promise<NightResult[]> {
+  // ── BMC device path ──────────────────────────────────────
+  if (deviceType === 'bmc' && bmcSerial) {
+    return processBMCFiles(files, bmcSerial, oximetryCSVs);
+  }
+
+  // ── ResMed (default) path ────────────────────────────────
   // Step 1: Identify file types
   const fileList = files.map((f) => ({
     name: f.path.split('/').pop() || '',
@@ -118,6 +131,7 @@ async function processFiles(
   }
 
   let strSignalLabels: string[] = [];
+  let dailySummary: Record<string, import('../lib/types').MachineSummaryStats> = {};
   if (strFileInfo) {
     const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
@@ -125,6 +139,11 @@ async function processFiles(
         dailySettings = extractSettings(strFile.buffer, deviceModel);
       } catch {
         // STR parsing failed — continue without settings
+      }
+      try {
+        dailySummary = extractMachineSummary(strFile.buffer, deviceModel);
+      } catch {
+        // Machine summary extraction failed — continue without summary
       }
       // Capture signal labels for diagnostics when extraction returns empty
       if (Object.keys(dailySettings).length === 0) {
@@ -157,6 +176,17 @@ async function processFiles(
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
       parsedEdfs.push(edf);
+      // Report truncated files as warnings (file was partially parsed, not an error)
+      if (edf.truncated) {
+        const filename = brp.path.split('/').pop() || brp.path;
+        const truncWarning: WorkerWarning = {
+          type: 'WARNING',
+          checkpoint: 'truncated_edf',
+          detail: `Truncated EDF file ${filename}: parsed ${edf.recordsParsed} of ${edf.recordsExpected} records`,
+          tags: { file: filename, records_parsed: String(edf.recordsParsed ?? 0), records_expected: String(edf.recordsExpected ?? 0) },
+        };
+        self.postMessage(truncWarning);
+      }
     } catch (err) {
       const filename = brp.path.split('/').pop() || brp.path;
       const detail = err instanceof Error ? err.message : String(err);
@@ -396,6 +426,8 @@ async function processFiles(
       oximetryTrace,
       settingsMetrics: settingsMetricsResult,
       crossDevice,
+      machineSummary: dailySummary[group.nightDate] ?? null,
+      settingsFingerprint: computeFingerprint(settings),
     });
 
     // Emit incremental result so the orchestrator can persist progress
@@ -422,6 +454,157 @@ async function processFiles(
   // Sort by date (most recent first)
   nights.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
 
+  return nights;
+}
+
+// ── BMC processing pipeline ─────────────────────────────────
+async function processBMCFiles(
+  files: { buffer: ArrayBuffer; path: string }[],
+  serial: string,
+  oximetryCSVs?: string[]
+): Promise<NightResult[]> {
+  postProgress(0, 4, 'Detecting BMC device...');
+
+  const { sessions, settings, device } = parseBMCFiles(files, serial);
+
+  if (sessions.length === 0) {
+    throw new Error('No therapy sessions found in BMC data files. Make sure you selected the SD card root folder.');
+  }
+
+  postProgress(1, 4, `Parsed ${sessions.length} session(s) from ${device.model}...`);
+
+  // Group sessions by night date (noon-to-noon)
+  const nightMap = new Map<string, ParsedSession[]>();
+  for (const session of sessions) {
+    const nightDate = bmcSessionNightDate(session.recordingDate);
+    const list = nightMap.get(nightDate) ?? [];
+    list.push(session);
+    nightMap.set(nightDate, list);
+  }
+
+  // Parse oximetry CSVs
+  const oximetryByDate = new Map<string, ReturnType<typeof parseOximetryCSV>>();
+  if (oximetryCSVs) {
+    for (const csv of oximetryCSVs) {
+      try {
+        const parsed = parseOximetryCSV(csv);
+        oximetryByDate.set(parsed.dateStr, parsed);
+      } catch (err) {
+        console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
+      }
+    }
+  }
+
+  postProgress(2, 4, 'Running analysis engines...');
+
+  // Run engines per night (same flow as ResMed)
+  const nights: NightResult[] = [];
+  const nightDates = Array.from(nightMap.keys()).sort();
+
+  for (let i = 0; i < nightDates.length; i++) {
+    const nightDate = nightDates[i]!;
+    const nightSessions = nightMap.get(nightDate)!;
+
+    if (i > 0 && i % ANALYZE_BATCH_SIZE === 0) {
+      await yieldControl();
+    }
+
+    // Get settings for this night
+    const nightSettings = settings[nightDate] ?? {
+      deviceModel: `${device.model} (${device.serial})`,
+      epap: 0, ipap: 0, pressureSupport: 0,
+      papMode: 'Unknown', riseTime: null,
+      trigger: 'N/A', cycle: 'N/A', easyBreathe: false,
+      settingsSource: 'unavailable' as const,
+    };
+
+    // Total duration
+    let totalDuration = 0;
+    for (const s of nightSessions) totalDuration += s.durationSeconds;
+
+    // Glasgow Index
+    const glasgow = computeNightGlasgow(nightSessions);
+
+    // Concatenate flow/pressure for WAT + NED
+    const totalFlowSamples = nightSessions.reduce((sum, s) => sum + s.flowData.length, 0);
+    const totalPressSamples = nightSessions.reduce((sum, s) => sum + (s.pressureData?.length ?? 0), 0);
+    const combinedFlow = new Float32Array(totalFlowSamples);
+    const combinedPressure = totalPressSamples > 0 ? new Float32Array(totalPressSamples) : null;
+    let flowOffset = 0;
+    let pressOffset = 0;
+    let avgSamplingRate = 0;
+    for (const s of nightSessions) {
+      combinedFlow.set(s.flowData, flowOffset);
+      flowOffset += s.flowData.length;
+      if (combinedPressure && s.pressureData) {
+        combinedPressure.set(s.pressureData, pressOffset);
+        pressOffset += s.pressureData.length;
+      }
+      avgSamplingRate += s.samplingRate;
+    }
+    avgSamplingRate /= nightSessions.length;
+
+    const wat = computeWAT(combinedFlow, avgSamplingRate);
+
+    // Machine events from BMC EVT as hypopnea summaries
+    const machineHypopneas: MachineHypopneaSummary[] = [];
+    for (const s of nightSessions) {
+      if (s.machineEvents) {
+        for (const e of s.machineEvents) {
+          if (e.type === 'HYP') {
+            machineHypopneas.push({ onsetSec: e.onsetSec, durationSec: e.durationSec });
+          }
+        }
+      }
+    }
+
+    const ned = computeNED(combinedFlow, avgSamplingRate, machineHypopneas.length > 0 ? machineHypopneas : undefined);
+
+    const recordingDate = nightSessions[0]!.recordingDate;
+
+    const settingsMetricsResult = combinedPressure
+      ? computeSettingsMetrics(combinedFlow, combinedPressure, avgSamplingRate)
+      : null;
+
+    // Oximetry
+    const oxData = oximetryByDate.get(nightDate);
+    const oxInterval = oxData?.intervalSeconds ?? 2;
+    const oximetry = oxData ? computeOximetry(oxData.samples, oxInterval) : null;
+    const oximetryTrace = oxData ? buildOximetryTrace(oxData.samples) : null;
+
+    // Cross-device matching
+    let crossDevice: CrossDeviceResults | null = null;
+    if (oximetry && oxData && ned.reras && ned.reras.length >= 10) {
+      crossDevice = computeCrossDevice(ned.reras, oxData.samples, oxInterval, totalDuration, ned.reraIndex, oximetry.hrClin10);
+    }
+
+    const night: NightResult = {
+      date: recordingDate,
+      dateStr: nightDate,
+      durationHours: totalDuration / 3600,
+      sessionCount: nightSessions.length,
+      settings: nightSettings,
+      glasgow, wat, ned,
+      oximetry, oximetryTrace,
+      settingsMetrics: settingsMetricsResult,
+      crossDevice,
+      machineSummary: null,
+      settingsFingerprint: computeFingerprint(nightSettings),
+    };
+    nights.push(night);
+
+    const nightMsg: WorkerNightResult = {
+      type: 'NIGHT_RESULT',
+      night,
+      nightIndex: i,
+      totalNights: nightDates.length,
+    };
+    self.postMessage(nightMsg);
+  }
+
+  postProgress(3, 4, 'Finalizing...');
+
+  nights.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
   return nights;
 }
 

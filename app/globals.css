@@ -9,7 +9,7 @@
 }
 
 @layer base {
-  /* Dark-only clinical theme */
+  /* Dark clinical theme (default) */
   :root {
     --background: 222 47% 4%;
     --foreground: 210 40% 93%;
@@ -53,6 +53,46 @@
     --data-elevated: 0 84% 60%;
   }
 
+  /* Light theme (accessibility) */
+  [data-theme="light"] {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 210 20% 96%;
+    --card-elevated: 210 20% 93%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 213 94% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 20% 91%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 85%;
+    --input: 214 20% 88%;
+    --ring: 213 94% 45%;
+
+    --brand-teal: 168 60% 35%;
+
+    --chart-1: 213 94% 45%;
+    --chart-2: 142 71% 35%;
+    --chart-3: 38 92% 42%;
+    --chart-4: 262 83% 48%;
+    --chart-5: 0 84% 50%;
+    --chart-6: 188 94% 33%;
+
+    --status-good: 142 71% 35%;
+    --status-warn: 38 92% 42%;
+    --status-bad: 0 84% 50%;
+    --data-good: 142 71% 35%;
+    --data-monitor: 38 92% 42%;
+    --data-elevated: 0 84% 50%;
+  }
+
   * {
     border-color: hsl(var(--border));
   }
@@ -86,8 +126,8 @@ body::before {
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(hsl(217 33% 12% / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(217 33% 12% / 0.03) 1px, transparent 1px);
+    linear-gradient(hsl(var(--border) / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.15) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
 }

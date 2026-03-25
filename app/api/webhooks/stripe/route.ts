@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
-import { isDiscordConfigured, syncRole } from '@/lib/discord';
+import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -72,7 +72,41 @@ async function syncDiscordForUser(
         stripe_event_id: stripeEventId ?? null,
       });
     } else {
-      // User hasn't linked Discord yet -- queue the role for when they do
+      // User hasn't linked Discord yet — try to auto-resolve if they saved a username
+      const { data: fullProfile } = await supabase
+        .from('profiles')
+        .select('discord_username')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (fullProfile?.discord_username) {
+        // They saved a username — try to find them in the guild
+        const searchResult = await searchGuildMember(fullProfile.discord_username);
+        if (searchResult.status === 'found') {
+          // Auto-link and assign role
+          await supabase.from('profiles').update({
+            discord_id: searchResult.discordId,
+            discord_linked_at: new Date().toISOString(),
+          }).eq('id', userId);
+
+          await syncRole(searchResult.discordId, tier);
+
+          await supabase.from('discord_role_events').insert({
+            user_id: userId,
+            discord_id: searchResult.discordId,
+            role_id: tier,
+            action: tier === 'community' ? 'revoke' : 'assign',
+            reason: `stripe_auto_resolve_${tier}`,
+            stripe_event_id: stripeEventId ?? null,
+          });
+
+          // Clean up any pending roles
+          await supabase.from('discord_pending_roles').delete().eq('user_id', userId);
+          return;
+        }
+      }
+
+      // Could not auto-resolve — queue the role for when they link
       const { getTierRoleId } = await import('@/lib/discord');
       const roleId = getTierRoleId(tier);
       if (roleId) {

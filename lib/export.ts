@@ -63,6 +63,13 @@ export function exportCSV(nights: NightResult[]): string {
     'Amplitude CV (%)',
     'Unstable Epochs (%)',
     'NED-Invisible Events (%)',
+    'Machine AHI',
+    'Machine OAI',
+    'Machine CAI',
+    'Leak P50 (L/min)',
+    'Leak P95 (L/min)',
+    'SpontCyc%',
+    'Settings Fingerprint',
     'Symptom Rating',
   ];
 
@@ -124,6 +131,13 @@ export function exportCSV(nights: NightResult[]): string {
     (n.ned.amplitudeCvOverall ?? 0).toFixed(2),
     (n.ned.unstableEpochPct ?? 0).toFixed(2),
     (n.ned.hypopneaNedInvisiblePct ?? 0).toFixed(2),
+    n.machineSummary?.ahi != null ? n.machineSummary.ahi.toFixed(1) : '',
+    n.machineSummary?.oai != null ? n.machineSummary.oai.toFixed(1) : '',
+    n.machineSummary?.cai != null ? n.machineSummary.cai.toFixed(1) : '',
+    n.machineSummary?.leak50 != null ? n.machineSummary.leak50.toFixed(1) : '',
+    n.machineSummary?.leak95 != null ? n.machineSummary.leak95.toFixed(1) : '',
+    n.machineSummary?.spontCycPct != null ? n.machineSummary.spontCycPct.toFixed(0) : '',
+    n.settingsFingerprint?.hash ?? '',
     (() => {
       try {
         const notes = loadNightNotes(n.dateStr);

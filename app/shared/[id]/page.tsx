@@ -49,6 +49,8 @@ function rehydrateNight(raw: Record<string, unknown>): NightResult {
       amplitudeCvMedianEpoch: ned.amplitudeCvMedianEpoch ?? 0,
       unstableEpochPct: ned.unstableEpochPct ?? 0,
     },
+    machineSummary: (raw.machineSummary as NightResult['machineSummary']) ?? null,
+    settingsFingerprint: (raw.settingsFingerprint as NightResult['settingsFingerprint']) ?? null,
   } as NightResult;
 }
 

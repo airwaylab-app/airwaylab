@@ -308,13 +308,13 @@ function AnalyzePageInner() {
   }, []);
 
   const handleFiles = useCallback(
-    (sdFiles: File[], oxFiles: File[]) => {
+    (sdFiles: File[], oxFiles: File[], deviceType?: string, bmcSerial?: string) => {
       setIsDemo(false);
       sdFilesRef.current = sdFiles;
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial);
     },
     [lifetimeNights]
   );
@@ -420,7 +420,7 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
-  const { status, progress, error, warning, persistenceWarning } = state;
+  const { status, progress, error, warning, persistenceWarning, warnings } = state;
 
   // Memoize derived data to stabilize references across renders
   const nights = useMemo<NightResult[]>(() =>
@@ -709,6 +709,19 @@ function AnalyzePageInner() {
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Warning</span>
                 {' '}&mdash; {warning}
+              </p>
+            </div>
+          )}
+
+          {/* Truncated EDF warning — files had incomplete data */}
+          {!isDemo && warnings.length > 0 && warnings.some((w) => w.includes('Truncated')) && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {warnings.filter((w) => w.includes('Truncated')).length} file{warnings.filter((w) => w.includes('Truncated')).length !== 1 ? 's' : ''} had incomplete data
+                </span>
+                {' '}&mdash; Analysis used available data from complete sections. For full results, re-copy the SD card ensuring the copy completes.
               </p>
             </div>
           )}

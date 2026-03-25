@@ -34,6 +34,7 @@ const initialState: AnalysisState = {
   therapyChangeDate: null,
   warning: null,
   persistenceWarning: null,
+  warnings: [],
 };
 
 class AnalysisOrchestrator {
@@ -68,7 +69,9 @@ class AnalysisOrchestrator {
    */
   async analyze(
     sdFiles: FileList | File[],
-    oximetryFiles?: FileList | File[]
+    oximetryFiles?: FileList | File[],
+    deviceType?: string,
+    bmcSerial?: string
   ): Promise<NightResult[]> {
     this.terminate();
     const sdArr = Array.from(sdFiles);
@@ -219,7 +222,7 @@ class AnalysisOrchestrator {
       const newNights = await this.runWorker(files, oximetryCSVs, (night) => {
         this.incrementalNights.push(night);
         this.debouncedPersist();
-      });
+      }, deviceType, bmcSerial);
 
       // ── Clean up incremental state ──
       this.clearIncrementalState();
@@ -273,7 +276,9 @@ class AnalysisOrchestrator {
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
     oximetryCSVs?: string[],
-    onNightComplete?: (night: NightResult) => void
+    onNightComplete?: (night: NightResult) => void,
+    deviceType?: string,
+    bmcSerial?: string
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
       // Progress-aware timeout: resets on any worker message.
@@ -328,12 +333,22 @@ class AnalysisOrchestrator {
             this.terminate();
             resolve(msg.nights);
             break;
-          case 'WARNING':
+          case 'WARNING': {
+            const isTruncated = msg.detail.includes('Truncated');
             Sentry.captureMessage(msg.detail, {
-              level: 'warning',
-              tags: { checkpoint: msg.checkpoint, ...msg.tags },
+              level: isTruncated ? 'info' : 'warning',
+              tags: {
+                checkpoint: msg.checkpoint,
+                ...(isTruncated ? { truncated_edf: 'true' } : {}),
+                ...msg.tags,
+              },
+            });
+            // Accumulate warnings on state for UI display
+            this.setState({
+              warnings: [...this.state.warnings, msg.detail],
             });
             break;
+          }
           case 'SETTINGS_DIAGNOSTIC':
             this.settingsDiagnostic = msg;
             Sentry.captureMessage('settings_extraction_failed', {
@@ -379,7 +394,7 @@ class AnalysisOrchestrator {
       // Transfer ArrayBuffers for zero-copy
       const transferable = files.map((f) => f.buffer);
       this.worker.postMessage(
-        { type: 'ANALYZE', files, oximetryCSVs },
+        { type: 'ANALYZE', files, oximetryCSVs, deviceType, bmcSerial },
         transferable
       );
     });

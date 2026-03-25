@@ -25,7 +25,7 @@ export function Header() {
               <Moon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
             </div>
             <span className="text-sm font-bold tracking-tight sm:text-base">
-              <span className="text-white">Airway</span>
+              <span className="text-foreground">Airway</span>
               <span className="font-normal text-brand-teal">Lab</span>
             </span>
             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-400">

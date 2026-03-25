@@ -149,3 +149,55 @@ export async function syncRole(discordId: string, tier: string): Promise<boolean
 export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
   return syncRole(discordId, 'community');
 }
+
+export type GuildSearchResult =
+  | { status: 'found'; discordId: string }
+  | { status: 'not_found' }
+  | { status: 'error'; message: string };
+
+/**
+ * Search the guild for a member by exact username match.
+ * Returns a discriminated result so callers can distinguish
+ * "not found" from "search failed" (different UX messages).
+ *
+ * Uses the guild member search endpoint which matches against
+ * username and nickname. We filter results for an exact username match.
+ */
+export async function searchGuildMember(username: string): Promise<GuildSearchResult> {
+  if (!isDiscordConfigured()) return { status: 'error', message: 'Discord not configured' };
+
+  try {
+    const { guildId } = getConfig();
+    const res = await discordFetch(
+      `/guilds/${guildId}/members/search?query=${encodeURIComponent(username)}&limit=100`
+    );
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[discord] searchGuildMember failed (${res.status}): ${errText}`);
+      return { status: 'error', message: `Discord API error (${res.status})` };
+    }
+
+    const members = await res.json() as Array<{
+      user: { id: string; username: string; global_name: string | null };
+    }>;
+
+    // The search endpoint returns partial matches — find the exact username match
+    const match = members.find(
+      (m) => m.user.username.toLowerCase() === username.toLowerCase()
+        || (m.user.global_name && m.user.global_name.toLowerCase() === username.toLowerCase())
+    );
+
+    if (match) {
+      return { status: 'found', discordId: match.user.id };
+    }
+    return { status: 'not_found' };
+  } catch (err) {
+    console.error('[discord] searchGuildMember error:', err);
+    Sentry.captureException(err, {
+      tags: { action: 'discord-search-member' },
+      extra: { username },
+    });
+    return { status: 'error', message: 'Failed to search Discord server' };
+  }
+}

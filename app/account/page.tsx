@@ -38,19 +38,39 @@ function formatMB(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
 }
 
-const DISCORD_STATUS_MESSAGES: Record<string, { text: string; color: string }> = {
-  connected: { text: 'Discord connected successfully.', color: 'text-emerald-400' },
-  error: { text: 'Could not connect Discord. Please try again.', color: 'text-red-400' },
-  cancelled: { text: 'Discord connection cancelled.', color: 'text-muted-foreground' },
-  already_linked: { text: 'This Discord account is already linked to another user.', color: 'text-red-400' },
-};
-
 function DiscordStatusBanner() {
   const searchParams = useSearchParams();
   const status = searchParams.get('discord');
-  if (!status || !DISCORD_STATUS_MESSAGES[status]) return null;
-  const { text, color } = DISCORD_STATUS_MESSAGES[status]!;
-  return <p className={`text-sm ${color}`}>{text}</p>;
+  if (!status) return null;
+  // Legacy OAuth callback params — kept for backwards compatibility
+  const messages: Record<string, { text: string; color: string }> = {
+    connected: { text: 'Discord connected successfully.', color: 'text-emerald-400' },
+    error: { text: 'Could not connect Discord. Enter your username below to try again.', color: 'text-red-400' },
+  };
+  const msg = messages[status];
+  if (!msg) return null;
+  return <p className={`text-sm ${msg.color}`}>{msg.text}</p>;
+}
+
+/**
+ * Auto-initiate Discord OAuth when arriving from email CTA (?connect=discord).
+ * Only triggers for paid users who haven't connected Discord yet.
+ */
+function DiscordAutoConnect() {
+  const searchParams = useSearchParams();
+  const { profile, isPaid } = useAuth();
+  const connectParam = searchParams.get('connect');
+
+  useEffect(() => {
+    if (connectParam !== 'discord') return;
+    if (!isPaid) return;
+    if (profile?.discord_id) return; // Already connected
+
+    // Auto-redirect to Discord OAuth
+    window.location.href = '/api/auth/discord';
+  }, [connectParam, isPaid, profile?.discord_id]);
+
+  return null;
 }
 
 export default function AccountPage() {
@@ -127,9 +147,10 @@ export default function AccountPage() {
     <main className="container mx-auto max-w-2xl px-4 py-16 space-y-6">
       <h1 className="text-2xl font-bold">Account Settings</h1>
 
-      {/* Discord OAuth callback status */}
+      {/* Discord OAuth callback status + auto-connect from email */}
       <Suspense>
         <DiscordStatusBanner />
+        <DiscordAutoConnect />
       </Suspense>
 
       {/* Profile */}

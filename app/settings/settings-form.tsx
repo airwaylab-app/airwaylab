@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { RotateCcw, Lock, Bell, BellOff, Loader2 } from 'lucide-react';
+import { RotateCcw, Lock, Bell, BellOff, Loader2, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { THRESHOLDS, type ThresholdDef } from '@/lib/thresholds';
 import {
@@ -13,11 +13,13 @@ import {
   saveDateFormat,
   saveTimeFormat,
   saveNumberFormat,
+  saveTheme,
   clearDisplayPreferences,
   DEFAULTS,
   type DateFormat,
   type TimeFormat,
   type NumberFormat,
+  type Theme,
   type DisplayPreferences,
 } from '@/lib/display-preferences';
 import { events } from '@/lib/analytics';
@@ -208,11 +210,17 @@ export function SettingsForm() {
     saveNumberFormat(value);
   }, []);
 
+  const handleTheme = useCallback((value: Theme) => {
+    setPrefs((prev) => ({ ...prev, theme: value }));
+    saveTheme(value);
+  }, []);
+
   const hasAnyCustomThreshold = Object.keys(THRESHOLDS).some(isCustomised);
   const hasAnyCustomPref =
     prefs.dateFormat !== DEFAULTS.dateFormat ||
     prefs.timeFormat !== DEFAULTS.timeFormat ||
-    prefs.numberFormat !== DEFAULTS.numberFormat;
+    prefs.numberFormat !== DEFAULTS.numberFormat ||
+    prefs.theme !== DEFAULTS.theme;
   const hasAnyCustom = hasAnyCustomThreshold || hasAnyCustomPref;
 
   const handleResetAll = useCallback(() => {
@@ -239,6 +247,33 @@ export function SettingsForm() {
         </h2>
         <div className="rounded-xl border border-border/50 bg-card/30 p-4 sm:p-6">
           <div className="flex flex-col gap-5">
+            {/* Theme */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Theme
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <OptionButton
+                  selected={prefs.theme === 'dark'}
+                  onClick={() => handleTheme('dark')}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Moon className="h-3.5 w-3.5" />
+                    Dark
+                  </span>
+                </OptionButton>
+                <OptionButton
+                  selected={prefs.theme === 'light'}
+                  onClick={() => handleTheme('light')}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sun className="h-3.5 w-3.5" />
+                    Light
+                  </span>
+                </OptionButton>
+              </div>
+            </div>
+
             {/* Date format */}
             <div>
               <label className="mb-2 block text-sm font-medium text-foreground">

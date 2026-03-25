@@ -3,6 +3,48 @@ import { getTrafficLight } from './thresholds';
 import { fmt } from './format-utils';
 
 /* ------------------------------------------------------------------ */
+/*  Plain-language metric summaries                                    */
+/*  One-sentence descriptions for users who want the "what" not "how" */
+/* ------------------------------------------------------------------ */
+
+export const METRIC_PLAIN_LANGUAGE: Record<string, string> = {
+  iflRisk:
+    'A composite score estimating how much flow limitation may be affecting your sleep quality. Higher values suggest greater symptom risk.',
+  glasgowIndex:
+    'A breath-shape score measuring how far your breathing deviates from normal flow patterns.',
+  flScore:
+    'How much of your breathing shows restricted airflow. Higher values mean your airway narrows during sleep.',
+  nedMean:
+    'Average negative effort dependence -- how much your airway resists airflow during inspiration.',
+  reraIndex:
+    'How often your breathing effort increases enough to briefly disrupt sleep, even without a full apnoea.',
+  eai:
+    'An estimate of how often your breathing disruptions cause brief recovery responses, based on flow patterns.',
+  regularity:
+    'How repetitive your breathing rhythm is. On PAP therapy, high regularity can signal persistently restricted airflow.',
+  periodicity:
+    'Detects repeating breathing cycles that may indicate periodic breathing or central events.',
+  combinedFL:
+    'The percentage of breaths where your airway was partially restricted, combining two independent detection methods.',
+  odi3:
+    'How many times per hour your blood oxygen drops by 3% or more from a recent baseline.',
+  tBelow90:
+    'Total time your blood oxygen spent below 90%, a level where your body may start to experience stress.',
+  spo2Mean:
+    'Your average blood oxygen level throughout the night. Normal range is 94-98%.',
+  hrClin10:
+    'How often your heart rate surges by 10+ beats per minute, which can indicate breathing-related arousals.',
+  briefObstructionIndex:
+    'How often your airway briefly collapses for just one or two breaths -- too short for standard detection methods.',
+  hypopneaIndex:
+    'How often your airflow drops significantly for 10 or more seconds, indicating partial airway collapse.',
+  amplitudeCv:
+    'How much your breath size varies within each 5-minute window. Higher values suggest intermittent airway compromise.',
+  estimatedRdi:
+    'An estimated count of all respiratory disruptions per hour, combining RERAs and hypopnoeas detected from flow data.',
+};
+
+/* ------------------------------------------------------------------ */
 /*  Plain-language methodology descriptions                           */
 /*  Used in MetricCard info popovers and the About page               */
 /* ------------------------------------------------------------------ */

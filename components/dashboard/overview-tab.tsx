@@ -10,7 +10,7 @@ import type { NightResult } from '@/lib/types';
 import { generateInsights } from '@/lib/insights';
 import { NightSummaryHero } from '@/components/dashboard/night-summary-hero';
 import { AIInsightsGate } from '@/components/dashboard/ai-insights-gate';
-import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2 } from 'lucide-react';
+import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2, ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
@@ -59,9 +59,11 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const p = previousNight;
 
   const [symptomRating, setSymptomRating] = useState<number | null>(null);
-  const [isContributeConsented, setIsContributeConsented] = useState(() => getConsentState());
+  // Initialize to false to match SSR (localStorage is unavailable during
+  // server rendering). Actual consent state is loaded in the useEffect below.
+  const [isContributeConsented, setIsContributeConsented] = useState(false);
 
-  // Reload symptom rating when night changes
+  // Load symptom rating and consent state after mount (and when night changes)
   useEffect(() => {
     const notes = loadNightNotes(n.dateStr);
     setSymptomRating(notes.symptomRating);
@@ -100,6 +102,39 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       <div data-walkthrough="summary-hero">
         <NightSummaryHero night={n} />
       </div>
+
+      {/* Treatment Success Banner — contextualises metrics based on RERA control */}
+      {(() => {
+        const reraLight = getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!);
+        if (reraLight === 'good') {
+          return (
+            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500/70" />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Your therapy is controlling respiratory events effectively. The metrics below show areas where further optimisation may improve sleep quality.
+              </p>
+            </div>
+          );
+        }
+        if (reraLight === 'warn') {
+          return (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/70" />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Your respiratory event index suggests room for therapy adjustment. Discuss these findings with your clinician.
+              </p>
+            </div>
+          );
+        }
+        return (
+          <div className="flex items-start gap-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500/70" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Your respiratory disruption index is elevated. These findings are worth discussing with your clinician.
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Symptom Rating — how did you sleep? */}
       <SymptomRating
@@ -191,6 +226,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.iflRisk}
           previousValue={p ? computeIFLRisk(p) : undefined}
           tooltip="Combines FL Score, NED, Flatness Index, and Glasgow Index to estimate how much flow limitation may be driving symptoms. Higher values suggest greater symptom risk from flow limitation."
+          contextHint={getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'bad' ? 'Room to optimise' : getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'warn' ? 'May benefit from optimisation' : undefined}
           onClick={() => openMetric('IFL Symptom Risk', (x) => computeIFLRisk(x), { unit: '%', threshold: THRESHOLDS.iflRisk, description: 'Composite flow limitation symptom risk across all nights' })}
         />
         <MetricCard
@@ -200,6 +236,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.glasgow.overall}
           tooltip="A composite score measuring how abnormal your breathing waveform looks. Lower is better. Based on 9 breath shape components."
           methodology={METRIC_METHODOLOGIES.glasgowIndex}
+          contextHint={getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'warn' ? 'May benefit from optimisation' : undefined}
           onClick={() => openMetric('Glasgow Index', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' })}
         />
         <MetricCard
@@ -211,6 +248,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.wat.flScore}
           tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
           methodology={METRIC_METHODOLOGIES.flScore}
+          contextHint={getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'warn' ? 'May benefit from optimisation' : undefined}
           onClick={() => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL, description: 'Percentage of flow-limited breaths per night' })}
         />
         <MetricCard
@@ -222,6 +260,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.nedMean}
           tooltip="Negative Effort Dependence — measures how much your breathing effort is wasted due to airway obstruction. Lower is better."
           methodology={METRIC_METHODOLOGIES.nedMean}
+          contextHint={getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'warn' ? 'May benefit from optimisation' : undefined}
           onClick={() => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean, description: 'Average wasted breathing effort due to obstruction' })}
         />
         <MetricCard
@@ -232,6 +271,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.reraIndex}
           tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort. Lower is better."
           methodology={METRIC_METHODOLOGIES.reraIndex}
+          contextHint={getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!) === 'bad' ? 'Discuss with clinician' : undefined}
           onClick={() => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex, description: 'Respiratory effort-related arousals per hour' })}
         />
       </div>
@@ -240,6 +280,31 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         text={getIFLRiskExplanation(computeIFLRisk(n), THRESHOLDS.iflRisk!)}
         defaultExpanded={isNewUser}
       />
+
+      {/* Understanding Your Results — collapsible guide to interpreting metrics */}
+      <details className="group rounded-xl border border-border/50 bg-card/30">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+          Understanding Your Results
+        </summary>
+        <div className="border-t border-border/30 px-4 pb-4 pt-3 space-y-2.5">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Green, amber, and red indicators show where each metric falls relative to research-based thresholds.
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Flow limitation metrics (Glasgow Index, FL Score, NED) measure a different dimension than event-based metrics like RERA. Red flow limitation scores mean room to optimise, not that treatment is failing.
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Always discuss findings with your clinician before making therapy changes.
+          </p>
+          <Link
+            href="/glossary"
+            className="inline-block text-xs text-primary/70 underline underline-offset-2 hover:text-primary"
+          >
+            Read the full glossary for detailed metric definitions
+          </Link>
+        </div>
+      </details>
 
       {/* Community Benchmarks — ungated, shows metric position bars */}
       <CommunityBenchmarks night={n} isDemo={isDemo} />
@@ -457,6 +522,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           compact
           tooltip="Respiratory disruptions per hour — recovery breaths following flow-limited breathing. This flow-based estimate typically reads higher than in-lab arousal index. Lower is better."
           methodology={METRIC_METHODOLOGIES.eai}
+          contextHint={getTrafficLight(n.ned.estimatedArousalIndex, THRESHOLDS.eai!) === 'bad' ? 'Discuss with clinician' : undefined}
           onClick={() => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
@@ -487,6 +553,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 compact
                 tooltip="Oxygen Desaturation Index — number of times per hour your blood oxygen drops by 3% or more. Lower is better."
                 methodology={METRIC_METHODOLOGIES.odi3}
+                contextHint={getTrafficLight(n.oximetry.odi3, THRESHOLDS.odi3!) === 'bad' ? 'Discuss with clinician' : undefined}
                 onClick={() => openMetric('ODI-3', (x) => x.oximetry?.odi3, { unit: '/hr', threshold: THRESHOLDS.odi3 })}
               />
               <MetricCard

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth, type Tier } from '@/lib/auth/auth-context';
 import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2, Settings } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
 
 const TIER_CONFIG: Record<Tier, { label: string; color: string; icon: typeof Heart }> = {
   community: { label: 'Community', color: 'text-muted-foreground', icon: User },
@@ -92,8 +93,9 @@ export function UserMenu() {
       } else {
         setPortalError(true);
       }
-    } catch {
+    } catch (err) {
       console.error('[user-menu] Failed to open billing portal');
+      Sentry.captureException(err, { tags: { action: 'customer-portal-menu' } });
       setPortalError(true);
     } finally {
       setPortalLoading(false);
@@ -174,7 +176,7 @@ export function UserMenu() {
                 </button>
                 {portalError && (
                   <p className="px-3 py-1 text-[10px] text-red-400">
-                    Could not open billing portal. Please try again.
+                    Could not open billing portal. Try again or <a href="/contact" className="underline">contact us</a>.
                   </p>
                 )}
               </>

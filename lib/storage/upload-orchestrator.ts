@@ -24,8 +24,18 @@ const RETRY_DELAY_MS = 2000;
 const RATE_LIMIT_BASE_DELAY_MS = 5000;
 /** Maximum rate limit retries before giving up on a file */
 const RATE_LIMIT_MAX_RETRIES = 4;
+/** Maximum retries for transient 5xx errors (less aggressive than rate limits) */
+const TRANSIENT_MAX_RETRIES = 3;
 /** Abort after this many consecutive failures with the same error */
 const FAIL_FAST_THRESHOLD = 3;
+
+/**
+ * Check if an error message indicates a transient server error.
+ * These are typically CDN/proxy-level failures that resolve on retry.
+ */
+export function isTransientServerError(errorMessage: string): boolean {
+  return /\b(502|503|504|520)\b/.test(errorMessage);
+}
 
 function getFilePath(file: File): string {
   return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
@@ -237,11 +247,17 @@ class UploadOrchestrator {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
+    // Tag as transient if ALL failures were 5xx server errors
+    const allTransient = result.errors.length > 0 && result.errors.every(
+      (err) => /\b(500|502|503|504|520)\b/.test(err)
+    );
+
     Sentry.captureMessage('cloud_upload_partial_failure', {
       level: result.uploaded === 0 ? 'error' : 'warning',
       tags: {
         allFailed: String(result.uploaded === 0),
         failedCount: String(result.failed),
+        transient: String(allTransient),
       },
       extra: {
         uploaded: result.uploaded,
@@ -439,9 +455,14 @@ class UploadOrchestrator {
       } catch (firstErr) {
         // Rate limit: exponential backoff with multiple retries
         const isRateLimit = firstErr instanceof Error && (firstErr as Error & { isRateLimit?: boolean }).isRateLimit === true;
-        if (isRateLimit) {
+        // Transient 5xx (502, 503, 504, 520): same exponential backoff but capped at fewer retries
+        const firstErrMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+        const isTransient = !isRateLimit && isTransientServerError(firstErrMsg);
+        if (isRateLimit || isTransient) {
+          const maxRetries = isRateLimit ? RATE_LIMIT_MAX_RETRIES : TRANSIENT_MAX_RETRIES;
+          const retryLabel = isRateLimit ? 'Rate limited' : 'Transient server error';
           let uploaded = false;
-          for (let attempt = 0; attempt < RATE_LIMIT_MAX_RETRIES; attempt++) {
+          for (let attempt = 0; attempt < maxRetries; attempt++) {
             const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
             await new Promise(r => setTimeout(r, delay));
             if (signal.aborted) break;
@@ -454,26 +475,30 @@ class UploadOrchestrator {
               lastErrorMessage = '';
               break;
             } catch (retryErr) {
-              const stillRateLimited = retryErr instanceof Error && (retryErr as Error & { isRateLimit?: boolean }).isRateLimit === true;
-              if (!stillRateLimited) {
+              const retryErrMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+              const stillRetryable = isRateLimit
+                ? retryErr instanceof Error && (retryErr as Error & { isRateLimit?: boolean }).isRateLimit === true
+                : isTransientServerError(retryErrMsg);
+              if (!stillRetryable) {
                 // Different error — record and stop retrying this file
-                const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
                 result.failed++;
-                result.errors.push(`${fileName}: ${errMsg}`);
+                result.errors.push(`${fileName}: ${retryErrMsg}`);
                 uploaded = true; // prevent double-counting
                 break;
               }
-              // Still rate limited — continue backoff
+              // Still retryable — continue backoff
             }
           }
           if (!uploaded) {
             result.failed++;
-            result.errors.push(`${fileName}: Rate limited after retries`);
+            result.errors.push(`${fileName}: ${retryLabel} after retries`);
           }
+          // Transient 5xx errors do NOT count toward consecutiveErrors —
+          // they are infrastructure-level and typically self-heal
         } else {
-          // Non-rate-limit error: retry once with flat delay
+          // Non-rate-limit, non-transient error: retry once with flat delay + jitter
           try {
-            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS + Math.random() * 500));
             if (signal.aborted) throw new Error('Cancelled');
             const uploaded = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
             if (uploaded) result.uploaded++;

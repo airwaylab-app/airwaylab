@@ -36,31 +36,27 @@ export function DataContribution({
   autoSubmitStatus = 'idle',
   autoSubmitCount = 0,
 }: Props) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return sessionStorage.getItem(DISMISS_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
-
-  // Check persistent consent state
-  const [isOptedIn] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return getConsentState();
-  });
-
-  // Track which nights were previously contributed (date-based dedup)
-  const [contributedDates] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('airwaylab_contributed_dates') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  // Initialize all browser-dependent state to safe defaults to match SSR.
+  // Actual values are loaded in the useEffect below to avoid hydration mismatches.
+  const [dismissed, setDismissed] = useState(false);
+  const [isOptedIn, setIsOptedIn] = useState(false);
+  const [contributedDates, setContributedDates] = useState<string[]>([]);
   const contributedNightCount = contributedDates.length;
+
+  // Load browser-dependent state after mount
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(DISMISS_KEY) === '1') setDismissed(true);
+    } catch { /* noop */ }
+    setIsOptedIn(getConsentState());
+    try {
+      const raw = localStorage.getItem('airwaylab_contributed_dates');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setContributedDates(parsed);
+      }
+    } catch { /* noop */ }
+  }, []);
 
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [expanded, setExpanded] = useState(false);

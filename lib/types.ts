@@ -2,6 +2,82 @@
 // AirwayLab — Core Type Definitions
 // ============================================================
 
+// ============================================================
+// Multi-device support types
+// ============================================================
+
+export type DeviceType = 'resmed' | 'bmc' | 'unknown';
+
+/**
+ * Unified session representation produced by device-specific parsers.
+ * Analysis engines consume this — they never see device-specific formats.
+ */
+export interface ParsedSession {
+  deviceType: DeviceType;
+  deviceModel: string;
+  filePath: string;
+  flowData: Float32Array;
+  pressureData: Float32Array | null;
+  samplingRate: number;
+  durationSeconds: number;
+  recordingDate: Date;
+  machineEvents?: ParsedMachineEvent[];
+  deviceMeta?: Record<string, unknown>;
+}
+
+export interface ParsedMachineEvent {
+  type: 'OSA' | 'CSA' | 'HYP' | 'RERA' | 'FL';
+  onsetSec: number;
+  durationSec: number;
+}
+
+// BMC-specific types (Luna 2 / RESmart G2/G3)
+
+export type BMCTherapyMode = 'CPAP' | 'AutoCPAP' | 'S' | 'S/T' | 'T' | 'Titration' | 'AutoS';
+
+export interface BMCIdxRecord {
+  sequence: number;
+  date: string;
+  startFileExt: number;
+  startPacketOffset: number;
+  endFileExt: number;
+  endPacketOffset: number;
+  mode: BMCTherapyMode;
+  initialPressure: number;
+  treatPressure: number;
+  maxPressure: number;
+  rampTime: number | null;
+  humidifier: number | null;
+  maskType: string;
+  reslexLevel: number;
+}
+
+export interface BMCEvtRecord {
+  session: number;
+  eventType: number;
+  timestampSecs: number;
+  durationSecs: number;
+  value: number;
+}
+
+export interface BMCDeviceInfo {
+  serial: string;
+  model: string;
+  firmware: string;
+}
+
+export interface BMCSessionSummary {
+  date: string;
+  durationMinutes: number;
+  osaCount: number;
+  csaCount: number;
+  hypCount: number;
+}
+
+// ============================================================
+// EDF types (ResMed)
+// ============================================================
+
 export interface EDFHeader {
   version: string;
   patientId: string;
@@ -37,6 +113,12 @@ export interface EDFFile {
   samplingRate: number;
   durationSeconds: number;
   filePath: string;
+  /** True when the file was shorter than expected and only partial records were parsed. */
+  truncated?: boolean;
+  /** Number of complete data records successfully parsed (set when truncated). */
+  recordsParsed?: number;
+  /** Number of data records expected per the EDF header (set when truncated). */
+  recordsExpected?: number;
 }
 
 export interface MachineSettings {
@@ -65,10 +147,23 @@ export interface MachineSettings {
   maskType?: string | null;
   /** Smart start enabled (from S.SmartStart) */
   smartStart?: boolean | null;
+  /** Maximum inspiratory time in seconds (from S.TiMax) */
+  tiMax?: number | null;
+  /** Minimum inspiratory time in seconds (from S.TiMin) */
+  tiMin?: number | null;
   /** All additional S.* signals not captured in typed fields above. */
   extendedSettings?: Record<string, number>;
   /** Whether settings were actually extracted from STR.edf or are fallback defaults. */
   settingsSource: 'extracted' | 'unavailable';
+  // BMC-specific settings (optional, only populated for BMC devices)
+  /** BMC Reslex (EPR equivalent) level: 0=Off, 1-3 */
+  reslexLevel?: number;
+  /** BMC auto-titration sensitivity (AutoCPAP mode) */
+  autoSensitivity?: number;
+  /** BMC tube type */
+  tubeType?: string;
+  /** BMC heated tube level */
+  heatedTubeLevel?: number | null;
 }
 
 export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';
@@ -288,6 +383,71 @@ export interface CrossDeviceResults {
   reason?: string;
 }
 
+export interface MachineSummaryStats {
+  // Event indices (Tier 1-asymmetric: high = guaranteed problem, low = not reassuring)
+  ahi: number | null;
+  hi: number | null;
+  oai: number | null;
+  cai: number | null;
+  uai: number | null;
+
+  // Leak statistics (data quality indicator)
+  leak50: number | null;
+  leak70: number | null;
+  leak95: number | null;
+  leakMax: number | null;
+
+  // Breathing stats (cross-validate with engine-computed values)
+  minVent50: number | null;
+  minVent95: number | null;
+  respRate50: number | null;
+  respRate95: number | null;
+  tidVol50: number | null;
+  tidVol95: number | null;
+  ti50: number | null;
+  ti95: number | null;
+  ieRatio50: number | null;
+  spontCycPct: number | null;
+
+  // Actual delivered pressure (may differ from settings in auto modes)
+  tgtIpap50: number | null;
+  tgtIpap95: number | null;
+  tgtEpap50: number | null;
+  tgtEpap95: number | null;
+  maskPress50: number | null;
+  maskPress95: number | null;
+
+  // Session metadata
+  durationMin: number | null;
+  maskOnMin: number | null;
+  maskOffMin: number | null;
+  maskEvents: number | null;
+
+  // Built-in SpO2 (if device has oximetry, e.g. ResMed with SA2)
+  spo2_50: number | null;
+  spo2_95: number | null;
+
+  // Faults
+  faultDevice: boolean;
+  faultAlarm: boolean;
+  faultHumidifier: boolean;
+  faultHeatedTube: boolean;
+  anyFault: boolean;
+
+  // Environmental (measured, not settings)
+  ambHumidity50: number | null;
+}
+
+export interface SettingsFingerprint {
+  epap: number;
+  ps: number;
+  cycle: string;
+  riseTime: number;
+  triggerSensitivity: string;
+  tiMax: number;
+  hash: string;
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -301,6 +461,8 @@ export interface NightResult {
   oximetryTrace: OximetryTraceData | null;
   settingsMetrics: SettingsMetrics | null;
   crossDevice: CrossDeviceResults | null;
+  machineSummary: MachineSummaryStats | null;
+  settingsFingerprint: SettingsFingerprint | null;
 }
 
 export interface AnalysisState {
@@ -313,12 +475,16 @@ export interface AnalysisState {
   warning: string | null;
   /** Warning from persistence layer (e.g. oldest nights dropped due to storage cap) */
   persistenceWarning: string | null;
+  /** Accumulated non-fatal warnings from analysis (e.g. truncated EDF files) */
+  warnings: string[];
 }
 
 export interface WorkerAnalyzeMessage {
   type: 'ANALYZE';
   files: { buffer: ArrayBuffer; path: string }[];
   oximetryCSVs?: string[];
+  deviceType?: DeviceType;
+  bmcSerial?: string;
 }
 
 export interface WorkerOximetryOnlyMessage {

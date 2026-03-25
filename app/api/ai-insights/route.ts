@@ -143,9 +143,12 @@ function buildUserPrompt(body: RequestBody): string {
       wat: selected.wat,
       ned: selected.ned,
       oximetry: selected.oximetry,
+      machineSummary: selected.machineSummary ?? undefined,
+      settingsFingerprint: selected.settingsFingerprint ?? undefined,
     },
     nightCount: nights.length,
     therapyChangeDate,
+    metricHierarchyNote: 'When comparing across nights with different Rise Time settings, do NOT reference NED or RERA differences. Use only oximetry metrics (HRc10, ODI3, T<94%) for cross-settings comparisons. Machine AHI is only meaningful when elevated -- do not cite low AHI as evidence of good therapy.',
   };
 
   // Include user-reported night context if available
@@ -543,10 +546,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (err instanceof Anthropic.BadRequestError) {
+      const isBillingError = err.message?.includes('credit balance');
       Sentry.captureException(err, {
-        tags: { route: 'ai-insights', error_type: 'bad_request' },
-        level: 'error',
+        tags: { route: 'ai-insights', error_type: isBillingError ? 'billing' : 'bad_request' },
+        level: isBillingError ? 'fatal' : 'error',
       });
+      if (isBillingError) {
+        console.error('[ai-insights] Anthropic credit balance exhausted');
+        return NextResponse.json(
+          { error: 'AI service is temporarily unavailable. Our team has been notified and is working on it.' },
+          { status: 503 }
+        );
+      }
       console.error('[ai-insights] Bad request');
       return NextResponse.json(
         { error: 'Failed to process analysis data. Please try again.' },

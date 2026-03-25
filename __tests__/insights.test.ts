@@ -25,7 +25,7 @@ describe('generateInsights', () => {
       expect(['positive', 'warning', 'actionable', 'info']).toContain(insight.type);
       expect(insight.title.length).toBeGreaterThan(0);
       expect(insight.body.length).toBeGreaterThan(0);
-      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'settings']).toContain(insight.category);
+      expect(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'settings', 'correlation', 'temporal']).toContain(insight.category);
     }
   });
 
@@ -333,7 +333,7 @@ describe('generateInsights', () => {
     });
 
     it('does not generate settings insights when settingsMetrics is null', () => {
-      const night = { ...SAMPLE_NIGHTS[0]!, settingsMetrics: null, crossDevice: null } as NightResult;
+      const night = { ...SAMPLE_NIGHTS[0]!, settingsMetrics: null, crossDevice: null, machineSummary: null, settingsFingerprint: null } as NightResult;
       const result = generateInsights([night], night, null, null);
       const settingsInsights = result.filter((i) => i.category === 'settings');
       expect(settingsInsights).toHaveLength(0);

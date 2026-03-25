@@ -106,11 +106,11 @@ export function persistResults(
       localStorage.setItem(STORAGE_KEY, bestFit.json);
       const dropped = nights.length - bestFit.count;
 
-      console.error(
+      console.warn(
         `[persistence] Data too large for ${nights.length} nights. Saved ${bestFit.count} most recent, dropped ${dropped} oldest.`
       );
       Sentry.captureMessage('Persistence: progressive save — oldest nights dropped', {
-        level: 'warning',
+        level: 'info',
         extra: {
           totalNights: nights.length,
           nightsSaved: bestFit.count,
@@ -221,6 +221,13 @@ export function loadPersistedResults(): {
       // Migrate: crossDevice added in cross-device RERA-arousal matching
       if (night.crossDevice === undefined) {
         night.crossDevice = null;
+      }
+      // Migrate: machineSummary + settingsFingerprint added in comprehensive-settings-extraction
+      if ((night as Record<string, unknown>).machineSummary === undefined) {
+        night.machineSummary = null;
+      }
+      if ((night as Record<string, unknown>).settingsFingerprint === undefined) {
+        night.settingsFingerprint = null;
       }
       // Migrate: hypopnea & amplitude stability fields added in v0.7.0
       if (night.ned && night.ned.briefObstructionIndex === undefined) {

@@ -107,8 +107,8 @@ export function discordLaunchEmail(
       ${paragraph("As a " + tierLabel + " subscriber, you now have access to the AirwayLab Discord -- a place where users share analysis insights, ask questions, and help each other get better therapy.")}
       ${paragraph("Here's what you get:")}
       ${bulletList(DISCORD_TIER_BENEFITS[tier])}
-      ${paragraph("Connect your Discord account in your AirwayLab settings to get instant access.")}
-      ${ctaButton('Connect Discord', `${BASE_URL}/account?utm_source=email&utm_medium=transactional&utm_campaign=discord_launch`)}
+      ${paragraph("Click below to connect your Discord account and get instant access.")}
+      ${ctaButton('Connect Discord', `${BASE_URL}/account?connect=discord&utm_source=email&utm_medium=transactional&utm_campaign=discord_launch`)}
       ${paragraph("This is a small, early community. Your voice will shape what it becomes.")}
       ${paragraph('Questions? Reply to this email or use the <a href="' + BASE_URL + '/contact" style="color:#5eead4;text-decoration:underline;">contact form</a>.')}
     `, `You're receiving this because you're an AirwayLab ${tierLabel} subscriber. Manage your subscription in <a href="${BASE_URL}/account" style="color:#5eead4;text-decoration:none;">account settings</a>.`),
