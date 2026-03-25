@@ -7,6 +7,8 @@ import { parseEDF } from '../lib/parsers/edf-parser';
 import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
+import { extractMachineSummary } from '../lib/parsers/machine-summary-extractor';
+import { computeFingerprint } from '../lib/settings-fingerprint';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
 import { parseEVE } from '../lib/parsers/eve-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
@@ -118,6 +120,7 @@ async function processFiles(
   }
 
   let strSignalLabels: string[] = [];
+  let dailySummary: Record<string, import('../lib/types').MachineSummaryStats> = {};
   if (strFileInfo) {
     const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
@@ -125,6 +128,11 @@ async function processFiles(
         dailySettings = extractSettings(strFile.buffer, deviceModel);
       } catch {
         // STR parsing failed — continue without settings
+      }
+      try {
+        dailySummary = extractMachineSummary(strFile.buffer, deviceModel);
+      } catch {
+        // Machine summary extraction failed — continue without summary
       }
       // Capture signal labels for diagnostics when extraction returns empty
       if (Object.keys(dailySettings).length === 0) {
@@ -396,8 +404,8 @@ async function processFiles(
       oximetryTrace,
       settingsMetrics: settingsMetricsResult,
       crossDevice,
-      machineSummary: null,
-      settingsFingerprint: null,
+      machineSummary: dailySummary[group.nightDate] ?? null,
+      settingsFingerprint: computeFingerprint(settings),
     });
 
     // Emit incremental result so the orchestrator can persist progress

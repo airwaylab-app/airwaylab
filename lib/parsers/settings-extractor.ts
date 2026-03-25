@@ -49,6 +49,7 @@ const TYPED_SIGNAL_LABELS = new Set([
   'S.RampEnable', 'S.RampTime', 'S.RampPress',
   'S.Humid.Level', 'S.HumidLevel', 'S.ClimateControl', 'S.Humid.Status',
   'S.TubeTemp', 'S.Tube.Temp', 'S.Mask', 'S.SmartStart',
+  'S.TiMax', 'S.TiMin',
 ]);
 
 /**
@@ -89,6 +90,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const tubeTempSignal = findSignal('S.TubeTemp') ?? findSignal('S.Tube.Temp');
   const maskSignal = findSignal('S.Mask');
   const smartStartSignal = findSignal('S.SmartStart');
+  const tiMaxSignal = findSignal('S.TiMax');
+  const tiMinSignal = findSignal('S.TiMin');
 
   // All remaining S.* signals for extendedSettings
   const extendedSignals = signals.filter(
@@ -167,6 +170,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     const tubeTempRaw = tubeTempSignal?.physicalValues[i];
     const maskRaw = maskSignal?.physicalValues[i];
     const smartStartRaw = smartStartSignal?.physicalValues[i];
+    const tiMaxRaw = tiMaxSignal?.physicalValues[i];
+    const tiMinRaw = tiMinSignal?.physicalValues[i];
 
     // Catch-all for remaining S.* signals
     const extended: Record<string, number> = {};
@@ -195,6 +200,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       tubeTempSetting: tubeTempRaw !== undefined ? Math.round(tubeTempRaw) : null,
       maskType: maskRaw !== undefined ? (MASK_MAP[Math.round(maskRaw)] ?? `Type ${Math.round(maskRaw)}`) : null,
       smartStart: smartStartRaw !== undefined ? Math.round(smartStartRaw) !== 0 : null,
+      tiMax: tiMaxRaw !== undefined ? Math.round(tiMaxRaw * 100) / 100 : null,
+      tiMin: tiMinRaw !== undefined ? Math.round(tiMinRaw * 100) / 100 : null,
       extendedSettings: Object.keys(extended).length > 0 ? extended : undefined,
       settingsSource: 'extracted',
     };
