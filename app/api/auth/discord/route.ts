@@ -19,8 +19,8 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const clientId = process.env.DISCORD_CLIENT_ID;
-  const redirectUri = process.env.DISCORD_REDIRECT_URI;
+  const clientId = process.env.DISCORD_CLIENT_ID?.trim();
+  const redirectUri = process.env.DISCORD_REDIRECT_URI?.trim();
 
   if (!clientId || !redirectUri) {
     return NextResponse.json({ error: 'Discord not configured' }, { status: 503 });

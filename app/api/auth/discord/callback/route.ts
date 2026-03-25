@@ -55,9 +55,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);
   }
 
-  const clientId = process.env.DISCORD_CLIENT_ID;
-  const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-  const redirectUri = process.env.DISCORD_REDIRECT_URI;
+  const clientId = process.env.DISCORD_CLIENT_ID?.trim();
+  const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim();
+  const redirectUri = process.env.DISCORD_REDIRECT_URI?.trim();
 
   if (!clientId || !clientSecret || !redirectUri || !isDiscordConfigured()) {
     return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);

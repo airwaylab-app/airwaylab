@@ -106,11 +106,11 @@ export function persistResults(
       localStorage.setItem(STORAGE_KEY, bestFit.json);
       const dropped = nights.length - bestFit.count;
 
-      console.error(
+      console.warn(
         `[persistence] Data too large for ${nights.length} nights. Saved ${bestFit.count} most recent, dropped ${dropped} oldest.`
       );
       Sentry.captureMessage('Persistence: progressive save — oldest nights dropped', {
-        level: 'warning',
+        level: 'info',
         extra: {
           totalNights: nights.length,
           nightsSaved: bestFit.count,
