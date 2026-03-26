@@ -13,6 +13,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 import {
   getPendingEmails,
   markSent,
@@ -23,6 +24,8 @@ import {
 import { SEQUENCES } from './templates';
 import { getUnsubscribeUrl } from './unsubscribe-token';
 import { sendEmail } from './send';
+
+const OVERDUE_ALERT_THRESHOLD = 20;
 
 interface CronResult {
   sent: number;
@@ -56,10 +59,23 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
       acc[e.sequence_name] = (acc[e.sequence_name] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    console.error(`[email-drips] Processing ${pendingEmails.length} emails:`, JSON.stringify(seqCounts));
+    console.error(`[email-drips] ${pendingEmails.length} due emails:`, JSON.stringify(seqCounts));
   }
 
-  for (const email of pendingEmails) {
+  // Rate limit: max 1 email per user per cron run to avoid flooding inboxes
+  // when catching up on overdue emails. Pick the lowest step per user.
+  const seen = new Set<string>();
+  const deduped = pendingEmails.filter((e) => {
+    if (seen.has(e.user_id)) return false;
+    seen.add(e.user_id);
+    return true;
+  });
+
+  if (deduped.length < pendingEmails.length) {
+    console.error(`[email-drips] Rate limited: ${pendingEmails.length} due -> ${deduped.length} to send (1/user/run)`);
+  }
+
+  for (const email of deduped) {
     const config = SEQUENCES[email.sequence_name];
     if (!config) {
       console.error(`[email-drips] No SEQUENCES config for: ${email.sequence_name}`);
@@ -92,6 +108,19 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
 
   // 3. Apply sunset policy for persistently unengaged users
   result.sunsetted = await applySunsetPolicy(supabase);
+
+  // 4. Health check: alert if drip system looks broken
+  const { count: overdueCount } = await supabase
+    .from('email_sequences')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+    .lte('scheduled_at', new Date().toISOString());
+
+  if (overdueCount && overdueCount > OVERDUE_ALERT_THRESHOLD) {
+    const msg = `Email drip health check: ${overdueCount} overdue emails after processing (sent=${result.sent}, failed=${result.failed}). Threshold: ${OVERDUE_ALERT_THRESHOLD}.`;
+    console.error(`[email-drips] ALERT: ${msg}`);
+    Sentry.captureMessage(msg, { level: 'warning', tags: { subsystem: 'email-drips' } });
+  }
 
   return result;
 }
