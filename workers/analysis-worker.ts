@@ -4,7 +4,8 @@
 // ============================================================
 
 import { parseEDF } from '../lib/parsers/edf-parser';
-import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, filterCSLFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
+import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, filterCSLFiles, filterPLDFiles, findSTRFile, findIdentificationFile, extractFolderDate, extractPLDFilenameDate } from '../lib/parsers/night-grouper';
+import { parsePLD, computePLDSummary } from '../lib/parsers/pld-parser';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
 import { extractMachineSummary } from '../lib/parsers/machine-summary-extractor';
@@ -38,6 +39,8 @@ import type {
   OximetryTraceData,
   CrossDeviceResults,
   CSLData,
+  PLDData,
+  PLDSummary,
 } from '../lib/types';
 
 // Global error handler — catches uncaught errors and sends them as
@@ -284,6 +287,34 @@ async function processFiles(
     }
   }
 
+  // Step 3.7: Parse PLD.edf files and group by night date
+  const pldFiles = filterPLDFiles(fileList);
+  const pldByDate = new Map<string, PLDData[]>();
+  for (const pldInfo of pldFiles) {
+    const fileData = files.find((f) => f.path === pldInfo.path);
+    if (!fileData) continue;
+    try {
+      const pld = parsePLD(fileData.buffer, fileData.path);
+      if (!pld) continue;
+      // Determine night date from folder path or filename
+      const nightDate = extractFolderDate(pldInfo.path) ?? extractPLDFilenameDate(pldInfo.path);
+      if (!nightDate) continue;
+      const existing = pldByDate.get(nightDate) ?? [];
+      existing.push(pld);
+      pldByDate.set(nightDate, existing);
+    } catch (err) {
+      const filename = pldInfo.path.split('/').pop() || pldInfo.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse PLD ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
+    }
+  }
+
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
 
@@ -472,6 +503,18 @@ async function processFiles(
         : 0,
     } : null;
 
+    // PLD summary: match by night date, merge multiple PLD files per night
+    let pldSummary: PLDSummary | null = null;
+    const nightPldFiles = pldByDate.get(group.nightDate);
+    if (nightPldFiles && nightPldFiles.length > 0) {
+      // Use first PLD file for the night (typically one PLD per session)
+      // If multiple, pick the longest one
+      const bestPld = nightPldFiles.reduce((best, current) =>
+        current.durationSeconds > best.durationSeconds ? current : best
+      );
+      pldSummary = computePLDSummary(bestPld);
+    }
+
     nights.push({
       date: recordingDate,
       dateStr: group.nightDate,
@@ -488,6 +531,7 @@ async function processFiles(
       machineSummary: dailySummary[group.nightDate] ?? null,
       settingsFingerprint: computeFingerprint(settings),
       csl,
+      pldSummary,
     });
 
     // Emit incremental result so the orchestrator can persist progress
@@ -651,6 +695,7 @@ async function processBMCFiles(
       machineSummary: null,
       settingsFingerprint: computeFingerprint(nightSettings),
       csl: null,
+      pldSummary: null, // PLD is ResMed-specific, not available for BMC
     };
     nights.push(night);
 

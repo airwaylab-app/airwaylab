@@ -140,6 +140,7 @@ function makeNight(dateStr: string, settings: Partial<MachineSettings> = {}): Ni
     machineSummary: null,
     settingsFingerprint: computeFingerprint(s),
     csl: null,
+    pldSummary: null,
   };
 }
 
