@@ -4,13 +4,14 @@
 // ============================================================
 
 import { parseEDF } from '../lib/parsers/edf-parser';
-import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
+import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, filterCSLFiles, findSTRFile, findIdentificationFile, extractFolderDate } from '../lib/parsers/night-grouper';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
 import { extractMachineSummary } from '../lib/parsers/machine-summary-extractor';
 import { computeFingerprint } from '../lib/settings-fingerprint';
 import { parseOximetryCSV } from '../lib/parsers/oximetry-csv-parser';
 import { parseEVE } from '../lib/parsers/eve-parser';
+import { parseCSL } from '../lib/parsers/csl-parser';
 import { parseBMCFiles, bmcSessionNightDate } from '../lib/parsers/bmc-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
@@ -36,6 +37,7 @@ import type {
   OximetryResults,
   OximetryTraceData,
   CrossDeviceResults,
+  CSLData,
 } from '../lib/types';
 
 // Global error handler — catches uncaught errors and sends them as
@@ -244,6 +246,39 @@ async function processFiles(
     }
   }
 
+  // Step 3.6: Parse CSL.edf files and group CSR data by night date
+  const cslFileInfos = filterCSLFiles(fileList);
+  const cslDataByDate = new Map<string, CSLData>();
+  for (const cslInfo of cslFileInfos) {
+    const fileData = files.find((f) => f.path === cslInfo.path);
+    if (!fileData) continue;
+    try {
+      const cslData = parseCSL(fileData.buffer);
+      const nightDate = extractFolderDate(cslInfo.path);
+      if (!nightDate || !cslData) continue;
+      // Multiple CSL files per night: merge episodes
+      const existing = cslDataByDate.get(nightDate);
+      if (existing) {
+        existing.episodes.push(...cslData.episodes);
+        existing.totalCSRSeconds += cslData.totalCSRSeconds;
+        existing.episodeCount += cslData.episodeCount;
+        // csrPercentage will be recalculated below since it depends on total recording duration
+      } else {
+        cslDataByDate.set(nightDate, cslData);
+      }
+    } catch (err) {
+      const filename = cslInfo.path.split('/').pop() || cslInfo.path;
+      const detail = err instanceof Error ? err.message : String(err);
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'parse_file_failed',
+        detail: `Failed to parse ${filename}: ${detail}`,
+        tags: { file: filename, error: detail },
+      };
+      self.postMessage(warning);
+    }
+  }
+
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
 
@@ -413,6 +448,16 @@ async function processFiles(
       );
     }
 
+    // CSL (Cheyne-Stokes) data for this night
+    const cslRaw = cslDataByDate.get(group.nightDate) ?? null;
+    // Recalculate CSR percentage using total night duration if merged from multiple CSL files
+    const csl: CSLData | null = cslRaw ? {
+      ...cslRaw,
+      csrPercentage: totalDuration > 0
+        ? Math.round((cslRaw.totalCSRSeconds / totalDuration) * 100 * 100) / 100
+        : 0,
+    } : null;
+
     nights.push({
       date: recordingDate,
       dateStr: group.nightDate,
@@ -428,6 +473,7 @@ async function processFiles(
       crossDevice,
       machineSummary: dailySummary[group.nightDate] ?? null,
       settingsFingerprint: computeFingerprint(settings),
+      csl,
     });
 
     // Emit incremental result so the orchestrator can persist progress
@@ -590,6 +636,7 @@ async function processBMCFiles(
       crossDevice,
       machineSummary: null,
       settingsFingerprint: computeFingerprint(nightSettings),
+      csl: null,
     };
     nights.push(night);
 

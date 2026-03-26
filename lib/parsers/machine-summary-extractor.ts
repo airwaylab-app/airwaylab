@@ -18,6 +18,8 @@ const SIGNAL_MAP: Record<string, keyof MachineSummaryStats> = {
   'OAI': 'oai',
   'CAI': 'cai',
   'UAI': 'uai',
+  'RIN': 'reraIndex',
+  'CSR': 'csrPercentage',
   'Leak.50': 'leak50',
   'Leak.70': 'leak70',
   'Leak.95': 'leak95',
@@ -38,6 +40,7 @@ const SIGNAL_MAP: Record<string, keyof MachineSummaryStats> = {
   'TgtEPAP.95': 'tgtEpap95',
   'MaskPress.50': 'maskPress50',
   'MaskPress.95': 'maskPress95',
+  'MaskPress.Max': 'maskPressMax',
   'Duration': 'durationMin',
   'MaskOn': 'maskOnMin',
   'MaskOff': 'maskOffMin',
@@ -68,6 +71,7 @@ function setBooleanField(summary: MachineSummaryStats, field: keyof MachineSumma
 function makeEmptySummary(): MachineSummaryStats {
   return {
     ahi: null, hi: null, oai: null, cai: null, uai: null,
+    reraIndex: null, csrPercentage: null,
     leak50: null, leak70: null, leak95: null, leakMax: null,
     minVent50: null, minVent95: null,
     respRate50: null, respRate95: null,
@@ -76,7 +80,7 @@ function makeEmptySummary(): MachineSummaryStats {
     ieRatio50: null, spontCycPct: null,
     tgtIpap50: null, tgtIpap95: null,
     tgtEpap50: null, tgtEpap95: null,
-    maskPress50: null, maskPress95: null,
+    maskPress50: null, maskPress95: null, maskPressMax: null,
     durationMin: null, maskOnMin: null, maskOffMin: null, maskEvents: null,
     spo2_50: null, spo2_95: null,
     faultDevice: false, faultAlarm: false,
