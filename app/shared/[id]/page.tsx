@@ -7,12 +7,53 @@ import { SharedViewClient } from '@/components/share/shared-view-client';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type { NightResult, MachineSettings } from '@/lib/types';
 
-export const metadata: Metadata = {
-  title: 'Shared Analysis | AirwayLab',
-  description:
-    'View a shared PAP therapy analysis — Glasgow Index scores, flow limitation patterns, and oximetry insights.',
-  robots: { index: false, follow: false },
-};
+/**
+ * Dynamic OG metadata for shared analysis pages.
+ * Shows night date + headline metric in link previews (Discord, Reddit, Slack, etc.)
+ */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const fallback: Metadata = {
+    title: 'Shared Analysis | AirwayLab',
+    description: 'View a shared PAP therapy analysis with flow limitation scores, Glasgow Index, and RERA detection.',
+    robots: { index: false, follow: false },
+  };
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) return fallback;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return fallback;
+
+  const { data } = await supabase
+    .from('shared_analyses')
+    .select('nights, created_at')
+    .eq('id', id)
+    .single();
+
+  if (!data) return fallback;
+
+  const nights = rehydrateNights(data.nights);
+  if (!nights || nights.length === 0) return fallback;
+
+  const latest = nights[0]!;
+  const dateStr = latest.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const glasgow = latest.glasgow?.overall?.toFixed(1) ?? '—';
+  const fl = latest.wat?.flScore != null ? `${Math.round(latest.wat.flScore)}%` : null;
+  const nightCount = nights.length;
+
+  const title = nightCount > 1
+    ? `${nightCount} Nights — Glasgow ${glasgow} | AirwayLab`
+    : `${dateStr} — Glasgow ${glasgow}${fl ? `, FL ${fl}` : ''} | AirwayLab`;
+  const description = `PAP therapy analysis: Glasgow Index ${glasgow}${fl ? `, FL Score ${fl}` : ''}. ${nightCount} night${nightCount > 1 ? 's' : ''} analysed with AirwayLab.`;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+    robots: { index: false, follow: false },
+  };
+}
 
 /**
  * Rehydrate a single night from JSONB.
