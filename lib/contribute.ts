@@ -4,11 +4,56 @@
 // No night count cap — large datasets are chunked automatically.
 // ============================================================
 
-import type { NightResult } from './types';
+import type { NightResult, NightNotes } from './types';
+import { loadNightNotes } from './night-notes';
 
 const CHUNK_SIZE = 1000;
 const RATE_LIMIT_MAX_RETRIES = 3;
 const RATE_LIMIT_BASE_DELAY_MS = 5000;
+
+/** Structured night context for contribution (no free text — only enums + numeric) */
+interface NightContext {
+  caffeine: NightNotes['caffeine'];
+  alcohol: NightNotes['alcohol'];
+  congestion: NightNotes['congestion'];
+  position: NightNotes['position'];
+  stress: NightNotes['stress'];
+  exercise: NightNotes['exercise'];
+  symptomRating: NightNotes['symptomRating'];
+}
+
+/**
+ * Load structured night context from localStorage for contribution.
+ * Strips the free-text `note` field to prevent PII leakage.
+ * Returns null if no structured data exists for the night.
+ */
+function loadNightContext(dateStr: string): NightContext | null {
+  try {
+    const notes = loadNightNotes(dateStr);
+    // Only include if at least one structured field is set
+    const hasData =
+      notes.caffeine !== null ||
+      notes.alcohol !== null ||
+      notes.congestion !== null ||
+      notes.position !== null ||
+      notes.stress !== null ||
+      notes.exercise !== null ||
+      notes.symptomRating !== null;
+    if (!hasData) return null;
+    return {
+      caffeine: notes.caffeine,
+      alcohol: notes.alcohol,
+      congestion: notes.congestion,
+      position: notes.position,
+      stress: notes.stress,
+      exercise: notes.exercise,
+      symptomRating: notes.symptomRating,
+      // NOTE: notes.note (free text) is intentionally excluded — may contain PII
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface ContributionResult {
   ok: boolean;
@@ -20,6 +65,7 @@ interface ContributionResult {
  * Contribute anonymised night data to the community dataset.
  * Automatically chunks large datasets into multiple requests
  * sharing a single contributionId for grouping.
+ * Night context (structured enums from night notes) is included when available.
  */
 export async function contributeNights(
   nights: NightResult[],
@@ -27,10 +73,17 @@ export async function contributeNights(
   existingContributionId?: string
 ): Promise<ContributionResult> {
   const contributionId = existingContributionId ?? crypto.randomUUID();
+
+  // Load night contexts for all nights (parallel array)
+  const allNightContexts = nights.map((n) => loadNightContext(n.dateStr));
+
   let totalSent = 0;
 
   for (let i = 0; i < nights.length; i += CHUNK_SIZE) {
     const chunk = nights.slice(i, i + CHUNK_SIZE);
+    const contextChunk = allNightContexts.slice(i, i + CHUNK_SIZE);
+    // Only include nightContexts if at least one has data
+    const hasAnyContext = contextChunk.some((c) => c !== null);
     const batchNum = Math.floor(i / CHUNK_SIZE) + 1;
     let success = false;
 
@@ -38,7 +91,11 @@ export async function contributeNights(
       const res = await fetch('/api/contribute-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nights: chunk, contributionId }),
+        body: JSON.stringify({
+          nights: chunk,
+          contributionId,
+          ...(hasAnyContext && { nightContexts: contextChunk }),
+        }),
       });
 
       if (res.ok) {

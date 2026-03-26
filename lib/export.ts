@@ -64,13 +64,28 @@ export function exportCSV(nights: NightResult[]): string {
     'Unstable Epochs (%)',
     'NED-Invisible Events (%)',
     'Machine AHI',
+    'Machine HI',
     'Machine OAI',
     'Machine CAI',
+    'Machine UAI',
     'Leak P50 (L/min)',
     'Leak P95 (L/min)',
+    'Leak Max (L/min)',
+    'RespRate P50 (/min)',
+    'RespRate P95 (/min)',
+    'MinVent P50 (L/min)',
+    'MinVent P95 (L/min)',
+    'TidVol P50 (mL)',
+    'TidVol P95 (mL)',
     'SpontCyc%',
     'Settings Fingerprint',
     'Symptom Rating',
+    'Caffeine',
+    'Alcohol',
+    'Congestion',
+    'Position',
+    'Stress',
+    'Exercise',
   ];
 
   const ox = (n: NightResult, get: (o: NonNullable<NightResult['oximetry']>) => number) =>
@@ -132,18 +147,35 @@ export function exportCSV(nights: NightResult[]): string {
     (n.ned.unstableEpochPct ?? 0).toFixed(2),
     (n.ned.hypopneaNedInvisiblePct ?? 0).toFixed(2),
     n.machineSummary?.ahi != null ? n.machineSummary.ahi.toFixed(1) : '',
+    n.machineSummary?.hi != null ? n.machineSummary.hi.toFixed(1) : '',
     n.machineSummary?.oai != null ? n.machineSummary.oai.toFixed(1) : '',
     n.machineSummary?.cai != null ? n.machineSummary.cai.toFixed(1) : '',
+    n.machineSummary?.uai != null ? n.machineSummary.uai.toFixed(1) : '',
     n.machineSummary?.leak50 != null ? n.machineSummary.leak50.toFixed(1) : '',
     n.machineSummary?.leak95 != null ? n.machineSummary.leak95.toFixed(1) : '',
+    n.machineSummary?.leakMax != null ? n.machineSummary.leakMax.toFixed(1) : '',
+    n.machineSummary?.respRate50 != null ? n.machineSummary.respRate50.toFixed(1) : '',
+    n.machineSummary?.respRate95 != null ? n.machineSummary.respRate95.toFixed(1) : '',
+    n.machineSummary?.minVent50 != null ? n.machineSummary.minVent50.toFixed(1) : '',
+    n.machineSummary?.minVent95 != null ? n.machineSummary.minVent95.toFixed(1) : '',
+    n.machineSummary?.tidVol50 != null ? n.machineSummary.tidVol50.toFixed(0) : '',
+    n.machineSummary?.tidVol95 != null ? n.machineSummary.tidVol95.toFixed(0) : '',
     n.machineSummary?.spontCycPct != null ? n.machineSummary.spontCycPct.toFixed(0) : '',
     n.settingsFingerprint?.hash ?? '',
-    (() => {
+    ...(() => {
       try {
         const notes = loadNightNotes(n.dateStr);
-        return notes.symptomRating !== null ? String(notes.symptomRating) : '';
+        return [
+          notes.symptomRating !== null ? String(notes.symptomRating) : '',
+          notes.caffeine ?? '',
+          notes.alcohol ?? '',
+          notes.congestion ?? '',
+          notes.position ?? '',
+          notes.stress ?? '',
+          notes.exercise ?? '',
+        ];
       } catch {
-        return '';
+        return ['', '', '', '', '', '', ''];
       }
     })(),
   ]);
