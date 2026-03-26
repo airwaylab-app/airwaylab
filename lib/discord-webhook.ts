@@ -231,6 +231,65 @@ export function formatUserSignalEmbed(opts: {
   }
 }
 
+/** Email bounce/complaint embed for #ops-alerts. */
+export function formatEmailAlertEmbed(opts: {
+  event: 'bounce' | 'complaint'
+  email: string
+  resendId: string
+  userId?: string
+}): DiscordEmbed {
+  const isBounce = opts.event === 'bounce'
+
+  const fields: DiscordEmbedField[] = [
+    { name: 'Email', value: opts.email, inline: true },
+    { name: 'Resend ID', value: opts.resendId, inline: true },
+  ]
+  if (opts.userId) fields.push({ name: 'User ID', value: opts.userId, inline: true })
+  fields.push({
+    name: 'Action taken',
+    value: isBounce
+      ? 'Pending emails cancelled'
+      : 'Pending emails cancelled + unsubscribed',
+    inline: false,
+  })
+
+  return {
+    title: isBounce ? ':warning: Email Bounced' : ':red_circle: Spam Complaint',
+    color: isBounce ? COLORS.amber : COLORS.red,
+    fields,
+    footer: { text: 'Resend webhook' },
+    timestamp: new Date().toISOString(),
+  }
+}
+
+/** Broadcast completion embed for #ops-alerts. */
+export function formatBroadcastEmbed(opts: {
+  templateId: string
+  sent: number
+  skipped: number
+  errors: number
+  totalOptedIn: number
+}): DiscordEmbed {
+  const hasErrors = opts.errors > 0
+  const fields: DiscordEmbedField[] = [
+    { name: 'Template', value: opts.templateId, inline: true },
+    { name: 'Sent', value: String(opts.sent), inline: true },
+    { name: 'Skipped', value: String(opts.skipped), inline: true },
+    { name: 'Errors', value: String(opts.errors), inline: true },
+    { name: 'Total opted in', value: String(opts.totalOptedIn), inline: true },
+  ]
+
+  return {
+    title: hasErrors
+      ? ':warning: Broadcast Sent (with errors)'
+      : ':mega: Broadcast Sent',
+    color: hasErrors ? COLORS.amber : COLORS.green,
+    fields,
+    footer: { text: 'Admin broadcast' },
+    timestamp: new Date().toISOString(),
+  }
+}
+
 /** Data contribution embed for #growth. */
 export function formatGrowthEmbed(opts: {
   event: 'data_contribution' | 'new_signup'
