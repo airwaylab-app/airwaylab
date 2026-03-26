@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
-import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 /**
@@ -23,7 +23,7 @@ const SharePayloadSchema = z.object({
   shareScope: z.enum(['single', 'all']),
 });
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
 
 const MAX_PAYLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -33,7 +33,7 @@ const MAX_PAYLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
  * Creates a share link by storing analysis results in Supabase.
  * Requires authentication — provides identity for abuse tracking,
  * storage quotas, and GDPR deletion path.
- * Rate limited to 10/hour per IP.
+ * Rate limited to 20/hour per authenticated user.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -41,16 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const ip = getRateLimitKey(request);
-    if (await limiter.isLimited(ip)) {
-      console.error(`[share] 429 rate limited ip=${ip}`);
-      return NextResponse.json(
-        { error: 'Too many shares. Please try again later.' },
-        { status: 429 }
-      );
-    }
-
-    // Auth check — share creation requires a logged-in user
+    // Auth check first — reject unauthenticated requests before touching rate limiter
     const supabaseAuth = await getSupabaseServer();
     if (!supabaseAuth) {
       return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
@@ -61,6 +52,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Sign in to share your analysis.' },
         { status: 401 }
+      );
+    }
+
+    // Rate limit per user (not IP) so users behind NAT/VPN get their own bucket
+    if (await limiter.isLimited(getUserRateLimitKey(user.id))) {
+      console.error(`[share] 429 rate limited user=${user.id}`);
+      return NextResponse.json(
+        { error: 'Too many shares. Please try again later.' },
+        { status: 429 }
       );
     }
 
