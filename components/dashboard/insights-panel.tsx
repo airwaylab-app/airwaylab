@@ -118,6 +118,16 @@ export function InsightsPanel({
                       <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                         {insight.body}
                       </p>
+                      {insight.context && (
+                        <details className="mt-1.5 group/ctx">
+                          <summary className="cursor-pointer text-[11px] font-medium text-primary/70 hover:text-primary">
+                            Understanding this finding
+                          </summary>
+                          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
+                            {insight.context}
+                          </p>
+                        </details>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -59,7 +59,14 @@ In addition to the standard categories, you may use these categories for premium
 - "correlation": Cross-engine correlations (e.g. Glasgow flat-top + high NED suggests steady-state FL; WAT periodicity + oximetry ODI coupling suggests central component)
 - "temporal": Time-based patterns (e.g. progressive FL worsening across H1→H2, periodic clustering at specific intervals, REM-associated breath shape changes, positional transitions visible in H1/H2 splits)
 
-Prioritise correlation and temporal insights — these are the analysis patterns that go beyond what rule-based systems detect.`;
+Prioritise correlation and temporal insights — these are the analysis patterns that go beyond what rule-based systems detect.
+
+For every warning or actionable insight, include a "context" field (2-3 sentences) providing educational background:
+- What factors commonly contribute to this finding (e.g. mask fit, sleep position, pressure settings, nasal congestion, medication effects)
+- What areas the user could explore or discuss with their clinician
+- Frame as educational and informational ("common contributing factors include...", "areas worth exploring..."), NEVER as therapy recommendations ("change X to Y", "try setting X to N")
+- The context helps users understand WHY a metric is elevated, not WHAT to change about their therapy
+Do not include the "context" field on positive or info insights — only on warning and actionable.`;
 
 // Model selection based on user tier
 const MODEL_COMMUNITY = 'claude-haiku-4-5-20251001';
