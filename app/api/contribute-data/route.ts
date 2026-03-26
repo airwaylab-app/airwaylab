@@ -6,6 +6,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
+import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
 
@@ -239,6 +240,15 @@ export async function POST(request: NextRequest) {
     } else {
       Sentry.logger.info('[contribute-data] Supabase not configured', { nightCount: anonymised.length });
     }
+
+    // Discord #growth alert (fire-and-forget)
+    const hasOximetry = anonymised.some((n) => n.oximetry !== null)
+    void sendAlert('growth', '', [formatGrowthEmbed({
+      event: 'data_contribution',
+      nightCount: anonymised.length,
+      hasOximetry,
+      deviceModel: anonymised[0]?.settings.deviceModel || undefined,
+    })]);
 
     return NextResponse.json({
       ok: true,

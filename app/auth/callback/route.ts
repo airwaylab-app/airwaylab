@@ -7,6 +7,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
 
 /**
  * Validate the `next` redirect parameter to prevent open redirect attacks.
@@ -96,6 +97,18 @@ export async function GET(request: NextRequest) {
       level: 'warning',
       tags: { checkpoint: 'auth_ghost_session', route: 'auth-callback' },
     });
+  }
+
+  // Detect new signups: if user was created within the last 60 seconds, it's a new signup
+  if (user?.created_at) {
+    const createdAt = new Date(user.created_at).getTime();
+    const now = Date.now();
+    if (now - createdAt < 60_000) {
+      void sendAlert('growth', '', [formatGrowthEmbed({
+        event: 'new_signup',
+        email: user.email ?? undefined,
+      })]);
+    }
   }
 
   // Add auth=success param so the client-side AuthProvider can detect

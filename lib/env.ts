@@ -80,6 +80,18 @@ export const serverEnv = {
 
   /** Sentry auth token for stats API (optional) */
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN ?? undefined,
+
+  /** Discord webhook URLs for admin alert channels (all optional) */
+  DISCORD_OPS_WEBHOOK_URL: process.env.DISCORD_OPS_WEBHOOK_URL ?? undefined,
+  DISCORD_REVENUE_WEBHOOK_URL: process.env.DISCORD_REVENUE_WEBHOOK_URL ?? undefined,
+  DISCORD_USER_SIGNALS_WEBHOOK_URL: process.env.DISCORD_USER_SIGNALS_WEBHOOK_URL ?? undefined,
+  DISCORD_GROWTH_WEBHOOK_URL: process.env.DISCORD_GROWTH_WEBHOOK_URL ?? undefined,
+
+  /** Discord webhook URL for #general channel (weekly discussion topics) */
+  DISCORD_GENERAL_WEBHOOK_URL: process.env.DISCORD_GENERAL_WEBHOOK_URL ?? undefined,
+
+  /** Sentry webhook secret for authenticating alert forwards to Discord */
+  SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET ?? undefined,
 } as const;
 
 /**

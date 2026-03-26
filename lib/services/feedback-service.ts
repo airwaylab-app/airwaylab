@@ -4,6 +4,7 @@ import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { supabaseInsert } from './supabase-helpers'
 import { sendEmail } from '@/lib/email/send'
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -71,6 +72,14 @@ export function submitFeedback(
       ].join('\n'),
       metadata: { emailType: 'admin_feedback' },
     })
+
+    // Discord notification (fire-and-forget)
+    void sendAlert('user-signals', '', [formatUserSignalEmbed({
+      type: input.message.startsWith('Oximetry format request') ? 'unsupported_device' : 'feedback',
+      category: label,
+      message: input.message.trim(),
+      email: input.email?.trim() ?? undefined,
+    })])
 
     const isFormatRequest = input.message.startsWith('Oximetry format request')
     const alertType = isFormatRequest ? 'unsupported_format' : input.type

@@ -6,6 +6,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { sendEmail } from '@/lib/email/send';
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
@@ -101,6 +102,15 @@ export async function POST(request: NextRequest) {
     } else {
       console.error('[provider-interest] Supabase not configured -- submission not stored');
     }
+
+    // Discord #user-signals alert (fire-and-forget)
+    void sendAlert('user-signals', '', [formatUserSignalEmbed({
+      type: 'provider_interest',
+      category: cleanPracticeType ? PRACTICE_TYPE_LABELS[cleanPracticeType] ?? cleanPracticeType : undefined,
+      message: message?.trim() ?? undefined,
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+    })]);
 
     Sentry.captureMessage('New provider interest submission', {
       level: 'info',

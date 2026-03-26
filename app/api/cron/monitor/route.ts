@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { checkAll, formatAlertEmail, writeSnapshot, buildCriticalAlerts } from '@/lib/monitoring';
 import { sendEmail } from '@/lib/email/send';
+import { sendOpsAlert, formatMonitorEmbed } from '@/lib/discord-webhook';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,8 @@ async function sendAlert(subject: string, body: string) {
  *
  * Runs daily via Vercel Cron (04:00 UTC). Checks usage across all paid
  * services (Supabase, Vercel, Anthropic, Sentry, Resend, Upstash).
- * Sends email alert when any service exceeds 80% of its limit.
+ * Sends Discord alert to #ops-alerts when any service exceeds 80% of
+ * its limit. Falls back to email if Discord webhook is not configured.
  * Writes daily snapshot for trend analysis.
  *
  * Protected by CRON_SECRET.
@@ -56,9 +58,18 @@ export async function GET(request: NextRequest) {
     let alertsSent = 0;
 
     if (alertChecks.length > 0) {
-      const { subject, body } = formatAlertEmail(checks);
-      const sent = await sendAlert(subject, body);
-      if (sent) alertsSent = 1;
+      // Primary: Discord ops channel
+      const embed = formatMonitorEmbed(checks);
+      const discordSent = await sendOpsAlert('', [embed]);
+
+      // Fallback: email if Discord fails
+      if (!discordSent) {
+        const { subject, body } = formatAlertEmail(checks);
+        const emailSent = await sendAlert(subject, body);
+        if (emailSent) alertsSent = 1;
+      } else {
+        alertsSent = 1;
+      }
 
       const criticalAlerts = buildCriticalAlerts(checks);
       Sentry.captureMessage('Service usage alert triggered', {
@@ -68,6 +79,7 @@ export async function GET(request: NextRequest) {
           alert_count: alertChecks.length,
           critical_count: criticalAlerts.length,
           services: alertChecks.map((c) => `${c.service}:${c.usage_pct}%`),
+          channel: discordSent ? 'discord' : 'email',
         },
       });
     }

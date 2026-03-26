@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { supabaseInsert } from './supabase-helpers'
 import { sendEmail } from '@/lib/email/send'
 import { contactConfirmationEmail } from '@/lib/email/transactional'
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -84,6 +85,15 @@ export function submitContactForm(
       html: confirmation.html,
       metadata: { emailType: 'contact_confirmation' },
     })
+
+    // Discord notification (fire-and-forget)
+    void sendAlert('user-signals', '', [formatUserSignalEmbed({
+      type: 'contact',
+      category: label,
+      message: input.message.trim(),
+      email: normalizedEmail,
+      name: input.name ?? undefined,
+    })])
 
     Sentry.captureMessage(`New contact form: ${input.category}`, {
       level: input.category === 'security' ? 'warning' : 'info',

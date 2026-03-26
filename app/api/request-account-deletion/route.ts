@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook';
 
 /** Account deletion requests: 3 per hour per IP */
 const deletionRateLimiter = new RateLimiter({
@@ -56,6 +57,12 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ error: 'Failed to submit request' }, { status: 500 });
     }
+
+    // Discord #user-signals alert (fire-and-forget)
+    void sendAlert('user-signals', '', [formatUserSignalEmbed({
+      type: 'account_deletion',
+      email: user.email ?? undefined,
+    })]);
 
     // Notify via Sentry so the team sees it in monitoring
     Sentry.captureMessage(`Account deletion requested by ${user.email}`, {
