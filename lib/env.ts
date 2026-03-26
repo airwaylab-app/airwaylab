@@ -87,6 +87,9 @@ export const serverEnv = {
   DISCORD_USER_SIGNALS_WEBHOOK_URL: process.env.DISCORD_USER_SIGNALS_WEBHOOK_URL ?? undefined,
   DISCORD_GROWTH_WEBHOOK_URL: process.env.DISCORD_GROWTH_WEBHOOK_URL ?? undefined,
 
+  /** Discord webhook URL for #general channel (weekly discussion topics) */
+  DISCORD_GENERAL_WEBHOOK_URL: process.env.DISCORD_GENERAL_WEBHOOK_URL ?? undefined,
+
   /** Sentry webhook secret for authenticating alert forwards to Discord */
   SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET ?? undefined,
 } as const;

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { sendAlert, COLORS } from '@/lib/discord-webhook'
+import { DISCUSSION_TOPICS, USAGE_TIPS, getISOWeekNumber } from './community-topics'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,7 +99,44 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }])
 
-    console.error(`[cron/weekly-digest] subs=+${newSubs}/-${cancellations}, feedback=${feedbackCount.count}, contributions=${contributions.length}`)
+    // Post weekly discussion topic + tip to #general via webhook
+    const week = getISOWeekNumber()
+    const topic = DISCUSSION_TOPICS[week % DISCUSSION_TOPICS.length]!
+    const tip = USAGE_TIPS[week % USAGE_TIPS.length]!
+
+    const generalWebhookUrl = process.env.DISCORD_GENERAL_WEBHOOK_URL
+    if (generalWebhookUrl) {
+      // Discussion topic
+      await fetch(generalWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: `:speech_balloon: Weekly Discussion: ${topic.title}`,
+            description: topic.prompt,
+            color: COLORS.teal,
+            footer: { text: 'Share your experience — discuss with your clinician before making changes.' },
+          }],
+        }),
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => { /* fail-open */ })
+
+      // Usage tip
+      await fetch(generalWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: ':bulb: Tip of the Week',
+            description: tip,
+            color: COLORS.blue,
+          }],
+        }),
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => { /* fail-open */ })
+    }
+
+    console.error(`[cron/weekly-digest] subs=+${newSubs}/-${cancellations}, feedback=${feedbackCount.count}, contributions=${contributions.length}, topic=${topic.title}`)
 
     return NextResponse.json({
       ok: true,
@@ -106,6 +144,7 @@ export async function GET(request: NextRequest) {
       cancellations,
       feedback: feedbackCount.count,
       contributions: contributions.length,
+      topic: topic.title,
     })
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'cron-weekly-digest' } })
