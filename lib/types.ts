@@ -449,6 +449,92 @@ export interface MachineSummaryStats {
   ambHumidity50: number | null;
 }
 
+// ============================================================
+// PLD (Periodic Low-resolution Data) types
+// ============================================================
+
+/**
+ * Raw PLD channel data parsed from PLD.edf files.
+ * All channels are optional — not all devices include all channels.
+ * PLD files are low-resolution (0.5 Hz / 2-second intervals, 30-day retention).
+ */
+export interface PLDData {
+  samplingRate: number;           // typically 0.5 Hz
+  durationSeconds: number;
+  startTime: Date;
+  maskPressure?: Float32Array;    // cmH2O
+  therapyPressure?: Float32Array; // cmH2O
+  expiratoryPressure?: Float32Array; // cmH2O (EPAP)
+  inspiratoryPressure?: Float32Array; // cmH2O (IPAP, BiPAP only)
+  leak?: Float32Array;            // L/min (converted from L/s)
+  respiratoryRate?: Float32Array; // breaths/min
+  tidalVolume?: Float32Array;     // mL (converted from L)
+  minuteVentilation?: Float32Array; // L/min
+  snore?: Float32Array;           // dimensionless
+  fflIndex?: Float32Array;        // dimensionless (machine FL score)
+  ieRatio?: Float32Array;         // ratio (converted from x100)
+  ti?: Float32Array;              // seconds
+  te?: Float32Array;              // seconds
+  targetMV?: Float32Array;        // L/min (ASV/iVAPS)
+}
+
+/** Summary statistics for a single PLD channel */
+export interface PLDChannelStats {
+  median: number;
+  p95: number;
+  max: number;
+}
+
+/** Extended channel stats including min */
+export interface PLDChannelStatsWithMin extends PLDChannelStats {
+  min: number;
+}
+
+/** Snore-specific stats including percentage above zero */
+export interface PLDSnoreStats extends PLDChannelStats {
+  percentAboveZero: number;
+}
+
+/** Minimal channel stats (median only) */
+export interface PLDChannelMedian {
+  median: number;
+}
+
+/** Two-stat channel stats (median + p95) */
+export interface PLDChannelMedianP95 {
+  median: number;
+  p95: number;
+}
+
+/**
+ * Aggregated PLD summary — small enough to persist in localStorage.
+ * Computed from raw PLDData Float32Arrays, which are NOT persisted.
+ */
+export interface PLDSummary {
+  samplingRate: number;
+  durationSeconds: number;
+  sampleCount: number;
+  // Summary stats for each channel
+  leak?: PLDChannelStats;
+  snore?: PLDSnoreStats;
+  fflIndex?: PLDChannelStats;
+  therapyPressure?: PLDChannelStatsWithMin;
+  expiratoryPressure?: PLDChannelStatsWithMin;
+  inspiratoryPressure?: PLDChannelStatsWithMin;
+  respiratoryRate?: PLDChannelMedianP95;
+  tidalVolume?: PLDChannelMedianP95;
+  minuteVentilation?: PLDChannelMedianP95;
+  ieRatio?: PLDChannelMedian;
+  ti?: PLDChannelMedian;
+  te?: PLDChannelMedian;
+  targetMV?: PLDChannelMedian;
+  // Capability flags
+  hasLeakData: boolean;
+  hasSnoreData: boolean;
+  hasFflData: boolean;
+  hasPressureData: boolean;
+}
+
 export interface SettingsFingerprint {
   epap: number;
   ps: number;
@@ -493,6 +579,7 @@ export interface NightResult {
   machineSummary: MachineSummaryStats | null;
   settingsFingerprint: SettingsFingerprint | null;
   csl: CSLData | null;
+  pldSummary: PLDSummary | null;
 }
 
 export interface AnalysisState {

@@ -105,6 +105,11 @@ function validateResMedFiles(
     warnings.push('Pulse oximetry data detected on your SD card (SpO2 + heart rate will be included in your analysis).');
   }
 
+  const hasPLD = edfFiles.some((f) => /(?:^|_)pld\.edf$/i.test(f.name));
+  if (hasPLD) {
+    warnings.push('Therapy summary data detected (leak, pressure, snore metrics will be included in your analysis).');
+  }
+
   const hasIdentification = files.some((f) => f.name.toUpperCase().startsWith('IDENTIFICATION'));
   if (!hasIdentification) {
     warnings.push('No Identification file found. Select the SD card root folder (one level above DATALOG) so we can identify your device model.');

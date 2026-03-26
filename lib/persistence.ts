@@ -229,6 +229,14 @@ export function loadPersistedResults(): {
       if ((night as Record<string, unknown>).settingsFingerprint === undefined) {
         night.settingsFingerprint = null;
       }
+      // Migrate: csl added for CSL.edf Cheyne-Stokes data
+      if ((night as Record<string, unknown>).csl === undefined) {
+        night.csl = null;
+      }
+      // Migrate: pldSummary added for PLD.edf low-resolution therapy data
+      if ((night as Record<string, unknown>).pldSummary === undefined) {
+        night.pldSummary = null;
+      }
       // Migrate: hypopnea & amplitude stability fields added in v0.7.0
       if (night.ned && night.ned.briefObstructionIndex === undefined) {
         night.ned.hypopneaCount = 0;

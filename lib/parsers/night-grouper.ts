@@ -37,6 +37,18 @@ function extractFilenameDate(filePath: string): string | null {
 }
 
 /**
+ * Extract date from PLD filename (YYYYMMDD_HHMMSS_PLD.edf).
+ */
+export function extractPLDFilenameDate(filePath: string): string | null {
+  const match = filePath.match(/(\d{8})_(\d{6})_PLD/i);
+  if (match) {
+    const d = match[1]!;
+    return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+  }
+  return null;
+}
+
+/**
  * Determine the sleep night date for a session.
  *
  * Priority:
@@ -123,6 +135,19 @@ export function filterBRPFiles(
         f.size > 50 * 1024;
     }
   );
+}
+
+/**
+ * Filter uploaded files to only valid PLD.edf therapy data files (any size).
+ * PLD files contain low-resolution (0.5 Hz) machine-computed therapy metrics.
+ */
+export function filterPLDFiles(
+  files: { name: string; path: string; size: number }[]
+): { name: string; path: string; size: number }[] {
+  return files.filter((f) => {
+    const name = f.name.toLowerCase();
+    return name.endsWith('pld.edf') || name.endsWith('_pld.edf');
+  });
 }
 
 /**
