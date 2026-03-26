@@ -23,6 +23,8 @@ export interface Insight {
   category: 'glasgow' | 'wat' | 'ned' | 'oximetry' | 'therapy' | 'trend' | 'settings' | 'correlation' | 'temporal';
   /** Optional link for further reading */
   link?: { text: string; href: string };
+  /** Educational context explaining contributing factors (premium AI only) */
+  context?: string;
 }
 
 /* ------------------------------------------------------------------ */
