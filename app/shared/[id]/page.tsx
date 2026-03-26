@@ -51,6 +51,7 @@ function rehydrateNight(raw: Record<string, unknown>): NightResult {
     },
     machineSummary: (raw.machineSummary as NightResult['machineSummary']) ?? null,
     settingsFingerprint: (raw.settingsFingerprint as NightResult['settingsFingerprint']) ?? null,
+    csl: (raw.csl as NightResult['csl']) ?? null,
   } as NightResult;
 }
 

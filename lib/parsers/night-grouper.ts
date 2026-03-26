@@ -161,6 +161,19 @@ export function filterEVEFiles(
 }
 
 /**
+ * Filter uploaded files to only valid CSL.edf Cheyne-Stokes files (any size).
+ * CSL files contain CSR Start/End events in EDF+ Annotations format.
+ */
+export function filterCSLFiles(
+  files: { name: string; path: string; size: number }[]
+): { name: string; path: string; size: number }[] {
+  return files.filter((f) => {
+    const name = f.name.toLowerCase();
+    return name.endsWith('csl.edf') && (name === 'csl.edf' || name.charAt(name.length - 8) === '_');
+  });
+}
+
+/**
  * Find Identification file from file list (case-insensitive).
  */
 export function findIdentificationFile(

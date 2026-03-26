@@ -395,6 +395,12 @@ export interface MachineSummaryStats {
   cai: number | null;
   uai: number | null;
 
+  // Machine RERA index (events/hr) — from RIN signal
+  reraIndex: number | null;
+
+  // Cheyne-Stokes % of sleep time — from CSR signal
+  csrPercentage: number | null;
+
   // Leak statistics (data quality indicator)
   leak50: number | null;
   leak70: number | null;
@@ -420,6 +426,7 @@ export interface MachineSummaryStats {
   tgtEpap95: number | null;
   maskPress50: number | null;
   maskPress95: number | null;
+  maskPressMax: number | null;
 
   // Session metadata
   durationMin: number | null;
@@ -452,6 +459,24 @@ export interface SettingsFingerprint {
   hash: string;
 }
 
+export interface CSREpisode {
+  /** Onset in seconds from recording start */
+  startSec: number;
+  /** End time in seconds from recording start */
+  endSec: number;
+  /** Episode duration in seconds */
+  durationSec: number;
+}
+
+export interface CSLData {
+  episodes: CSREpisode[];
+  /** Sum of all episode durations in seconds */
+  totalCSRSeconds: number;
+  /** totalCSRSeconds / recording duration x 100 */
+  csrPercentage: number;
+  episodeCount: number;
+}
+
 export interface NightResult {
   date: Date;
   dateStr: string;
@@ -467,6 +492,7 @@ export interface NightResult {
   crossDevice: CrossDeviceResults | null;
   machineSummary: MachineSummaryStats | null;
   settingsFingerprint: SettingsFingerprint | null;
+  csl: CSLData | null;
 }
 
 export interface AnalysisState {

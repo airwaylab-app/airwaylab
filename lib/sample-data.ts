@@ -323,6 +323,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     crossDevice: null,
     machineSummary: null,
     settingsFingerprint: null,
+    csl: null,
   },
   {
     date: dateFromStr('2025-01-14'),
@@ -339,6 +340,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     crossDevice: null,
     machineSummary: null,
     settingsFingerprint: null,
+    csl: null,
   },
   {
     date: dateFromStr('2025-01-13'),
@@ -355,6 +357,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     crossDevice: null,
     machineSummary: null,
     settingsFingerprint: null,
+    csl: null,
   },
   {
     date: dateFromStr('2025-01-12'),
@@ -371,6 +374,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     crossDevice: null,
     machineSummary: null,
     settingsFingerprint: null,
+    csl: null,
   },
   {
     date: dateFromStr('2025-01-11'),
@@ -387,6 +391,7 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     crossDevice: null,
     machineSummary: null,
     settingsFingerprint: null,
+    csl: null,
   },
 ];
 
