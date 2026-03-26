@@ -61,3 +61,9 @@ cache/
 
 # WIP files (untracked dev work, excluded from tsc)
 _wip/
+
+# Outreach & personal data (contacts, emails, leads — belongs in Gmail/CRM, not a public repo)
+outreach*.md
+leads/
+contacts/
+*.contacts.md

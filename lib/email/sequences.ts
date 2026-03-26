@@ -103,14 +103,14 @@ export async function getPendingEmails(
       sequence_name,
       step,
       ab_variant,
-      profiles!inner(email, email_opt_in)
+      profiles!email_sequences_user_id_profiles_fkey(email, email_opt_in)
     `)
     .eq('status', 'pending')
     .lte('scheduled_at', new Date().toISOString())
     .limit(50); // batch size per cron run
 
   if (error) {
-    console.error('[email-sequences] Failed to query pending emails:', error.message);
+    console.error('[email-sequences] Failed to query pending emails:', error.message, error.details, error.hint);
     return [];
   }
 

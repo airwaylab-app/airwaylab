@@ -139,6 +139,53 @@ const trustItems = [
   },
 ];
 
+/* ─── Landing page FAQ (feeds JSON-LD + LLM citation) ─── */
+const landingFaqData = [
+  {
+    question: 'What is AirwayLab?',
+    answer:
+      'AirwayLab is a free, open-source web tool that analyses ResMed CPAP and BiPAP SD card data using four research-grade engines: Glasgow Index (breath shape scoring), WAT (flow limitation and periodicity), NED (negative effort dependence and RERA detection), and Oximetry (SpO2 and heart rate analysis). All analysis runs entirely in your browser. No data is uploaded to any server unless you choose to share it.',
+  },
+  {
+    question: 'Is AirwayLab free?',
+    answer:
+      'Yes. All four analysis engines, up to 3 nights per upload, AI insights, and cloud backup are free. Premium tiers (Supporter $9/month, Champion $25/month) add unlimited AI analysis, extended history, PDF reports, and Discord community access. The free tier is complete and will remain free.',
+  },
+  {
+    question: 'What PAP machines does AirwayLab support?',
+    answer:
+      'AirwayLab currently supports ResMed AirSense 10, AirCurve 10, and partially AirSense 11. These machines store detailed flow waveform data in EDF format on the SD card. Philips Respironics and other manufacturers use different data formats and are not currently supported.',
+  },
+  {
+    question: 'Is my sleep data private?',
+    answer:
+      'Yes. All core analysis runs entirely in your browser using Web Workers. Your data stays on your device by default. Optional features like AI insights, cloud backup, and data contribution require your explicit consent. The source code is open-source (GPL-3.0) and publicly auditable.',
+  },
+  {
+    question: 'What is the Glasgow Index?',
+    answer:
+      'The Glasgow Index is a 9-component scoring system that evaluates each breath for flow limitation characteristics including skew, spike, flat top, multi-peak, and variable amplitude. Scores range from 0 to 9 where lower is better. Below 2.0 is generally considered good therapy. It was originally developed by DaveSkvn as an open-source analyser and ported to AirwayLab.',
+  },
+  {
+    question: 'How is AirwayLab different from OSCAR?',
+    answer:
+      'OSCAR is a desktop application for interactive breath-by-breath waveform browsing. AirwayLab is a browser-based tool that runs automated flow limitation scoring using four independent engines. OSCAR shows your waveforms; AirwayLab analyses them with composite metrics. They are complementary tools, not competitors. Many users benefit from using both.',
+  },
+];
+
+const landingFaqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: landingFaqData.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+};
+
 const softwareAppJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -167,6 +214,10 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(landingFaqJsonLd) }}
       />
       {/* ─── Hero ─── */}
       <section className="relative flex min-h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:min-h-[calc(100vh-4rem)]">
@@ -805,6 +856,40 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ─── FAQ ─── */}
+      <section className="container mx-auto px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Frequently Asked Questions
+          </h2>
+        </div>
+        <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+          {landingFaqData.map((item) => (
+            <div
+              key={item.question}
+              className="rounded-lg border border-border/50 bg-card/30 p-5"
+            >
+              <h3 className="mb-2 text-sm font-semibold text-foreground">
+                {item.question}
+              </h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {item.answer}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          More questions?{' '}
+          <Link href="/about" className="text-primary hover:underline">
+            Read about our methodology
+          </Link>
+          {' '}or{' '}
+          <Link href="/glossary" className="text-primary hover:underline">
+            browse the glossary
+          </Link>
+        </p>
       </section>
 
       {/* ─── CTA + Email ─── */}

@@ -49,13 +49,31 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);
 
+  if (pendingEmails.length === 0) {
+    console.error('[email-drips] getPendingEmails returned 0 rows -- check FK and join config');
+  } else {
+    const seqCounts = pendingEmails.reduce((acc, e) => {
+      acc[e.sequence_name] = (acc[e.sequence_name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.error(`[email-drips] Processing ${pendingEmails.length} emails:`, JSON.stringify(seqCounts));
+  }
+
   for (const email of pendingEmails) {
     const config = SEQUENCES[email.sequence_name];
-    if (!config) continue;
+    if (!config) {
+      console.error(`[email-drips] No SEQUENCES config for: ${email.sequence_name}`);
+      result.failed++;
+      continue;
+    }
 
     const unsubscribeUrl = getUnsubscribeUrl(email.user_id);
     const template = config.getTemplate(email.step, unsubscribeUrl);
-    if (!template) continue;
+    if (!template) {
+      console.error(`[email-drips] No template for ${email.sequence_name} step ${email.step}`);
+      result.failed++;
+      continue;
+    }
 
     const resendId = await sendEmail({
       to: email.email,

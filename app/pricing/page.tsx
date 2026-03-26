@@ -70,6 +70,19 @@ const FAQ_ITEMS = [
   },
 ];
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.a,
+    },
+  })),
+};
+
 export default function PricingPage() {
   const { user, tier } = useAuth();
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('yearly');
@@ -142,6 +155,10 @@ export default function PricingPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
         {/* Header */}
         <div className="mb-12 text-center">
