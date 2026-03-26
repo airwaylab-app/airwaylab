@@ -12,7 +12,7 @@ interface MachineEvent {
   /** Raw annotation label from EVE.edf */
   rawLabel: string;
   /** Normalised event type */
-  type: 'obstructive-apnea' | 'central-apnea' | 'hypopnea' | 'unclassified-apnea';
+  type: 'obstructive-apnea' | 'central-apnea' | 'hypopnea' | 'unclassified-apnea' | 'rera';
 }
 
 /** Map lowercase annotation labels to normalised event types */
@@ -21,6 +21,8 @@ const LABEL_MAP: Record<string, MachineEvent['type']> = {
   'central apnea': 'central-apnea',
   'hypopnea': 'hypopnea',
   'apnea': 'unclassified-apnea',
+  'rera': 'rera',
+  'arousal': 'rera',
 };
 
 /** Labels to silently skip (not events) */
