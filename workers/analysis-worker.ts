@@ -216,6 +216,7 @@ async function processFiles(
   // Step 3.5: Parse EVE.edf files and group events by night date
   const eveFileInfos = filterEVEFiles(fileList);
   const eveEventsByDate = new Map<string, MachineHypopneaSummary[]>();
+  const eveReraCountByDate = new Map<string, number>();
   for (const eveInfo of eveFileInfos) {
     const fileData = files.find((f) => f.path === eveInfo.path);
     if (!fileData) continue;
@@ -230,6 +231,10 @@ async function processFiles(
         const existing = eveEventsByDate.get(nightDate) ?? [];
         existing.push(...hypopneas);
         eveEventsByDate.set(nightDate, existing);
+      }
+      const reraCount = events.filter((e) => e.type === 'rera').length;
+      if (reraCount > 0) {
+        eveReraCountByDate.set(nightDate, (eveReraCountByDate.get(nightDate) ?? 0) + reraCount);
       }
     } catch (err) {
       const filename = eveInfo.path.split('/').pop() || eveInfo.path;
@@ -385,6 +390,15 @@ async function processFiles(
     // Machine hypopnea events for this night (from EVE.edf)
     const machineHypopneas = eveEventsByDate.get(group.nightDate);
     const ned = computeNED(combinedFlow, avgSamplingRate, machineHypopneas);
+
+    // Machine RERA events (from EVE.edf) — count and index
+    const machineReraCount = eveReraCountByDate.get(group.nightDate) ?? 0;
+    if (machineReraCount > 0) {
+      ned.machineReraCount = machineReraCount;
+      ned.machineReraIndex = totalDuration > 0
+        ? Math.round((machineReraCount / (totalDuration / 3600)) * 100) / 100
+        : 0;
+    }
 
     // Recording date from first session
     const recordingDate = group.sessions[0]!.recordingDate;

@@ -261,6 +261,10 @@ export interface NEDResults {
   hypopneaH1Index?: number;
   hypopneaH2Index?: number;
 
+  // Machine RERA metrics (from EVE.edf)
+  machineReraCount?: number;
+  machineReraIndex?: number;
+
   // Brief obstruction metrics (v0.7.0+)
   briefObstructionCount?: number;
   briefObstructionIndex?: number;
