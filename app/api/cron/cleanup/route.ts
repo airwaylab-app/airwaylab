@@ -93,8 +93,10 @@ export async function GET(request: NextRequest) {
       results.emails_sent = emailResult.sent;
       results.emails_failed = emailResult.failed;
       results.dormancy_scheduled = emailResult.dormancyScheduled;
+      results.activation_scheduled = emailResult.activationScheduled;
+      results.sunsetted = emailResult.sunsetted;
       console.error(
-        `[cron/cleanup] email drips: sent=${emailResult.sent}, failed=${emailResult.failed}, dormancy=${emailResult.dormancyScheduled}`
+        `[cron/cleanup] email drips: sent=${emailResult.sent}, failed=${emailResult.failed}, dormancy=${emailResult.dormancyScheduled}, activation=${emailResult.activationScheduled}, sunsetted=${emailResult.sunsetted}`
       );
     } catch (emailErr) {
       console.error('[cron/cleanup] email drip error:', emailErr);
