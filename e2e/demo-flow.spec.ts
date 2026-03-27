@@ -73,20 +73,20 @@ test.describe('Demo Mode Flow', () => {
     }
   });
 
-  // ── Demo shows 5 sample nights ─────────────────────────────
-  test('demo mode provides 5 sample nights', async ({ page }) => {
+  // ── Demo shows 7 sample nights ─────────────────────────────
+  test('demo mode provides 7 sample nights', async ({ page }) => {
     await page.goto('/analyze?demo=1');
 
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
     ).toBeVisible({ timeout: 30_000 });
 
-    // Night selector should contain 5 nights
+    // Night selector should contain 7 nights
     const nightOptions = page.locator('select option, [data-slot="select-option"]');
     const count = await nightOptions.count().catch(() => 0);
-    // If using a select element, verify 5 options
+    // If using a select element, verify 7 options
     if (count > 0) {
-      expect(count).toBe(5);
+      expect(count).toBe(7);
     }
   });
 
