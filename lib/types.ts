@@ -110,6 +110,7 @@ export interface EDFFile {
   recordingDate: Date;
   flowData: Float32Array;
   pressureData: Float32Array | null;
+  respEventData: Float32Array | null;  // BiPAP trigger/cycle event markers (25 Hz)
   samplingRate: number;
   durationSeconds: number;
   filePath: string;

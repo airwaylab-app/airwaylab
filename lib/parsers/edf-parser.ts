@@ -8,7 +8,8 @@ import type { EDFHeader, EDFSignal, EDFFile } from '../types';
 /**
  * Parse an EDF file from an ArrayBuffer.
  * Returns header, signal metadata, flow data (Float32Array), optional pressure data,
- * sampling rate, duration, and recording date.
+ * optional resp event data (BiPAP trigger/cycle markers), sampling rate, duration,
+ * and recording date.
  */
 export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   const view = new DataView(buffer);
@@ -116,6 +117,12 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
 
   const pressIdx = signals.findIndex((s) => s.label.toLowerCase().includes('press'));
 
+  // BiPAP trigger/cycle event channel (AirCurve 10 VAuto, S, ST-A)
+  const respEventIdx = signals.findIndex((s) => {
+    const label = s.label.toLowerCase();
+    return label.includes('resp event') || label.includes('trigcycevt');
+  });
+
   const flowSignal = signals[flowIdx]!;
   const samplingRate = flowSignal.numSamples / header.recordDuration;
 
@@ -148,12 +155,16 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   const actualFlowSamples = actualNumRecords * flowSignal.numSamples;
   const actualPressureSamples =
     pressIdx >= 0 ? actualNumRecords * signals[pressIdx]!.numSamples : 0;
+  const actualRespEventSamples =
+    respEventIdx >= 0 ? actualNumRecords * signals[respEventIdx]!.numSamples : 0;
   const flowData = new Float32Array(actualFlowSamples);
   const pressureData: Float32Array | null = pressIdx >= 0 ? new Float32Array(actualPressureSamples) : null;
+  const respEventData: Float32Array | null = respEventIdx >= 0 ? new Float32Array(actualRespEventSamples) : null;
 
   let dataOffset = header.headerBytes;
   let flowWriteIdx = 0;
   let pressWriteIdx = 0;
+  let respEventWriteIdx = 0;
 
   // Precompute scaling factors
   const digitalRange = flowSignal.digitalMax - flowSignal.digitalMin;
@@ -173,6 +184,17 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     pressDigMin = ps.digitalMin;
   }
 
+  let respEventScale = 0;
+  let respEventOffset_ = 0;
+  let respEventDigMin = 0;
+  if (respEventIdx >= 0) {
+    const rs = signals[respEventIdx]!;
+    const respEventDigRange = rs.digitalMax - rs.digitalMin;
+    respEventScale = respEventDigRange === 0 ? 0 : (rs.physicalMax - rs.physicalMin) / respEventDigRange;
+    respEventOffset_ = rs.physicalMin;
+    respEventDigMin = rs.digitalMin;
+  }
+
   for (let rec = 0; rec < actualNumRecords; rec++) {
     let recordPtr = dataOffset;
 
@@ -190,6 +212,12 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
           const digitalValue = view.getInt16(recordPtr + s * 2, true);
           pressureData[pressWriteIdx++] =
             (digitalValue - pressDigMin) * pressScale + pressOffset_;
+        }
+      } else if (sig === respEventIdx && respEventData) {
+        for (let s = 0; s < samplesInRecord; s++) {
+          const digitalValue = view.getInt16(recordPtr + s * 2, true);
+          respEventData[respEventWriteIdx++] =
+            (digitalValue - respEventDigMin) * respEventScale + respEventOffset_;
         }
       }
 
@@ -222,6 +250,7 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     recordingDate,
     flowData,
     pressureData,
+    respEventData,
     samplingRate,
     durationSeconds,
     filePath,
