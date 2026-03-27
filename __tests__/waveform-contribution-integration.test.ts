@@ -68,6 +68,7 @@ vi.mock('@/lib/parsers/edf-parser', () => ({
       recordingDate: new Date(y, m, d, h, min),
       flowData,
       pressureData: null,
+      respEventData: null,
       samplingRate: 25,
       durationSeconds: 4,
       filePath,
