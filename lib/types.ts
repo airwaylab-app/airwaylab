@@ -234,6 +234,8 @@ export interface RERACandidate {
 
 export interface NEDResults {
   breathCount: number;
+  /** Per-breath data — populated by engine, stored in IndexedDB, stripped from localStorage */
+  breaths?: Breath[];
   nedMean: number;
   nedMedian: number;
   nedP95: number;

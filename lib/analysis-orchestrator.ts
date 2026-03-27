@@ -23,6 +23,10 @@ import {
   diffAgainstManifest,
 } from './file-manifest';
 import { storeOximetryTrace, loadOximetryTrace } from './oximetry-trace-idb';
+import { storeBreathData, loadBreathData } from './breath-data-idb';
+import { loadPLDTrace } from './pld-trace-idb';
+import type { CompactBreath } from './breath-data-idb';
+import type { StoredPLDTrace } from './pld-trace-idb';
 
 type StateListener = (state: AnalysisState) => void;
 
@@ -105,6 +109,8 @@ class AnalysisOrchestrator {
             return this.analyzeOximetryOnly(oximetryFiles!);
           }
           await restoreOximetryTraces(cachedNights);
+          await restoreBreathData(cachedNights);
+          await restorePLDTraces(cachedNights);
           const therapyChangeDate = detectTherapyChange(cachedNights);
           this.setState({
             status: 'complete',
@@ -136,6 +142,8 @@ class AnalysisOrchestrator {
             return this.analyzeOximetryOnly(oximetryFiles!);
           }
           await restoreOximetryTraces(cachedNights);
+          await restoreBreathData(cachedNights);
+          await restorePLDTraces(cachedNights);
           const therapyChangeDate = detectTherapyChange(cachedNights);
           this.setState({
             status: 'complete',
@@ -230,6 +238,8 @@ class AnalysisOrchestrator {
       // ── Merge cached + new ──
       const merged = mergeNights(cachedNights, newNights);
       await restoreOximetryTraces(merged);
+      await restoreBreathData(merged);
+      await restorePLDTraces(merged);
       const therapyChangeDate = detectTherapyChange(merged);
 
       // ── Check if oximetry matched any nights ──
@@ -245,6 +255,8 @@ class AnalysisOrchestrator {
       // ── Authoritative save of final results ──
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
+      persistBreathData(merged);
+      persistPLDTraces(merged);
 
       this.setState({
         status: 'complete',
@@ -666,6 +678,92 @@ function persistOximetryTraces(nights: NightResult[]): void {
   ).catch(() => {
     // Non-critical — IDB errors are logged inside storeOximetryTrace
   });
+}
+
+/**
+ * Restore per-breath data from IndexedDB for nights that have
+ * NED results but no breaths array (stripped during localStorage persistence).
+ * Attaches compact breath data as a _compactBreaths property for dashboard use.
+ * Mutates the array in place for efficiency.
+ */
+async function restoreBreathData(nights: NightResult[]): Promise<void> {
+  const nightsNeedingBreaths = nights.filter(
+    (n) => n.ned.breathCount > 0 && (!n.ned.breaths || n.ned.breaths.length === 0)
+  );
+  if (nightsNeedingBreaths.length === 0) return;
+
+  const results = await Promise.allSettled(
+    nightsNeedingBreaths.map(async (night) => {
+      const compactBreaths = await loadBreathData(night.dateStr);
+      if (compactBreaths) {
+        // Store compact breaths on the night for dashboard access
+        (night as NightResult & { _compactBreaths?: CompactBreath[] })._compactBreaths = compactBreaths;
+      }
+    })
+  );
+
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length > 0) {
+    console.error(`[orchestrator] Failed to restore ${failed.length} breath data set(s) from IDB`);
+  }
+}
+
+/**
+ * Fire-and-forget store of per-breath data to IndexedDB.
+ * Uses the sampling rate from session data; defaults to 25 Hz if unavailable.
+ */
+function persistBreathData(nights: NightResult[]): void {
+  const nightsWithBreaths = nights.filter(
+    (n) => n.ned.breaths && n.ned.breaths.length > 0
+  );
+  if (nightsWithBreaths.length === 0) return;
+
+  // Default sampling rate — actual rate varies by device but 25 Hz is
+  // the most common (AirSense 10). The sampling rate is used to convert
+  // sample indices to seconds in the compact representation.
+  const DEFAULT_SAMPLING_RATE = 25;
+
+  Promise.allSettled(
+    nightsWithBreaths.map((n) =>
+      storeBreathData(n.dateStr, n.ned.breaths!, DEFAULT_SAMPLING_RATE)
+    )
+  ).catch(() => {
+    // Non-critical — IDB errors are logged inside storeBreathData
+  });
+}
+
+/**
+ * Restore PLD traces from IndexedDB for nights.
+ * Attaches as _pldTrace property for dashboard access.
+ * Mutates the array in place for efficiency.
+ */
+async function restorePLDTraces(nights: NightResult[]): Promise<void> {
+  const results = await Promise.allSettled(
+    nights.map(async (night) => {
+      const pldTrace = await loadPLDTrace(night.dateStr);
+      if (pldTrace) {
+        (night as NightResult & { _pldTrace?: StoredPLDTrace })._pldTrace = pldTrace;
+      }
+    })
+  );
+
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length > 0) {
+    console.error(`[orchestrator] Failed to restore ${failed.length} PLD trace(s) from IDB`);
+  }
+}
+
+/**
+ * Fire-and-forget store of PLD traces to IndexedDB.
+ * Currently a no-op: PLD channel data is not yet extracted from the
+ * analysis pipeline. When PLD extraction is added (e.g., from PLD.edf
+ * or STR.edf detail channels), this function will persist the traces.
+ */
+function persistPLDTraces(_nights: NightResult[]): void {
+  // PLD channel extraction is not yet implemented in the analysis worker.
+  // This function is a forward-compatible stub — when PLD timeseries data
+  // becomes available on NightResult (e.g., via a pldTrace field), it will
+  // be persisted here using storePLDTrace().
 }
 
 /**

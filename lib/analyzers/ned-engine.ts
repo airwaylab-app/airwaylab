@@ -795,6 +795,7 @@ function summarize(
 
   return {
     breathCount,
+    breaths,
     nedMean: round2(nedMean),
     nedMedian: round2(nedMedian),
     nedP95: round2(nedP95),
@@ -872,6 +873,7 @@ function round2(n: number): number {
 function emptyNEDResults(): NEDResults {
   return {
     breathCount: 0,
+    breaths: [],
     nedMean: 0,
     nedMedian: 0,
     nedP95: 0,
