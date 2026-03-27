@@ -11,6 +11,10 @@ import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 import { cancelSequence } from '@/lib/email/sequences';
 import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
+// Vercel Pro default is 15s — far too short for Claude Sonnet (10-25s typical).
+// 60s allows for cold starts + slow responses + deep mode with large payloads.
+export const maxDuration = 60;
+
 const AI_MONTHLY_LIMIT = 3;
 
 // Dedup rate-limit alerts: one alert per user per hour max
@@ -377,7 +381,11 @@ export async function POST(request: NextRequest) {
       systemPrompt += PREMIUM_INSIGHT_EXTENSION;
     }
 
-    const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 3 });
+    const client = new Anthropic({
+      apiKey: anthropicKey,
+      maxRetries: 1,    // Fail fast — silent retries burn 30s+ and look like a hang
+      timeout: 50_000,  // 50s SDK timeout — leaves 10s headroom under maxDuration
+    });
 
     // Premium users get Sonnet for higher quality analysis; community gets Haiku
     const model = isPaidTier ? MODEL_PREMIUM : MODEL_COMMUNITY;
