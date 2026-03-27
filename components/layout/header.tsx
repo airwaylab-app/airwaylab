@@ -8,6 +8,8 @@ import { GitHubStars } from '@/components/common/github-stars';
 import { useAuth } from '@/lib/auth/auth-context';
 import { UserMenu } from '@/components/auth/user-menu';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { FeedbackButton } from '@/components/feedback/feedback-button';
+import { FeedbackPanel } from '@/components/feedback/feedback-panel';
 import { cn } from '@/lib/utils';
 
 export function Header() {
@@ -15,6 +17,7 @@ export function Header() {
   const pathname = usePathname();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
     <>
@@ -116,6 +119,9 @@ export function Header() {
                 </>
               )}
             </div>
+            {/* Feedback button — always visible, outside hamburger */}
+            <FeedbackButton onClick={() => setFeedbackOpen(true)} className="ml-0.5 sm:ml-1" />
+
             {/* Desktop: star count badge */}
             <GitHubStars className="ml-0.5 hidden items-center gap-1.5 rounded-md border border-border/50 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground sm:ml-1 sm:flex sm:px-3 sm:py-1.5 sm:text-sm" />
 
@@ -137,6 +143,7 @@ export function Header() {
       </header>
 
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <FeedbackPanel open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </>
   );
 }
