@@ -42,12 +42,16 @@ interface RateLimiterOptions {
   windowMs: number;
   /** Maximum requests per window */
   max: number;
+  /** Use Upstash Redis for cross-instance persistence (default: false).
+   *  Enable for abuse-sensitive routes (AI insights, Stripe, file uploads). */
+  persistent?: boolean;
 }
 
 export class RateLimiter {
   private readonly map = new Map<string, RateLimitEntry>();
   private readonly windowMs: number;
   private readonly max: number;
+  private readonly persistent: boolean;
   private lastCleanup = Date.now();
   private upstash: Ratelimit | null = null;
   private upstashInitialised = false;
@@ -55,6 +59,7 @@ export class RateLimiter {
   constructor(options: RateLimiterOptions) {
     this.windowMs = options.windowMs;
     this.max = options.max;
+    this.persistent = options.persistent ?? false;
   }
 
   /**
@@ -65,11 +70,13 @@ export class RateLimiter {
     if (this.upstashInitialised) return this.upstash;
     this.upstashInitialised = true;
 
+    if (!this.persistent) return null;
+
     const redis = getRedis();
     if (redis) {
       this.upstash = new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(this.max, `${this.windowMs} ms`),
+        limiter: Ratelimit.fixedWindow(this.max, `${this.windowMs} ms`),
         prefix: 'airwaylab_rl',
       });
     }
@@ -161,16 +168,19 @@ export function getUserRateLimitKey(userId: string): string {
 export const aiRateLimiter = new RateLimiter({
   windowMs: 3_600_000,
   max: 20,
+  persistent: true,
 });
 
 /** AI insights — paid tiers: 60 requests per hour per user */
 export const aiPremiumRateLimiter = new RateLimiter({
   windowMs: 3_600_000,
   max: 60,
+  persistent: true,
 });
 
 /** Checkout/portal: 10 requests per 15 minutes per IP */
 export const stripeRateLimiter = new RateLimiter({
   windowMs: 900_000,
   max: 10,
+  persistent: true,
 });

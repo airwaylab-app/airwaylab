@@ -7,7 +7,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
-const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5000 });
+const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5000, persistent: true });
 
 const presignSchema = z.object({
   filePath: z.string().min(1).max(500),
