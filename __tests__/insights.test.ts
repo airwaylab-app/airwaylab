@@ -4,8 +4,12 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { NightResult } from '@/lib/types';
 
 describe('generateInsights', () => {
-  // SAMPLE_NIGHTS: [night1(1.8), night2(1.2), night3(2.6), night4(1.5), night5(2.1)]
-  // night1 = most recent (2025-01-15), night5 = oldest (2025-01-11)
+  // SAMPLE_NIGHTS (7 nights, newest first):
+  // [0] night1(1.8) Jan 17, [1] night2(1.2) Jan 16, [2] night3(1.5) Jan 15,
+  // [3] night4(2.6) Jan 14, [4] night5(1.5) Jan 13, [5] night6(2.1) Jan 12,
+  // [6] night7(2.3) Jan 11
+  // Settings change at Jan 15: [0-2] = new settings (EPAP 10), [3-6] = old settings (EPAP 8)
+  // Oximetry: [0,1,2,5] have it, [3,4,6] do not
 
   it('returns an array of insights', () => {
     const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0]!, SAMPLE_NIGHTS[1]!, null);
@@ -45,31 +49,30 @@ describe('generateInsights', () => {
 
   describe('single-night insights', () => {
     it('generates Glasgow warning for night with bad Glasgow', () => {
-      // night3 has Glasgow 2.6 → bad
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!, null);
+      // night4 (index 3) has Glasgow 2.6 → bad
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[3]!, SAMPLE_NIGHTS[4]!, null);
       const glasgowWarning = result.find((i) => i.id === 'glasgow-bad');
       expect(glasgowWarning).toBeDefined();
       expect(glasgowWarning!.type).toBe('warning');
     });
 
     it('generates Glasgow positive for good Glasgow night', () => {
-      // night2 has Glasgow 1.2 → warn (not quite good at ≤1.0)
-      // night4 has Glasgow 1.5 → warn
+      // night2 (index 1) has Glasgow 1.2 → warn (not quite good at ≤1.0)
       // We need a night with Glasgow ≤ 1.0 for 'good'
       // Sample data doesn't have one that's ≤1.0, so this tests that warn nights don't get 'good' insight
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[1]!, SAMPLE_NIGHTS[2]!, null);
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[1]!, SAMPLE_NIGHTS[3]!, null);
       const glasgowGood = result.find((i) => i.id === 'glasgow-good');
       // night2 Glasgow is 1.2 which is > 1.0 (green threshold), so no 'good' insight
       expect(glasgowGood).toBeUndefined();
     });
 
     it('detects elevated RERA on bad nights', () => {
-      // night3 has RERA 11.8 >= 10
+      // night4 (index 3) has RERA 11.8 >= 10
       // Use only 2 nights to avoid trend insights consuming the 6-insight cap
       const result = generateInsights(
-        [SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!],
-        SAMPLE_NIGHTS[2]!,
+        [SAMPLE_NIGHTS[3]!, SAMPLE_NIGHTS[4]!],
         SAMPLE_NIGHTS[3]!,
+        SAMPLE_NIGHTS[4]!,
         null
       );
       const reraWarning = result.find((i) => i.id === 'rera-high');
@@ -77,38 +80,40 @@ describe('generateInsights', () => {
       expect(reraWarning!.category).toBe('ned');
     });
 
-    it('generates regularity-bad for night3 (regularity 52 > amber threshold 50, lowerIsBetter)', () => {
-      // night3 has regularity 52 → bad (threshold: green=30, amber=50, lowerIsBetter)
+    it('generates regularity-bad for night4 (regularity 52 > amber threshold 50, lowerIsBetter)', () => {
+      // night4 (index 3) has regularity 52 → bad (threshold: green=30, amber=50, lowerIsBetter)
       // 52 > 50 (amber) → 'bad', so regularity-bad insight fires
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!, null);
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[3]!, SAMPLE_NIGHTS[4]!, null);
       const regWarning = result.find((i) => i.id === 'regularity-bad');
       expect(regWarning).toBeDefined();
       expect(regWarning!.type).toBe('warning');
     });
 
     it('detects night-over-night Glasgow change', () => {
-      // night3 (2.6) to night2 (1.2) = delta -1.4 → improved
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[1]!, SAMPLE_NIGHTS[2]!, null);
+      // night4 (2.6) to night2 (1.2) = delta -1.4 → improved
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[1]!, SAMPLE_NIGHTS[3]!, null);
       const delta = result.find((i) => i.id === 'night-delta');
       expect(delta).toBeDefined();
       expect(delta!.type).toBe('positive'); // improved
     });
 
     it('does not generate dominant component when worst < 0.5', () => {
-      // night3: flatTop is 0.48 (highest component), but threshold is ≥0.5
+      // night4 (index 3): flatTop is 0.48 (highest component), but threshold is ≥0.5
       // So glasgow-dominant insight should NOT fire
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!, null);
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[3]!, SAMPLE_NIGHTS[4]!, null);
       const dominant = result.find((i) => i.id === 'glasgow-dominant');
       expect(dominant).toBeUndefined();
     });
 
     it('detects H1/H2 NED split when difference is >5', () => {
-      // night3: h1=24.2, h2=32.8 → diff=8.6 → insight expected
-      // Pass only 2 nights to avoid trend insights filling the 6-insight cap
+      // night4 (index 3): h1=24.2, h2=32.8 → diff=8.6 → insight expected
+      // Pass only 2 nights and strip machineSummary to avoid filling the 6-insight cap
+      const n3 = { ...SAMPLE_NIGHTS[3]!, machineSummary: null };
+      const n4 = { ...SAMPLE_NIGHTS[4]!, machineSummary: null };
       const result = generateInsights(
-        [SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!],
-        SAMPLE_NIGHTS[2]!,
-        SAMPLE_NIGHTS[3]!,
+        [n3, n4],
+        n3,
+        n4,
         null
       );
       const h1h2 = result.find((i) => i.id === 'ned-h1h2');
@@ -118,17 +123,17 @@ describe('generateInsights', () => {
 
   describe('oximetry insights', () => {
     it('no oximetry insights when oximetry is null', () => {
-      // night3 has no oximetry
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[2]!, SAMPLE_NIGHTS[3]!, null);
+      // night4 (index 3) has no oximetry
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[3]!, SAMPLE_NIGHTS[4]!, null);
       const oxInsights = result.filter((i) => i.category === 'oximetry');
       expect(oxInsights).toHaveLength(0);
     });
 
-    it('generates ODI insight for night5 (higher ODI)', () => {
-      // night5 ODI-3 = 6.8, threshold bad >15, so not bad
-      // night5 ODI-3 = 6.8 → warn (green=5, amber=15, lowerIsBetter → 6.8 > 5 ≤ 15 = warn)
+    it('generates ODI insight for night6 (higher ODI)', () => {
+      // night6 (index 5) ODI-3 = 6.8, threshold bad >15, so not bad
+      // night6 ODI-3 = 6.8 → warn (green=5, amber=15, lowerIsBetter → 6.8 > 5 ≤ 15 = warn)
       // Not "bad" so no odi-high insight. But we can verify that.
-      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[4]!, SAMPLE_NIGHTS[3]!, null);
+      const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[5]!, SAMPLE_NIGHTS[4]!, null);
       const odiHigh = result.find((i) => i.id === 'odi-high');
       // ODI 6.8 is warn, not bad, so no odi-high
       expect(odiHigh).toBeUndefined();
@@ -184,7 +189,7 @@ describe('generateInsights', () => {
   describe('trend insights', () => {
     it('returns trend insights when 3+ nights provided', () => {
       const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0]!, SAMPLE_NIGHTS[1]!, null);
-      // With 5 nights there should be some trend insights
+      // With 7 nights there should be some trend insights
       const trendInsights = result.filter((i) => i.category === 'trend');
       expect(trendInsights.length).toBeGreaterThanOrEqual(0); // May or may not fire depending on slope
     });
@@ -199,10 +204,10 @@ describe('generateInsights', () => {
     it('generates therapy change insight when date is provided', () => {
       const result = generateInsights(SAMPLE_NIGHTS, SAMPLE_NIGHTS[0]!, SAMPLE_NIGHTS[1]!, SAMPLE_THERAPY_CHANGE_DATE);
       const therapyInsight = result.find((i) => i.id === 'therapy-change-impact');
-      // Therapy change date is 2025-01-14, which is night2
-      // Before: nights 3,4,5 avg Glasgow = (2.6+1.5+2.1)/3 = 2.07
-      // After: nights 1,2 avg Glasgow = (1.8+1.2)/2 = 1.5
-      // Delta = 1.5 - 2.07 = -0.57 → improved
+      // Therapy change date is 2025-01-15, which is night3
+      // Before: nights 4,5,6,7 avg Glasgow = (2.6+1.5+2.1+2.3)/4 = 2.125
+      // After: nights 1,2,3 avg Glasgow = (1.8+1.2+1.5)/3 = 1.5
+      // Delta = 1.5 - 2.125 = -0.625 → improved
       expect(therapyInsight).toBeDefined();
       expect(therapyInsight!.type).toBe('positive');
     });
@@ -214,10 +219,10 @@ describe('generateInsights', () => {
       // FL Score 70*0.35=24.5, NED 35*0.30=10.5, FI Math.max(0,(0.70-0.5)/0.5)*100=40*0.20=8.0, Glasgow (2.0/9)*100*0.15=3.33
       // Total = 46.33 → above 45 threshold
       const highFLNight = {
-        ...SAMPLE_NIGHTS[2]!,
-        wat: { ...SAMPLE_NIGHTS[2]!.wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
-        ned: { ...SAMPLE_NIGHTS[2]!.ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
-        glasgow: { ...SAMPLE_NIGHTS[2]!.glasgow, overall: 2.0 },
+        ...SAMPLE_NIGHTS[3]!,
+        wat: { ...SAMPLE_NIGHTS[3]!.wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
+        ned: { ...SAMPLE_NIGHTS[3]!.ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        glasgow: { ...SAMPLE_NIGHTS[3]!.glasgow, overall: 2.0 },
       };
       const result = generateInsights([highFLNight], highFLNight, null, null, 2);
       const correlation = result.find((i) => i.id === 'symptom-fl-correlation');
@@ -228,11 +233,13 @@ describe('generateInsights', () => {
 
     it('generates symptom-fl-asymptomatic when IFL >45 and rating >=4', () => {
       // Same IFL Risk calculation as above = 46.33 → above 45 threshold
+      // Strip machineSummary to avoid machine-ahi-elevated crowding the 6-insight cap
       const highFLNight = {
-        ...SAMPLE_NIGHTS[2]!,
-        wat: { ...SAMPLE_NIGHTS[2]!.wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
-        ned: { ...SAMPLE_NIGHTS[2]!.ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
-        glasgow: { ...SAMPLE_NIGHTS[2]!.glasgow, overall: 2.0 },
+        ...SAMPLE_NIGHTS[3]!,
+        machineSummary: null,
+        wat: { ...SAMPLE_NIGHTS[3]!.wat, flScore: 70, regularityScore: 25, periodicityIndex: 10 },
+        ned: { ...SAMPLE_NIGHTS[3]!.ned, nedMean: 35, fiMean: 0.70, reraIndex: 3, estimatedArousalIndex: 4, h1NedMean: 33, h2NedMean: 35, briefObstructionIndex: 1 },
+        glasgow: { ...SAMPLE_NIGHTS[3]!.glasgow, overall: 2.0 },
       };
       const result = generateInsights([highFLNight], highFLNight, null, null, 4);
       const asymptomatic = result.find((i) => i.id === 'symptom-fl-asymptomatic');
@@ -364,7 +371,7 @@ describe('generateInsights', () => {
     });
 
     it('handles night with null oximetry gracefully', () => {
-      const nightNoOx = SAMPLE_NIGHTS[2]!; // night3 has no oximetry
+      const nightNoOx = SAMPLE_NIGHTS[3]!; // night4 has no oximetry
       expect(() => generateInsights([nightNoOx], nightNoOx, null, null)).not.toThrow();
     });
   });

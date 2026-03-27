@@ -56,7 +56,7 @@ describe('exportForumSingleNight', () => {
   });
 
   it('omits oximetry when not present', () => {
-    const nightNoOx = SAMPLE_NIGHTS[2]!; // night3 has no oximetry
+    const nightNoOx = SAMPLE_NIGHTS[3]!; // night4 has no oximetry
     const output = exportForumSingleNight(nightNoOx);
     expect(output).not.toContain('**Oximetry**');
     expect(output).not.toContain('ODI-3');
@@ -80,7 +80,7 @@ describe('exportForumSingleNight', () => {
   });
 
   it('pluralizes sessions correctly', () => {
-    const nightMultiSession = SAMPLE_NIGHTS[2]!; // 2 sessions
+    const nightMultiSession = SAMPLE_NIGHTS[3]!; // night4 has 2 sessions
     const output = exportForumSingleNight(nightMultiSession);
     expect(output).toContain('2 sessions');
   });
@@ -120,7 +120,7 @@ describe('exportForumMultiNight', () => {
 
   it('includes oximetry table for nights with oximetry', () => {
     const output = exportForumMultiNight(SAMPLE_NIGHTS);
-    // nights 1, 2, and 5 have oximetry
+    // nights 1, 2, 3, and 6 have oximetry
     expect(output).toContain('**Oximetry**');
     expect(output).toContain('ODI-3');
   });
@@ -141,7 +141,7 @@ describe('exportForumMultiNight', () => {
   it('includes date range', () => {
     const output = exportForumMultiNight(SAMPLE_NIGHTS);
     expect(output).toContain('2025-01-11');
-    expect(output).toContain('2025-01-15');
+    expect(output).toContain('2025-01-17');
   });
 
   it('includes AirwayLab attribution', () => {

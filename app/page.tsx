@@ -710,7 +710,7 @@ export default function Home() {
                 <p className="mt-0.5 text-[10px] text-muted-foreground">Glasgow Index went from 2.1 to 1.5.</p>
               </div>
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
-                <p className="text-xs font-medium text-emerald-300">Trending down over 5 nights</p>
+                <p className="text-xs font-medium text-emerald-300">Trending down over 7 nights</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">Flow limitation is improving (2.1 → 1.8).</p>
               </div>
             </div>

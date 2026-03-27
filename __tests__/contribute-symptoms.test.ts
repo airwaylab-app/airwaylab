@@ -84,7 +84,8 @@ describe('buildContributionPayload', () => {
   });
 
   it('omits enhanced fields when not available', () => {
-    const night = SAMPLE_NIGHTS[0]!;
+    // Use a night without settingsMetrics or enhanced NED fields
+    const night = { ...SAMPLE_NIGHTS[0]!, settingsMetrics: null } as NightResult;
     const payload = buildContributionPayload(night, 3);
 
     expect(payload.hypopnea_index).toBeUndefined();

@@ -568,7 +568,7 @@ function AnalyzePageInner() {
               See sample data
             </Button>
             <p className="text-[11px] text-muted-foreground/50">
-              See what AirwayLab looks like with 5 nights of example data
+              See what AirwayLab looks like with 7 nights of example data
             </p>
           </div>
         </div>
@@ -639,8 +639,8 @@ function AnalyzePageInner() {
               </div>
               {/* Sample data context — update if lib/sample-data.ts changes */}
               <p className="text-xs text-muted-foreground/70">
-                Sample scenario: BiPAP ST user with moderate flow limitation across 5 nights.
-                Settings were adjusted (EPAP 8&rarr;10, IPAP 14&rarr;16) on Jan 14 &mdash; compare nights before and after to see the effect.
+                Sample scenario: BiPAP ST user with moderate flow limitation across 7 nights.
+                Settings were adjusted (EPAP 8&rarr;10, IPAP 14&rarr;16) on Jan 15 &mdash; compare nights before and after to see the effect.
               </p>
             </div>
           )}

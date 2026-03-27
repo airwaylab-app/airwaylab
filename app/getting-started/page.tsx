@@ -278,7 +278,7 @@ export default function GettingStartedPage() {
             Don&apos;t have your SD card handy?
           </h2>
           <p className="max-w-md text-sm text-muted-foreground">
-            See what AirwayLab looks like with 5 nights of sample data
+            See what AirwayLab looks like with 7 nights of sample data
           </p>
           <Link href="/analyze?demo">
             <Button size="lg" variant="outline" className="gap-2">
