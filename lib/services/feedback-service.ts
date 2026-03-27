@@ -13,6 +13,9 @@ export interface FeedbackInput {
   email: string | null
   type: 'feature' | 'bug' | 'support' | 'feedback'
   page: string | null
+  user_id?: string | null
+  contact_ok?: boolean
+  metadata?: Record<string, unknown> | null
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -51,12 +54,17 @@ export function submitFeedback(
       message: `[${input.type}] ${input.message.trim()}`,
       email: input.email?.trim() || null,
       page: input.page,
+      user_id: input.user_id ?? null,
+      contact_ok: input.contact_ok ?? false,
+      type: input.type,
+      metadata: input.metadata ?? null,
     }),
     'feedback',
   ).map((result) => {
     const label = TYPE_LABELS[input.type] ?? 'Feedback'
+    const meta = (input.metadata ?? {}) as Record<string, unknown>
 
-    // Admin notification (fire-and-forget)
+    // Admin notification with full context (fire-and-forget)
     void sendEmail({
       to: 'dev@airwaylab.app',
       subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
@@ -66,9 +74,20 @@ export function submitFeedback(
         `Type: ${label}`,
         `Page: ${input.page ?? '\u2014'}`,
         `Email: ${input.email?.trim() ?? '\u2014'}`,
+        `Contact OK: ${input.contact_ok ? 'Yes' : 'No'}`,
+        `User ID: ${input.user_id ?? '\u2014'}`,
+        `Tier: ${meta.user_tier ?? '\u2014'}`,
+        `Display name: ${meta.display_name ?? '\u2014'}`,
         '',
         'Message:',
         input.message.trim(),
+        '',
+        '\u2500\u2500 Context \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+        `App version: ${meta.app_version ?? '\u2014'}`,
+        `Browser: ${typeof meta.user_agent === 'string' ? meta.user_agent.slice(0, 120) : '\u2014'}`,
+        `Screen: ${meta.screen_width ?? '?'}x${meta.screen_height ?? '?'} (viewport: ${meta.viewport_width ?? '?'}x${meta.viewport_height ?? '?'})`,
+        `Timezone: ${meta.timezone ?? '\u2014'}`,
+        `Has analysis: ${meta.has_analysis_results === true ? 'Yes' : meta.has_analysis_results === false ? 'No' : '\u2014'}`,
       ].join('\n'),
       metadata: { emailType: 'admin_feedback' },
     })

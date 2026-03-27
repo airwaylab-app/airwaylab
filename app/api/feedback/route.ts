@@ -22,6 +22,9 @@ const FeedbackSchema = z.object({
     (v) => (typeof v === 'string' && v.length > 0 ? v : null),
     z.string().max(200).regex(/^\/[\w/\-]*$/).nullable().catch(null)
   ),
+  user_id: z.string().uuid().nullable().optional(),
+  contact_ok: z.boolean().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 })
 
 const MAX_PAYLOAD_BYTES = 8_000
