@@ -10,7 +10,9 @@ import * as Sentry from '@sentry/nextjs';
 const DB_NAME = 'airwaylab';
 const STORE_NAME = 'waveforms';
 const OXIMETRY_STORE_NAME = 'oximetry-traces';
-const DB_VERSION = 2;
+const BREATH_DATA_STORE_NAME = 'breath-data';
+const PLD_TRACES_STORE_NAME = 'pld-traces';
+const DB_VERSION = 3;
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 /**
@@ -33,6 +35,12 @@ export function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(OXIMETRY_STORE_NAME)) {
         db.createObjectStore(OXIMETRY_STORE_NAME, { keyPath: 'dateStr' });
+      }
+      if (!db.objectStoreNames.contains(BREATH_DATA_STORE_NAME)) {
+        db.createObjectStore(BREATH_DATA_STORE_NAME, { keyPath: 'dateStr' });
+      }
+      if (!db.objectStoreNames.contains(PLD_TRACES_STORE_NAME)) {
+        db.createObjectStore(PLD_TRACES_STORE_NAME, { keyPath: 'dateStr' });
       }
     };
 
@@ -154,39 +162,50 @@ async function deleteWaveform(dateStr: string): Promise<void> {
 }
 
 /**
- * Delete all expired waveforms.
+ * Delete expired entries from a single object store.
+ * Entries are expired if they exceed the TTL or have a mismatched engine version.
+ */
+async function deleteExpiredFromStore(storeName: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.openCursor();
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor) {
+        const entry = cursor.value as { storedAt: number; engineVersion: string };
+        if (
+          Date.now() - entry.storedAt > TTL_MS ||
+          entry.engineVersion !== ENGINE_VERSION
+        ) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+}
+
+/**
+ * Delete all expired entries across all object stores.
  */
 export async function deleteExpired(): Promise<void> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.openCursor();
-
-      request.onsuccess = () => {
-        const cursor = request.result;
-        if (cursor) {
-          const entry = cursor.value as StoredWaveform;
-          if (
-            Date.now() - entry.storedAt > TTL_MS ||
-            entry.engineVersion !== ENGINE_VERSION
-          ) {
-            cursor.delete();
-          }
-          cursor.continue();
-        }
-      };
-
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
+    await deleteExpiredFromStore(STORE_NAME);
+    await deleteExpiredFromStore(OXIMETRY_STORE_NAME);
+    await deleteExpiredFromStore(BREATH_DATA_STORE_NAME);
+    await deleteExpiredFromStore(PLD_TRACES_STORE_NAME);
   } catch {
     // Non-fatal
     Sentry.captureMessage('IndexedDB cleanup failed', {

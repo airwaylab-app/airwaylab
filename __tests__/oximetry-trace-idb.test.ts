@@ -147,17 +147,19 @@ describe('oximetry-trace-idb error handling', () => {
 // ── Test 9: IDB version bump ─────────────────────────────────
 
 describe('oximetry-trace-idb schema', () => {
-  it('Test 9: DB_VERSION is 2 to accommodate new store', async () => {
+  it('Test 9: DB_VERSION is 3 to accommodate breath-data and pld-traces stores', async () => {
     const { readFileSync } = await import('fs');
     const { resolve } = await import('path');
     const source = readFileSync(resolve(__dirname, '../lib/waveform-idb.ts'), 'utf-8');
-    expect(source).toMatch(/DB_VERSION\s*=\s*2/);
+    expect(source).toMatch(/DB_VERSION\s*=\s*3/);
   });
 
-  it('onupgradeneeded creates oximetry-traces store', async () => {
+  it('onupgradeneeded creates all object stores', async () => {
     const { readFileSync } = await import('fs');
     const { resolve } = await import('path');
     const source = readFileSync(resolve(__dirname, '../lib/waveform-idb.ts'), 'utf-8');
     expect(source).toContain("'oximetry-traces'");
+    expect(source).toContain("'breath-data'");
+    expect(source).toContain("'pld-traces'");
   });
 });

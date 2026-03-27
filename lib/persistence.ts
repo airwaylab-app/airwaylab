@@ -36,7 +36,7 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
     // Remove raw flow/breath arrays that take most of the space
     ned: {
       ...n.ned,
-      breaths: [], // per-breath array can be huge — not needed for persistence
+      breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
     },
     oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
     // settingsMetrics is a small summary object — keep it for persistence
