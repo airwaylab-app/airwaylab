@@ -1,0 +1,8 @@
+<svg version="1.2" baseProfile="tiny-ps" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>AirwayLab</title>
+  <rect width="512" height="512" rx="96" ry="96" fill="#0f172a"/>
+  <circle cx="256" cy="232" r="128" fill="#2DB89A" opacity="0.08"/>
+  <circle cx="242" cy="220" r="104" fill="#2DB89A"/>
+  <circle cx="286" cy="194" r="88" fill="#0f172a"/>
+  <path d="M140 370 Q200 345 256 370 Q312 395 372 370" fill="none" stroke="#2DB89A" stroke-width="8" stroke-linecap="round" opacity="0.4"/>
+</svg>
