@@ -172,6 +172,60 @@ export const DEVICE_GUIDES: DeviceGuide[] = [
     metaDescription:
       'How to upload ResMed AirCurve 10 BiPAP data to AirwayLab. Full support for VAuto, ST, and ASV models. Free flow limitation analysis guide.',
   },
+  {
+    slug: 'bmc-luna',
+    name: 'BMC Luna / RESmart',
+    fullName: 'BMC Luna 2 / RESmart G2',
+    manufacturer: 'BMC',
+    type: 'Auto',
+    supportLevel: 'full',
+    sdCardLocation: 'Side of the machine, behind a flip-open cover',
+    sdCardType: 'Standard SD card. Included with the machine.',
+    datalogPath: 'Root of SD card (files named SERIALNUM.000, SERIALNUM.idx, SERIALNUM.USR)',
+    sampleRate: '25 Hz flow waveform data embedded in proprietary binary format',
+    signals: [
+      'Flow waveform (SERIAL.000 through SERIAL.029) — breath-by-breath flow data in proprietary binary packets',
+      'Session index (SERIAL.idx) — session start times, durations, therapy mode, pressure settings, mask type, leak rates',
+      'Machine events (SERIAL.evt) — apnea, hypopnea, and flow limitation events scored by the device',
+      'Device info (SERIAL.USR) — serial number, model, firmware version',
+    ],
+    uploadSteps: [
+      'Power off your BMC Luna / RESmart and unplug it.',
+      'Open the SD card slot on the side of the machine. Push the card gently to eject.',
+      'Insert the SD card into your computer using an SD card reader.',
+      'Go to https://airwaylab.app/analyze and click "Upload Your SD Card."',
+      'Select the entire SD card contents. AirwayLab detects BMC devices automatically from the file naming pattern (SERIALNUM.000, .idx, .USR).',
+      'Wait for the analysis to complete. AirwayLab parses the proprietary binary format and produces the same Glasgow Index, WAT, NED, and oximetry results as ResMed devices.',
+      'Eject the SD card safely and put it back in your machine.',
+    ],
+    tips: [
+      'BMC Luna and RESmart devices use a proprietary binary format, not EDF like ResMed. AirwayLab handles this automatically. You don\'t need to convert anything.',
+      'The SD card stores data in numbered files (e.g. 22734456.000, 22734456.001). The number is your device serial. Don\'t rename these files.',
+      'BMC devices record therapy mode (CPAP, AutoCPAP, S, S/T, AutoS), pressure settings, mask type, and leak rates. AirwayLab extracts all of these.',
+      'Machine-scored events (apneas, hypopneas, flow limitation events) are parsed from the .evt file and shown alongside AirwayLab\'s own engine analysis.',
+      'BMC Luna 2, Luna 2 QX, RESmart G2, and RESmart G3 all use the same data format. AirwayLab supports all variants.',
+    ],
+    troubleshooting: [
+      {
+        question: 'AirwayLab doesn\'t detect my BMC device',
+        answer: 'Make sure you\'re selecting all files from the SD card root, not just individual files. AirwayLab looks for the .idx file with a numeric prefix (e.g. 22734456.idx) to identify BMC devices. If your SD card has folders, select the folder containing the SERIALNUM files.',
+      },
+      {
+        question: 'Analysis shows fewer nights than expected',
+        answer: 'BMC devices store data across multiple .000 through .029 files. If only some files were selected during upload, nights stored in the missing files won\'t appear. Select all files from the SD card to get complete data.',
+      },
+      {
+        question: 'Pressure settings show differently than my machine display',
+        answer: 'AirwayLab extracts settings from the .idx file, which records the actual delivered settings per session. These should match your machine settings. If they look different, your machine may be in an auto mode where delivered pressure varies from the configured range.',
+      },
+      {
+        question: 'I have a different BMC model (e.g. Luna IQ, newer firmware)',
+        answer: 'AirwayLab\'s BMC parser covers the binary format used by Luna 2 and RESmart G2/G3. Newer models may use updated formats. If your device isn\'t detected, use the "Submit device info" option that appears so we can add support.',
+      },
+    ],
+    metaDescription:
+      'How to upload BMC Luna 2 or RESmart G2 SD card data to AirwayLab for flow limitation analysis. Full support for proprietary binary format. Free, browser-based.',
+  },
 ];
 
 export function getGuideBySlug(slug: string): DeviceGuide | undefined {

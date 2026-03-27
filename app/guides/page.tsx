@@ -6,19 +6,21 @@ import { DEVICE_GUIDES } from '@/lib/device-guides';
 export const metadata: Metadata = {
   title: 'Device Guides — Upload Your ResMed Data to AirwayLab',
   description:
-    'Step-by-step guides for uploading CPAP and BiPAP SD card data to AirwayLab. Covers ResMed AirSense 10, AirSense 11, and AirCurve 10.',
+    'Step-by-step guides for uploading CPAP and BiPAP SD card data to AirwayLab. Covers ResMed AirSense 10, AirSense 11, AirCurve 10, and BMC Luna / RESmart.',
   keywords: [
     'ResMed SD card upload',
     'AirSense 10 data analysis',
     'AirSense 11 CPAP data',
     'AirCurve 10 BiPAP data',
+    'BMC Luna data analysis',
+    'RESmart CPAP data',
     'CPAP SD card reader',
-    'ResMed flow limitation analysis',
+    'flow limitation analysis',
   ],
   openGraph: {
-    title: 'Device Guides — Upload Your ResMed Data to AirwayLab',
+    title: 'Device Guides — Upload Your PAP Data to AirwayLab',
     description:
-      'Step-by-step guides for uploading CPAP and BiPAP SD card data to AirwayLab. Covers ResMed AirSense 10, AirSense 11, and AirCurve 10.',
+      'Step-by-step guides for uploading CPAP and BiPAP SD card data to AirwayLab. Covers ResMed AirSense 10, AirSense 11, AirCurve 10, and BMC Luna / RESmart.',
   },
   alternates: {
     canonical: 'https://airwaylab.app/guides',
@@ -131,16 +133,18 @@ export default function GuidesPage() {
         </Link>
       </div>
 
-      {/* Not ResMed? */}
+      {/* Other devices */}
       <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex items-center gap-2.5">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
           <h3 className="text-sm font-semibold">Using a different device?</h3>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          AirwayLab currently supports ResMed devices only. Philips
-          Respironics, BMC, and other manufacturers use different data formats.
-          Support for additional devices is on the roadmap.
+          AirwayLab currently supports ResMed and BMC devices. Philips
+          Respironics and other manufacturers use different data formats.
+          Support for additional devices is on the roadmap. If you upload
+          an unsupported device, you can submit your file structure to help
+          us add support.
         </p>
       </div>
     </div>
