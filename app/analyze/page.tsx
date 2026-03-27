@@ -43,6 +43,7 @@ import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-tra
 import { safeGetItem } from '@/lib/safe-local-storage';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
+import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -938,6 +939,7 @@ function AnalyzePageInner() {
             }} />
             <GuidedWalkthrough isComplete={isComplete} />
             {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
+            {!isDemo && <HistoryExpiryWarning nights={nights} />}
             {!isDemo && <EmailOptInNudge />}
             <DataContribution
               nights={nights}
