@@ -33,20 +33,20 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
-      Sentry.logger.warn('[track-analysis] 429 rate limited', { ip });
+      console.error('[track-analysis] 429 rate limited', { ip });
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
     }
 
     // Size guard
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      Sentry.logger.warn('[track-analysis] 413 payload too large', { contentLength: request.headers.get('content-length') });
+      console.error('[track-analysis] 413 payload too large', { contentLength: request.headers.get('content-length') });
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
     const body = await request.json().catch(() => null);
     const parsed = TrackAnalysisSchema.safeParse(body);
     if (!parsed.success) {
-      Sentry.logger.warn('[track-analysis] 400 invalid payload');
+      console.error('[track-analysis] 400 invalid payload');
       return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      Sentry.logger.info('[track-analysis] Supabase not configured', { nightCount });
+      console.error('[track-analysis] Supabase not configured', { nightCount });
     }
 
     return NextResponse.json({ ok: true });
