@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
-      Sentry.logger.warn('[contribute-data] 429 rate limited', { ip });
+      console.error('[contribute-data] 429 rate limited', { ip });
       return NextResponse.json(
         { error: 'Too many contributions. Please try again later.' },
         { status: 429 }
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
 
     // Size guard
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      Sentry.logger.warn('[contribute-data] 413 payload too large', { contentLength: request.headers.get('content-length') });
+      console.error('[contribute-data] 413 payload too large', { contentLength: request.headers.get('content-length') });
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
@@ -257,13 +257,13 @@ export async function POST(request: NextRequest) {
     const parsed = ContributeDataSchema.safeParse(raw);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
-      Sentry.logger.warn('[contribute-data] 400 validation failed', { error: firstError });
+      console.error('[contribute-data] 400 validation failed', { error: firstError });
       return NextResponse.json({ error: firstError }, { status: 400 });
     }
     const { nights, contributionId: clientContributionId, nightContexts } = parsed.data;
 
     if (!nights.every(isValidNight)) {
-      Sentry.logger.warn('[contribute-data] 400 invalid night data format', { nightCount: nights.length });
+      console.error('[contribute-data] 400 invalid night data format', { nightCount: nights.length });
       return NextResponse.json(
         { error: 'Invalid night data format.' },
         { status: 400 }
@@ -294,12 +294,12 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        Sentry.logger.warn('[contribute-data] Supabase insert failed', { error: error.message });
+        console.error('[contribute-data] Supabase insert failed', { error: error.message });
         Sentry.captureException(error, { tags: { route: 'contribute-data' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {
-      Sentry.logger.info('[contribute-data] Supabase not configured', { nightCount: anonymised.length });
+      console.error('[contribute-data] Supabase not configured', { nightCount: anonymised.length });
     }
 
     // Discord #growth alert (fire-and-forget)

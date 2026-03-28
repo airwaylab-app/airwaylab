@@ -42,7 +42,7 @@ export function submitFeedback(
 
   if (!supabase) {
     // Graceful degradation: log and succeed when Supabase is not configured
-    Sentry.logger.info('[feedback] Supabase not configured', {
+    console.error('[feedback] Supabase not configured', {
       type: input.type,
       messagePreview: input.message.slice(0, 100),
     })
