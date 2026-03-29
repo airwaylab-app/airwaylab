@@ -106,18 +106,10 @@ export function persistResults(
       localStorage.setItem(STORAGE_KEY, bestFit.json);
       const dropped = nights.length - bestFit.count;
 
+      // Expected behavior for large datasets — not a bug
       console.warn(
         `[persistence] Data too large for ${nights.length} nights. Saved ${bestFit.count} most recent, dropped ${dropped} oldest.`
       );
-      Sentry.captureMessage('Persistence: progressive save — oldest nights dropped', {
-        level: 'info',
-        extra: {
-          totalNights: nights.length,
-          nightsSaved: bestFit.count,
-          nightsDropped: dropped,
-          dataSizeMB: (bestFit.json.length * 2 / 1024 / 1024).toFixed(1),
-        },
-      });
 
       return {
         saved: true,
@@ -202,7 +194,7 @@ export function loadPersistedResults(): {
       !firstNight.wat ||
       !firstNight.ned
     ) {
-      Sentry.logger.warn('[persistence] Corrupted data detected, clearing');
+      console.warn('[persistence] Corrupted data detected, clearing');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }

@@ -158,13 +158,11 @@ describe('pld-trace-idb error handling', () => {
     }
   });
 
-  it('Sentry messages include module: pld-trace-idb tag', async () => {
+  it('does not send IndexedDB errors to Sentry (graceful degradation)', async () => {
     const { readFileSync } = await import('fs');
     const { resolve } = await import('path');
     const source = readFileSync(resolve(__dirname, '../lib/pld-trace-idb.ts'), 'utf-8');
-    const tagMatches = source.match(/module:\s*'pld-trace-idb'/g);
-    expect(tagMatches).not.toBeNull();
-    expect(tagMatches!.length).toBeGreaterThanOrEqual(3);
+    expect(source).not.toContain("import * as Sentry from '@sentry/nextjs'");
   });
 });
 

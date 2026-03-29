@@ -12,9 +12,6 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  // Enable Sentry structured logging (Sentry.logger.info/warn/etc.)
-  _experiments: { enableLogs: true },
-
   beforeSend(event) {
     // Supabase storage rejects internally for duplicate uploads before our code handles it.
     // The contribute-waveforms endpoint treats duplicates as idempotent success (upsert: false by design).
@@ -22,6 +19,19 @@ Sentry.init({
     if (message.includes('The resource already exists')) {
       return null;
     }
+
+    // Anthropic transient errors (rate limits, timeouts, connection, server errors)
+    // are not AirwayLab bugs. Sample at 10% to track volume trends without burning budget.
+    const errorType = (event.tags as Record<string, string> | undefined)?.error_type;
+    if (
+      errorType === 'rate_limit' ||
+      errorType === 'connection_timeout' ||
+      errorType === 'connection' ||
+      errorType === 'server_error'
+    ) {
+      return Math.random() < 0.1 ? event : null;
+    }
+
     return event;
   },
 });

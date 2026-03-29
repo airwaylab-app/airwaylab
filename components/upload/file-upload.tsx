@@ -52,14 +52,8 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
             level: 'info',
             tags: { checkpoint: 'unsupported_device', file_count: files.length },
           });
-        } else if (result.edfCount === 0) {
-          const extensions = Array.from(new Set(files.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
-          Sentry.captureMessage('Upload: all files rejected by validation', {
-            level: 'warning',
-            tags: { checkpoint: 'upload_all_rejected', file_count: files.length },
-            extra: { file_types: extensions.join(','), errors: result.errors },
-          });
         }
+        // No Sentry for rejected files — user error (wrong files selected), not a bug
       }
     },
     [onFilesSelected, oxFiles]
@@ -103,14 +97,8 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           setSdFiles(edfFiles);
           if (result.valid) {
             onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : oxFiles, result.deviceType, result.bmcSerial);
-          } else if (result.edfCount === 0) {
-            const extensions = Array.from(new Set(edfFiles.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
-            Sentry.captureMessage('Upload: all files rejected by validation', {
-              level: 'warning',
-              tags: { checkpoint: 'upload_all_rejected', file_count: edfFiles.length },
-              extra: { file_types: extensions.join(','), errors: result.errors },
-            });
           }
+          // No Sentry for rejected files — user error (wrong files selected), not a bug
         }
         if (csvFiles.length > 0) {
           const oxResult = validateOximetryFiles(csvFiles);

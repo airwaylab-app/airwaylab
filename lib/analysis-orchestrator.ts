@@ -347,14 +347,17 @@ class AnalysisOrchestrator {
             break;
           case 'WARNING': {
             const isTruncated = msg.detail.includes('Truncated');
-            Sentry.captureMessage(msg.detail, {
-              level: isTruncated ? 'info' : 'warning',
-              tags: {
-                checkpoint: msg.checkpoint,
-                ...(isTruncated ? { truncated_edf: 'true' } : {}),
-                ...msg.tags,
-              },
-            });
+            // Truncated EDFs are common on SD cards (power loss, incomplete writes).
+            // Non-truncated warnings are actual parsing issues worth tracking.
+            if (!isTruncated) {
+              Sentry.captureMessage(msg.detail, {
+                level: 'warning',
+                tags: {
+                  checkpoint: msg.checkpoint,
+                  ...msg.tags,
+                },
+              });
+            }
             // Accumulate warnings on state for UI display
             this.setState({
               warnings: [...this.state.warnings, msg.detail],
@@ -363,14 +366,8 @@ class AnalysisOrchestrator {
           }
           case 'SETTINGS_DIAGNOSTIC':
             this.settingsDiagnostic = msg;
-            Sentry.captureMessage('settings_extraction_failed', {
-              level: 'info',
-              tags: { deviceModel: msg.deviceModel, hasStrFile: String(msg.hasStrFile) },
-              extra: {
-                signalLabels: msg.signalLabels.slice(0, 50),
-                signalCount: msg.signalLabels.length,
-              },
-            });
+            // Device data is saved to Supabase via /api/device-diagnostic below.
+            // No Sentry capture needed — the API endpoint handles error tracking.
             // Save unknown device data to Supabase for future support
             fetch('/api/device-diagnostic', {
               method: 'POST',
