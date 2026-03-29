@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Community page** -- New `/community` page showcasing the AirwayLab community with tiered membership, activity cards, FAQ with JSON-LD, and "support the project" framing. (community-page)
+- **Simplified header navigation** -- Replaced 8 nav links with 4 visible (Analyze, Blog, Community, Pricing) + "More" dropdown. Moved Settings to user menu. Added gear icon for logged-out settings access. (header-simplification)
 - **Getting Started guide page** -- Step-by-step guide at `/getting-started` for new users, with navigation links from header, footer, landing page, and error states. Includes analytics tracking and premium upsell. (getting-started-guide-page)
 - **Dashboard guided walkthrough** -- Opt-in 5-step spotlight tour for first-time users. Walkthrough state persists server-side (Supabase profiles) for logged-in users with localStorage fallback. Re-runnable from NextSteps panel. Analytics on start/step/complete/skip. (first-visit-guided-walkthrough)
 - **Community benchmarks** -- Position bars showing where your IFL Risk, Glasgow, FL Score, and RERA Index fall within anonymised community ranges. Available to all users without data contribution. Includes contextual premium nudge. 1-hour server-side cache. (community-benchmarks-free)

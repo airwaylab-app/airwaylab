@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 const PRIMARY_NAV: { href: string; label: string; alwaysVisible?: boolean }[] = [
   { href: '/analyze', label: 'Analyze', alwaysVisible: true },
   { href: '/blog', label: 'Blog' },
+  { href: '/community', label: 'Community' },
   { href: '/pricing', label: 'Pricing' },
 ];
 
@@ -29,6 +30,7 @@ const MORE_NAV = [
 const MOBILE_NAV = [
   { href: '/analyze', label: 'Analyze' },
   { href: '/blog', label: 'Blog' },
+  { href: '/community', label: 'Community' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/getting-started', label: 'Getting Started' },
   { href: '/glossary', label: 'Glossary' },
