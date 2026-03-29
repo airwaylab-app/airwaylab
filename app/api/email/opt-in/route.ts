@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const ip = getRateLimitKey(request);
   if (await limiter.isLimited(ip)) {
-    Sentry.logger.warn('[email/opt-in] 429 rate limited', { ip });
+    console.error('[email/opt-in] 429 rate limited', { ip });
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       { status: 429 }

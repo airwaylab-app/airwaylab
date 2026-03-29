@@ -51,7 +51,7 @@ export const METRIC_PLAIN_LANGUAGE: Record<string, string> = {
 
 export const METRIC_METHODOLOGIES = {
   glasgowIndex:
-    'Each breath is scored against 9 shape characteristics (skew, spike, flat top, top heavy, multi-peak, no pause, inspiratory rate, multi-breath, variable amplitude). Each component represents the proportion of breaths exhibiting that characteristic (0\u20131). The overall Glasgow Index sums all 9 components (0\u20139 scale). Typical scores range from 0 to about 3 \u2014 scores above 3 are rare and indicate very significant problems. It\u2019s a holistic breath-shape score that catches many types of abnormality, not just classic flow limitation.',
+    'Each breath is scored against 9 shape characteristics (skew, spike, flat top, top heavy, multi-peak, no pause, inspiratory rate, multi-breath, variable amplitude). Each component represents the proportion of breaths exhibiting that characteristic (0\u20131). The overall Glasgow Index sums all 9 components (0\u20139 scale). Note: the original Glasgow Index Excel tool used a 0\u20133 summary scale \u2014 AirwayLab uses the full 0\u20139 component sum for more granularity. Typical scores range from 0 to about 3; scores above 3 are rare and indicate very significant problems. It\u2019s a holistic breath-shape score that catches many types of abnormality, not just classic flow limitation.',
 
   flScore:
     'Computed by the WAT (Wobble Analysis Tool) engine. For each breath window, it measures the ratio of tidal volume variance in the top half vs the full signal. A higher ratio means more variation is concentrated at the flow peaks, indicating flat-topped (flow-limited) breathing. This is a population-level metric \u2014 it looks at the overall distribution of breath shapes, not individual breaths.',
@@ -135,7 +135,7 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
   if (light === 'warn') {
     return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. This is a secondary marker \u2014 your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Note: this flow-based estimate typically reads higher than an in-lab arousal index.`;
   }
-  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. This is a secondary marker \u2014 frequent recovery breaths following flow limitation suggest your nervous system is repeatedly responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Discuss with your clinician \u2014 an in-lab study with EEG can measure true cortical arousals directly.`;
+  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Important: this flow-based estimate typically reads 2\u20133x higher than an in-lab arousal index measured with EEG, because it detects respiratory recovery patterns that don\u2019t always correspond to cortical arousals. This is a secondary marker \u2014 check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Discuss with your clinician if concerned.`;
 }
 
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {

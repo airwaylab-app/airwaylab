@@ -6,6 +6,7 @@ import type { Insight } from '@/lib/insights';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { aiRateLimiter, aiPremiumRateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 import { cancelSequence } from '@/lib/email/sequences';
@@ -313,6 +314,14 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+  }
+
+  // Payload size guard — reject oversized requests before parsing (FB-27)
+  if (exceedsPayloadLimit(request, 512_000)) {
+    return NextResponse.json(
+      { error: 'Request too large. Try selecting a more recent night or disable deep analysis mode.' },
+      { status: 413 }
+    );
   }
 
   // Validate Anthropic API key is configured

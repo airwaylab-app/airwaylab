@@ -175,7 +175,7 @@ export function DataContribution({
             <Heart className="h-4 w-4 text-red-400" />
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm text-muted-foreground">
-                Auto-contribution failed.
+                Auto-contribution failed — this can happen due to a temporary network issue.
               </p>
               <Button
                 size="sm"

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitKey(request)
     if (await limiter.isLimited(ip)) {
-      Sentry.logger.warn('[feedback] 429 rate limited', { ip })
+      console.error('[feedback] 429 rate limited', { ip })
       return NextResponse.json(
         { error: 'Too many submissions. Please try again later.' },
         { status: 429 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      Sentry.logger.warn('[feedback] 413 payload too large', { contentLength: request.headers.get('content-length') })
+      console.error('[feedback] 413 payload too large', { contentLength: request.headers.get('content-length') })
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }

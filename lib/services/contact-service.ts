@@ -40,7 +40,7 @@ export function submitContactForm(
   const supabase = getSupabaseAdmin()
 
   if (!supabase) {
-    Sentry.logger.info('[contact] Supabase not configured', {
+    console.error('[contact] Supabase not configured', {
       category: input.category,
       messagePreview: input.message.slice(0, 100),
     })

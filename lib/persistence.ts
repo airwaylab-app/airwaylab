@@ -151,10 +151,14 @@ export function persistResults(
 /**
  * Load persisted results from localStorage.
  * Returns null if nothing is saved, data is too old, or parsing fails.
+ * Returns { engineUpgraded: true } if data exists but was analyzed with an
+ * older engine version — the UI should prompt re-upload instead of showing
+ * an empty dashboard.
  */
 export function loadPersistedResults(): {
   nights: NightResult[];
   therapyChangeDate: string | null;
+  engineUpgraded?: boolean;
 } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -174,9 +178,13 @@ export function loadPersistedResults(): {
       return null;
     }
 
-    // Invalidate if engine version changed
+    // Engine version mismatch: clear stale data but signal to UI (FB-22)
     if (data.engineVersion && data.engineVersion !== ENGINE_VERSION) {
+      const nightCount = Array.isArray(data.nights) ? data.nights.length : 0;
       localStorage.removeItem(STORAGE_KEY);
+      if (nightCount > 0) {
+        return { nights: [], therapyChangeDate: null, engineUpgraded: true };
+      }
       return null;
     }
 
