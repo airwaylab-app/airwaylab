@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
         await supabase.from('discord_pending_roles').delete().eq('user_id', profile.id);
 
         resolved++;
-        console.log(`[discord-sync] Auto-linked ${profile.discord_username} (${profile.tier})`);
+        console.info(`[discord-sync] Auto-linked ${profile.discord_username} (${profile.tier})`);
       } catch (err) {
         // Don't let one user's failure stop the rest
         console.error(`[discord-sync] Failed for ${profile.discord_username}:`, err);

@@ -4,8 +4,12 @@ import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
+import { validateOrigin } from '@/lib/csrf';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 const BASE_URL = 'https://airwaylab.app';
+
+const MAX_PAYLOAD_BYTES = 1_048_576;
 
 const AnnounceSchema = z.object({
   dry_run: z.boolean().optional(),
@@ -31,6 +35,19 @@ const AnnounceSchema = z.object({
  * Set dry_run: false to actually send.
  */
 export async function POST(request: NextRequest) {
+  // CSRF check as defense-in-depth (primary auth is Bearer token below)
+  if (!validateOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+    console.error('[email/announce] 413 payload too large', { contentLength: request.headers.get('content-length') });
+    return NextResponse.json(
+      { error: 'Payload too large.' },
+      { status: 413 }
+    );
+  }
+
   const authHeader = request.headers.get('authorization');
   const adminKey = process.env.ADMIN_API_KEY;
 

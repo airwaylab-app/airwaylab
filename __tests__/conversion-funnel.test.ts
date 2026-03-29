@@ -101,9 +101,9 @@ describe('Step 4: Auto data collection for registered users', () => {
 
   it('presign route does not enforce storage quota', () => {
     const src = readSource('app/api/files/presign/route.ts');
-    // Should not contain 413 status code for quota exceeded
-    expect(src).not.toContain('413');
+    // Payload size guard (security) is allowed — quota enforcement is not
     expect(src).not.toContain('getStorageUsage');
+    expect(src).not.toContain('STORAGE_QUOTA');
   });
 
   it('storage quotas are unlimited for all tiers', () => {

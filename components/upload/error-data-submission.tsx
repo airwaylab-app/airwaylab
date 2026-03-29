@@ -33,6 +33,7 @@ export function ErrorDataSubmission({ error, files }: Props) {
           errorMessage: error,
           email: email.trim() || undefined,
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+          consentAcknowledged: true,
         }),
       });
 

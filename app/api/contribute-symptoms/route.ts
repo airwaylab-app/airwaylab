@@ -12,6 +12,7 @@ const symptomRateLimiter = new RateLimiter({
 });
 
 const PayloadSchema = z.object({
+  consent: z.literal(true, { error: 'Consent is required to contribute symptom data.' }),
   symptom_rating: z.number().int().min(1).max(5),
   ifl_risk: z.number().min(0).max(100),
   glasgow_overall: z.number().min(0).max(8),

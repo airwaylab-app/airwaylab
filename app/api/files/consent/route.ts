@@ -4,12 +4,15 @@ import { captureApiError } from '@/lib/sentry-utils';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
 
 const ConsentSchema = z.object({
   consent: z.boolean(),
 });
+
+const MAX_PAYLOAD_BYTES = 1_000_000; // 1 MB
 
 /**
  * GET: Check storage consent status
@@ -56,6 +59,11 @@ export async function POST(request: NextRequest) {
   const ip = getRateLimitKey(request);
   if (await rateLimiter.isLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+    console.error('[files/consent] 413 payload too large', { contentLength: request.headers.get('content-length') });
+    return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
   }
 
   const supabase = await getSupabaseServer();

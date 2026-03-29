@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, { tags: { route: 'delete-user-data' } });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
