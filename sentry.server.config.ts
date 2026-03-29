@@ -57,6 +57,9 @@ function sendBudgetDiscordAlert(pct: number, tier: string) {
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+  // Track which deploy introduced each error
+  release: process.env.VERCEL_GIT_COMMIT_SHA || 'dev',
+
   // Only enable in production
   enabled: process.env.NODE_ENV === 'production',
 

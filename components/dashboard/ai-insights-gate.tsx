@@ -96,6 +96,7 @@ export function AIInsightsGate({
     const notes = loadNightNotes(selectedNight.dateStr);
 
     events.aiInsightsButtonClicked(tier, aiRemaining === Infinity ? 999 : aiRemaining);
+    Sentry.addBreadcrumb({ message: 'AI insights requested', category: 'ai', data: { tier } });
 
     const nightIdx = selectedIdx >= 0 ? selectedIdx : 0;
 

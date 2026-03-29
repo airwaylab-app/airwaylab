@@ -188,6 +188,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
+        Sentry.setUser({ id: initialSession.user.id });
+      } else {
+        Sentry.setUser(null);
+      }
+      if (initialSession?.user) {
         fetchProfile(initialSession.user.id).then(() => {
           // Check if user signed up via EmailOptIn (pending email opt-in)
           try {
@@ -215,8 +220,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
+          Sentry.setUser({ id: s.user.id });
           fetchProfile(s.user.id);
         } else {
+          Sentry.setUser(null);
           setProfile(null);
           setSubscription(null);
         }
@@ -270,6 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('[auth-context] Sign-out failed:', error.message);
       Sentry.captureException(error, { tags: { context: 'auth-sign-out' } });
     }
+    Sentry.setUser(null);
     setUser(null);
     setSession(null);
     setProfile(null);

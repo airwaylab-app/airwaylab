@@ -86,6 +86,8 @@ class AnalysisOrchestrator {
     });
 
     try {
+      Sentry.addBreadcrumb({ message: 'Analysis started', category: 'analysis', data: { fileCount: sdArr.length } });
+
       // ── Incremental check: use manifest diffing for smarter dedup ──
       const cached = loadPersistedResults();
       const cachedNights = cached?.nights ?? [];
@@ -257,6 +259,8 @@ class AnalysisOrchestrator {
       persistOximetryTraces(merged);
       persistBreathData(merged);
       persistPLDTraces(merged);
+
+      Sentry.addBreadcrumb({ message: 'Analysis complete', category: 'analysis', data: { nightCount: merged.length } });
 
       this.setState({
         status: 'complete',
