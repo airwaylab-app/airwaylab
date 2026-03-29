@@ -186,6 +186,11 @@ export async function fetchDeepAIInsights(
 
   const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
 
+  // Client-side truncation: cap per-breath data to prevent 413 errors (FB-27)
+  const trimmedBreaths = perBreathSummary && perBreathSummary.breaths.length > 1000
+    ? { ...perBreathSummary, breaths: perBreathSummary.breaths.slice(0, 1000) }
+    : perBreathSummary;
+
   try {
     const res = await fetch('/api/ai-insights', {
       method: 'POST',
@@ -197,7 +202,7 @@ export async function fetchDeepAIInsights(
         therapyChangeDate,
         nightNotes,
         deep: true,
-        perBreathSummary,
+        perBreathSummary: trimmedBreaths,
       }),
       signal: controller.signal,
     });

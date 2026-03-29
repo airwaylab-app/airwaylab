@@ -185,13 +185,15 @@ export function parseOximetryCSV(csvText: string): ParsedOximetry {
       : parseCheckmeTime(timeStr);
     if (!time) continue;
 
-    // Check validity
-    const spo2Invalid = spo2Str === '--' || spo2Str === '';
-    const hrInvalid = hrStr === '--' || hrStr === '';
+    // Check validity — trim whitespace to handle format variations (FB-31)
+    const spo2Trimmed = spo2Str.trim();
+    const hrTrimmed = hrStr.trim();
+    const spo2Invalid = spo2Trimmed === '--' || spo2Trimmed === '';
+    const hrInvalid = hrTrimmed === '--' || hrTrimmed === '';
 
-    const spo2 = spo2Invalid ? -1 : parseInt(spo2Str);
-    const hr = hrInvalid ? -1 : parseInt(hrStr);
-    const motion = parseInt(motionStr) || 0;
+    const spo2 = spo2Invalid ? -1 : parseInt(spo2Trimmed, 10);
+    const hr = hrInvalid ? -1 : parseInt(hrTrimmed, 10);
+    const motion = parseInt((motionStr ?? '').trim(), 10) || 0;
 
     samples.push({
       time,

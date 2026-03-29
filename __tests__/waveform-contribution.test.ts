@@ -158,8 +158,9 @@ describe('persistence engine version', () => {
     storage.set('airwaylab_results', JSON.stringify(parsed));
 
     const result = loadPersistedResults();
-    expect(result).toBeNull();
-    // Should have removed the stale data
+    // Should return engineUpgraded signal instead of null (FB-22)
+    expect(result).toEqual({ nights: [], therapyChangeDate: null, engineUpgraded: true });
+    // Should have removed the stale data from storage
     expect(storage.has('airwaylab_results')).toBe(false);
   });
 

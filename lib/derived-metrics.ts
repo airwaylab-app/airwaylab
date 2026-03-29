@@ -12,5 +12,8 @@ import type { NEDResults } from './types';
  * Most accurate for UARS patients where apneas are rare and RERAs dominate.
  */
 export function computeEstimatedRDI(ned: NEDResults): number {
-  return ned.reraIndex + (ned.hypopneaIndex ?? 0);
+  const hypopnea = ned.hypopneaIndex ?? 0;
+  const rdi = ned.reraIndex + (Number.isFinite(hypopnea) ? hypopnea : 0);
+  // Safety: RDI must be at least RERA (hypopnea can't be negative)
+  return Math.max(rdi, ned.reraIndex);
 }
