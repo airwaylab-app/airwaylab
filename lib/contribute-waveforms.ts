@@ -260,6 +260,7 @@ async function uploadWaveform(
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/octet-stream',
+      'X-Consent-Confirmed': 'true',
       'X-Night-Date': night.dateStr,
       'X-Contribution-Id': contributionId,
       'X-Engine-Version': ENGINE_VERSION,

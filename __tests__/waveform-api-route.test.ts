@@ -62,6 +62,7 @@ function makeRequest(overrides: Partial<{
     'x-device-model': 'AirSense 10',
     'x-pap-mode': 'APAP',
     'x-analysis-results': JSON.stringify({ glasgow: { overall: 2.1 } }),
+    'x-consent-confirmed': 'true',
     ...overrides.headers,
   };
 
@@ -125,6 +126,7 @@ describe('contribute-waveforms API route', () => {
       'x-device-model': 'AirSense 10',
       'x-pap-mode': 'APAP',
       'x-analysis-results': JSON.stringify({ glasgow: { overall: 2.1 } }),
+    'x-consent-confirmed': 'true',
       // No content-encoding header → not compressed
     });
 
@@ -143,14 +145,23 @@ describe('contribute-waveforms API route', () => {
   it('rejects request with missing required headers', async () => {
     const { POST } = await import('@/app/api/contribute-waveforms/route');
 
-    const request = new Request('https://airwaylab.app/api/contribute-waveforms', {
+    // Without consent header -> 403
+    const noConsent = new Request('https://airwaylab.app/api/contribute-waveforms', {
       method: 'POST',
       headers: { 'content-type': 'application/octet-stream' },
       body: new Uint8Array([1, 2, 3]),
     });
+    const consentResponse = await POST(noConsent as never);
+    expect(consentResponse.status).toBe(403);
 
-    const response = await POST(request as never);
-    expect(response.status).toBe(400);
+    // With consent but missing other headers -> 400
+    const noHeaders = new Request('https://airwaylab.app/api/contribute-waveforms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/octet-stream', 'x-consent-confirmed': 'true' },
+      body: new Uint8Array([1, 2, 3]),
+    });
+    const headerResponse = await POST(noHeaders as never);
+    expect(headerResponse.status).toBe(400);
   });
 
   it('rejects request with invalid date format', async () => {

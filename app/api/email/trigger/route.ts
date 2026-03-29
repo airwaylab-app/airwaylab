@@ -7,6 +7,12 @@ import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 import { sendEmail } from '@/lib/email/send';
 import { validateOrigin } from '@/lib/csrf';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
+
+const limiter = new RateLimiter({ windowMs: 60_000, max: 10 });
+
+const MAX_PAYLOAD_BYTES = 1_048_576;
 
 const TriggerSchema = z.object({
   sequence: z.enum(['post_upload']),
@@ -24,31 +30,48 @@ const TriggerSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
-    return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
-  }
-
-  const supabaseAuth = await getSupabaseServer();
-  if (!supabaseAuth) {
-    return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
-  }
-
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await request.json().catch(() => null);
-  const parsed = TriggerSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-  }
-
-  const supabase = getSupabaseServiceRole();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
   }
 
   try {
+    const ip = getRateLimitKey(request);
+    if (await limiter.isLimited(ip)) {
+      console.error('[email/trigger] 429 rate limited', { ip });
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+      console.error('[email/trigger] 413 payload too large', { contentLength: request.headers.get('content-length') });
+      return NextResponse.json(
+        { error: 'Payload too large.' },
+        { status: 413 }
+      );
+    }
+
+    const supabaseAuth = await getSupabaseServer();
+    if (!supabaseAuth) {
+      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
+    }
+
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => null);
+    const parsed = TriggerSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    const supabase = getSupabaseServiceRole();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+
     // Check if user has opted in to emails
     const { data: profile } = await supabase
       .from('profiles')

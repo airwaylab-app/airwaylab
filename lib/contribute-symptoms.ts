@@ -90,7 +90,7 @@ export async function contributeSymptoms(
     const res = await fetch('/api/contribute-symptoms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ consent: true, ...payload }),
       signal,
     });
     return res.ok;

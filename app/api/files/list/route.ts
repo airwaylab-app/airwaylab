@@ -5,7 +5,7 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { getUserTier, getStorageUsage } from '@/lib/storage/quota';
 import type { StoredFileMetadata } from '@/lib/storage/types';
 
-const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 60 });
+const rateLimiter = new RateLimiter({ windowMs: 60_000, max: 200 });
 
 /**
  * List stored files for the authenticated user.

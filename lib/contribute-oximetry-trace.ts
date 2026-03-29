@@ -155,6 +155,7 @@ export async function contributeOximetryTraceBackground(
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
+          'x-consent-confirmed': 'true',
           ...(isCompressed && { 'Content-Encoding': 'gzip' }),
           'x-night-date': night.dateStr,
           'x-contribution-id': contributionId,
