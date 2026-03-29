@@ -201,3 +201,49 @@ export async function searchGuildMember(username: string): Promise<GuildSearchRe
     return { status: 'error', message: 'Failed to search Discord server' };
   }
 }
+
+const DM_FOOTER = '\n\n—\nNeed help? Reply in #general or email dev@airwaylab.app — this bot can\'t read replies.';
+
+/**
+ * Send a DM to a Discord user via the bot.
+ * Appends a standard footer directing replies to #general or email.
+ * Fail-open: returns false on error, never throws.
+ */
+export async function sendDM(discordId: string, message: string): Promise<boolean> {
+  if (!isDiscordConfigured()) return false;
+
+  try {
+    // Create or get existing DM channel
+    const channelRes = await discordFetch('/users/@me/channels', 'POST', {
+      recipient_id: discordId,
+    });
+
+    if (!channelRes.ok) {
+      const errText = await channelRes.text();
+      console.error(`[discord] sendDM: failed to open DM channel (${channelRes.status}): ${errText}`);
+      return false;
+    }
+
+    const channel = await channelRes.json() as { id: string };
+
+    // Send message with reply-to footer
+    const msgRes = await discordFetch(`/channels/${channel.id}/messages`, 'POST', {
+      content: message + DM_FOOTER,
+    });
+
+    if (!msgRes.ok) {
+      const errText = await msgRes.text();
+      console.error(`[discord] sendDM: failed to send message (${msgRes.status}): ${errText}`);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[discord] sendDM error:', err);
+    Sentry.captureException(err, {
+      tags: { action: 'discord-send-dm' },
+      extra: { discordId },
+    });
+    return false;
+  }
+}
