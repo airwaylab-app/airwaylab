@@ -64,6 +64,7 @@ import {
   BarChart,
   HardDrive,
   Settings2,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -112,6 +113,7 @@ function AnalyzePageInner() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
+  const [engineUpgraded, setEngineUpgraded] = useState(false);
   const { user } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
@@ -210,7 +212,10 @@ function AnalyzePageInner() {
     } else if (state.status === 'idle') {
       const saved = loadPersistedResults();
       if (saved) {
-        if (saved.nights.length === 0) {
+        if (saved.engineUpgraded) {
+          // Engine version changed — old results cleared, prompt re-upload (FB-22)
+          setEngineUpgraded(true);
+        } else if (saved.nights.length === 0) {
           // Persisted data existed but contained 0 nights — data loss
           console.error('[persistence] Restored session has 0 nights — serving empty dashboard');
           Sentry.captureMessage('Persistence: restored session has 0 nights', {
@@ -218,8 +223,10 @@ function AnalyzePageInner() {
             extra: { therapyChangeDate: saved.therapyChangeDate },
           });
         }
-        setPersistedData(saved);
-        hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
+        if (saved.nights.length > 0) {
+          setPersistedData(saved);
+          hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -528,6 +535,22 @@ function AnalyzePageInner() {
             previousNights={lifetimeNights}
             onRegister={() => setAnalyzeAuthModalOpen(true)}
           />
+        </div>
+      )}
+
+      {/* Engine upgrade banner — shown when cached results were from an older version */}
+      {engineUpgraded && status === 'idle' && !isDemo && (
+        <div className="mx-auto mb-4 max-w-lg">
+          <div className="flex items-start gap-2.5 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+            <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium text-blue-400">Analysis engine updated</p>
+              <p className="mt-0.5">
+                Your previous results were analyzed with an older engine version.
+                Re-upload your SD card to get improved analysis with the latest algorithms.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

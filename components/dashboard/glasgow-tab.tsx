@@ -59,7 +59,7 @@ export function GlasgowTab({ nights, selectedNight, previousNight, therapyChange
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
-          tooltip="Sum of all 9 breath-shape components (0–9 scale). Typical scores range from 0 to about 3 — lower is better. Based on the original Glasgow Index by DaveSkvn."
+          tooltip="Sum of all 9 breath-shape components (0–9 scale). Note: the original Glasgow Index tool used a 0–3 summary — AirwayLab uses the full 0–9 component sum for more detail. Typical scores range from 0 to about 3; lower is better."
           onClick={clickable ? () => openMetric('Glasgow Overall', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' }) : undefined}
         />
         <div className="sm:col-span-2">

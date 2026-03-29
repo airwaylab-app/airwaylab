@@ -30,7 +30,11 @@ const TYPE_LABELS: Record<string, string> = {
 // ── Service function ─────────────────────────────────────────
 
 /**
- * Persists feedback to Supabase and fires a notification email.
+ * Persists feedback to Supabase and fires notifications.
+ *
+ * Notification routing:
+ * - Bug reports → email (dev@airwaylab.app) + Discord (with @mention)
+ * - All other types → Discord only
  *
  * This function owns the business logic; HTTP concerns (auth, CSRF,
  * rate limiting, Zod validation) stay in the API route.
@@ -64,36 +68,44 @@ export function submitFeedback(
     const label = TYPE_LABELS[input.type] ?? 'Feedback'
     const meta = (input.metadata ?? {}) as Record<string, unknown>
 
-    // Admin notification with full context (fire-and-forget)
-    void sendEmail({
-      to: 'dev@airwaylab.app',
-      subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
-      text: [
-        `New ${label.toLowerCase()} on airwaylab.app`,
-        '',
-        `Type: ${label}`,
-        `Page: ${input.page ?? '\u2014'}`,
-        `Email: ${input.email?.trim() ?? '\u2014'}`,
-        `Contact OK: ${input.contact_ok ? 'Yes' : 'No'}`,
-        `User ID: ${input.user_id ?? '\u2014'}`,
-        `Tier: ${meta.user_tier ?? '\u2014'}`,
-        `Display name: ${meta.display_name ?? '\u2014'}`,
-        '',
-        'Message:',
-        input.message.trim(),
-        '',
-        '\u2500\u2500 Context \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
-        `App version: ${meta.app_version ?? '\u2014'}`,
-        `Browser: ${typeof meta.user_agent === 'string' ? meta.user_agent.slice(0, 120) : '\u2014'}`,
-        `Screen: ${meta.screen_width ?? '?'}x${meta.screen_height ?? '?'} (viewport: ${meta.viewport_width ?? '?'}x${meta.viewport_height ?? '?'})`,
-        `Timezone: ${meta.timezone ?? '\u2014'}`,
-        `Has analysis: ${meta.has_analysis_results === true ? 'Yes' : meta.has_analysis_results === false ? 'No' : '\u2014'}`,
-      ].join('\n'),
-      metadata: { emailType: 'admin_feedback' },
-    })
+    // Admin email only for bug reports (feature requests / ideas → Discord only)
+    if (input.type === 'bug') {
+      void sendEmail({
+        to: 'dev@airwaylab.app',
+        subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
+        text: [
+          `New ${label.toLowerCase()} on airwaylab.app`,
+          '',
+          `Type: ${label}`,
+          `Page: ${input.page ?? '\u2014'}`,
+          `Email: ${input.email?.trim() ?? '\u2014'}`,
+          `Contact OK: ${input.contact_ok ? 'Yes' : 'No'}`,
+          `User ID: ${input.user_id ?? '\u2014'}`,
+          `Tier: ${meta.user_tier ?? '\u2014'}`,
+          `Display name: ${meta.display_name ?? '\u2014'}`,
+          '',
+          'Message:',
+          input.message.trim(),
+          '',
+          '\u2500\u2500 Context \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+          `App version: ${meta.app_version ?? '\u2014'}`,
+          `Browser: ${typeof meta.user_agent === 'string' ? meta.user_agent.slice(0, 120) : '\u2014'}`,
+          `Screen: ${meta.screen_width ?? '?'}x${meta.screen_height ?? '?'} (viewport: ${meta.viewport_width ?? '?'}x${meta.viewport_height ?? '?'})`,
+          `Timezone: ${meta.timezone ?? '\u2014'}`,
+          `Has analysis: ${meta.has_analysis_results === true ? 'Yes' : meta.has_analysis_results === false ? 'No' : '\u2014'}`,
+        ].join('\n'),
+        metadata: { emailType: 'admin_feedback' },
+      })
+    }
 
-    // Discord notification (fire-and-forget)
-    void sendAlert('user-signals', '', [formatUserSignalEmbed({
+    // Discord notification for all feedback types
+    // Personal mention for bugs so admin gets pinged
+    const adminUserId = process.env.DISCORD_ADMIN_USER_ID
+    const discordContent = input.type === 'bug' && adminUserId
+      ? `<@${adminUserId}> Bug report submitted`
+      : ''
+
+    void sendAlert('user-signals', discordContent, [formatUserSignalEmbed({
       type: input.message.startsWith('Oximetry format request') ? 'unsupported_device' : 'feedback',
       category: label,
       message: input.message.trim(),
