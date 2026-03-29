@@ -294,8 +294,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        console.error('[contribute-data] Supabase insert failed', { error: error.message });
-        Sentry.captureException(error, { tags: { route: 'contribute-data' } });
+        Sentry.captureException(error, { tags: { route: 'contribute-data', step: 'insert' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
     } else {

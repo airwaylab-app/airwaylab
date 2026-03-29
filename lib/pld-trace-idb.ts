@@ -8,7 +8,6 @@
 
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const STORE_NAME = 'pld-traces';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -106,12 +105,8 @@ export async function storePLDTrace(
       };
     });
   } catch (err) {
-    console.error('[pld-trace-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB PLD trace store failed', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-      extra: { error: String(err) },
-    });
+    // IndexedDB failures are non-fatal — expected in private browsing
+    console.warn('[pld-trace-idb] store failed:', err);
   }
 }
 
@@ -161,10 +156,7 @@ export async function loadPLDTrace(
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB PLD trace load unavailable', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -189,9 +181,6 @@ async function deletePLDTrace(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB PLD trace delete failed', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }

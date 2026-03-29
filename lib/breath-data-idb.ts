@@ -8,7 +8,6 @@
 import type { Breath } from './types';
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const STORE_NAME = 'breath-data';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -90,12 +89,8 @@ export async function storeBreathData(
       };
     });
   } catch (err) {
-    console.error('[breath-data-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB breath data store failed', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-      extra: { error: String(err) },
-    });
+    // IndexedDB failures are non-fatal — expected in private browsing
+    console.warn('[breath-data-idb] store failed:', err);
   }
 }
 
@@ -145,10 +140,7 @@ export async function loadBreathData(
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB breath data load unavailable', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -173,9 +165,6 @@ async function deleteBreathData(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB breath data delete failed', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }

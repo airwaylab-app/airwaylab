@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
   // Auth check — require signed-in user
   const supabase = await getSupabaseServer();
   if (!supabase) {
-    Sentry.captureMessage('AI insights: Supabase not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
+    Sentry.captureMessage('AI insights: Supabase not configured', { level: 'warning', tags: { route: 'ai-insights', error_type: 'config' } });
     return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
   }
 
@@ -327,7 +327,7 @@ export async function POST(request: NextRequest) {
   // Validate Anthropic API key is configured
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) {
-    Sentry.captureMessage('AI insights: ANTHROPIC_API_KEY not configured', { level: 'error', tags: { route: 'ai-insights', error_type: 'config' } });
+    Sentry.captureMessage('AI insights: ANTHROPIC_API_KEY not configured', { level: 'warning', tags: { route: 'ai-insights', error_type: 'config' } });
     return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
   }
 

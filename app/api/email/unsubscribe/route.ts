@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     if (profileError) {
       console.error('[unsubscribe] Failed to update profile:', profileError.message);
-      Sentry.captureException(profileError);
+      Sentry.captureException(profileError, { tags: { route: 'email-unsubscribe', step: 'profile-update' } });
     }
 
     // Cancel all pending email sequences
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/contact?unsubscribe=success', request.url));
   } catch (err) {
     console.error('[unsubscribe] Unexpected error:', err);
-    Sentry.captureException(err);
+    Sentry.captureException(err, { tags: { route: 'email-unsubscribe' } });
     return NextResponse.redirect(new URL('/contact?unsubscribe=error', request.url));
   }
 }

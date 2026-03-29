@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     if (filesError) {
       Sentry.captureException(filesError, {
-        extra: { userId: user.id, step: 'query_user_files' },
+        tags: { route: 'user-data-stats', step: 'query_user_files' },
       });
     }
 
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     if (storageError && storageError.code !== 'PGRST116') {
       // PGRST116 = no rows found, which is expected for new users
       Sentry.captureException(storageError, {
-        extra: { userId: user.id, step: 'query_user_storage_usage' },
+        tags: { route: 'user-data-stats', step: 'query_user_storage_usage' },
       });
     }
 
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     if (analysisError) {
       Sentry.captureException(analysisError, {
-        extra: { userId: user.id, step: 'query_analysis_data' },
+        tags: { route: 'user-data-stats', step: 'query_analysis_data' },
       });
     }
 
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       nightCount: nightCount ?? 0,
     });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, { tags: { route: 'user-data-stats' } });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

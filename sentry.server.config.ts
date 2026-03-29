@@ -93,6 +93,18 @@ Sentry.init({
     }
 
     eventCount++;
+    // Anthropic transient errors (rate limits, timeouts, connection, server errors)
+    // are not AirwayLab bugs. Sample at 10% to track volume trends without burning budget.
+    const errorType = (event.tags as Record<string, string> | undefined)?.error_type;
+    if (
+      errorType === 'rate_limit' ||
+      errorType === 'connection_timeout' ||
+      errorType === 'connection' ||
+      errorType === 'server_error'
+    ) {
+      return Math.random() < 0.1 ? event : null;
+    }
+
     return event;
   },
 });

@@ -53,6 +53,16 @@ Sentry.init({
       return null;
     }
 
+    // Filter common browser errors that aren't actionable AirwayLab bugs
+    if (
+      message.includes('ResizeObserver loop') ||
+      message.includes('Non-Error promise rejection captured') ||
+      message.includes('Load failed') ||
+      message.includes('Failed to fetch')
+    ) {
+      return null;
+    }
+
     return event;
   },
 });
