@@ -829,12 +829,20 @@ export default function Home() {
           </div>
 
           {/* Community Links */}
-          {/* TODO: Update to specific AirwayLab thread URLs once community posts exist */}
           <div>
             <p className="mb-3 text-sm font-medium text-muted-foreground">
               Join the conversation
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
+              <a
+                href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || 'https://discord.gg/DK7aN847Mn'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Discord
+              </a>
               <a
                 href="https://www.apneaboard.com"
                 target="_blank"

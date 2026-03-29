@@ -77,6 +77,8 @@ export function persistResults(
   nights: NightResult[],
   therapyChangeDate: string | null
 ): PersistResult {
+  Sentry.addBreadcrumb({ message: 'Results persisted', category: 'persistence', data: { nightCount: nights.length } });
+
   try {
     // Try full dataset first
     const full = trySerialise(nights, therapyChangeDate);
