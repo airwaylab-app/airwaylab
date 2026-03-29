@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { captureApiError } from '@/lib/sentry-utils';
@@ -45,7 +44,7 @@ export async function GET(request: Request) {
       .eq('is_demo', false);
 
     if (uploadsError) {
-      Sentry.logger.warn('[stats] uploads count error', { error: uploadsError.message });
+      console.error('[stats] uploads count error', { error: uploadsError.message });
       captureApiError(uploadsError, { route: 'stats', query: 'uploads' });
     }
 
@@ -56,7 +55,7 @@ export async function GET(request: Request) {
       .eq('is_demo', false);
 
     if (nightsError) {
-      Sentry.logger.warn('[stats] nights sum error', { error: nightsError.message });
+      console.error('[stats] nights sum error', { error: nightsError.message });
       captureApiError(nightsError, { route: 'stats', query: 'nights' });
     }
 
@@ -69,7 +68,7 @@ export async function GET(request: Request) {
 
     if (contribError) {
       // Table might not exist yet — not critical
-      Sentry.logger.info('[stats] contributions count skipped', { error: contribError.message });
+      console.error('[stats] contributions count skipped', { error: contribError.message });
     }
 
     // Sum night_count from data_contributions for research counter
@@ -78,7 +77,7 @@ export async function GET(request: Request) {
       .select('night_count');
 
     if (contribNightsError) {
-      Sentry.logger.info('[stats] contributed nights sum skipped', { error: contribNightsError.message });
+      console.error('[stats] contributed nights sum skipped', { error: contribNightsError.message });
     }
 
     const totalContributedNights = contribNightsData?.reduce(
@@ -96,7 +95,7 @@ export async function GET(request: Request) {
 
     const { data: extData, error: extError } = await supabase.rpc('get_extended_stats');
     if (extError) {
-      Sentry.logger.info('[stats] extended stats RPC skipped', { error: extError.message });
+      console.error('[stats] extended stats RPC skipped', { error: extError.message });
     } else if (extData) {
       extendedStats = {
         uniqueRawUploaders: extData.unique_raw_uploaders ?? 0,
