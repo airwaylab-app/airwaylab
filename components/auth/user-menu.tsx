@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth, type Tier } from '@/lib/auth/auth-context';
-import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2, Settings } from 'lucide-react';
+import { User, LogOut, CreditCard, Crown, Heart, Loader2, Trash2, Settings, SlidersHorizontal } from 'lucide-react';
 import * as Sentry from '@sentry/nextjs';
 
 const TIER_CONFIG: Record<Tier, { label: string; color: string; icon: typeof Heart }> = {
@@ -145,6 +145,16 @@ export function UserMenu() {
             >
               <Settings className="h-3.5 w-3.5" />
               Account Settings
+            </Link>
+
+            <Link
+              href="/settings"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              App Settings
             </Link>
 
             {tier === 'community' && (

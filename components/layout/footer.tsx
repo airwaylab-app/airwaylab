@@ -67,6 +67,17 @@ export function Footer() {
               Community
             </p>
             <nav className="flex flex-col gap-2 text-xs text-muted-foreground">
+              <Link href="/community" className="transition-colors hover:text-foreground">
+                Community
+              </Link>
+              <a
+                href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || 'https://discord.gg/DK7aN847Mn'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-foreground"
+              >
+                Discord
+              </a>
               <a
                 href="https://www.apneaboard.com"
                 target="_blank"

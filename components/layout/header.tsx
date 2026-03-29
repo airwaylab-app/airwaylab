@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Moon, Github, Menu } from 'lucide-react';
+import { Moon, Github, Menu, ChevronDown, Settings } from 'lucide-react';
 import { GitHubStars } from '@/components/common/github-stars';
 import { useAuth } from '@/lib/auth/auth-context';
 import { UserMenu } from '@/components/auth/user-menu';
@@ -12,12 +12,51 @@ import { FeedbackButton } from '@/components/feedback/feedback-button';
 import { FeedbackPanel } from '@/components/feedback/feedback-panel';
 import { cn } from '@/lib/utils';
 
+const PRIMARY_NAV: { href: string; label: string; alwaysVisible?: boolean }[] = [
+  { href: '/analyze', label: 'Analyze', alwaysVisible: true },
+  { href: '/blog', label: 'Blog' },
+  { href: '/pricing', label: 'Pricing' },
+];
+
+const MORE_NAV = [
+  { href: '/getting-started', label: 'Getting Started' },
+  { href: '/glossary', label: 'Glossary' },
+  { href: '/providers', label: 'For Providers' },
+  { href: '/about', label: 'About' },
+  { href: '/changelog', label: "What's New" },
+];
+
+const MOBILE_NAV = [
+  { href: '/analyze', label: 'Analyze' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/getting-started', label: 'Getting Started' },
+  { href: '/glossary', label: 'Glossary' },
+  { href: '/providers', label: 'For Providers' },
+  { href: '/about', label: 'About' },
+  { href: '/changelog', label: "What's New" },
+];
+
 export function Header() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Close "More" dropdown on Escape
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMoreMenuOpen(false);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [moreMenuOpen]);
+
+  const checkActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const isMoreActive = MORE_NAV.some(({ href }) => checkActive(href));
 
   return (
     <>
@@ -36,33 +75,70 @@ export function Header() {
             </span>
           </Link>
           <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
-            {[
-              { href: '/analyze', label: 'Analyze', alwaysVisible: true },
-              { href: '/getting-started', label: 'Getting Started' },
-              { href: '/pricing', label: 'Pricing' },
-              { href: '/blog', label: 'Blog' },
-              { href: '/providers', label: 'For Providers' },
-              { href: '/glossary', label: 'Glossary' },
-              { href: '/settings', label: 'Settings' },
-              { href: '/about', label: 'About' },
-            ].map(({ href, label, alwaysVisible }) => {
-              const isActive = pathname === href || pathname.startsWith(href + '/');
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    'rounded-md px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm',
-                    !alwaysVisible && 'hidden sm:inline-flex',
-                    isActive
-                      ? 'bg-accent/50 text-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                  )}
-                >
-                  {label}
-                </Link>
-              );
-            })}
+            {/* Primary nav links */}
+            {PRIMARY_NAV.map(({ href, label, alwaysVisible }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  'rounded-md px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm',
+                  !alwaysVisible && 'hidden sm:inline-flex',
+                  checkActive(href)
+                    ? 'bg-accent/50 text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+
+            {/* Desktop: "More" dropdown */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                className={cn(
+                  'flex items-center gap-0.5 rounded-md px-3 py-2 text-sm transition-colors',
+                  isMoreActive || moreMenuOpen
+                    ? 'bg-accent/50 text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="true"
+              >
+                More
+                <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreMenuOpen && 'rotate-180')} />
+              </button>
+              {moreMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMoreMenuOpen(false)}
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-border/50 bg-background/95 py-1 shadow-lg backdrop-blur-xl"
+                  >
+                    {MORE_NAV.map(({ href, label }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        role="menuitem"
+                        onClick={() => setMoreMenuOpen(false)}
+                        className={cn(
+                          'block px-4 py-2 text-sm transition-colors',
+                          checkActive(href)
+                            ? 'bg-accent/50 text-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Mobile: hamburger menu */}
             <div className="relative sm:hidden">
               <button
@@ -79,32 +155,21 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   />
                   <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border/50 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
-                    {[
-                      { href: '/getting-started', label: 'Getting Started' },
-                      { href: '/pricing', label: 'Pricing' },
-                      { href: '/blog', label: 'Blog' },
-                      { href: '/providers', label: 'For Providers' },
-                      { href: '/glossary', label: 'Glossary' },
-                      { href: '/settings', label: 'Settings' },
-                      { href: '/about', label: 'About' },
-                    ].map(({ href, label }) => {
-                      const isActive = pathname === href || pathname.startsWith(href + '/');
-                      return (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            'block px-4 py-2 text-sm transition-colors',
-                            isActive
-                              ? 'bg-accent/50 text-foreground'
-                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                          )}
-                        >
-                          {label}
-                        </Link>
-                      );
-                    })}
+                    {MOBILE_NAV.map(({ href, label }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'block px-4 py-2 text-sm transition-colors',
+                          checkActive(href)
+                            ? 'bg-accent/50 text-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )}
+                      >
+                        {label}
+                      </Link>
+                    ))}
                     <a
                       href="https://github.com/airwaylab-app/airwaylab"
                       target="_blank"
@@ -119,7 +184,8 @@ export function Header() {
                 </>
               )}
             </div>
-            {/* Feedback button — always visible, outside hamburger */}
+
+            {/* Feedback button */}
             <FeedbackButton onClick={() => setFeedbackOpen(true)} className="ml-0.5 sm:ml-1" />
 
             {/* Desktop: star count badge */}
@@ -131,12 +197,21 @@ export function Header() {
             ) : user ? (
               <UserMenu />
             ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="ml-0.5 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:ml-1 sm:px-3 sm:py-2 sm:text-sm"
-              >
-                Sign in
-              </button>
+              <div className="ml-0.5 flex items-center gap-0.5 sm:ml-1">
+                <Link
+                  href="/settings"
+                  className="rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label="App settings"
+                >
+                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </Link>
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:px-3 sm:py-2 sm:text-sm"
+                >
+                  Sign in
+                </button>
+              </div>
             )}
           </nav>
         </div>
