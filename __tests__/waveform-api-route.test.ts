@@ -13,6 +13,14 @@ vi.mock('@sentry/nextjs', () => ({
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
+  getSupabaseServer: vi.fn(() => Promise.resolve({
+    auth: {
+      getUser: vi.fn(() => Promise.resolve({
+        data: { user: { id: 'test-user-id' } },
+        error: null,
+      })),
+    },
+  })),
   getSupabaseAdmin: vi.fn(() => ({
     storage: {
       from: () => ({

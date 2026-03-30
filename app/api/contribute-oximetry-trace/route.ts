@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getSupabaseServer, getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 100 });
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export async function POST(request: NextRequest) {
@@ -14,6 +14,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Auth required — contributions must be linked to a user
+    const supabaseAuth = await getSupabaseServer();
+    if (!supabaseAuth) {
+      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
+    }
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      return NextResponse.json({ error: 'Authentication required to contribute data.' }, { status: 401 });
+    }
+
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
       return NextResponse.json(
@@ -114,6 +124,7 @@ export async function POST(request: NextRequest) {
       device_model: deviceModel,
       pap_mode: papMode,
       oximetry_results: oximetryResults,
+      user_id: authUser.id,
     });
 
     if (dbError) {

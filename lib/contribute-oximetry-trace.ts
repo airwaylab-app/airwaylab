@@ -1,7 +1,8 @@
 // ============================================================
 // AirwayLab — Oximetry Trace Contribution
 // Compresses HR/SpO2 timeseries and uploads to the research
-// dataset. Runs silently in the background — no UI feedback,
+// dataset. Requires authentication — contributions are linked
+// to user_id. Runs silently in the background — no UI feedback,
 // failures logged to Sentry only.
 // ============================================================
 
@@ -166,6 +167,7 @@ export async function contributeOximetryTraceBackground(
           'x-pap-mode': night.settings.papMode || 'Unknown',
           'x-oximetry-results': JSON.stringify(anonymiseOximetry(night)),
         },
+        credentials: 'same-origin',
         body: compressed,
       });
 

@@ -99,7 +99,8 @@ function AnalyzePageInner() {
   const sdFilesRef = useRef<File[]>([]);
   const oxFilesRef = useRef<File[]>([]);
   const oxInputRef = useRef<HTMLInputElement>(null);
-  const contributeOptInRef = useRef(
+  // Legacy localStorage opt-in (still read as fallback during transition)
+  const legacyOptInRef = useRef(
     typeof window !== 'undefined' && (() => { try { return localStorage.getItem('airwaylab_contribute_optin') === '1'; } catch { return false; } })()
   );
   const [oximetryJustAdded, setOximetryJustAdded] = useState(false);
@@ -115,9 +116,11 @@ function AnalyzePageInner() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const [engineUpgraded, setEngineUpgraded] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const userRef = useRef(user);
+  const profileRef = useRef(profile);
   useEffect(() => { userRef.current = user; }, [user]);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
   const hasTriggeredAutoUpload = useRef(false);
 
   // Warn before closing/refreshing while analysis is in progress
@@ -264,18 +267,24 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Contribute data: auto if opted in, show nudge if first time
+        // Contribute data: auto if authenticated + consented, or legacy opt-in
         const contributedDates: string[] = JSON.parse(
           safeGetItem('airwaylab_contributed_dates') || '[]'
         );
         const contributedSet = new Set(contributedDates);
         const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
 
-        if (contributeOptInRef.current && newNights.length > 0) {
+        // Auth-based consent: auto-contribute if user is authenticated and has contribution_consent
+        const hasConsent = userRef.current
+          ? (profileRef.current?.contribution_consent ?? true)
+          : legacyOptInRef.current;
+
+        if (hasConsent && userRef.current && newNights.length > 0) {
           setAutoSubmitCount(newNights.length);
           submitContribution(newNights);
-        } else if (!contributeOptInRef.current && contributedDates.length === 0) {
-          // Only show nudge if user has never contributed before
+        } else if (!userRef.current && !legacyOptInRef.current && contributedDates.length === 0) {
+          // Only show nudge for unauthenticated users who have never contributed
+          // (authenticated users auto-contribute via consent; nudge not needed)
           pendingNightsRef.current = newState.nights;
           setShowContributeNudge(true);
         }
@@ -381,7 +390,7 @@ function AnalyzePageInner() {
 
   const handleNudgeContribute = useCallback(() => {
     // Store opt-in so future analyses auto-contribute without re-prompting
-    contributeOptInRef.current = true;
+    legacyOptInRef.current = true;
     try { localStorage.setItem('airwaylab_contribute_optin', '1'); } catch { /* noop */ }
     submitContribution(pendingNightsRef.current);
     setShowContributeNudge(false);

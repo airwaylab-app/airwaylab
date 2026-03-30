@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getSupabaseServer, getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
@@ -9,7 +9,7 @@ import type { NightResult } from '@/lib/types';
 import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
 import { isValidDeviceMode } from '@/lib/device-capabilities';
 
-const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 100 });
 
 // ── Validation ───────────────────────────────────────────────
 const MAX_NIGHTS_PER_CHUNK = 1000; // max nights per request (client chunks larger datasets)
@@ -236,6 +236,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Auth required — contributions must be linked to a user
+    const supabaseAuth = await getSupabaseServer();
+    if (!supabaseAuth) {
+      return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
+    }
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      return NextResponse.json({ error: 'Authentication required to contribute data.' }, { status: 401 });
+    }
+
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
       console.error('[contribute-data] 429 rate limited', { ip });
@@ -327,6 +337,7 @@ export async function POST(request: NextRequest) {
         has_oximetry: anonymised.some((n) => n.oximetry !== null),
         device_model: anonymised[0]?.settings.deviceModel || 'Unknown',
         pap_mode: anonymised[0]?.settings.papMode || 'Unknown',
+        user_id: authUser.id,
       });
 
       if (error) {

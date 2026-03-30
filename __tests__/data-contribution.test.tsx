@@ -45,6 +45,25 @@ vi.mock('@/lib/contribute', () => ({
   trackContributedDates: vi.fn(),
 }));
 
+// ── Mock auth context ──────────────────────────────────────
+const mockAuthValue = {
+  user: null as { id: string } | null,
+  profile: null as { contribution_consent: boolean } | null,
+  subscription: null,
+  session: null,
+  isLoading: false,
+  tier: 'community' as const,
+  isPaid: false,
+  signIn: vi.fn(),
+  signOut: vi.fn(),
+  refreshProfile: vi.fn(),
+  markWalkthroughComplete: vi.fn(),
+};
+
+vi.mock('@/lib/auth/auth-context', () => ({
+  useAuth: vi.fn(() => mockAuthValue),
+}));
+
 import { DataContribution } from '@/components/dashboard/data-contribution';
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -88,6 +107,9 @@ describe('DataContribution', () => {
     storage.clear();
     sessionStore.clear();
     vi.clearAllMocks();
+    // Reset auth mock to default (no user)
+    mockAuthValue.user = null;
+    mockAuthValue.profile = null;
     // Stats endpoint — always return 0 to avoid social proof noise in tests
     fetchMock.mockResolvedValue({
       ok: true,

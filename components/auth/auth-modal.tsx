@@ -20,6 +20,7 @@ export function AuthModal({ open, onClose }: Props) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [contributionConsent, setContributionConsent] = useState(true);
   const [emailOptIn, setEmailOptIn] = useState(true);
   const focusTrapRef = useFocusTrap(open);
 
@@ -47,6 +48,16 @@ export function AuthModal({ open, onClose }: Props) {
         }
       }
 
+      // Persist contribution consent preference for post-auth pickup
+      try {
+        localStorage.setItem(
+          'airwaylab_contribution_consent_pending',
+          contributionConsent ? '1' : '0'
+        );
+      } catch {
+        // noop
+      }
+
       const { error: signInError } = await signIn(trimmed);
       setLoading(false);
 
@@ -68,7 +79,7 @@ export function AuthModal({ open, onClose }: Props) {
       setSent(true);
       events.authMagicLinkSent();
     },
-    [email, emailOptIn, signIn]
+    [email, emailOptIn, contributionConsent, signIn]
   );
 
   const handleClose = useCallback(() => {
@@ -77,6 +88,7 @@ export function AuthModal({ open, onClose }: Props) {
     setSent(false);
     setError(null);
     setConsentChecked(false);
+    setContributionConsent(true);
     setEmailOptIn(true);
     onClose();
   }, [onClose]);
@@ -159,6 +171,20 @@ export function AuthModal({ open, onClose }: Props) {
                   <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
                     Privacy Policy
                   </a>
+                </span>
+              </label>
+
+              {/* Contribution consent checkbox (default checked) */}
+              <label className="flex cursor-pointer items-start gap-2.5 px-3 py-1">
+                <input
+                  type="checkbox"
+                  checked={contributionConsent}
+                  onChange={(e) => setContributionConsent(e.target.checked)}
+                  data-testid="contribution-consent-checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
+                />
+                <span className="text-xs leading-snug text-muted-foreground">
+                  Help improve sleep analysis for everyone. Your pseudonymised analysis data will be used to build better models. You can withdraw anytime via Account Settings.
                 </span>
               </label>
 

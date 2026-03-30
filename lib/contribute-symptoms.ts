@@ -1,11 +1,13 @@
 // ============================================================
 // AirwayLab — Symptom Contribution Client
-// Builds and submits anonymised symptom rating payloads.
+// Builds and submits pseudonymised symptom rating payloads.
+// Requires authentication — contributions are linked to user_id.
 // ============================================================
 
 import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
 import { computeIFLRisk } from './ifl-risk';
+import { ENGINE_VERSION } from './engine-version';
 
 /** Bucket a pressure value into a privacy-preserving range string. */
 export function bucketPressure(pressure: number): string {
@@ -31,6 +33,8 @@ interface SymptomContributionPayload {
   pap_mode: string;
   device_model: string;
   duration_hours: number;
+  night_date: string;
+  engine_version: string;
   // Enhanced fields (v0.7.0+)
   hypopnea_index?: number;
   amplitude_cv?: number;
@@ -59,6 +63,8 @@ export function buildContributionPayload(
     pap_mode: night.settings.papMode,
     device_model: night.settings.deviceModel,
     duration_hours: Math.round(night.durationHours * 100) / 100,
+    night_date: night.dateStr,
+    engine_version: ENGINE_VERSION,
   };
 
   // Enhanced fields — only include when available
@@ -91,7 +97,8 @@ export async function contributeSymptoms(
     const res = await fetch('/api/contribute-symptoms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ consent: true, ...payload }),
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
       signal,
     });
     return res.ok;

@@ -18,6 +18,7 @@ interface Profile {
   email_opt_in: boolean;
   discord_id: string | null;
   discord_username: string | null;
+  contribution_consent: boolean;
 }
 
 interface Subscription {
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // M1: Handle query errors instead of swallowing them
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
+      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username, contribution_consent')
       .eq('id', userId)
       .single();
 
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email_opt_in: profileData.email_opt_in ?? false,
         discord_id: profileData.discord_id ?? null,
         discord_username: profileData.discord_username ?? null,
+        contribution_consent: profileData.contribution_consent ?? true,
       });
     }
 
@@ -204,6 +206,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 credentials: 'same-origin',
                 body: JSON.stringify({ opt_in: true }),
               }).catch(() => { /* non-critical */ });
+            }
+          } catch { /* localStorage unavailable */ }
+
+          // Check if user signed up with contribution consent preference
+          try {
+            const consentPending = localStorage.getItem('airwaylab_contribution_consent_pending');
+            if (consentPending !== null) {
+              localStorage.removeItem('airwaylab_contribution_consent_pending');
+              const consentValue = consentPending === '1';
+              // Update profiles table with consent preference (fire-and-forget)
+              if (supabase) {
+                void (async () => {
+                  const { error: consentErr } = await supabase
+                    .from('profiles')
+                    .update({ contribution_consent: consentValue })
+                    .eq('id', initialSession.user.id);
+                  if (consentErr) {
+                    console.error('[auth-context] Failed to update contribution consent:', consentErr.message);
+                  }
+                })();
+              }
             }
           } catch { /* localStorage unavailable */ }
         }).finally(() => setIsLoading(false));

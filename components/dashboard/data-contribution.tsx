@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { Users, Loader2, X, Shield, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/auth/auth-context';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { getConsentState, setConsentState } from '@/components/upload/contribution-consent-utils';
@@ -23,12 +24,11 @@ interface Props {
 }
 
 /**
- * Opt-in anonymous data contribution banner.
- * Shown after analysis completes. Dismissible, remembers choice.
+ * Data contribution status display.
  *
- * For opted-in users (airwaylab_contribute_optin === '1'), the banner
- * shows auto-contribution status instead of a manual submit button.
- * The manual UI is only shown for users who haven't opted in.
+ * For authenticated users with contribution_consent, shows auto-sync status.
+ * For unauthenticated users or those without consent, shows nothing (contribution
+ * requires authentication since Phase 1 of ML data maximisation).
  */
 export function DataContribution({
   nights,
@@ -36,6 +36,11 @@ export function DataContribution({
   autoSubmitStatus = 'idle',
   autoSubmitCount = 0,
 }: Props) {
+  const { user, profile } = useAuth();
+  // Determine if user has contribution consent from their profile (auth-based)
+  // Falls back to legacy localStorage-based opt-in for backward compat during transition
+  const hasProfileConsent = profile?.contribution_consent ?? false;
+
   // Initialize all browser-dependent state to safe defaults to match SSR.
   // Actual values are loaded in the useEffect below to avoid hydration mismatches.
   const [dismissed, setDismissed] = useState(false);
@@ -48,7 +53,8 @@ export function DataContribution({
     try {
       if (sessionStorage.getItem(DISMISS_KEY) === '1') setDismissed(true);
     } catch { /* noop */ }
-    setIsOptedIn(getConsentState());
+    // Auth-based consent takes priority over localStorage
+    setIsOptedIn(user ? hasProfileConsent : getConsentState());
     try {
       const raw = localStorage.getItem('airwaylab_contributed_dates');
       if (raw) {
@@ -56,7 +62,7 @@ export function DataContribution({
         if (Array.isArray(parsed)) setContributedDates(parsed);
       }
     } catch { /* noop */ }
-  }, []);
+  }, [user, hasProfileConsent]);
 
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [expanded, setExpanded] = useState(false);

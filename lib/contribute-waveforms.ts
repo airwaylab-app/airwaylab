@@ -1,7 +1,8 @@
 // ============================================================
 // AirwayLab — Waveform Data Contribution
 // Extracts flow data from raw EDF files, compresses with gzip,
-// and uploads to the research dataset. Runs silently in the
+// and uploads to the research dataset. Requires authentication —
+// contributions are linked to user_id. Runs silently in the
 // background — no UI feedback, failures logged to Sentry only.
 // ============================================================
 
@@ -282,6 +283,7 @@ async function uploadWaveform(
     const res = await fetch('/api/contribute-waveforms', {
       method: 'POST',
       headers,
+      credentials: 'same-origin',
       body: compressedData,
     });
 

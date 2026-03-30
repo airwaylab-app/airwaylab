@@ -1,6 +1,7 @@
 // ============================================================
 // AirwayLab — Data Contribution Client
-// Submits anonymised analysis results in chunks.
+// Submits pseudonymised analysis results in chunks.
+// Requires authentication — contributions are linked to user_id.
 // No night count cap — large datasets are chunked automatically.
 // ============================================================
 
@@ -87,7 +88,8 @@ interface ContributionResult {
 }
 
 /**
- * Contribute anonymised night data to the community dataset.
+ * Contribute pseudonymised night data to the community dataset.
+ * Requires authentication — server will reject unauthenticated requests (401).
  * Automatically chunks large datasets into multiple requests
  * sharing a single contributionId for grouping.
  * Night context (structured enums from night notes) is included when available.
@@ -120,6 +122,7 @@ export async function contributeNights(
       const res = await fetch('/api/contribute-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           nights: chunk,
           contributionId,
@@ -130,6 +133,11 @@ export async function contributeNights(
       if (res.ok) {
         success = true;
         break;
+      }
+
+      // Not authenticated — bail immediately, don't retry
+      if (res.status === 401) {
+        throw new Error('Authentication required to contribute data.');
       }
 
       // Retry with exponential backoff on rate limit
