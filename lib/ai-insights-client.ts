@@ -12,6 +12,27 @@ interface AIInsightsResult {
   truncated?: boolean;
 }
 
+/**
+ * Strip NightResult down to only fields that buildUserPrompt() reads.
+ * Removes oximetryTrace (~800KB/night), per-breath arrays, and unused modules.
+ */
+function stripNightForAIPayload(night: NightResult): Record<string, unknown> {
+  const { breaths, reras, ...nedSummary } = night.ned;
+  return {
+    dateStr: night.dateStr,
+    durationHours: night.durationHours,
+    sessionCount: night.sessionCount,
+    settings: night.settings,
+    glasgow: night.glasgow,
+    wat: night.wat,
+    ned: nedSummary,
+    oximetry: night.oximetry,
+    machineSummary: night.machineSummary ?? undefined,
+    settingsFingerprint: night.settingsFingerprint ?? undefined,
+    // Explicitly excluded: oximetryTrace, settingsMetrics, crossDevice, csl, pldSummary, date
+  };
+}
+
 /** Per-breath summary format stored in Supabase Storage */
 interface BreathSummary {
   ned: number;
@@ -108,6 +129,7 @@ export async function fetchAIInsights(
   signal?.addEventListener('abort', onExternalAbort);
 
   const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
+  const strippedNights = trimmedNights.map(stripNightForAIPayload);
 
   try {
     const res = await fetch('/api/ai-insights', {
@@ -115,7 +137,7 @@ export async function fetchAIInsights(
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        nights: trimmedNights,
+        nights: strippedNights,
         selectedNightIndex: adjustedIndex,
         therapyChangeDate,
         nightNotes,
@@ -185,6 +207,7 @@ export async function fetchDeepAIInsights(
   signal?.addEventListener('abort', onExternalAbort);
 
   const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
+  const strippedNights = trimmedNights.map(stripNightForAIPayload);
 
   // Client-side truncation: cap per-breath data to prevent 413 errors (FB-27)
   const trimmedBreaths = perBreathSummary && perBreathSummary.breaths.length > 1000
@@ -197,7 +220,7 @@ export async function fetchDeepAIInsights(
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        nights: trimmedNights,
+        nights: strippedNights,
         selectedNightIndex: adjustedIndex,
         therapyChangeDate,
         nightNotes,
