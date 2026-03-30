@@ -17,7 +17,7 @@ interface AIInsightsResult {
  * Removes oximetryTrace (~800KB/night), per-breath arrays, and unused modules.
  */
 function stripNightForAIPayload(night: NightResult): Record<string, unknown> {
-  const { breaths, reras, ...nedSummary } = night.ned;
+  const { breaths: _breaths, reras: _reras, ...nedSummary } = night.ned;
   return {
     dateStr: night.dateStr,
     durationHours: night.durationHours,
