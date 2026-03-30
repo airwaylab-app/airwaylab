@@ -373,6 +373,141 @@ describe('PLD Parser', () => {
       expect(result!.leak!.length).toBeLessThan(numRecords);
     });
 
+    it('handles negative numSamples in signal header without crashing', () => {
+      // Reproduce Sentry bug: "Invalid typed array length: -30"
+      // When a corrupted PLD.edf has negative numSamples values in a signal header,
+      // the parser would try to create Float32Array(-30) and crash.
+      const numSignals = 2;
+      const numDataRecords = 10;
+      const recordDuration = 2;
+      const headerBytes = 256 + numSignals * 256;
+
+      // We build a buffer with valid header but inject negative numSamples
+      // Since numSamples is negative, there are effectively 0 usable data bytes
+      const buffer = new ArrayBuffer(headerBytes);
+      const encoder = new TextEncoder();
+
+      function writeField(offset: number, length: number, value: string): void {
+        const padded = value.padEnd(length);
+        const bytes = encoder.encode(padded.slice(0, length));
+        new Uint8Array(buffer, offset, length).set(bytes);
+      }
+
+      // Fixed header
+      writeField(0, 8, '0');
+      writeField(8, 80, 'test');
+      writeField(88, 80, 'test');
+      writeField(168, 8, '01.01.25');
+      writeField(176, 8, '22.00.00');
+      writeField(184, 8, String(headerBytes));
+      writeField(192, 44, '');
+      writeField(236, 8, String(numDataRecords));
+      writeField(244, 8, String(recordDuration));
+      writeField(252, 4, String(numSignals));
+
+      // Per-signal headers
+      let offset = 256;
+
+      // Labels
+      writeField(offset, 16, 'Leak');
+      writeField(offset + 16, 16, 'Snore');
+      offset += numSignals * 16;
+
+      // Transducer
+      offset += numSignals * 80;
+
+      // Physical dimension
+      writeField(offset, 8, 'L/s');
+      writeField(offset + 8, 8, '');
+      offset += numSignals * 8;
+
+      // Physical min
+      writeField(offset, 8, '0');
+      writeField(offset + 8, 8, '0');
+      offset += numSignals * 8;
+
+      // Physical max
+      writeField(offset, 8, '2');
+      writeField(offset + 8, 8, '10');
+      offset += numSignals * 8;
+
+      // Digital min
+      writeField(offset, 8, '-32768');
+      writeField(offset + 8, 8, '-32768');
+      offset += numSignals * 8;
+
+      // Digital max
+      writeField(offset, 8, '32767');
+      writeField(offset + 8, 8, '32767');
+      offset += numSignals * 8;
+
+      // Prefiltering
+      offset += numSignals * 80;
+
+      // numSamples — inject NEGATIVE values (the bug trigger)
+      writeField(offset, 8, '-30');
+      writeField(offset + 8, 8, '-15');
+      offset += numSignals * 8;
+
+      // Reserved
+      // (not needed, buffer already zeroed)
+
+      // This should NOT throw — previously it crashed with:
+      // "Invalid typed array length: -30" (RangeError from new Float32Array(-30))
+      // After the fix, negative numSamples is clamped to 0 and the parser
+      // returns null (all signals have 0 samples = corrupted metadata).
+      const result = parsePLD(buffer, 'corrupted_PLD.edf');
+      expect(result).toBeNull();
+    });
+
+    it('handles negative numDataRecords in header without crashing', () => {
+      // Another variant of corrupted metadata: numDataRecords is negative
+      const numSignals = 1;
+      const headerBytes = 256 + numSignals * 256;
+      const buffer = new ArrayBuffer(headerBytes + 20); // some extra bytes
+      const encoder = new TextEncoder();
+
+      function writeField(off: number, length: number, value: string): void {
+        const padded = value.padEnd(length);
+        const bytes = encoder.encode(padded.slice(0, length));
+        new Uint8Array(buffer, off, length).set(bytes);
+      }
+
+      writeField(0, 8, '0');
+      writeField(8, 80, 'test');
+      writeField(88, 80, 'test');
+      writeField(168, 8, '01.01.25');
+      writeField(176, 8, '22.00.00');
+      writeField(184, 8, String(headerBytes));
+      writeField(192, 44, '');
+      writeField(236, 8, '-5');  // NEGATIVE numDataRecords
+      writeField(244, 8, '2');
+      writeField(252, 4, String(numSignals));
+
+      // Minimal signal header
+      let offset = 256;
+      writeField(offset, 16, 'Leak');
+      offset += numSignals * 16;
+      offset += numSignals * 80; // transducer
+      writeField(offset, 8, 'L/s');
+      offset += numSignals * 8;
+      writeField(offset, 8, '0');
+      offset += numSignals * 8;
+      writeField(offset, 8, '2');
+      offset += numSignals * 8;
+      writeField(offset, 8, '-32768');
+      offset += numSignals * 8;
+      writeField(offset, 8, '32767');
+      offset += numSignals * 8;
+      offset += numSignals * 80; // prefiltering
+      writeField(offset, 8, '1');
+      offset += numSignals * 8;
+
+      // numDataRecords clamped to 0, so should return null early
+      const result = parsePLD(buffer, 'corrupted_PLD.edf');
+      expect(result).toBeNull();
+    });
+
     it('parses correct recording date from EDF header', () => {
       const channels: TestChannel[] = [
         { label: 'Leak', data: [0.2], physicalMin: 0, physicalMax: 2, unit: 'L/s' },

@@ -188,7 +188,7 @@ function extractWaveform(
  * Detects FL runs, M-shape patterns, and arousal candidates.
  * This is a lightweight detector — the main analysis engines provide the authoritative results.
  */
-function detectEventsFromFlow(
+export function detectEventsFromFlow(
   flow: Float32Array,
   sampleRate: number
 ): WaveformEvent[] {
@@ -290,7 +290,7 @@ function detectEventsFromFlow(
   return events;
 }
 
-interface BreathFeatures {
+export interface BreathFeatures {
   startSample: number;
   endSample: number;
   amplitude: number;
@@ -301,7 +301,7 @@ interface BreathFeatures {
 /**
  * Extract individual breaths by detecting zero-crossings in flow data.
  */
-function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[] {
+export function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[] {
   const breaths: BreathFeatures[] = [];
   const minBreathSamples = Math.round(sampleRate * 1.5); // Min ~1.5s breath
   const maxBreathSamples = Math.round(sampleRate * 15);  // Max ~15s breath
@@ -331,7 +331,7 @@ function extractBreaths(flow: Float32Array, sampleRate: number): BreathFeatures[
 /**
  * Compute features for a single breath.
  */
-function computeBreathFeatures(
+export function computeBreathFeatures(
   flow: Float32Array,
   start: number,
   end: number,

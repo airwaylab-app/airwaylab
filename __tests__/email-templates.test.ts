@@ -11,167 +11,279 @@ import {
   type SequenceName,
 } from '@/lib/email/templates';
 
-const UNSUB_URL = 'https://airwaylab.app/unsubscribe?token=test-token';
+// ── Helpers ──────────────────────────────────────────────────
 
-// ── Individual template tests ──────────────────────────────────
+const UNSUB_URL = 'https://airwaylab.app/api/email/unsubscribe?token=test-token';
 
-describe('Post-upload sequence templates', () => {
-  it('step 1 returns valid subject and HTML', () => {
-    const { subject, html } = postUploadStep1(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('AirwayLab');
-    expect(html).toContain(UNSUB_URL);
-  });
+function assertValidHtml(html: string) {
+  expect(html).toContain('<!DOCTYPE html>');
+  expect(html).toContain('<html lang="en">');
+  expect(html).toContain('</html>');
+  expect(html).toContain('<body');
+  expect(html).toContain('</body>');
+}
 
-  it('step 1 includes upload CTA and privacy reassurance', () => {
-    const { html } = postUploadStep1(UNSUB_URL);
-    expect(html).toContain('Upload');
-    expect(html).toContain('airwaylab.app/analyze');
-    expect(html).toContain('saved in your browser');
-  });
+function assertHasHeader(html: string) {
+  expect(html).toContain('AirwayLab');
+  expect(html).toContain('Airway');
+  expect(html).toContain('Lab');
+}
 
-  it('step 2 explains multi-night analysis value', () => {
-    const { subject, html } = postUploadStep2(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('Upload Your Next Night');
-  });
+function assertHasUnsubscribeFooter(html: string) {
+  expect(html).toContain(UNSUB_URL);
+  expect(html).toContain('Unsubscribe');
+  expect(html).toContain('opted in to email updates');
+}
 
-  it('step 3 promotes symptom tracking', () => {
-    const { subject, html } = postUploadStep3(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('Log How You Slept');
-    expect(html).toContain('clinician');
-  });
-});
+function assertDarkTheme(html: string) {
+  expect(html).toContain('background-color:#0a0a0b');
+  expect(html).toContain('color-scheme');
+}
 
-describe('Dormancy sequence templates', () => {
-  it('step 1 highlights new features', () => {
-    const { subject, html } = dormancyStep1(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('Upload This Month');
-    expect(html).toContain('One upload, one minute');
-  });
+function assertHasCta(html: string) {
+  // CTA button with teal background
+  expect(html).toContain('background-color:#5eead4');
+  expect(html).toContain('border-radius:8px');
+}
 
-  it('step 2 encourages comparison', () => {
-    const { subject, html } = dormancyStep2(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('Upload When You');
-    expect(html).toContain('tracking');
-  });
-});
+// ── Shared template structure tests ──────────────────────────
 
-describe('Feature education sequence templates', () => {
-  it('step 1 explains AI insights', () => {
-    const { subject, html } = featureEducationStep1(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('AI');
-    expect(html).toContain('Try AI Insights');
-    expect(html).toContain('3 AI analyses per month');
-  });
-
-  it('step 2 promotes export options', () => {
-    const { subject, html } = featureEducationStep2(UNSUB_URL);
-    expect(subject).toBeTruthy();
-    expect(html).toContain('PDF report');
-    expect(html).toContain('CSV export');
-    expect(html).toContain('Export Your Report');
-  });
-});
-
-// ── Structural invariants ──────────────────────────────────────
-
-describe('All templates — structural invariants', () => {
-  const allTemplates = [
-    { name: 'postUpload1', fn: postUploadStep1 },
-    { name: 'postUpload2', fn: postUploadStep2 },
-    { name: 'postUpload3', fn: postUploadStep3 },
-    { name: 'dormancy1', fn: dormancyStep1 },
-    { name: 'dormancy2', fn: dormancyStep2 },
-    { name: 'featureEd1', fn: featureEducationStep1 },
-    { name: 'featureEd2', fn: featureEducationStep2 },
+describe('email templates — shared structure', () => {
+  const allDirectTemplates = [
+    { name: 'postUploadStep1', fn: postUploadStep1 },
+    { name: 'postUploadStep2', fn: postUploadStep2 },
+    { name: 'postUploadStep3', fn: postUploadStep3 },
+    { name: 'dormancyStep1', fn: dormancyStep1 },
+    { name: 'dormancyStep2', fn: dormancyStep2 },
+    { name: 'featureEducationStep1', fn: featureEducationStep1 },
+    { name: 'featureEducationStep2', fn: featureEducationStep2 },
   ];
 
-  it.each(allTemplates)('$name has non-empty subject', ({ fn }) => {
-    const { subject } = fn(UNSUB_URL);
-    expect(subject.length).toBeGreaterThan(0);
+  for (const { name, fn } of allDirectTemplates) {
+    describe(name, () => {
+      it('returns subject and html', () => {
+        const result = fn(UNSUB_URL);
+        expect(result.subject).toBeTruthy();
+        expect(typeof result.subject).toBe('string');
+        expect(result.html).toBeTruthy();
+        expect(typeof result.html).toBe('string');
+      });
+
+      it('renders valid HTML with doctype', () => {
+        assertValidHtml(fn(UNSUB_URL).html);
+      });
+
+      it('includes AirwayLab header', () => {
+        assertHasHeader(fn(UNSUB_URL).html);
+      });
+
+      it('includes unsubscribe link in footer', () => {
+        assertHasUnsubscribeFooter(fn(UNSUB_URL).html);
+      });
+
+      it('uses dark theme styling', () => {
+        assertDarkTheme(fn(UNSUB_URL).html);
+      });
+
+      it('includes a CTA button', () => {
+        assertHasCta(fn(UNSUB_URL).html);
+      });
+    });
+  }
+});
+
+// ── Individual template content tests ────────────────────────
+
+describe('email templates — content', () => {
+  describe('post_upload sequence', () => {
+    it('step 1 mentions engine analysis', () => {
+      const { subject, html } = postUploadStep1(UNSUB_URL);
+      expect(subject).toContain('engines');
+      expect(html).toContain('flow limitation');
+      expect(html).toContain('breathing regularity');
+    });
+
+    it('step 2 encourages multi-night uploads for trends', () => {
+      const { subject, html } = postUploadStep2(UNSUB_URL);
+      expect(subject).toContain('snapshot');
+      expect(html).toContain('trend');
+    });
+
+    it('step 3 promotes symptom logging and AI insights upsell', () => {
+      const { html } = postUploadStep3(UNSUB_URL);
+      expect(html).toContain('symptom');
+      expect(html).toContain('Supporter');
+      expect(html).toContain('/pricing');
+    });
   });
 
-  it.each(allTemplates)('$name produces valid HTML document', ({ fn }) => {
-    const { html } = fn(UNSUB_URL);
-    expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<html');
-    expect(html).toContain('</html>');
+  describe('dormancy sequence', () => {
+    it('step 1 encourages monthly uploads', () => {
+      const { html } = dormancyStep1(UNSUB_URL);
+      expect(html).toContain('monthly');
+      expect(html).toContain('trend');
+    });
+
+    it('step 2 is the final email and says so', () => {
+      const { html } = dormancyStep2(UNSUB_URL);
+      expect(html).toContain('last email');
+    });
   });
 
-  it.each(allTemplates)('$name includes unsubscribe link', ({ fn }) => {
-    const { html } = fn(UNSUB_URL);
-    expect(html).toContain(UNSUB_URL);
-    expect(html).toContain('Unsubscribe');
+  describe('feature_education sequence', () => {
+    it('step 1 promotes AI insights', () => {
+      const { subject, html } = featureEducationStep1(UNSUB_URL);
+      expect(subject).toContain('plain language');
+      expect(html).toContain('AI insights');
+      expect(html).toContain('Supporter');
+    });
+
+    it('step 2 promotes export features', () => {
+      const { subject, html } = featureEducationStep2(UNSUB_URL);
+      expect(subject).toContain('clinician');
+      expect(html).toContain('PDF report');
+      expect(html).toContain('CSV export');
+      expect(html).toContain('Forum post');
+    });
   });
 
-  it.each(allTemplates)('$name includes AirwayLab branding', ({ fn }) => {
-    const { html } = fn(UNSUB_URL);
-    expect(html).toContain('Airway');
-    expect(html).toContain('Lab');
-  });
+  describe('UTM parameters', () => {
+    it('all CTAs include UTM tracking parameters', () => {
+      const templates = [
+        postUploadStep1(UNSUB_URL),
+        postUploadStep2(UNSUB_URL),
+        postUploadStep3(UNSUB_URL),
+        dormancyStep1(UNSUB_URL),
+        dormancyStep2(UNSUB_URL),
+        featureEducationStep1(UNSUB_URL),
+        featureEducationStep2(UNSUB_URL),
+      ];
 
-  it.each(allTemplates)('$name includes dark theme meta', ({ fn }) => {
-    const { html } = fn(UNSUB_URL);
-    expect(html).toContain('color-scheme');
-    expect(html).toContain('dark');
-  });
-
-  it.each(allTemplates)('$name includes UTM tracking on CTA', ({ fn }) => {
-    const { html } = fn(UNSUB_URL);
-    expect(html).toContain('utm_source=email');
-    expect(html).toContain('utm_medium=drip');
+      for (const { html } of templates) {
+        expect(html).toContain('utm_source=email');
+        expect(html).toContain('utm_medium=drip');
+        expect(html).toContain('utm_campaign=');
+      }
+    });
   });
 });
 
-// ── SEQUENCES registry ─────────────────────────────────────────
+// ── SEQUENCES registry tests ─────────────────────────────────
 
 describe('SEQUENCES registry', () => {
   const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education', 'activation', 'premium_onboarding'];
 
-  it.each(sequenceNames)('%s has correct totalSteps matching delays array', (name) => {
-    const config = SEQUENCES[name];
-    expect(config.delays).toHaveLength(config.totalSteps);
-  });
-
-  it.each(sequenceNames)('%s getTemplate returns valid output for every step', (name) => {
-    const config = SEQUENCES[name];
-    for (let step = 1; step <= config.totalSteps; step++) {
-      const result = config.getTemplate(step, UNSUB_URL);
-      expect(result).not.toBeNull();
-      expect(result!.subject).toBeTruthy();
-      expect(result!.html).toContain('<!DOCTYPE html>');
+  it('has all expected sequence names', () => {
+    for (const name of sequenceNames) {
+      expect(SEQUENCES[name]).toBeDefined();
     }
   });
 
-  it.each(sequenceNames)('%s getTemplate returns null for out-of-range step', (name) => {
-    const config = SEQUENCES[name];
-    expect(config.getTemplate(0, UNSUB_URL)).toBeNull();
-    expect(config.getTemplate(config.totalSteps + 1, UNSUB_URL)).toBeNull();
+  for (const name of sequenceNames) {
+    describe(name, () => {
+      const config = SEQUENCES[name];
+
+      it('has totalSteps matching delays array length', () => {
+        expect(config.totalSteps).toBe(config.delays.length);
+      });
+
+      it('has non-decreasing delay values', () => {
+        for (let i = 1; i < config.delays.length; i++) {
+          expect(config.delays[i]!).toBeGreaterThanOrEqual(config.delays[i - 1]!);
+        }
+      });
+
+      it('returns templates for all valid steps', () => {
+        for (let step = 1; step <= config.totalSteps; step++) {
+          const template = config.getTemplate(step, UNSUB_URL);
+          expect(template).not.toBeNull();
+          expect(template!.subject).toBeTruthy();
+          expect(template!.html).toBeTruthy();
+        }
+      });
+
+      it('returns null for out-of-range steps', () => {
+        expect(config.getTemplate(0, UNSUB_URL)).toBeNull();
+        expect(config.getTemplate(config.totalSteps + 1, UNSUB_URL)).toBeNull();
+        expect(config.getTemplate(-1, UNSUB_URL)).toBeNull();
+      });
+    });
+  }
+
+  describe('activation sequence (not exported directly)', () => {
+    it('step 1 helps users get started with SD card upload', () => {
+      const template = SEQUENCES.activation.getTemplate(1, UNSUB_URL)!;
+      expect(template.subject).toContain('SD card');
+      expect(template.html).toContain('ResMed');
+      expect(template.html).toContain('DATALOG');
+    });
+
+    it('step 2 is the last activation email', () => {
+      const template = SEQUENCES.activation.getTemplate(2, UNSUB_URL)!;
+      expect(template.html).toContain('last activation email');
+    });
   });
 
-  it('post_upload has 3 steps with delays [0, 3, 7]', () => {
-    expect(SEQUENCES.post_upload.totalSteps).toBe(3);
-    expect(SEQUENCES.post_upload.delays).toEqual([0, 3, 7]);
+  describe('premium_onboarding sequence (not exported directly)', () => {
+    it('step 1 introduces AI-powered insights', () => {
+      const template = SEQUENCES.premium_onboarding.getTemplate(1, UNSUB_URL)!;
+      expect(template.html).toContain('AI-powered insights');
+    });
+
+    it('step 2 promotes PDF report for clinicians', () => {
+      const template = SEQUENCES.premium_onboarding.getTemplate(2, UNSUB_URL)!;
+      expect(template.html).toContain('PDF report');
+      expect(template.html).toContain('clinician');
+    });
+
+    it('step 3 mentions open-source and supporters page', () => {
+      const template = SEQUENCES.premium_onboarding.getTemplate(3, UNSUB_URL)!;
+      expect(template.html).toContain('open-source');
+      expect(template.html).toContain('/supporters');
+    });
   });
 
-  it('dormancy has 2 steps with delays [0, 7]', () => {
-    expect(SEQUENCES.dormancy.totalSteps).toBe(2);
-    expect(SEQUENCES.dormancy.delays).toEqual([0, 7]);
-  });
+  describe('delay configurations', () => {
+    it('post_upload starts immediately, then 3 and 7 days', () => {
+      expect(SEQUENCES.post_upload.delays).toEqual([0, 3, 7]);
+    });
 
-  it('feature_education has 2 steps with delays [10, 17]', () => {
-    expect(SEQUENCES.feature_education.totalSteps).toBe(2);
-    expect(SEQUENCES.feature_education.delays).toEqual([10, 17]);
-  });
+    it('dormancy starts immediately, then 7 days', () => {
+      expect(SEQUENCES.dormancy.delays).toEqual([0, 7]);
+    });
 
-  it('premium_onboarding has 3 steps with delays [0, 3, 7]', () => {
-    expect(SEQUENCES.premium_onboarding.totalSteps).toBe(3);
-    expect(SEQUENCES.premium_onboarding.delays).toEqual([0, 3, 7]);
+    it('feature_education starts at day 10, then day 17', () => {
+      expect(SEQUENCES.feature_education.delays).toEqual([10, 17]);
+    });
+
+    it('activation starts immediately, then 3 days', () => {
+      expect(SEQUENCES.activation.delays).toEqual([0, 3]);
+    });
+
+    it('premium_onboarding starts immediately, then 3 and 7 days', () => {
+      expect(SEQUENCES.premium_onboarding.delays).toEqual([0, 3, 7]);
+    });
+  });
+});
+
+// ── No health data in emails ─────────────────────────────────
+
+describe('email templates — privacy', () => {
+  it('no template contains raw health data patterns', () => {
+    const allTemplates: string[] = [];
+    for (const config of Object.values(SEQUENCES)) {
+      for (let step = 1; step <= config.totalSteps; step++) {
+        const t = config.getTemplate(step, UNSUB_URL);
+        if (t) allTemplates.push(t.html);
+      }
+    }
+
+    for (const html of allTemplates) {
+      // Templates should contain links back to the app, not raw patient data
+      expect(html).not.toMatch(/SpO2:\s*\d+/);
+      expect(html).not.toMatch(/AHI:\s*\d+\.\d+/);
+      // Should link to airwaylab.app
+      expect(html).toContain('airwaylab.app');
+    }
   });
 });

@@ -132,6 +132,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - **What's tested:** All four analysis engines, insights generator, export functions, persistence, thresholds, upload validation, metric explanations. Focus is on value ranges, boundary conditions, and comparative behaviour (e.g., "flow-limited data scores higher than normal").
 - **Path alias:** Tests use `@/` imports resolved to project root.
 - **Run:** `npm test` (single run) or `npx vitest` (watch mode).
+- **Bug-tax rule:** Every bug fix MUST include a test that catches the regression. Every new file in `lib/` or `app/api/` MUST ship with a corresponding test file. The untested file count monotonically decreases.
 
 ## Key Design Decisions
 

@@ -25,7 +25,7 @@ import { SEQUENCES } from './templates';
 import { getUnsubscribeUrl } from './unsubscribe-token';
 import { sendEmail } from './send';
 
-const OVERDUE_ALERT_THRESHOLD = 20;
+const OVERDUE_ALERT_THRESHOLD = 50;
 
 interface CronResult {
   sent: number;

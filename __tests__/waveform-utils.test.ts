@@ -6,6 +6,8 @@ import {
   decimatePressureRange,
   computeFlowStats,
   computeFlowStatsFromRaw,
+  computeTidalVolume,
+  computeRespiratoryRate,
   generateSyntheticWaveform,
   sliceByTime,
   getTargetRate,
@@ -13,6 +15,7 @@ import {
   formatElapsedTimeShort,
   downsampleFlow,
   downsamplePressure,
+  detectMShapeInWorker,
 } from '@/lib/waveform-utils';
 import type { FlowSample, PressurePoint } from '@/lib/waveform-types';
 
@@ -429,5 +432,328 @@ describe('formatElapsedTimeShort', () => {
 
   it('formats 8 hours', () => {
     expect(formatElapsedTimeShort(28800)).toBe('8:00');
+  });
+});
+
+// ── computeTidalVolume ─────────────────────────────────────
+
+describe('computeTidalVolume', () => {
+  it('returns empty for empty input', () => {
+    expect(computeTidalVolume(new Float32Array(0), 25)).toEqual([]);
+  });
+
+  it('returns empty for zero sample rate', () => {
+    expect(computeTidalVolume(new Float32Array([1, 2, 3]), 0)).toEqual([]);
+  });
+
+  it('returns empty for negative sample rate', () => {
+    expect(computeTidalVolume(new Float32Array([1, 2, 3]), -1)).toEqual([]);
+  });
+
+  it('produces tidal volume points from a sine wave signal', () => {
+    // Normal breathing: ~15 br/min = 0.25 Hz, 60 seconds at 25 Hz
+    const sampleRate = 25;
+    const duration = 60;
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+    const breathFreq = 15 / 60; // 0.25 Hz
+
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * breathFreq * i / sampleRate) * 30;
+    }
+
+    const result = computeTidalVolume(data, sampleRate);
+    expect(result.length).toBeGreaterThan(0);
+    // Each point should have t and avg
+    for (const p of result) {
+      expect(typeof p.t).toBe('number');
+      expect(typeof p.avg).toBe('number');
+      expect(p.t).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('respects custom bucket size', () => {
+    const sampleRate = 25;
+    const duration = 60;
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 0.25 * i / sampleRate) * 30;
+    }
+
+    const bucket2 = computeTidalVolume(data, sampleRate, 2);
+    const bucket5 = computeTidalVolume(data, sampleRate, 5);
+
+    // Larger buckets = fewer points
+    expect(bucket5.length).toBeLessThan(bucket2.length);
+    // 60s / 2s = 30 buckets, 60s / 5s = 12 buckets
+    expect(bucket2.length).toBe(30);
+    expect(bucket5.length).toBe(12);
+  });
+
+  it('filters out unrealistically short and long breaths', () => {
+    // Very rapid oscillation at 5 Hz → breath duration ~0.2s, well below 1.5s minimum
+    const sampleRate = 25;
+    const duration = 10;
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 5 * i / sampleRate) * 20;
+    }
+
+    const result = computeTidalVolume(data, sampleRate);
+    // All TV values should be 0 because breaths are too short (< 1.5s)
+    for (const p of result) {
+      expect(p.avg).toBe(0);
+    }
+  });
+
+  it('handles single sample', () => {
+    const data = new Float32Array([42]);
+    const result = computeTidalVolume(data, 25);
+    expect(result.length).toBe(1);
+    expect(result[0]!.t).toBe(0);
+  });
+});
+
+// ── computeRespiratoryRate ──────────────────────────────────
+
+describe('computeRespiratoryRate', () => {
+  it('returns empty for empty input', () => {
+    expect(computeRespiratoryRate(new Float32Array(0), 25)).toEqual([]);
+  });
+
+  it('returns empty for zero sample rate', () => {
+    expect(computeRespiratoryRate(new Float32Array([1, 2, 3]), 0)).toEqual([]);
+  });
+
+  it('returns empty for negative sample rate', () => {
+    expect(computeRespiratoryRate(new Float32Array([1, 2, 3]), -1)).toEqual([]);
+  });
+
+  it('estimates correct RR for a known breathing frequency', () => {
+    // 15 breaths/min = 0.25 Hz, need enough duration for the 30s window
+    const sampleRate = 25;
+    const duration = 120; // 2 minutes for stable measurement
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * (15 / 60) * i / sampleRate) * 25;
+    }
+
+    const result = computeRespiratoryRate(data, sampleRate);
+    expect(result.length).toBeGreaterThan(0);
+
+    // Mid-signal buckets should show ~15 br/min
+    const midIdx = Math.floor(result.length / 2);
+    expect(result[midIdx]!.avg).toBeGreaterThanOrEqual(12);
+    expect(result[midIdx]!.avg).toBeLessThanOrEqual(18);
+  });
+
+  it('applies refractory period to cap high-frequency noise', () => {
+    // 3 Hz oscillation: way too fast for real breathing
+    const sampleRate = 25;
+    const duration = 60;
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 3 * i / sampleRate) * 20;
+    }
+
+    const result = computeRespiratoryRate(data, sampleRate);
+    // With 1.5s refractory, max ~40 br/min
+    for (const p of result) {
+      expect(p.avg).toBeLessThanOrEqual(42);
+    }
+  });
+
+  it('respects custom bucket size', () => {
+    const sampleRate = 25;
+    const duration = 60;
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 0.25 * i / sampleRate) * 25;
+    }
+
+    const bucket2 = computeRespiratoryRate(data, sampleRate, 2);
+    const bucket5 = computeRespiratoryRate(data, sampleRate, 5);
+
+    expect(bucket5.length).toBeLessThan(bucket2.length);
+  });
+
+  it('handles single sample gracefully', () => {
+    const data = new Float32Array([42]);
+    const result = computeRespiratoryRate(data, 25);
+    expect(result.length).toBe(1);
+    expect(result[0]!.avg).toBe(0); // Not enough data for crossings
+  });
+});
+
+// ── detectMShapeInWorker ──────────────────────────────────────
+
+describe('detectMShapeInWorker', () => {
+  it('returns false for arrays shorter than 12 samples', () => {
+    const data = new Float32Array([10, 20, 15, 10, 20, 15, 10, 20, 15, 10, 20]);
+    expect(detectMShapeInWorker(data, 20)).toBe(false);
+  });
+
+  it('detects M-shape when valley dips below 80% of peak in middle', () => {
+    // Create an M-shape: two peaks with a valley in between
+    const len = 24;
+    const data = new Float32Array(len);
+    const qPeak = 30;
+
+    for (let i = 0; i < len; i++) {
+      if (i < 6) {
+        // Rising to first peak
+        data[i] = (i / 5) * qPeak;
+      } else if (i < 10) {
+        // First peak
+        data[i] = qPeak;
+      } else if (i < 14) {
+        // Valley in the middle (below 80% of qPeak = 24)
+        data[i] = qPeak * 0.5; // 15, well below 24
+      } else if (i < 18) {
+        // Second peak
+        data[i] = qPeak;
+      } else {
+        // Falling
+        data[i] = qPeak * (1 - (i - 17) / 7);
+      }
+    }
+
+    expect(detectMShapeInWorker(data, qPeak)).toBe(true);
+  });
+
+  it('returns false for normal inspiration (no valley)', () => {
+    // Smooth sinusoidal inspiration -- no M-shape
+    const len = 24;
+    const data = new Float32Array(len);
+    const qPeak = 30;
+
+    for (let i = 0; i < len; i++) {
+      data[i] = Math.sin((i / (len - 1)) * Math.PI) * qPeak;
+    }
+
+    expect(detectMShapeInWorker(data, qPeak)).toBe(false);
+  });
+
+  it('returns false when valley is above 80% threshold', () => {
+    // Two peaks with a shallow dip (still above 80%)
+    const len = 24;
+    const data = new Float32Array(len);
+    const qPeak = 30;
+
+    for (let i = 0; i < len; i++) {
+      if (i < 6) data[i] = (i / 5) * qPeak;
+      else if (i < 10) data[i] = qPeak;
+      else if (i < 14) data[i] = qPeak * 0.85; // Above 80% threshold
+      else if (i < 18) data[i] = qPeak;
+      else data[i] = qPeak * (1 - (i - 17) / 7);
+    }
+
+    expect(detectMShapeInWorker(data, qPeak)).toBe(false);
+  });
+
+  it('requires peaks on both sides of the valley', () => {
+    // Valley in middle but left side never reaches above threshold
+    const len = 24;
+    const data = new Float32Array(len);
+    const qPeak = 30;
+
+    for (let i = 0; i < len; i++) {
+      if (i < 12) data[i] = qPeak * 0.3; // Left side below threshold
+      else if (i < 14) data[i] = qPeak * 0.5; // Valley
+      else data[i] = qPeak; // Right side above threshold
+    }
+
+    expect(detectMShapeInWorker(data, qPeak)).toBe(false);
+  });
+});
+
+// ── downsampleFlow min/max preservation ──────────────────────
+
+describe('downsampleFlow min/max preservation', () => {
+  it('preserves actual min and max values within each bucket', () => {
+    // Create data where a spike exists within a bucket
+    const sampleRate = 10;
+    const bucketSeconds = 2; // 20 samples per bucket
+    const data = new Float32Array(20);
+    for (let i = 0; i < 20; i++) data[i] = 5;
+    data[3] = -42; // spike low
+    data[15] = 99; // spike high
+
+    const result = downsampleFlow(data, sampleRate, bucketSeconds);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.min).toBe(-42);
+    expect(result[0]!.max).toBe(99);
+  });
+
+  it('computes correct avg for each bucket', () => {
+    const data = new Float32Array([10, 20, 30, 40, 50]);
+    const result = downsampleFlow(data, 5, 1); // 5 samples per bucket
+    expect(result).toHaveLength(1);
+    expect(result[0]!.avg).toBe(30); // (10+20+30+40+50)/5 = 30
+  });
+
+  it('handles multiple buckets', () => {
+    const data = new Float32Array(20);
+    // Bucket 1 (0-9): values 0-9
+    // Bucket 2 (10-19): values 10-19
+    for (let i = 0; i < 20; i++) data[i] = i;
+
+    const result = downsampleFlow(data, 10, 1); // 10 samples per bucket
+    expect(result).toHaveLength(2);
+    expect(result[0]!.min).toBe(0);
+    expect(result[0]!.max).toBe(9);
+    expect(result[1]!.min).toBe(10);
+    expect(result[1]!.max).toBe(19);
+  });
+});
+
+// ── Large array handling ─────────────────────────────────────
+
+describe('large array handling', () => {
+  it('decimateFlow handles a large array (8h at 25 Hz)', () => {
+    const sampleRate = 25;
+    const duration = 8 * 3600; // 8 hours
+    const totalSamples = sampleRate * duration;
+    const data = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      data[i] = Math.sin(2 * Math.PI * 0.25 * i / sampleRate) * 30;
+    }
+
+    const result = decimateFlow(data, sampleRate, 1); // step = 25
+    const expectedLength = Math.ceil(totalSamples / 25);
+    expect(result).toHaveLength(expectedLength);
+    // Verify first and last timestamps
+    expect(result[0]!.t).toBe(0);
+    expect(result[result.length - 1]!.t).toBeCloseTo(duration - 1, 0);
+  });
+
+  it('computeFlowStatsFromRaw handles large array with reservoir sampling', () => {
+    // Create array larger than RESERVOIR_SIZE (50k)
+    const sampleRate = 25;
+    const totalSamples = 200_000;
+    const flow = new Float32Array(totalSamples);
+    const pressure = new Float32Array(totalSamples);
+
+    for (let i = 0; i < totalSamples; i++) {
+      flow[i] = Math.sin(2 * Math.PI * 0.2 * i / sampleRate) * 25;
+      pressure[i] = 12 + Math.sin(2 * Math.PI * 0.2 * i / sampleRate) * 2;
+    }
+
+    const stats = computeFlowStatsFromRaw(flow, sampleRate, pressure);
+    expect(stats.flowMin).toBeLessThan(0);
+    expect(stats.flowMax).toBeGreaterThan(0);
+    expect(stats.pressureMin).not.toBeNull();
+    expect(stats.pressureMax).not.toBeNull();
+    expect(stats.pressureP10).not.toBeNull();
+    expect(stats.pressureP90).not.toBeNull();
+    // P10 should be less than P90
+    expect(stats.pressureP10!).toBeLessThanOrEqual(stats.pressureP90!);
   });
 });

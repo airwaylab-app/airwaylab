@@ -150,11 +150,11 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
     recordingId: readField(buffer, decoder, 88, 80),
     startDate: readField(buffer, decoder, 168, 8),
     startTime: readField(buffer, decoder, 176, 8),
-    headerBytes: parseInt(readField(buffer, decoder, 184, 8)) || 0,
+    headerBytes: Math.max(0, parseInt(readField(buffer, decoder, 184, 8)) || 0),
     reserved: readField(buffer, decoder, 192, 44),
-    numDataRecords: parseInt(readField(buffer, decoder, 236, 8)) || 0,
+    numDataRecords: Math.max(0, parseInt(readField(buffer, decoder, 236, 8)) || 0),
     recordDuration: parseFloat(readField(buffer, decoder, 244, 8)) || 1,
-    numSignals: parseInt(readField(buffer, decoder, 252, 4)) || 0,
+    numSignals: Math.max(0, parseInt(readField(buffer, decoder, 252, 4)) || 0),
   };
 
   if (header.numSignals === 0 || header.numDataRecords === 0) {
@@ -231,7 +231,8 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
   offset += n * 80;
 
   for (let i = 0; i < n; i++) {
-    signals[i]!.numSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    const rawNumSamples = parseInt(readField(buffer, decoder, offset + i * 8, 8)) || 0;
+    signals[i]!.numSamples = Math.max(0, rawNumSamples);
   }
   offset += n * 8;
 
@@ -264,6 +265,9 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
   // --- Validate buffer size ---
   const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);
   const bytesPerRecord = samplesPerRecord * 2;
+  if (bytesPerRecord === 0) {
+    return null; // All signals have 0 samples — corrupted metadata
+  }
   const expectedBytes = header.headerBytes + header.numDataRecords * bytesPerRecord;
 
   let actualNumRecords = header.numDataRecords;
@@ -294,7 +298,7 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
     const sig = m.signal;
     const digitalRange = sig.digitalMax - sig.digitalMin;
     const scale = digitalRange === 0 ? 0 : (sig.physicalMax - sig.physicalMin) / digitalRange;
-    const totalSamples = actualNumRecords * sig.numSamples;
+    const totalSamples = Math.max(0, actualNumRecords * sig.numSamples);
 
     // Determine conversion factor
     let convFactor = m.matcher.conversionFactor ?? 1;
