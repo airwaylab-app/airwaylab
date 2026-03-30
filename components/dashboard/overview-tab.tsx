@@ -19,6 +19,9 @@ import { NextSteps } from '@/components/dashboard/next-steps';
 import { MetricExplanation } from '@/components/common/metric-explanation';
 import { loadNightNotes } from '@/lib/night-notes';
 import { SymptomRating } from '@/components/dashboard/symptom-rating';
+import { NightContextEditor } from '@/components/dashboard/night-context-editor';
+import type { NightNotes } from '@/lib/types';
+import { EMPTY_NOTES } from '@/lib/night-notes';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
 import { CommunityBenchmarks } from '@/components/dashboard/community-benchmarks';
 import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
@@ -59,16 +62,30 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
   const p = previousNight;
 
   const [symptomRating, setSymptomRating] = useState<number | null>(null);
+  const [nightNotes, setNightNotes] = useState<NightNotes>({ ...EMPTY_NOTES });
   // Initialize to false to match SSR (localStorage is unavailable during
   // server rendering). Actual consent state is loaded in the useEffect below.
   const [isContributeConsented, setIsContributeConsented] = useState(false);
 
-  // Load symptom rating and consent state after mount (and when night changes)
+  // Load symptom rating, night notes, and consent state after mount (and when night changes)
   useEffect(() => {
     const notes = loadNightNotes(n.dateStr);
     setSymptomRating(notes.symptomRating);
+    setNightNotes(notes);
     setIsContributeConsented(getConsentState());
   }, [n.dateStr]);
+
+  // Keep symptomRating + nightNotes in sync when symptom rating changes
+  const handleSymptomRatingChange = useCallback((rating: number | null) => {
+    setSymptomRating(rating);
+    setNightNotes((prev) => ({ ...prev, symptomRating: rating }));
+  }, []);
+
+  // Keep symptomRating + nightNotes in sync when context fields change
+  const handleNotesChange = useCallback((updated: NightNotes) => {
+    setNightNotes(updated);
+    setSymptomRating(updated.symptomRating);
+  }, []);
 
   const insights = generateInsights(nights, n, p, therapyChangeDate, symptomRating);
 
@@ -140,8 +157,15 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       <SymptomRating
         night={n}
         value={symptomRating}
-        onChange={setSymptomRating}
+        onChange={handleSymptomRatingChange}
         isContributeConsented={isContributeConsented}
+      />
+
+      {/* Night Context — structured enum fields (caffeine, position, stress, etc.) */}
+      <NightContextEditor
+        night={n}
+        notes={nightNotes}
+        onNotesChange={handleNotesChange}
       />
 
       {/* Start-here guidance for new users — positioned right below hero */}
