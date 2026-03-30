@@ -35,34 +35,9 @@ export function FeedbackPanel({ open, onClose }: Props) {
   const [contactOk, setContactOk] = useState(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error' | 'rate_limited'>('idle')
 
-  // Pre-fill contact checkbox when signed in
-  useEffect(() => {
-    if (user) setContactOk(true)
-  }, [user])
-
-  // ESC to close
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  // Auto-close after success
-  useEffect(() => {
-    if (status !== 'success') return
-    const timer = setTimeout(() => {
-      handleClose()
-    }, 3000)
-    return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status])
-
+  // Callbacks first (referenced by effects below)
   const handleClose = useCallback(() => {
     onClose()
-    // Reset form after panel animation
     setTimeout(() => {
       setStatus('idle')
       setMessage('')
@@ -108,6 +83,37 @@ export function FeedbackPanel({ open, onClose }: Props) {
     }
   }, [message, email, type, user, profile, contactOk])
 
+  // Pre-fill contact checkbox when signed in
+  useEffect(() => {
+    if (user) setContactOk(true)
+  }, [user])
+
+  // ESC to close, Cmd/Ctrl+Enter to submit
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        const trimmed = message.trim()
+        if (trimmed.length >= 5 && status !== 'sending') {
+          handleSubmit()
+        }
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open, onClose, message, status, handleSubmit])
+
+  // Auto-close after success
+  useEffect(() => {
+    if (status !== 'success') return
+    const timer = setTimeout(() => {
+      handleClose()
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [status, handleClose])
+
   if (!open) return null
 
   const remaining = MAX_CHARS - message.length
@@ -130,13 +136,19 @@ export function FeedbackPanel({ open, onClose }: Props) {
         aria-label="Share your feedback"
         className={cn(
           'fixed z-50 flex flex-col border border-border/50 bg-card shadow-xl',
-          // Desktop: right panel
-          'sm:right-0 sm:top-0 sm:h-full sm:w-[380px] sm:rounded-l-xl sm:border-r-0',
           // Mobile: bottom sheet
-          'inset-x-0 bottom-0 max-h-[85vh] rounded-t-xl sm:inset-x-auto sm:max-h-none',
-          'animate-in fade-in-0 sm:slide-in-from-right',
+          'left-0 right-0 bottom-0 max-h-[85vh] rounded-t-xl',
+          // Desktop: right slide-in panel
+          'sm:left-auto sm:bottom-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[380px] sm:rounded-t-none sm:rounded-l-xl sm:border-r-0',
+          // Animations
+          'animate-in fade-in-0 slide-in-from-bottom sm:slide-in-from-bottom-0 sm:slide-in-from-right',
         )}
       >
+        {/* Mobile drag indicator */}
+        <div className="flex justify-center pt-2 sm:hidden">
+          <div className="h-1 w-8 rounded-full bg-muted-foreground/30" />
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
           <h2 className="text-sm font-semibold">Share your feedback</h2>
@@ -202,14 +214,17 @@ export function FeedbackPanel({ open, onClose }: Props) {
                   className="h-28 w-full resize-none rounded-lg border border-border/50 bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:border-primary/30 focus:outline-none focus:ring-1 focus:ring-primary/20 disabled:opacity-50"
                   maxLength={MAX_CHARS}
                 />
-                <div className="mt-1 flex justify-end">
+                <div className="mt-1 flex justify-between">
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to send
+                  </span>
                   <span
                     className={cn(
                       'text-[10px]',
-                      remaining < 50 ? 'text-red-400' : 'text-muted-foreground/50',
+                      remaining < 20 ? 'text-red-400' : remaining < 50 ? 'text-amber-400' : 'text-muted-foreground/50',
                     )}
                   >
-                    {remaining} characters left
+                    {remaining}
                   </span>
                 </div>
               </div>
