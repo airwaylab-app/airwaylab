@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { loadNightNotes, saveNightNotes } from '@/lib/night-notes';
+import { saveNightNotes } from '@/lib/night-notes';
 import type { NightResult, NightNotes, CaffeineLevel, AlcoholLevel, CongestionLevel, SleepPosition, StressLevel, ExerciseLevel } from '@/lib/types';
 
 // ============================================================
