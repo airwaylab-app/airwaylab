@@ -102,13 +102,19 @@ describe('FeedbackPanel', () => {
     expect(submitBtn).not.toBeDisabled()
   })
 
-  it('shows character counter that turns red near limit', () => {
+  it('shows character counter with amber/red thresholds near limit', () => {
     renderPanel()
     const textarea = screen.getByPlaceholderText("What's on your mind?")
 
+    // At 460 chars (40 remaining): amber zone (< 50)
     fireEvent.change(textarea, { target: { value: 'x'.repeat(460) } })
-    const counter = screen.getByText('40 characters left')
-    expect(counter.className).toContain('text-red-400')
+    const amberCounter = screen.getByText('40')
+    expect(amberCounter.className).toContain('text-amber-400')
+
+    // At 485 chars (15 remaining): red zone (< 20)
+    fireEvent.change(textarea, { target: { value: 'x'.repeat(485) } })
+    const redCounter = screen.getByText('15')
+    expect(redCounter.className).toContain('text-red-400')
   })
 
   // ── Auth-aware email ───────────────────────────────────────
