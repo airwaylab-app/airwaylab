@@ -94,7 +94,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ name: null });
       await submitContactForm(input);
 
-      const insertArg = mockInsert.mock.calls[0]!![0];
+      const insertArg = mockInsert.mock.calls[0]![0];
       expect(insertArg.message).toBe('[contact:privacy] I have a question about my data being stored.');
     });
 
@@ -113,7 +113,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ message: '  padded message  ' });
       await submitContactForm(input);
 
-      const insertArg = mockInsert.mock.calls[0]!![0];
+      const insertArg = mockInsert.mock.calls[0]![0];
       expect(insertArg.message).toContain('padded message');
       // The message inside should be trimmed
       expect(insertArg.message).not.toMatch(/\s{2,}$/);
@@ -145,7 +145,7 @@ describe('submitContactForm', () => {
         const input = makeContactInput({ category });
         await submitContactForm(input);
 
-        const insertArg = mockInsert.mock.calls[0]!![0];
+        const insertArg = mockInsert.mock.calls[0]![0];
         expect(insertArg.message).toContain(`[contact:${category}]`);
       }
     });
@@ -182,7 +182,7 @@ describe('submitContactForm', () => {
       await submitContactForm(input);
 
       // First sendEmail call is admin notification
-      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]!![0];
+      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(adminCall.to).toBe('dev@airwaylab.app');
       expect(adminCall.metadata).toEqual({ emailType: 'admin_contact' });
     });
@@ -191,7 +191,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ email: 'User@Test.com' });
       await submitContactForm(input);
 
-      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]!![0];
+      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(adminCall.replyTo).toBe('user@test.com');
     });
 
@@ -219,7 +219,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ message: longMessage });
       await submitContactForm(input);
 
-      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]!![0];
+      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(adminCall.subject).toContain('...');
     });
 
@@ -227,7 +227,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ message: 'Short' });
       await submitContactForm(input);
 
-      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]!![0];
+      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(adminCall.subject).not.toContain('...');
     });
 
@@ -235,7 +235,7 @@ describe('submitContactForm', () => {
       const input = makeContactInput({ message: 'Detailed question here' });
       await submitContactForm(input);
 
-      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]!![0];
+      const adminCall = (sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(adminCall.text).toContain('Detailed question here');
     });
   });

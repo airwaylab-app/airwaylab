@@ -575,6 +575,7 @@ describe('buildOximetryTrace', () => {
     it('handles data exactly at the minimum threshold (60 cleaned samples)', () => {
       // We need exactly 60 samples to survive cleaning.
       // Place 60 valid samples inside the buffer-safe window.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const startMs = BASE_TIME.getTime();
       const samples: OximetrySample[] = [];
 

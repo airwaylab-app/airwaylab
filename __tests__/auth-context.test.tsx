@@ -47,6 +47,7 @@ function makeQueryBuilder(result: QueryResult) {
 let mockProfileResult: QueryResult = { data: null, error: null };
 let mockSubscriptionResult: QueryResult = { data: null, error: null };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockFrom = vi.fn((table: string) => {
   if (table === 'profiles') return makeQueryBuilder(mockProfileResult);
   if (table === 'subscriptions') return makeQueryBuilder(mockSubscriptionResult);
@@ -57,6 +58,7 @@ const mockUpdate = vi.fn(() => ({
   eq: vi.fn(() => Promise.resolve({ error: null })),
 }));
 
+   
 const mockFromWithUpdate = vi.fn((table: string) => {
   if (table === 'profiles') {
     const qb = makeQueryBuilder(mockProfileResult);

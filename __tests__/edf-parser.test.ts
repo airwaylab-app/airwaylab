@@ -60,6 +60,7 @@ function buildEDF(opts: EDFBuildOptions): ArrayBuffer {
   const totalSize = headerBytes + dataBytes;
 
   const buffer = new ArrayBuffer(totalSize);
+       
   const view = new DataView(buffer);
   const encoder = new TextEncoder();
 
@@ -1018,6 +1019,7 @@ describe('EDF Parser — parseEDF', () => {
       const numSignals = 1;
       const headerBytes = 256 + numSignals * 256;
       const buffer = new ArrayBuffer(headerBytes + 100); // extra bytes for "data"
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const view = new DataView(buffer);
       const encoder = new TextEncoder();
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -20,7 +21,7 @@ interface MockQueryResult {
   count?: number | null;
 }
 
-function createMockSupabase(overrides: {
+function _createMockSupabase(overrides: {
   upsertResult?: MockQueryResult;
   updateResult?: MockQueryResult;
   selectResult?: MockQueryResult;
@@ -29,8 +30,11 @@ function createMockSupabase(overrides: {
 } = {}) {
   let selectCallIndex = 0;
 
-  let chainable: any;
-  chainable = {
+  
+   
+   
+   
+  const chainable: any = {
     eq: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(),
@@ -71,7 +75,7 @@ function createMockSupabase(overrides: {
 
   // Make the chain itself thenable so `await supabase.from(...).select(...).eq(...)` works
   const makeThenable = (obj: typeof chainable) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (obj as any).then = (resolve: (val: unknown) => void) => {
       return resolveSelect().then(resolve);
     };
@@ -132,8 +136,11 @@ describe('email sequences', () => {
   describe('scheduleSequence', () => {
     it('creates rows for each step in the sequence with correct delays', async () => {
       const upsertSpy = vi.fn().mockResolvedValue({ error: null });
-      let chainable: any;
-  chainable = {
+      
+   
+   
+   
+  const chainable: any = {
         upsert: upsertSpy,
       };
       const supabase = {
@@ -195,6 +202,7 @@ describe('email sequences', () => {
     });
 
     it('logs error on upsert failure without throwing', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const supabase = {
         from: vi.fn().mockReturnValue({
@@ -246,6 +254,7 @@ describe('email sequences', () => {
     });
 
     it('logs error on update failure without throwing', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const finalResult = Promise.resolve({ error: { message: 'Update failed' } });
       const supabase = {
@@ -340,6 +349,7 @@ describe('email sequences', () => {
     });
 
     it('returns empty array on query error', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const resolved = Promise.resolve({
         data: null,
@@ -428,6 +438,7 @@ describe('email sequences', () => {
     });
 
     it('logs error on failure without throwing', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const supabase = {
         from: vi.fn().mockReturnValue({
@@ -527,6 +538,7 @@ describe('email sequences', () => {
     });
 
     it('returns 0 on query error', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const selectResults = [
         { data: [], error: null },
@@ -679,6 +691,7 @@ describe('email sequences', () => {
         }),
       } as unknown as SupabaseClient;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const count = await applySunsetPolicy(supabase);
 
@@ -688,6 +701,7 @@ describe('email sequences', () => {
     });
 
     it('skips sunset when zero clicks are tracked (circuit breaker)', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const chain = {
@@ -751,6 +765,7 @@ describe('email sequences', () => {
     });
 
     it('returns 0 on query error', async () => {
+     
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       let callIdx = 0;
       const chain = {

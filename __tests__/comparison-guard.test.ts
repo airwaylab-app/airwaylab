@@ -4,11 +4,11 @@ import {
   getValidMetrics,
   findSettingsChangeBoundaries,
   type ComparisonContext,
-  type ComparisonResult,
+
 } from '@/lib/comparison-guard';
 import { computeFingerprint } from '@/lib/settings-fingerprint';
 import { METRIC_REGISTRY, RT_SENSITIVE_METRICS } from '@/lib/metric-registry';
-import type { MachineSettings, NightResult, SettingsFingerprint } from '@/lib/types';
+import type { MachineSettings, NightResult } from '@/lib/types';
 
 // ── Helpers ─────────────────────────────────────────────────
 

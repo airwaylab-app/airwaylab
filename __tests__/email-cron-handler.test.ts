@@ -14,6 +14,7 @@ vi.mock('@/lib/email/templates', () => ({
     post_upload: {
       totalSteps: 3,
       delays: [0, 3, 7],
+       
       getTemplate: (step: number, url: string) => {
         if (step >= 1 && step <= 3) {
           return { subject: `Post Upload Step ${step}`, html: `<p>Step ${step}</p><a href="${url}">Unsub</a>` };
@@ -24,6 +25,7 @@ vi.mock('@/lib/email/templates', () => ({
     dormancy: {
       totalSteps: 2,
       delays: [0, 7],
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       getTemplate: (step: number, url: string) => {
         if (step >= 1 && step <= 2) {
           return { subject: `Dormancy Step ${step}`, html: `<p>Dormancy ${step}</p>` };
