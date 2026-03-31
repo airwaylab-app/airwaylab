@@ -81,8 +81,8 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
     } else if (!eventGood && hasFLConcern) {
       // Case 3: both bad
       tier = 'bad';
-      headlineText = 'Your results need attention';
-      bodyText = `Both respiratory event counts and flow limitation metrics are elevated (RERA ${fmt(n.ned.reraIndex)}/hr, IFL Risk ${fmt(iflRisk)}%). Discuss your settings with your sleep physician.`;
+      headlineText = 'Multiple metrics are outside typical ranges';
+      bodyText = `Both respiratory event counts and flow limitation metrics are elevated (RERA ${fmt(n.ned.reraIndex)}/hr, IFL Risk ${fmt(iflRisk)}%). Discuss with your sleep physician.`;
     } else {
       // Case 4: events elevated, FL fine
       tier = 'warn';

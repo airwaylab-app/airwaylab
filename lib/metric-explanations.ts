@@ -160,7 +160,7 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
   if (light === 'warn') {
     return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss whether pressure or settings adjustments could help with your clinician.';
   }
-  return 'Significant flow limitation detected. Individual sensitivity varies, but research suggests this level of FL can drive fatigue and unrefreshing sleep via a stress response, even without frequent arousals. Discuss therapy optimisation with your clinician.';
+  return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Discuss with your clinician if you have concerns.';
 }
 
 

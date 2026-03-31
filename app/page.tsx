@@ -190,7 +190,7 @@ const softwareAppJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'AirwayLab',
-  applicationCategory: 'HealthApplication',
+  applicationCategory: 'UtilitiesApplication',
   operatingSystem: 'Web browser',
   url: 'https://airwaylab.app',
   description:
@@ -266,7 +266,7 @@ export default function Home() {
               <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Your PAP device says your AHI is fine. But you still wake up exhausted.
                 AirwayLab uses the Glasgow Index and three more research-grade engines
-                to detect flow limitation, RERAs, and breathing instability
+                to analyze flow limitation, RERAs, and breathing instability
                 that standard metrics miss — automatically, in 60 seconds.
               </p>
 

@@ -44,15 +44,15 @@ const breadcrumbJsonLd = {
 
 const medicalPageJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'MedicalWebPage',
+  '@type': 'WebPage',
   name: 'Glasgow Index - PAP Flow Limitation Scoring',
   description: 'The Glasgow Index scores inspiratory flow shapes on 9 morphological components to quantify flow limitation severity. Scores range from 0 (normal) to 9 (severe).',
   url: 'https://airwaylab.app/about/glasgow-index',
   about: {
-    '@type': 'MedicalCondition',
+    '@type': 'Thing',
     name: 'Inspiratory Flow Limitation',
   },
-  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  audience: { '@type': 'Audience', audienceType: 'General Public' },
   isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
 };
 

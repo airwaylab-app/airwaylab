@@ -63,7 +63,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'fl-score',
-        stem: 'Could pressure adjustments help reduce my inspiratory flow limitation?',
+        stem: 'My AirwayLab report shows elevated FL metrics. Can you help me understand what this means?',
         rationale: `Your FL Score of ${Math.round(n.wat.flScore)}% suggests significant flow limitation during sleep.`,
         category: 'flow-limitation',
         urgency: light,
@@ -85,7 +85,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       const compText = elevated.length > 0 ? ` (${elevated.join(', ')})` : '';
       return {
         id: 'glasgow',
-        stem: 'My breath shape analysis shows flow-limited patterns — what options could help?',
+        stem: 'My breath shape analysis shows flow-limited patterns. Can you help me understand what this means?',
         rationale: `Your Glasgow Index of ${fmt(n.glasgow.overall)} indicates altered inspiratory flow shapes${compText}.`,
         category: 'flow-limitation',
         urgency: light,
@@ -118,7 +118,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       const severity = n.ned.reraIndex > 10 ? 'frequent' : 'moderate';
       return {
         id: 'rera-index',
-        stem: 'My data shows frequent respiratory effort-related arousals. Could pressure or mode changes reduce these?',
+        stem: 'My data shows frequent respiratory effort-related arousals. Can you help me understand what might be causing this?',
         rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr indicates ${severity} sleep disruptions beyond what AHI captures.`,
         category: 'arousals',
         urgency: light,
@@ -134,7 +134,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'eai',
-        stem: 'My estimated arousal index is elevated — are there therapy adjustments that could improve sleep continuity?',
+        stem: 'My estimated arousal index is elevated. What might be contributing to this?',
         rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr suggests sleep fragmentation that may affect how rested you feel.`,
         category: 'arousals',
         urgency: light,
@@ -237,7 +237,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'premature-cycle',
-        stem: 'My BiPAP data suggests possible premature cycling. Would adjusting the Cycle sensitivity help?',
+        stem: 'My BiPAP data suggests possible premature cycling. Can you review whether my Cycle settings are appropriate?',
         rationale: `Your inspiratory time patterns suggest the machine may be ending breaths before you're ready to exhale (${fmt(n.settingsMetrics.prematureCyclePct, 0)}% of breaths).`,
         category: 'settings',
         urgency: light,
@@ -253,7 +253,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'late-cycle',
-        stem: 'My BiPAP may be holding pressure too long during breaths. Would adjusting Rise Time or Cycle settings help?',
+        stem: 'My BiPAP data shows patterns that may indicate late cycling. Can you review whether my settings are appropriate?',
         rationale: `Your data shows patterns consistent with the machine continuing to deliver pressure after your inspiratory effort has ended (${fmt(n.settingsMetrics.lateCyclePct, 0)}% of breaths).`,
         category: 'settings',
         urgency: light,
@@ -289,7 +289,7 @@ function deduplicateFlowLimitation(questions: ClinicianQuestion[]): ClinicianQue
 
   const consolidated: ClinicianQuestion = {
     id: 'fl-consolidated',
-    stem: 'Multiple flow limitation metrics are elevated — could pressure or airway management help?',
+    stem: 'Multiple flow limitation metrics are elevated. Can you help me understand what this means for my therapy?',
     rationale: `Your ${metricNames.join(', ')} all indicate flow limitation. ${metricDetails}`,
     category: 'flow-limitation',
     urgency: worstUrgency,

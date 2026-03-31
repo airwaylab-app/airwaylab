@@ -205,7 +205,7 @@ export function CommunityBenchmarks({ night, isDemo = false }: Props) {
           <Sparkles className="h-3 w-3 shrink-0 text-primary/40" />
           <span>
             {isElevated
-              ? 'Your flow limitation is higher than most users at similar pressure settings. Supporters get AI analysis of what patterns like yours typically respond to.'
+              ? 'Your flow limitation is higher than most users at similar pressure settings. Supporters get deeper AI analysis of cross-engine correlations in their data.'
               : 'Your results are within the typical range. Supporters get AI insights into what is working and what to watch for.'}
             {' '}
             <Link href="/pricing" className="text-primary/60 hover:underline">

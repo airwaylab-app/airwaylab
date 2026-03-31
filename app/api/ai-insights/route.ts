@@ -68,16 +68,16 @@ Prioritise correlation and temporal insights — these are the analysis patterns
 
 For every warning or actionable insight, include a "context" field (2-3 sentences) providing educational background:
 - What factors commonly contribute to this finding (e.g. mask fit, sleep position, pressure settings, nasal congestion, medication effects)
-- What areas the user could explore or discuss with their clinician
-- Frame as educational and informational ("common contributing factors include...", "areas worth exploring..."), NEVER as therapy recommendations ("change X to Y", "try setting X to N")
-- The context helps users understand WHY a metric is elevated, not WHAT to change about their therapy
+- Educational background on factors that commonly influence this metric
+- Frame as educational and informational ("common contributing factors include..."), NEVER as therapy recommendations ("change X to Y", "try setting X to N")
+- The context provides educational background, not guidance on therapy changes
 Do not include the "context" field on positive or info insights — only on warning and actionable.`;
 
 // Model selection based on user tier
 const MODEL_COMMUNITY = 'claude-haiku-4-5-20251001';
 const MODEL_PREMIUM = 'claude-sonnet-4-6';
 
-const SYSTEM_PROMPT = `You are a sleep medicine data analyst specialising in PAP flow limitation analysis. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
+const SYSTEM_PROMPT = `You are a data pattern summarization assistant that describes patterns in PAP therapy data. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
 Your task is to generate 3–6 clinical insights in JSON format. Each insight must follow this exact schema:
 {
@@ -92,12 +92,12 @@ Focus on:
 - Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top high while NED shows low M-shape suggests steady-state flow limitation rather than oscillatory obstruction)
 - Patterns between WAT regularity/periodicity and Glasgow component breakdown
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
-- Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Identify specific settings that may be contributing to findings and suggest concrete adjustments to investigate.
+- Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Describe how these settings relate to the data patterns observed. Do NOT suggest specific adjustments or changes.
 - Oximetry-flow correlations when oximetry data is present
 - Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL predicts sleepiness independently of arousals via limbic/HPA axis stress response. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 - When user-reported night context is provided (caffeine, alcohol, congestion, sleep position, stress, exercise): correlate these factors with the analysis findings. For example, afternoon caffeine + high disruptions, nasal congestion + elevated FL, back sleeping + H2 worsening, etc.
 - When oximetry data shows high T<94% with low ODI3, flag this as likely tonic respiratory depression (e.g., from alcohol or medication) rather than obstructive events — different mechanism, different response.
-- ACTIONABILITY: For every warning or actionable insight, include specific areas to investigate (e.g. "review sleep position patterns", "consider side sleeping", "reduce afternoon caffeine"). Frame as "areas to investigate with your clinician" not as medical advice.
+- ACTIONABILITY: For every warning or actionable insight, describe what the data shows and note results may be worth discussing with a clinician. Do NOT suggest specific actions, behavioral changes, or areas to investigate.
 
 Rules:
 - Describe what the data shows — patterns, correlations, and observations. Do NOT recommend specific therapy or pressure changes based on metrics alone. Metrics are useful for verifying whether changes worked, but the visual picture (flow waveforms, apnea events, pressure traces, and breath forms together) is needed to guide adjustments. Frame insights as "what the data shows" rather than "what to change".
@@ -272,6 +272,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Payload size guard -- reject oversized requests before any metered checks (FB-27)
+  // Must run BEFORE rate limiter: Upstash consume-then-check burns a slot on every call,
+  // so 413 failures were also triggering 429s for users retrying.
+  if (exceedsPayloadLimit(request, 512_000)) {
+    return NextResponse.json(
+      { error: 'Request too large. Try selecting a more recent night or disable deep analysis mode.' },
+      { status: 413 }
+    );
+  }
+
   // Server-side AI usage enforcement (C2)
   const { data: profile } = await supabase
     .from('profiles')
@@ -281,7 +291,7 @@ export async function POST(request: NextRequest) {
 
   const userTier = profile?.tier ?? 'community';
 
-  // Rate limiting by user ID — paid users get 3x the limit (C3)
+  // Rate limiting by user ID -- paid users get 3x the limit (C3)
   const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
   const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
   if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
@@ -294,7 +304,7 @@ export async function POST(request: NextRequest) {
     if (!adminClient) {
       // Hard fail: without service role, we cannot enforce usage limits.
       // Allowing through would give community users unlimited free AI.
-      console.error('[ai-insights] Service role not configured — cannot enforce community usage limit');
+      console.error('[ai-insights] Service role not configured -- cannot enforce community usage limit');
       return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
     }
 
@@ -314,14 +324,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-  }
-
-  // Payload size guard — reject oversized requests before parsing (FB-27)
-  if (exceedsPayloadLimit(request, 512_000)) {
-    return NextResponse.json(
-      { error: 'Request too large. Try selecting a more recent night or disable deep analysis mode.' },
-      { status: 413 }
-    );
   }
 
   // Validate Anthropic API key is configured
