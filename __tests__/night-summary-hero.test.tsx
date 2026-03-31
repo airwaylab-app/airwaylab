@@ -107,7 +107,7 @@ describe('NightSummaryHero — treatment context framing', () => {
     const { container } = render(<NightSummaryHero night={night} />);
     const hero = container.firstChild as HTMLElement;
     expect(hero.className).toContain('border-red');
-    expect(screen.getByText('Your results need attention')).toBeInTheDocument();
+    expect(screen.getByText('Multiple metrics are outside typical ranges')).toBeInTheDocument();
   });
 
   // Case 4: events bad + FL good → amber
