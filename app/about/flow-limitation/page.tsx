@@ -48,16 +48,16 @@ const breadcrumbJsonLd = {
 
 const medicalPageJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'MedicalWebPage',
+  '@type': 'WebPage',
   name: 'What Is PAP Flow Limitation?',
   description: 'Learn about flow limitation in PAP therapy: causes, detection methods, and how AirwayLab measures it using Glasgow Index, WAT, and NED analysis.',
   url: 'https://airwaylab.app/about/flow-limitation',
   about: {
-    '@type': 'MedicalCondition',
+    '@type': 'Thing',
     name: 'Inspiratory Flow Limitation',
     alternateName: 'Upper Airway Resistance',
   },
-  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  audience: { '@type': 'Audience', audienceType: 'General Public' },
   isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
 };
 

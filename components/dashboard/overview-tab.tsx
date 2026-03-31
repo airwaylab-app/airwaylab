@@ -138,7 +138,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/70" />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Your respiratory event index suggests room for therapy adjustment. Discuss these findings with your clinician.
+                Your respiratory event index is in the elevated range. Discuss these findings with your clinician.
               </p>
             </div>
           );

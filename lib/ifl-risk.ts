@@ -56,7 +56,7 @@ export function getIFLContextNote(
 ): string | null {
   // High FL + Low EAI: FL may be driving symptoms without arousals
   if (iflRisk > 30 && eai <= 5) {
-    return 'Flow limitation is elevated despite a low disruption index. Research suggests flow limitation can drive symptoms independently of arousals — discuss flow limitation reduction strategies with your clinician.';
+    return 'Flow limitation is elevated despite a low disruption index. Research suggests flow limitation can drive symptoms independently of arousals — your clinician can help interpret flow limitation findings in context.';
   }
 
   // Low FL + High EAI: disruptions without FL suggest other causes

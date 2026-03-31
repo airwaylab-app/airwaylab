@@ -162,7 +162,7 @@ export function featureEducationStep1(unsubscribeUrl: string): { subject: string
       ${bulletList([
         '"Your Glasgow Index of 2.4 suggests moderate flow limitation, primarily in the second half of the night..."',
         '"Your RERA index of 6.2 is above the normal range, which may explain persistent fatigue despite a low AHI..."',
-        '"Consider discussing an EPR reduction with your clinician, as your flow limitation worsens with higher expiratory pressure relief..."',
+        '"Your clinician can help interpret what these patterns mean for your therapy."',
       ])}
       ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and suggests adjustments to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
       ${ctaButton('Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1`)}
@@ -183,7 +183,7 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
         '<strong style="color:#fff;">Forum post</strong> -- formatted for ApneaBoard or r/SleepApnea, with traffic-light indicators.',
       ])}
       ${paragraph('The more data you bring, the better the conversation. Your clinician can\'t act on symptoms alone -- they need objective evidence.')}
-      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get AI-powered recommendations that connect your FL Score trends to specific pressure settings and suggest changes based on your breathing patterns. It\'s the difference between seeing the numbers and understanding what to do about them.')}
+      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get deeper AI analysis that identifies patterns across your data and settings. It\'s the difference between seeing the numbers and understanding what to do about them.')}
       ${ctaButton('Export Your Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2`)}
     `, unsubscribeUrl),
   };
@@ -231,7 +231,7 @@ function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading('Your analysis just got smarter')}
       ${paragraph('Every time you upload now, you\'ll get AI-powered insights alongside the standard engine scores. The AI reads your Glasgow Index, FL Score, NED, and oximetry results together -- connecting patterns across engines that the individual scores can\'t show.')}
-      ${paragraph('It references your pressure settings and suggests specific adjustments to discuss with your clinician. Upload a night and see the difference.')}
+      ${paragraph('It references your pressure settings and analyses your data in context with your current settings. Upload a night and see the difference.')}
       ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_1`)}
     `, unsubscribeUrl),
   };

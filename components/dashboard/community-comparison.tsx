@@ -169,7 +169,7 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
           </div>
           {stats.sameBucketAvgRating !== null && stats.sameBucketCount >= 5 && (
             <p className="mt-1.5 text-[10px] text-muted-foreground/70">
-              Users with similar IFL Risk rate their sleep {stats.sameBucketAvgRating.toFixed(1)}/5 on average
+              Users with similar IFL Risk rate their sleep {stats.sameBucketAvgRating.toFixed(1)}/5 on average (self-reported)
               ({stats.sameBucketCount} ratings)
             </p>
           )}

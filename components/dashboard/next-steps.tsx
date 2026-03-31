@@ -33,13 +33,13 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
 
   if (gl === 'bad') {
     steps.push({
-      text: 'Your flow limitation is elevated. Discuss pressure or settings adjustments with your clinician — bring this report.',
+      text: 'Your flow limitation metrics are higher than typical. Consider sharing this report with your clinician for interpretation.',
     });
   }
 
   if (eaiL === 'bad' && gl === 'good') {
     steps.push({
-      text: 'Your respiratory disruptions are elevated despite low flow limitation. Read about CNS sensitization and discuss with your specialist.',
+      text: 'Your respiratory disruption metrics are elevated while flow limitation is low. Read about CNS sensitization for educational context.',
       link: { href: '/blog/what-is-cns-sensitization', label: 'Read about CNS sensitization' },
     });
   }
@@ -60,7 +60,7 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
 
   if (steps.length === 0) {
     steps.push({
-      text: 'Your therapy looks effective. Keep tracking weekly to catch any changes early.',
+      text: 'Your metrics are within the typical range. Upload regularly to track changes over time.',
     });
   }
 
