@@ -531,6 +531,26 @@ export async function POST(request: NextRequest) {
         .catch(() => {}); // Non-blocking
     }
 
+    // Log AI output for MDR compliance monitoring + quality evaluation (non-blocking)
+    if (adminClient) {
+      void adminClient
+        .from('ai_insights_log')
+        .insert({
+          user_id: user.id,
+          tier: userTier,
+          model: userTier === 'community' ? MODEL_COMMUNITY : MODEL_PREMIUM,
+          is_deep: !!isDeepRequest,
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          insight_count: insights.length,
+          insights: JSON.stringify(insights),
+          truncated,
+        })
+        .then(({ error }) => {
+          if (error) console.error('[ai-insights] Log insert failed:', error.message);
+        });
+    }
+
     return NextResponse.json({
       insights,
       source: 'ai',

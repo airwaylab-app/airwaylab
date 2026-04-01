@@ -28,6 +28,7 @@ const mockSupabaseFrom = vi.fn().mockReturnValue({
     Promise.resolve({ data: { tier: mockTier } })
   ),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+  insert: vi.fn().mockResolvedValue({ error: null }),
 });
 const mockRpc = vi.fn().mockResolvedValue({ data: null });
 
@@ -336,6 +337,7 @@ describe('Premium AI Quality — Response Fields', () => {
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: { tier: 'community' } }),
       maybeSingle: vi.fn().mockResolvedValue({ data: { count: 1 } }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
     });
     mockAIResponse([validInsight()]);
     const res = await callRoute(validBody());
