@@ -21,8 +21,8 @@ export const DEMO_AI_INSIGHTS: Insight[] = [
   {
     id: 'demo-ai-ned',
     type: 'warning',
-    title: 'NED worsening pattern may indicate REM-related obstruction',
-    body: 'Despite overall improvement post-settings-change, NED combined shows a rising H1\u200A\u2192\u200AH2 trend (from 16% up to 22%) that correlates with an ODI-3 shift from 3.4 to 5.0/hr on nights with oximetry data. This pattern is consistent with REM-phase residual obstruction. Worth discussing positional or pressure-response strategies with your clinician.',
+    title: 'NED pattern shows H1-to-H2 worsening trend',
+    body: 'Despite overall improvement post-settings-change, NED combined shows a rising H1\u200A\u2192\u200AH2 trend (from 16% up to 22%) that correlates with an ODI-3 shift from 3.4 to 5.0/hr on nights with oximetry data. This late-night worsening pattern is worth discussing with your clinician at your next review.',
     category: 'ned',
   },
   {

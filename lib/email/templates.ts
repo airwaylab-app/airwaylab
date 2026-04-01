@@ -164,7 +164,7 @@ export function featureEducationStep1(unsubscribeUrl: string): { subject: string
         '"Your RERA index of 6.2 is above the normal range, which may explain persistent fatigue despite a low AHI..."',
         '"Your clinician can help interpret what these patterns mean for your therapy."',
       ])}
-      ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and suggests adjustments to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
+      ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and highlights findings to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
       ${ctaButton('Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1`)}
     `, unsubscribeUrl),
   };
@@ -183,7 +183,7 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
         '<strong style="color:#fff;">Forum post</strong> -- formatted for ApneaBoard or r/SleepApnea, with traffic-light indicators.',
       ])}
       ${paragraph('The more data you bring, the better the conversation. Your clinician can\'t act on symptoms alone -- they need objective evidence.')}
-      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get deeper AI analysis that identifies patterns across your data and settings. It\'s the difference between seeing the numbers and understanding what to do about them.')}
+      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get deeper AI analysis that identifies patterns across your data and settings. It\'s the difference between seeing the numbers and understanding what they show about your therapy.')}
       ${ctaButton('Export Your Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2`)}
     `, unsubscribeUrl),
   };
