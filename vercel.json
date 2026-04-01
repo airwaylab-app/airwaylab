@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/weekly-digest",
       "schedule": "0 18 * * 0"
+    },
+    {
+      "path": "/api/cron/ai-monitor",
+      "schedule": "0 5 * * *"
     }
   ]
 }
