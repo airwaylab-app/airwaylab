@@ -151,6 +151,7 @@ export const ShareButton = memo(function ShareButton({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'File upload failed';
       console.error('[share-button] file upload failed:', message);
+      Sentry.captureException(err, { tags: { action: 'share-file-upload' } });
       events.shareFilesUploadFailed(message);
       setFileUpload((prev) => ({ ...prev, status: 'error', errorMessage: message }));
     }
