@@ -213,7 +213,7 @@ describe('Premium AI Quality — System Prompt', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
-    expect(createArgs.system).toContain('6 to 10 clinical insights');
+    expect(createArgs.system).toContain('6 to 10 data pattern observations');
     expect(createArgs.system).toContain('"correlation"');
     expect(createArgs.system).toContain('"temporal"');
   });
@@ -224,7 +224,7 @@ describe('Premium AI Quality — System Prompt', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
-    expect(createArgs.system).not.toContain('6 to 10 clinical insights');
+    expect(createArgs.system).not.toContain('6 to 10 data pattern observations');
     expect(createArgs.system).not.toContain('"correlation"');
     expect(createArgs.system).not.toContain('"temporal"');
   });
@@ -243,7 +243,7 @@ describe('Premium AI Quality — System Prompt', () => {
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
     expect(createArgs.system).toContain('RERA clustering');
-    expect(createArgs.system).toContain('6 to 10 clinical insights');
+    expect(createArgs.system).toContain('6 to 10 data pattern observations');
   });
 });
 
