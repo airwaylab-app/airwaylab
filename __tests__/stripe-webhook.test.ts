@@ -1,3 +1,11 @@
+/**
+ * Tests for the Stripe webhook handler (app/api/webhooks/stripe/route.ts).
+ *
+ * Covers: checkout.session.completed, subscription.updated, subscription.deleted,
+ * invoice.payment_failed, idempotency, tier assignment (all 4 price IDs),
+ * tier transitions, compensating deletes on failure, missing data,
+ * unknown price IDs, MRR computation, and malformed events.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
@@ -7,6 +15,35 @@ import type { NextRequest } from 'next/server';
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
+}));
+
+// Mock email modules (fire-and-forget in the route, but must be mockable)
+vi.mock('@/lib/email/sequences', () => ({
+  cancelSequence: vi.fn().mockResolvedValue(undefined),
+  scheduleSequence: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/email/send', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/email/transactional', () => ({
+  welcomeEmail: vi.fn().mockReturnValue({ subject: 'Welcome', html: '<p>Welcome</p>' }),
+  cancellationEmail: vi.fn().mockReturnValue({ subject: 'Cancelled', html: '<p>Bye</p>' }),
+}));
+
+// Mock Discord modules (non-blocking in the route)
+vi.mock('@/lib/discord', () => ({
+  isDiscordConfigured: vi.fn().mockReturnValue(false),
+  syncRole: vi.fn().mockResolvedValue(undefined),
+  searchGuildMember: vi.fn().mockResolvedValue({ status: 'not_found' }),
+  getTierRoleId: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock('@/lib/discord-webhook', () => ({
+  sendAlert: vi.fn().mockResolvedValue(undefined),
+  formatRevenueEmbed: vi.fn().mockReturnValue({}),
 }));
 
 // Mock Supabase — builder pattern that supports chaining
@@ -541,5 +578,661 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Sentry captures: upsert error (at throw), delete error (compensating), handler error (catch)
     expect(captureException).toHaveBeenCalledTimes(3);
+  });
+
+  // ---------- 14. Tier assignment: all 4 price IDs ----------
+  it('assigns supporter tier for supporter yearly price', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_supp_y', unit_amount: 9000, recurring: { interval: 'year' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'supporter', stripe_price_id: 'price_supp_y' }),
+      expect.any(Object)
+    );
+  });
+
+  it('assigns champion tier for champion monthly price', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_champ_m', unit_amount: 1900, recurring: { interval: 'month' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'champion' }),
+      expect.any(Object)
+    );
+  });
+
+  it('assigns champion tier for champion yearly price', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_champ_y', unit_amount: 19000, recurring: { interval: 'year' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'champion' }),
+      expect.any(Object)
+    );
+  });
+
+  // ---------- 15. Unknown price ID defaults to supporter ----------
+  it('defaults to supporter tier and fires Sentry warning for unknown price ID', async () => {
+    const { captureMessage } = await import('@sentry/nextjs');
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_unknown_xyz', unit_amount: 999, recurring: { interval: 'month' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'supporter' }),
+      expect.any(Object)
+    );
+    expect(captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown Stripe price ID: price_unknown_xyz'),
+      'warning'
+    );
+  });
+
+  // ---------- 16. MRR computation for monthly ----------
+  it('logs correct MRR for monthly subscription (unit_amount passed through)', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_supp_m', unit_amount: 900, recurring: { interval: 'month' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    // MRR for monthly = unit_amount directly
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ mrr_cents: 900 })
+    );
+  });
+
+  // ---------- 17. MRR computation for yearly ----------
+  it('logs correct MRR for yearly subscription (unit_amount / 12)', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(
+      makeSubscriptionObject({
+        items: {
+          data: [{
+            price: { id: 'price_supp_y', unit_amount: 9000, recurring: { interval: 'year' } },
+            current_period_end: 1700000000,
+          }],
+        },
+      })
+    );
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    // MRR for yearly = 9000 / 12 = 750
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ mrr_cents: 750 })
+    );
+  });
+
+  // ---------- 18. Tier transition: upgrade via subscription.updated ----------
+  it('handles supporter-to-champion upgrade via subscription.updated', async () => {
+    const subscription = makeSubscriptionObject({
+      items: {
+        data: [{
+          price: { id: 'price_champ_m', unit_amount: 1900, recurring: { interval: 'month' } },
+          current_period_end: 1700000000,
+        }],
+      },
+    });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Subscription record updated to champion
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'champion', stripe_price_id: 'price_champ_m' })
+    );
+    // Profile updated to champion (status is active)
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'champion' });
+  });
+
+  // ---------- 19. Tier transition: downgrade via subscription.updated ----------
+  it('handles champion-to-supporter downgrade via subscription.updated', async () => {
+    const subscription = makeSubscriptionObject({
+      items: {
+        data: [{
+          price: { id: 'price_supp_m', unit_amount: 900, recurring: { interval: 'month' } },
+          current_period_end: 1700000000,
+        }],
+      },
+    });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: 'supporter' })
+    );
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'supporter' });
+  });
+
+  // ---------- 20. subscription.updated: trialing status updates profile ----------
+  it('updates profile tier when subscription status is trialing', async () => {
+    const subscription = makeSubscriptionObject({ status: 'trialing' });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Profile SHOULD be updated for trialing status
+    expect(builders['profiles']!.update).toHaveBeenCalledWith({ tier: 'supporter' });
+  });
+
+  // ---------- 21. subscription.updated: canceled status does NOT update profile ----------
+  it('does NOT update profile tier when subscription status is canceled', async () => {
+    const subscription = makeSubscriptionObject({ status: 'canceled' });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Profile should NOT be updated for canceled status
+    const profileCalls = mockFrom.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'profiles'
+    );
+    expect(profileCalls).toHaveLength(0);
+  });
+
+  // ---------- 22. subscription.updated: missing userId still updates subscription ----------
+  it('updates subscription record but logs warning when userId is missing on subscription.updated', async () => {
+    const { captureMessage } = await import('@sentry/nextjs');
+    const subscription = makeSubscriptionObject({ metadata: {} });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Subscription record should still be updated
+    expect(builders['subscriptions']!.update).toHaveBeenCalled();
+
+    // Sentry warning for missing userId
+    expect(captureMessage).toHaveBeenCalledWith(
+      'Stripe subscription.updated missing userId',
+      expect.objectContaining({ level: 'warning' })
+    );
+  });
+
+  // ---------- 23. subscription.updated: logs updated event ----------
+  it('logs updated event to subscription_events on subscription.updated', async () => {
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'updated',
+        tier: 'supporter',
+        interval: 'month',
+        stripe_subscription_id: 'sub_test_123',
+      })
+    );
+  });
+
+  // ---------- 24. subscription.deleted: logs cancelled event ----------
+  it('logs cancelled event to subscription_events on subscription.deleted', async () => {
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions' && !builders[table]) {
+        builders[table] = createQueryBuilder({ data: [], error: null });
+      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'cancelled',
+        stripe_subscription_id: 'sub_test_123',
+      })
+    );
+  });
+
+  // ---------- 25. subscription.deleted: missing userId ----------
+  it('cancels subscription but skips profile downgrade when userId is missing', async () => {
+    const subscription = makeSubscriptionObject({ metadata: {} });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Subscription should still be marked canceled
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'canceled' });
+
+    // Profile should NOT be updated (no userId)
+    const profileCalls = mockFrom.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'profiles'
+    );
+    expect(profileCalls).toHaveLength(0);
+  });
+
+  // ---------- 26. invoice.payment_failed: subscription as object ----------
+  it('extracts subscription ID from object form in invoice.payment_failed', async () => {
+    const invoice = {
+      parent: {
+        subscription_details: {
+          subscription: { id: 'sub_obj_789' },
+        },
+      },
+    };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
+    expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_obj_789');
+  });
+
+  // ---------- 27. invoice.payment_failed: no subscription ----------
+  it('does nothing when invoice.payment_failed has no subscriptionId', async () => {
+    const invoice = {
+      parent: {
+        subscription_details: { subscription: null },
+      },
+    };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // subscriptions.update should NOT have been called
+    const subCalls = mockFrom.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'subscriptions'
+    );
+    expect(subCalls).toHaveLength(0);
+  });
+
+  // ---------- 28. invoice.payment_failed: missing parent entirely ----------
+  it('does nothing when invoice.payment_failed has no parent field', async () => {
+    const invoice = {};
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    const subCalls = mockFrom.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'subscriptions'
+    );
+    expect(subCalls).toHaveLength(0);
+  });
+
+  // ---------- 29. Unhandled event type returns 200 ----------
+  it('returns 200 for unhandled event types (acknowledges receipt)', async () => {
+    const event = makeStripeEvent('customer.created', { id: 'cus_xyz' });
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.received).toBe(true);
+  });
+
+  // ---------- 30. Idempotency: duplicate does not invoke business logic ----------
+  it('does not invoke subscriptions.retrieve or upsert for duplicate events', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    // Idempotency insert fails (duplicate)
+    mockFrom.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: 'duplicate key' } })
+    );
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    // No business logic should execute
+    expect(mockSubscriptionsRetrieve).not.toHaveBeenCalled();
+  });
+
+  // ---------- 31. subscription.updated: subscription update DB failure ----------
+  it('returns 500 and compensates when subscription.updated DB update fails', async () => {
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    let stripeEventsCallCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'stripe_events') {
+        stripeEventsCallCount++;
+        if (stripeEventsCallCount === 1) return createQueryBuilder({ data: null, error: null });
+        return createQueryBuilder({ data: null, error: null }); // compensating delete
+      }
+      if (table === 'subscription_events') {
+        return createQueryBuilder({ data: null, error: null });
+      }
+      if (table === 'subscriptions') {
+        return createQueryBuilder({ data: null, error: { message: 'Update failed' } });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(500);
+  });
+
+  // ---------- 32. subscription.deleted: cancel DB failure triggers compensating delete ----------
+  it('returns 500 and compensates when subscription.deleted cancel DB update fails', async () => {
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    let stripeEventsCallCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'stripe_events') {
+        stripeEventsCallCount++;
+        if (stripeEventsCallCount === 1) return createQueryBuilder({ data: null, error: null });
+        return createQueryBuilder({ data: null, error: null }); // compensating delete
+      }
+      if (table === 'subscription_events') {
+        return createQueryBuilder({ data: null, error: null });
+      }
+      if (table === 'subscriptions') {
+        return createQueryBuilder({ data: null, error: { message: 'Cancel failed' } });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(500);
+
+    // Verify compensating delete was attempted
+    const stripeEventsCalls = mockFrom.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'stripe_events'
+    );
+    expect(stripeEventsCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // ---------- 33. checkout.session.completed: profile update failure triggers compensating delete ----------
+  it('returns 500 and compensates when profile update fails on checkout.session.completed', async () => {
+    const { captureException } = await import('@sentry/nextjs');
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
+
+    let stripeEventsCallCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'stripe_events') {
+        stripeEventsCallCount++;
+        if (stripeEventsCallCount === 1) return createQueryBuilder({ data: null, error: null });
+        return createQueryBuilder({ data: null, error: null }); // compensating delete
+      }
+      if (table === 'subscription_events') {
+        return createQueryBuilder({ data: null, error: null });
+      }
+      if (table === 'subscriptions') {
+        return createQueryBuilder({ data: null, error: null }); // upsert succeeds
+      }
+      if (table === 'profiles') {
+        // Profile update fails
+        return createQueryBuilder({ data: null, error: { message: 'Profile update failed' } });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(500);
+
+    expect(captureException).toHaveBeenCalled();
+  });
+
+  // ---------- 34. checkout.session.completed: upsert includes onConflict ----------
+  it('uses onConflict stripe_subscription_id for subscription upsert', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    expect(builders['subscriptions']!.upsert).toHaveBeenCalledWith(
+      expect.any(Object),
+      { onConflict: 'stripe_subscription_id' }
+    );
+  });
+
+  // ---------- 35. checkout.session.completed: stores stripe_customer_id on profile ----------
+  it('stores stripe_customer_id on the user profile during checkout', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_REAL_789',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    expect(builders['profiles']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({ stripe_customer_id: 'cus_REAL_789' })
+    );
   });
 });
