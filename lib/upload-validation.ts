@@ -165,13 +165,17 @@ function validateBMCFiles(
  * Detect whether a CSV header line matches a supported oximetry format.
  * Returns the format name or 'unknown'.
  */
-type OximetryFormat = 'viatom' | 'unknown';
+type OximetryFormat = 'viatom' | 'o2ring' | 'unknown';
 
 export function detectOximetryFormat(headerLine: string): OximetryFormat {
   const lower = headerLine.toLowerCase();
   // Viatom / Checkme O2 Max: "Time, Oxygen Level, Pulse Rate, Motion, ..."
   if (lower.includes('oxygen level') && lower.includes('pulse rate')) {
     return 'viatom';
+  }
+  // Wellue O2Ring: "Time,SpO2(%),Pulse Rate(bpm),Motion,..."
+  if (lower.includes('spo2(%)') || (lower.includes('spo2') && lower.includes('pulse rate'))) {
+    return 'o2ring';
   }
   return 'unknown';
 }
