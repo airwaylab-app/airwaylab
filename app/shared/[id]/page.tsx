@@ -200,7 +200,7 @@ export default async function SharedAnalysisPage({ params }: PageProps) {
         </div>
       </div>
 
-      <Disclaimer />
+      <Disclaimer persistent />
     </div>
   );
 }

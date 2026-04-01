@@ -93,6 +93,43 @@ describe('Disclaimer localStorage safety', () => {
       configurable: true,
     });
   });
+
+  it('persistent prop renders without dismiss button and ignores localStorage', async () => {
+    // Mock localStorage with dismissed state already set
+    const original = globalThis.localStorage;
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: vi.fn().mockReturnValue('true'),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+        length: 0,
+        key: () => null,
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    vi.resetModules();
+    const { render, screen } = await import('@testing-library/react');
+    const { Disclaimer } = await import('@/components/common/disclaimer');
+
+    const { unmount } = render(<Disclaimer persistent />);
+
+    // Should still show disclaimer text despite localStorage saying dismissed
+    expect(screen.getByText(/not medical advice/i)).toBeDefined();
+
+    // Should NOT have a dismiss button
+    expect(screen.queryByLabelText(/dismiss disclaimer/i)).toBeNull();
+
+    unmount();
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: original,
+      writable: true,
+      configurable: true,
+    });
+  });
 });
 
 // ── PR1: PDF report empty-array guard ──────────────────────────
