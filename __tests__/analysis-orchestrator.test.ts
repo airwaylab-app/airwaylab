@@ -308,6 +308,74 @@ describe('mergeNights', () => {
     expect(cachedOnly).toHaveLength(1);
     expect(cachedOnly[0]!.dateStr).toBe('2026-03-10');
   });
+
+  it('handles large number of nights correctly', () => {
+    const cached: NightResult[] = [];
+    const fresh: NightResult[] = [];
+    // Generate 30 cached nights and 30 fresh nights with 15 overlapping
+    for (let i = 1; i <= 30; i++) {
+      const day = String(i).padStart(2, '0');
+      cached.push(makeNight(`2026-01-${day}`, { durationHours: 8.0 }));
+    }
+    for (let i = 16; i <= 45; i++) {
+      const month = i <= 31 ? '01' : '02';
+      const day = i <= 31 ? String(i).padStart(2, '0') : String(i - 31).padStart(2, '0');
+      fresh.push(makeNight(`2026-${month}-${day}`, { durationHours: 6.0 }));
+    }
+
+    const result = mergeNights(cached, fresh);
+    // 30 cached + 15 fresh-only = 45 total
+    expect(result).toHaveLength(45);
+    // Most recent first
+    expect(result[0]!.dateStr).toBe('2026-02-14');
+    // Cached wins on overlap (Jan 16-30)
+    const jan20 = result.find((n) => n.dateStr === '2026-01-20');
+    expect(jan20!.durationHours).toBe(8.0);
+    // Fresh-only keeps fresh values
+    const feb05 = result.find((n) => n.dateStr === '2026-02-05');
+    expect(feb05!.durationHours).toBe(6.0);
+  });
+
+  it('does not bleed fresh oximetryTrace when cached already has oximetry', () => {
+    const cachedOx = makeOximetry();
+    cachedOx.spo2Mean = 96;
+    const freshOx = makeOximetry();
+    freshOx.spo2Mean = 91;
+    const freshTrace = makeOximetryTrace();
+
+    const cached = [makeNight('2026-03-10', { oximetry: cachedOx, oximetryTrace: null })];
+    const fresh = [makeNight('2026-03-10', { oximetry: freshOx, oximetryTrace: freshTrace })];
+
+    const result = mergeNights(cached, fresh);
+    expect(result).toHaveLength(1);
+    // Cached has oximetry, so cached wins entirely -- no fresh trace bleed
+    expect(result[0]!.oximetry!.spo2Mean).toBe(96);
+    expect(result[0]!.oximetryTrace).toBeNull();
+  });
+
+  it('preserves fresh oximetryTrace along with oximetry when cached has neither', () => {
+    const freshOx = makeOximetry();
+    const freshTrace = makeOximetryTrace();
+
+    const cached = [makeNight('2026-03-10', { oximetry: null, oximetryTrace: null })];
+    const fresh = [makeNight('2026-03-10', { oximetry: freshOx, oximetryTrace: freshTrace })];
+
+    const result = mergeNights(cached, fresh);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.oximetry).toBe(freshOx);
+    expect(result[0]!.oximetryTrace).toBe(freshTrace);
+  });
+
+  it('handles duplicate dates in the same input array', () => {
+    const fresh = [
+      makeNight('2026-03-10', { durationHours: 6.0 }),
+      makeNight('2026-03-10', { durationHours: 7.0 }),
+    ];
+    const result = mergeNights([], fresh);
+    // Last fresh entry for same date wins (Map.set overwrites)
+    expect(result).toHaveLength(1);
+    expect(result[0]!.durationHours).toBe(7.0);
+  });
 });
 
 describe('detectTherapyChange', () => {
@@ -388,6 +456,70 @@ describe('detectTherapyChange', () => {
       }),
     ];
     // riseTime and trigger are not compared by detectTherapyChange
+    expect(detectTherapyChange(nights)).toBeNull();
+  });
+
+  it('returns correct date with exactly 2 nights and a change', () => {
+    const nights = [
+      makeNight('2026-03-12', { settings: makeSettings({ epap: 8 }) }),
+      makeNight('2026-03-11', { settings: makeSettings({ epap: 6 }) }),
+    ];
+    expect(detectTherapyChange(nights)).toBe('2026-03-12');
+  });
+
+  it('returns correct date with exactly 2 nights and no change', () => {
+    const nights = [
+      makeNight('2026-03-12', { settings: makeSettings({ epap: 6 }) }),
+      makeNight('2026-03-11', { settings: makeSettings({ epap: 6 }) }),
+    ];
+    expect(detectTherapyChange(nights)).toBeNull();
+  });
+
+  it('detects change only at the last pair of nights', () => {
+    const nights = [
+      makeNight('2026-03-15', { settings: makeSettings({ epap: 6 }) }),
+      makeNight('2026-03-14', { settings: makeSettings({ epap: 6 }) }),
+      makeNight('2026-03-13', { settings: makeSettings({ epap: 6 }) }),
+      makeNight('2026-03-12', { settings: makeSettings({ epap: 6 }) }),
+      makeNight('2026-03-11', { settings: makeSettings({ epap: 4 }) }),
+    ];
+    // Only change is between 03-12 (epap=6) and 03-11 (epap=4)
+    expect(detectTherapyChange(nights)).toBe('2026-03-12');
+  });
+
+  it('detects simultaneous changes in multiple fields', () => {
+    const nights = [
+      makeNight('2026-03-12', {
+        settings: makeSettings({ epap: 8, ipap: 16, papMode: 'ASV' }),
+      }),
+      makeNight('2026-03-11', {
+        settings: makeSettings({ epap: 6, ipap: 14, papMode: 'VAuto' }),
+      }),
+    ];
+    expect(detectTherapyChange(nights)).toBe('2026-03-12');
+  });
+
+  it('ignores easyBreathe and cycle changes', () => {
+    const nights = [
+      makeNight('2026-03-12', {
+        settings: makeSettings({ easyBreathe: true, cycle: 'High' }),
+      }),
+      makeNight('2026-03-11', {
+        settings: makeSettings({ easyBreathe: false, cycle: 'Medium' }),
+      }),
+    ];
+    expect(detectTherapyChange(nights)).toBeNull();
+  });
+
+  it('ignores deviceModel change alone', () => {
+    const nights = [
+      makeNight('2026-03-12', {
+        settings: makeSettings({ deviceModel: 'AirSense 11' }),
+      }),
+      makeNight('2026-03-11', {
+        settings: makeSettings({ deviceModel: 'AirCurve 10 VAuto' }),
+      }),
+    ];
     expect(detectTherapyChange(nights)).toBeNull();
   });
 });
