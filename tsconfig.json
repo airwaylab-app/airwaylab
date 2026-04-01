@@ -38,6 +38,8 @@
   ],
   "exclude": [
     "node_modules",
-    "_wip"
+    "_wip",
+    "ops",
+    ".claude/worktrees"
   ]
 }

@@ -44,6 +44,7 @@ import { safeGetItem } from '@/lib/safe-local-storage';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
+import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -470,6 +471,11 @@ function AnalyzePageInner() {
           </button>
         </div>
       )}
+
+      {/* Medical disclaimer — persistent on clinical pages (MDR compliance) */}
+      <div className="-mx-4 mb-4">
+        <Disclaimer persistent />
+      </div>
 
       {/* Header */}
       <div className="mb-4 sm:mb-6">
