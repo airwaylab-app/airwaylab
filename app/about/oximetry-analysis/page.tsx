@@ -44,16 +44,24 @@ const breadcrumbJsonLd = {
 
 const medicalPageJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebPage',
+  '@type': 'MedicalWebPage',
   name: 'Pulse Oximetry Analysis for PAP Users',
   description: 'AirwayLab analyzes pulse oximetry data across 17 metrics including ODI-3, ODI-4, desaturation time, heart rate surges, and coupled desaturation-arousal events.',
   url: 'https://airwaylab.app/about/oximetry-analysis',
   about: {
-    '@type': 'Thing',
+    '@type': 'MedicalCondition',
     name: 'Sleep-Disordered Breathing',
     alternateName: 'Nocturnal Hypoxemia',
   },
-  audience: { '@type': 'Audience', audienceType: 'General Public' },
+  medicalAudience: {
+    '@type': 'MedicalAudience',
+    audienceType: 'Patient',
+  },
+  lastReviewed: '2026-03-01',
+  mainContentOfPage: {
+    '@type': 'WebPageElement',
+    cssSelector: '.container',
+  },
   isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
 };
 
