@@ -123,7 +123,7 @@ export function getGlasgowExplanation(value: number, threshold: ThresholdDef): s
   if (light === 'warn') {
     return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Consider discussing this with your clinician.`;
   }
-  return `Your Glasgow Index of ${fmt(value)} indicates significant flow limitation. Your airway is partially narrowing during sleep frequently enough to affect breathing quality. Discuss pressure or settings adjustments with your clinician.`;
+  return `Your Glasgow Index of ${fmt(value)} indicates significant flow limitation. Your airway is partially narrowing during sleep frequently enough to affect breathing quality. Discuss these patterns with your clinician.`;
 }
 
 export function getEAIExplanation(value: number, threshold: ThresholdDef): string {
@@ -158,7 +158,7 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Your flow limitation composite is low. Your airway appears to be functioning well during therapy.';
   }
   if (light === 'warn') {
-    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss whether pressure or settings adjustments could help with your clinician.';
+    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss these findings with your clinician.';
   }
   return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Discuss with your clinician if you have concerns.';
 }

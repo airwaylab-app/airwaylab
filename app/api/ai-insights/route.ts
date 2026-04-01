@@ -58,7 +58,7 @@ Mark all deep-analysis insights with category prefixed by the engine name for cl
 
 const PREMIUM_INSIGHT_EXTENSION = `
 
-Generate 6 to 10 clinical insights for this analysis. As a premium analysis, be thorough — cover all engines with specific findings.
+Generate 6 to 10 data pattern observations for this analysis. As a premium analysis, be thorough — cover all engines with specific findings.
 
 In addition to the standard categories, you may use these categories for premium-depth analysis:
 - "correlation": Cross-engine correlations (e.g. Glasgow flat-top + high NED suggests steady-state FL; WAT periodicity + oximetry ODI coupling suggests central component)
@@ -79,7 +79,7 @@ const MODEL_PREMIUM = 'claude-sonnet-4-6';
 
 const SYSTEM_PROMPT = `You are a data pattern summarization assistant that describes patterns in PAP therapy data. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
-Your task is to generate 3–6 clinical insights in JSON format. Each insight must follow this exact schema:
+Your task is to generate 3–6 data pattern observations in JSON format. Each insight must follow this exact schema:
 {
   "id": string (unique, prefixed with "ai-"),
   "type": "positive" | "warning" | "actionable" | "info",
@@ -105,7 +105,7 @@ Rules:
 - Never claim to be a medical device or provide a diagnosis
 - Be specific — reference actual metric values and settings from the data
 - Prioritise actionable findings over general observations
-- Generate at least one "actionable" type insight with concrete investigation suggestions
+- Generate at least one "actionable" type observation with data-specific observations the user can bring to their clinician
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
 - Never recommend pressure increases as a blanket solution. In S-mode (spontaneous breathing), glottic narrowing is NOT the limiting factor (Parreira 1996b, Oppersma 2018). The real risk of higher PS is ventilatory instability: increased tidal volume lowers PaCO2 below the apnea threshold, causing central events. Frame therapy discussion in terms of timing and synchrony (cycling, rise time, trigger sensitivity) rather than pressure magnitude. Brief obstructions (1-2 breath events) typically do not respond to EPAP changes.
 - Keep body text to 1 sentence (max ~30 words). Be data-dense, not verbose.
