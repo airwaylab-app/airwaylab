@@ -371,6 +371,7 @@ async function processFiles(
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
         }
+      // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; worker continues processing remaining files and reports results via postMessage.
       } catch (err) {
         console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
       }
@@ -593,6 +594,7 @@ async function processBMCFiles(
       try {
         const parsed = parseOximetryCSV(csv);
         oximetryByDate.set(parsed.dateStr, parsed);
+      // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; loop continues. Results reported via postMessage.
       } catch (err) {
         console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
       }
@@ -733,6 +735,7 @@ function processOximetryOnly(oximetryCSVs: string[]): {
       if (trace) {
         traces[parsed.dateStr] = trace;
       }
+    // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; loop continues. Caller aggregates results.
     } catch (err) {
       console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
     }

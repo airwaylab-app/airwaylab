@@ -47,8 +47,8 @@ export async function storeOximetryTrace(
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing.
   } catch (err) {
-    // IndexedDB failures are non-fatal — expected in private browsing
     console.warn('[oximetry-trace-idb] store failed:', err);
   }
 }
@@ -78,14 +78,14 @@ export async function loadOximetryTrace(
 
         // Engine version mismatch → stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deleteOximetryTrace(dateStr).catch(() => {});
+          deleteOximetryTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deleteOximetryTrace(dateStr).catch(() => {});
+          deleteOximetryTrace(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }

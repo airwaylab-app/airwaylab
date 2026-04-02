@@ -158,12 +158,13 @@ class WaveformOrchestrator {
         this.setState({ status: 'ready', waveform: stored, error: null });
 
         // Store in IndexedDB (non-blocking, non-fatal)
+        // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is best-effort; failure is logged and non-fatal to the user flow.
         storeWaveform(stored).catch((err) => {
           console.error('[waveform] IDB store failed:', err);
         });
 
         // Clean up expired entries (non-blocking)
-        deleteExpired().catch(() => {});
+        deleteExpired().catch(() => { /* fire-and-forget IDB expiry cleanup */ });
 
         return stored;
       } else {
