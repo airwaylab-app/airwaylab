@@ -261,7 +261,6 @@ export async function POST(request: NextRequest) {
 
     // Proactive payload size monitoring -- track every request so we can alert
     // when payloads approach the limit before they start hitting 413s
-    const contentLength = request.headers.get('content-length');
     Sentry.addBreadcrumb({
       category: 'payload',
       message: `contribute-data payload size: ${contentLength ?? 'unknown'} bytes`,
