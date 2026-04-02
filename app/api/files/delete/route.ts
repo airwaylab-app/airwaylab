@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { captureApiError } from '@/lib/sentry-utils';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (storageError) {
       console.error('[files/delete] Storage deletion error:', storageError);
+      Sentry.captureException(storageError, { tags: { route: 'files/delete', action: 'storage-deletion' } });
       // Continue with metadata cleanup even if storage delete partially fails
     }
 

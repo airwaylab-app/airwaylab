@@ -51,7 +51,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.error('[feedback] 413 payload too large', { contentLength: request.headers.get('content-length') })
+      const contentLength = request.headers.get('content-length')
+      console.error('[feedback] 413 payload too large', { contentLength })
+      Sentry.captureMessage('Payload too large', {
+        level: 'warning',
+        extra: { route: 'feedback', contentLength },
+      })
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }

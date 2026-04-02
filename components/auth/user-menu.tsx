@@ -76,8 +76,9 @@ export function UserMenu() {
       } else {
         setDeleteState('error');
       }
-    } catch {
+    } catch (err) {
       console.error('[user-menu] Failed to request account deletion');
+      Sentry.captureException(err, { tags: { action: 'account-deletion-request' } });
       setDeleteState('error');
     }
   }, []);

@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
 
     // Size guard
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.error('[track-analysis] 413 payload too large', { contentLength: request.headers.get('content-length') });
+      const contentLength = request.headers.get('content-length');
+      console.error('[track-analysis] 413 payload too large', { contentLength });
+      Sentry.captureMessage('Payload too large', {
+        level: 'warning',
+        extra: { route: 'track-analysis', contentLength },
+      });
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
@@ -72,6 +77,11 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.error('[track-analysis] Supabase not configured', { nightCount });
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'track-analysis' },
+        extra: { nightCount },
+      });
     }
 
     return NextResponse.json({ ok: true });

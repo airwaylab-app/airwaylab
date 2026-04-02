@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('[email/opt-in] Profile update failed:', updateError.message);
+      Sentry.captureException(updateError, { tags: { route: 'email-opt-in', action: 'profile-update' } });
       return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
     }
 

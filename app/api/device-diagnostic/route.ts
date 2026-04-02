@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
     const { deviceModel, signalLabels, identificationText, hasStrFile } = parsed.data;
 
     const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'device-diagnostic' },
+      });
+    }
     if (supabase) {
       const { error } = await supabase.from('device_diagnostics').insert({
         device_model: deviceModel,

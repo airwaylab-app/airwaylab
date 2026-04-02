@@ -79,6 +79,10 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       console.error('[contribute-oximetry-trace] Supabase not configured');
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'contribute-oximetry-trace' },
+      });
       return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 

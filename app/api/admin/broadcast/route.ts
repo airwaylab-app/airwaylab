@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (fetchError) {
       console.error('[broadcast] Failed to fetch users:', fetchError)
+      Sentry.captureException(fetchError, { tags: { route: 'admin-broadcast', action: 'fetch-users' } })
       return NextResponse.json({ error: 'Database query failed' }, { status: 500 })
     }
 

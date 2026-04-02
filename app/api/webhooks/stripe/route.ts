@@ -41,6 +41,7 @@ async function logSubscriptionEvent(
   if (error) {
     // Non-blocking — log but don't throw
     console.error('[stripe-webhook] subscription_events insert failed:', error);
+    Sentry.captureException(error, { tags: { route: 'stripe-webhook', action: 'subscription-events-insert' } });
   }
 }
 
@@ -126,6 +127,7 @@ async function syncDiscordForUser(
   } catch (err) {
     // Non-blocking -- never fail the webhook over Discord
     console.error('[stripe-webhook] Discord sync failed:', err);
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'discord-sync' } });
   }
 }
 
@@ -170,6 +172,7 @@ async function sendWelcomeNotification(
     await sendEmail({ to: email, subject, html, metadata: { emailType: 'welcome', userId } });
   } catch (err) {
     console.error('[stripe-webhook] Welcome email failed:', err);
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'welcome-email' } });
   }
 }
 
@@ -204,6 +207,7 @@ async function sendCancellationNotification(
     await sendEmail({ to: email, subject, html, metadata: { emailType: 'cancellation', userId } });
   } catch (err) {
     console.error('[stripe-webhook] Cancellation email failed:', err);
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'cancellation-email' } });
   }
 }
 
@@ -322,7 +326,10 @@ export async function POST(request: NextRequest) {
           cancelSequence(supabase, userId, 'dormancy'),
           cancelSequence(supabase, userId, 'activation'),
           scheduleSequence(supabase, userId, 'premium_onboarding'),
-        ]).catch((err) => console.error('[stripe-webhook] Email sequence update failed:', err));
+        ]).catch((err) => {
+          console.error('[stripe-webhook] Email sequence update failed:', err);
+          Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'email-sequence-update' } });
+        });
 
         // Send welcome email (non-blocking)
         void sendWelcomeNotification(supabase, userId, tier, interval);
