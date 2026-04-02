@@ -7,6 +7,7 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
 import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
+import { isValidDeviceMode } from '@/lib/device-capabilities';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
 
@@ -285,6 +286,17 @@ export async function POST(request: NextRequest) {
       typeof clientContributionId === 'string' && clientContributionId.length > 0
         ? clientContributionId
         : crypto.randomUUID();
+
+    // Device/mode consistency check -- flag impossible combinations (parser bug indicator)
+    const deviceModel = anonymised[0]?.settings.deviceModel || 'Unknown';
+    const papMode = anonymised[0]?.settings.papMode || 'Unknown';
+    if (!isValidDeviceMode(deviceModel, papMode)) {
+      Sentry.captureMessage('Device/mode mismatch detected', {
+        level: 'warning',
+        tags: { route: 'contribute-data', action: 'device-mode-check' },
+        extra: { deviceModel, papMode, contributionId },
+      });
+    }
 
     const supabase = getSupabaseAdmin();
 
