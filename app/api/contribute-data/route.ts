@@ -259,17 +259,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Proactive payload size monitoring -- track every request so we can alert
+    // when payloads approach the limit before they start hitting 413s
+    const contentLength = request.headers.get('content-length');
+    Sentry.addBreadcrumb({
+      category: 'payload',
+      message: `contribute-data payload size: ${contentLength ?? 'unknown'} bytes`,
+      level: 'info',
+      data: { route: 'contribute-data', contentLength, limitBytes: MAX_PAYLOAD_BYTES },
+    });
+
     const raw = await request.json().catch(() => null);
     const parsed = ContributeDataSchema.safeParse(raw);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
       console.error('[contribute-data] 400 validation failed', { error: firstError });
+      Sentry.captureMessage('Contribute-data Zod validation failure', {
+        level: 'warning',
+        tags: { route: 'contribute-data' },
+        extra: { error: firstError, issueCount: parsed.error.issues.length },
+      });
       return NextResponse.json({ error: firstError }, { status: 400 });
     }
     const { nights, contributionId: clientContributionId, nightContexts } = parsed.data;
 
     if (!nights.every(isValidNight)) {
       console.error('[contribute-data] 400 invalid night data format', { nightCount: nights.length });
+      Sentry.captureMessage('Contribute-data invalid night data format', {
+        level: 'warning',
+        tags: { route: 'contribute-data' },
+        extra: { nightCount: nights.length },
+      });
       return NextResponse.json(
         { error: 'Invalid night data format.' },
         { status: 400 }
@@ -316,6 +336,11 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.error('[contribute-data] Supabase not configured', { nightCount: anonymised.length });
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'contribute-data' },
+        extra: { nightCount: anonymised.length },
+      });
     }
 
     // Discord #growth alert (fire-and-forget)

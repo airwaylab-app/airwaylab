@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from '@/lib/types';
 import { events } from '@/lib/analytics';
 
@@ -35,6 +36,7 @@ export async function storeAnalysisData(nights: NightResult[]): Promise<void> {
     events.analysisDataStored(nights.length, totalBreathCount);
   } catch (error) {
     console.error('Error storing analysis data:', error);
+    Sentry.captureException(error, { tags: { action: 'store-analysis-data' } });
   }
 }
 

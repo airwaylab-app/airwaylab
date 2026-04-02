@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
 
           if (removeError) {
             console.error(`[cron/cleanup] Storage cleanup error for ${shareId}:`, removeError.message);
+            Sentry.captureException(removeError, { tags: { route: 'cron-cleanup', action: 'storage-cleanup' }, extra: { shareId } });
           } else {
             shareFilesDeleted += paths.length;
           }

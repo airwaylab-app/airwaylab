@@ -111,6 +111,9 @@ export async function POST(request: NextRequest) {
 
     if (error || !users) {
       console.error('[email/announce] Query failed:', error?.message);
+      Sentry.captureException(error ?? new Error('Profile query returned null'), {
+        tags: { route: 'email-announce', action: 'profile-query' },
+      });
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
@@ -140,6 +143,7 @@ export async function POST(request: NextRequest) {
 
     if (backfillError) {
       console.error('[email/announce] Backfill failed:', backfillError.message);
+      Sentry.captureException(backfillError, { tags: { route: 'email-announce', action: 'backfill-opt-in' } });
       // Continue anyway — sending is more important than the flag
     } else {
       console.error(`[email/announce] Backfilled email_opt_in = true for all users`);
