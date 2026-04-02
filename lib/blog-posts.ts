@@ -16,6 +16,35 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-read-cpap-data',
+    title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
+    description:
+      'Your PAP machine records thousands of data points every night. AHI only tells part of the story. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics AHI misses.',
+    date: '2026-04-02',
+    readTime: '12 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Flow Limitation', 'OSCAR'],
+    ogDescription:
+      'Your PAP machine records thousands of data points every night. AHI only tells part of the story. Learn how to read flow limitation, breathing patterns, and the metrics your summary screen misses.',
+    faqItems: [
+      {
+        question: 'What data does my CPAP machine record?',
+        answer: 'Most modern PAP machines record detailed flow waveforms, pressure data, leak rates, respiratory events, machine settings, and session timing. This data is stored on the SD card in EDF format.',
+      },
+      {
+        question: 'Is AHI the only metric that matters?',
+        answer: 'AHI counts complete and partial airway closures per hour. It doesn\'t capture flow limitation, breathing pattern instability, or RERAs, which can also affect sleep quality. Deeper analysis of your flow data reveals these patterns.',
+      },
+      {
+        question: 'How do I access my CPAP data?',
+        answer: 'Remove the SD card from your PAP machine, insert it into a card reader, and open the data with analysis software like OSCAR (for raw waveforms) or AirwayLab (for automated scoring and pattern analysis).',
+      },
+      {
+        question: 'Does AirwayLab upload my data?',
+        answer: 'No. All analysis runs in your browser. Your data never leaves your device unless you explicitly opt in to optional server features.',
+      },
+    ],
+  },
+  {
     slug: 'why-ahi-is-lying',
     title: 'Why Your AHI Is Lying to You',
     description:
