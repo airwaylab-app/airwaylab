@@ -373,7 +373,8 @@ function AnalyzePageInner() {
           contributionId
         ).catch(() => { /* logged in contributeOximetryTraceBackground */ });
       })
-      .catch(() => {
+      .catch((err) => {
+        Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
         setAutoSubmitStatus('error');
       });
   }, []);

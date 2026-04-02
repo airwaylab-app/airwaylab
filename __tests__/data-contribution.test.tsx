@@ -215,6 +215,75 @@ describe('DataContribution', () => {
     });
   });
 
+  // Test: Manual retry success overrides stale error prop
+  it('shows success when manual retry succeeds despite autoSubmitStatus="error"', async () => {
+    storage.set('airwaylab_contribute_optin', '1');
+    storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
+
+    const nights = [makeNight('2025-01-01'), makeNight('2025-01-02')];
+
+    // Render with error state, then click retry
+    render(
+      <DataContribution
+        nights={nights}
+        autoSubmitStatus="error"
+        autoSubmitCount={1}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/auto-contribution failed/i)).toBeInTheDocument();
+    });
+
+    // Simulate clicking retry (which calls handleContribute -> sets status to 'sending' then 'success')
+    const retryBtn = screen.getByRole('button', { name: /tap to retry/i });
+    retryBtn.click();
+
+    // After retry, contributeNights resolves -> status becomes 'success'
+    // The parent prop autoSubmitStatus is still 'error' but internal status overrides it
+    await waitFor(() => {
+      expect(screen.getByText(/data contributed successfully/i)).toBeInTheDocument();
+    });
+
+    // Error message should be gone
+    expect(screen.queryByText(/auto-contribution failed/i)).not.toBeInTheDocument();
+  });
+
+  // Test: Manual retry loading overrides stale error prop
+  it('shows loading state when retry is in progress despite autoSubmitStatus="error"', async () => {
+    storage.set('airwaylab_contribute_optin', '1');
+    storage.set('airwaylab_contributed_dates', JSON.stringify(['2025-01-01']));
+
+    // Make contributeNights hang (never resolve) to keep status at 'sending'
+    const { contributeNights } = await import('@/lib/contribute');
+    (contributeNights as ReturnType<typeof vi.fn>).mockImplementation(
+      () => new Promise(() => { /* never resolves */ })
+    );
+
+    const nights = [makeNight('2025-01-01'), makeNight('2025-01-02')];
+
+    render(
+      <DataContribution
+        nights={nights}
+        autoSubmitStatus="error"
+        autoSubmitCount={1}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/auto-contribution failed/i)).toBeInTheDocument();
+    });
+
+    const retryBtn = screen.getByRole('button', { name: /tap to retry/i });
+    retryBtn.click();
+
+    // Should show retry-in-progress, not error
+    await waitFor(() => {
+      expect(screen.getByText(/retrying contribution/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/auto-contribution failed/i)).not.toBeInTheDocument();
+  });
+
   // Test: N nights pluralization
   it('pluralizes correctly for multiple new nights', async () => {
     storage.set('airwaylab_contribute_optin', '1');
