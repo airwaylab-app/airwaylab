@@ -30,15 +30,25 @@ const SENSITIVITY_MAP: Record<number, string> = {
   0: 'very low',
 };
 
+/** AirCurve 11 uses a 1-5 sensitivity scale instead of 0-4 */
+const SENSITIVITY_MAP_AC11: Record<number, string> = {
+  5: 'very high',
+  4: 'high',
+  3: 'medium',
+  2: 'low',
+  1: 'very low',
+};
+
 const MASK_MAP: Record<number, string> = {
   0: 'Pillows',
   1: 'Full Face',
   2: 'Nasal',
 };
 
-function sensitivityLabel(value: number | undefined): string {
+export function sensitivityLabel(value: number | undefined, isAirCurve11 = false): string {
   if (value === undefined || value === null) return 'N/A';
-  return SENSITIVITY_MAP[value] ?? String(value);
+  const map = isAirCurve11 ? SENSITIVITY_MAP_AC11 : SENSITIVITY_MAP;
+  return map[value] ?? String(value);
 }
 
 /** Signals already handled by typed fields — excluded from extendedSettings */
@@ -46,6 +56,7 @@ const TYPED_SIGNAL_LABELS = new Set([
   'TgtIPAP.50', 'TgtEPAP.50', 'Mode', 'Date',
   'S.RiseTime', 'S.Trigger', 'S.Cycle', 'S.EasyBreathe',
   'S.EPR.Level', 'S.EPR.EPREnable', 'S.C.Press',
+  'S.VA.Trigger', 'S.VA.Cycle', // AirCurve 11 VAuto-specific signals
   'S.RampEnable', 'S.RampTime', 'S.RampPress',
   'S.Humid.Level', 'S.HumidLevel', 'S.ClimateControl', 'S.Humid.Status',
   'S.TubeTemp', 'S.Tube.Temp', 'S.Mask', 'S.SmartStart',
@@ -65,8 +76,14 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const allLabels = signals.map((s) => s.label);
   console.error(`[settings] STR.edf signals (${allLabels.length}): ${allLabels.join(', ')}`);
 
+  const isAC11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
+
   const findSignal = (substring: string) =>
     signals.find((s) => s.label.includes(substring));
+
+  /** Find a signal by exact label match (avoids S.S.Trigger matching S.Trigger) */
+  const findSignalExact = (label: string) =>
+    signals.find((s) => s.label === label);
 
   // Core pressure signals
   const targetIPAP = findSignal('TgtIPAP.50');
@@ -74,8 +91,15 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const modeSignal = findSignal('Mode');
   const dateSignal = findSignal('Date');
   const riseTimeSignal = findSignal('S.RiseTime');
-  const triggerSignal = findSignal('S.Trigger');
-  const cycleSignal = findSignal('S.Cycle');
+  // AirCurve 11 VAuto uses S.VA.Trigger/S.VA.Cycle signals.
+  // findSignal('S.Trigger') would match S.S.Trigger (Spont mode) via substring,
+  // so prefer S.VA.* exact matches for AirCurve 11 devices, falling back to generic.
+  const triggerSignal = isAC11
+    ? (findSignalExact('S.VA.Trigger') ?? findSignal('S.Trigger'))
+    : findSignal('S.Trigger');
+  const cycleSignal = isAC11
+    ? (findSignalExact('S.VA.Cycle') ?? findSignal('S.Cycle'))
+    : findSignal('S.Cycle');
   const easyBreatheSignal = findSignal('S.EasyBreathe');
   const eprLevelSignal = findSignal('S.EPR.Level');
   const eprEnableSignal = findSignal('S.EPR.EPREnable');
@@ -182,15 +206,21 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       }
     }
 
+    // AirCurve 11 uses mode 8 for VAuto, not iVAPS
+    let papMode = MODE_MAP[modeNum] ?? `Mode ${modeNum}`;
+    if (isAC11 && modeNum === 8) {
+      papMode = 'VAuto';
+    }
+
     dailySettings[dateStr] = {
       deviceModel,
       epap,
       ipap,
       pressureSupport: Math.round((ipap - epap) * 10) / 10,
-      papMode: MODE_MAP[modeNum] ?? `Mode ${modeNum}`,
+      papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
-      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined),
-      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined),
+      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAC11),
+      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAC11),
       easyBreathe: easyBreatheOn,
       rampEnabled: rampEnableRaw !== undefined ? Math.round(rampEnableRaw) !== 0 : null,
       rampTime: rampTimeRaw !== undefined ? Math.round(rampTimeRaw) : null,
@@ -231,6 +261,14 @@ export function parseIdentification(text: string): string {
     const json = JSON.parse(text);
     if (json.ModelNumber) return json.ModelNumber;
     if (json.ProductName) return json.ProductName;
+    // Handle AirCurve 11 nested JSON: FlowGenerator.IdentificationProfiles.Product.ProductName
+    const fg = json.FlowGenerator;
+    if (fg?.IdentificationProfiles?.Product?.ProductName) {
+      return fg.IdentificationProfiles.Product.ProductName;
+    }
+    if (fg?.IdentificationProfiles?.Product?.ModelNumber) {
+      return fg.IdentificationProfiles.Product.ModelNumber;
+    }
     // Handle iVAPS nested IdentificationProfiles structure
     if (json.IdentificationProfiles) {
       const profiles = json.IdentificationProfiles;
