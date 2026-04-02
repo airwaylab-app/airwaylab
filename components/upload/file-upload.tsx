@@ -142,8 +142,10 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
               processDroppedFiles(Array.from(e.dataTransfer.files));
             }
           })
-          .catch(() => {
-            // Fallback on traversal error
+          .catch((err) => {
+            Sentry.captureException(err, {
+              tags: { checkpoint: 'directory_traversal_fallback' },
+            });
             processDroppedFiles(Array.from(e.dataTransfer.files));
           });
         return;
