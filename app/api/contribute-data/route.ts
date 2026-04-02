@@ -245,8 +245,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Size guard
-        if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.error('[contribute-data] 413 payload too large', { contentLength: request.headers.get('content-length') });
+    const contentLength = request.headers.get('content-length');
+    if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+      console.error('[contribute-data] 413 payload too large', { contentLength });
+      Sentry.captureMessage('Contribution payload too large', {
+        level: 'warning',
+        extra: { contentLength },
+      });
       return NextResponse.json(
         { error: 'Payload too large.' },
         { status: 413 }
