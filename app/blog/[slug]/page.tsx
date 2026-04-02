@@ -19,9 +19,11 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
+import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-flow-limitation-reras';
 
 const postComponents: Record<string, React.ComponentType> = {
   'how-to-read-cpap-data': HowToReadCPAPData,
+  'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
