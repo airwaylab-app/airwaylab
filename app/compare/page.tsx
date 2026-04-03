@@ -12,13 +12,13 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Compare CPAP Analysis Tools -- AirwayLab vs OSCAR, SleepHQ, myAir',
+  title: 'Compare CPAP Analysis Tools: AirwayLab vs OSCAR vs SleepHQ vs myAir',
   description:
-    'Side-by-side comparison of CPAP analysis software: AirwayLab, OSCAR, SleepHQ, and myAir. Compare privacy, features, cost, and flow limitation analysis capabilities.',
+    'Side-by-side comparison of CPAP analysis tools: AirwayLab, OSCAR, SleepHQ, and myAir. Compare flow limitation analysis, privacy, cost, and features.',
   openGraph: {
-    title: 'Compare CPAP Analysis Tools -- AirwayLab vs OSCAR, SleepHQ, myAir',
+    title: 'Compare CPAP Analysis Tools: AirwayLab vs OSCAR vs SleepHQ vs myAir',
     description:
-      'Side-by-side comparison of CPAP analysis software. Compare privacy, features, cost, and flow limitation analysis capabilities.',
+      'Side-by-side comparison of CPAP analysis tools. Compare flow limitation analysis, privacy, cost, and features.',
   },
   alternates: {
     canonical: 'https://airwaylab.app/compare',
