@@ -2,6 +2,22 @@
 
 import { Loader2 } from 'lucide-react';
 
+const STAGE_LABELS: Array<{ match: string; label: string }> = [
+  { match: 'Parsing settings', label: 'Reading device settings' },
+  { match: 'Parsing EDF files', label: 'Reading SD card data' },
+  { match: 'Analyzing night', label: 'Analyzing breath patterns' },
+  { match: 'Analyzing nights', label: 'Analyzing breath patterns' },
+  { match: 'Finalizing', label: 'Generating insights' },
+  { match: 'Detecting BMC', label: 'Detecting device type' },
+  { match: 'Parsed', label: 'Reading session data' },
+  { match: 'Running analysis', label: 'Analyzing breath patterns' },
+];
+
+function getFriendlyLabel(stage: string): string {
+  const entry = STAGE_LABELS.find((s) => stage.startsWith(s.match));
+  return entry ? entry.label : stage;
+}
+
 interface ProgressDisplayProps {
   current: number;
   total: number;
@@ -11,12 +27,13 @@ interface ProgressDisplayProps {
 
 export function ProgressDisplay({ current, total, stage, isAuthenticated }: ProgressDisplayProps) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  const friendlyLabel = getFriendlyLabel(stage);
 
   return (
     <div className="rounded-xl border border-border/50 bg-card p-6">
       <div className="mb-3 flex items-center gap-2.5">
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        <span className="text-sm font-medium">{stage}</span>
+        <span className="text-sm font-medium">{friendlyLabel}</span>
       </div>
 
       {/* Custom progress bar */}
@@ -25,7 +42,7 @@ export function ProgressDisplay({ current, total, stage, isAuthenticated }: Prog
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${stage}: ${pct}% complete`}
+        aria-label={`${friendlyLabel}: ${pct}% complete`}
         className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
       >
         <div

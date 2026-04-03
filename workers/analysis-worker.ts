@@ -213,7 +213,7 @@ async function processFiles(
 
   if (parsedEdfs.length === 0) {
     if (brpFiles.length === 0) {
-      throw new Error('No flow data files (BRP.edf) found in the uploaded data. Make sure you selected the root folder or DATALOG folder from your SD card.');
+      throw new Error('No flow data files (BRP.edf) found in the uploaded data. Make sure you selected the SD card itself, not a subfolder.');
     }
     throw new Error(`Found ${brpFiles.length} flow data file(s) but none could be parsed. The files may be corrupted or in an unsupported format.`);
   }
@@ -573,7 +573,7 @@ async function processBMCFiles(
   const { sessions, settings, device } = parseBMCFiles(files, serial);
 
   if (sessions.length === 0) {
-    throw new Error('No therapy sessions found in BMC data files. Make sure you selected the SD card root folder.');
+    throw new Error('No therapy sessions found in BMC data files. Make sure you selected the SD card itself, not a subfolder.');
   }
 
   postProgress(1, 4, `Parsed ${sessions.length} session(s) from ${device.model}...`);

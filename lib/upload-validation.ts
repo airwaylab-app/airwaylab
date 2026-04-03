@@ -75,12 +75,12 @@ function validateResMedFiles(
   });
 
   if (edfFiles.length === 0) {
-    errors.push('No EDF files found. Make sure you selected the root folder or DATALOG folder from your ResMed SD card.');
+    errors.push('No EDF files found. Make sure you selected the SD card itself, not a subfolder.');
     return { valid: false, edfCount: 0, warnings, errors, deviceType: 'resmed', deviceLabel: 'ResMed' };
   }
 
   if (!hasDatalog && edfFiles.length < 5) {
-    warnings.push('Folder structure doesn\'t match a recognised ResMed SD card layout. Expected a DATALOG folder with dated subfolders.');
+    warnings.push('Folder structure doesn\'t look like a typical ResMed SD card. Make sure you selected the SD card itself, not a subfolder.');
   }
   if (!hasSTR) {
     warnings.push('No STR.edf settings file found. Machine settings won\'t be available.');
@@ -112,7 +112,7 @@ function validateResMedFiles(
 
   const hasIdentification = files.some((f) => f.name.toUpperCase().startsWith('IDENTIFICATION'));
   if (!hasIdentification) {
-    warnings.push('No Identification file found. Select the SD card root folder (one level above DATALOG) so we can identify your device model.');
+    warnings.push('No Identification file found. Select the SD card itself (not a subfolder) so we can identify your device model.');
   }
 
   return { valid: errors.length === 0, edfCount: edfFiles.length, warnings, errors, deviceType: 'resmed', deviceLabel: 'ResMed' };
