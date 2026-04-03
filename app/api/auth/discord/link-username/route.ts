@@ -17,6 +17,9 @@ import {
   syncRole,
   getTierRoleId,
 } from '@/lib/discord';
+import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 const linkSchema = z.object({
   username: z
@@ -36,6 +39,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  // Rate limit by authenticated user
+  if (await limiter.isLimited(getUserRateLimitKey(user.id))) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } }
+    );
   }
 
   const serviceRole = getSupabaseServiceRole();

@@ -6,8 +6,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 export async function GET(_request: NextRequest) {
+  // Rate limit by IP before any other work
+  const ip = getRateLimitKey(_request);
+  if (await limiter.isLimited(ip)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } }
+    );
+  }
+
   // Verify user is authenticated
   const supabase = await getSupabaseServer();
   if (!supabase) {

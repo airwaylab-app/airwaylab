@@ -15,12 +15,24 @@ import {
   addMemberToGuild,
   getTierRoleId,
 } from '@/lib/discord';
+import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_SITE_URL
   ? `${process.env.NEXT_PUBLIC_SITE_URL}/account`
   : 'https://airwaylab.app/account';
 
 export async function GET(request: NextRequest) {
+  // Rate limit by IP before processing the callback
+  const ip = getRateLimitKey(request);
+  if (await limiter.isLimited(ip)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
