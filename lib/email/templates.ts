@@ -44,6 +44,9 @@ function layout(content: string, unsubscribeUrl: string): string {
         <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
         from these emails.
       </p>
+      <p style="font-size:10px;color:#52525b;line-height:1.5;margin:12px 0 0 0;">
+        AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
+      </p>
     </div>
   </div>
 </body>
