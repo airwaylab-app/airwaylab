@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import Link from 'next/link';
-import { Check, Heart, Crown, Sparkles, Loader2, Shield } from 'lucide-react';
+import { Check, Heart, Crown, Sparkles, Loader2, Shield, Cpu, Code2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { CommunityCounter } from '@/components/common/community-counter';
 
 const PRICES = {
   supporter: {
@@ -169,6 +170,23 @@ export default function PricingPage() {
             AirwayLab&apos;s core analysis is free and always will be. Paid tiers
             fund development and keep the project independent.
           </p>
+
+          {/* Stats bar */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <CommunityCounter className="flex items-center gap-1.5" />
+            <span className="hidden sm:inline text-border/60">|</span>
+            <span>Free for everyone</span>
+            <span className="hidden sm:inline text-border/60">|</span>
+            <span className="flex items-center gap-1.5">
+              <Cpu className="h-3.5 w-3.5 text-blue-400" />
+              All analysis in your browser
+            </span>
+            <span className="hidden sm:inline text-border/60">|</span>
+            <span className="flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5 text-emerald-400" />
+              100% open source
+            </span>
+          </div>
         </div>
 
         {/* Billing toggle */}
@@ -379,6 +397,19 @@ export default function PricingPage() {
 
         {/* Trust signals */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Cpu className="h-3.5 w-3.5 text-blue-400" />
+            100% browser-based analysis
+          </span>
+          <a
+            href="https://github.com/airwaylab-app/airwaylab"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 transition-colors hover:text-foreground"
+          >
+            <Code2 className="h-3.5 w-3.5 text-emerald-400" />
+            Open source -- audit the code
+          </a>
           <span className="flex items-center gap-1.5">
             <Shield className="h-3.5 w-3.5 text-emerald-500" />
             Cancel anytime
