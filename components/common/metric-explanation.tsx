@@ -33,6 +33,9 @@ export function MetricExplanation({ text, defaultExpanded = false }: Props) {
               {paragraph}
             </p>
           ))}
+          <p className="mt-2 text-[10px] text-muted-foreground/50">
+            Informational only, not diagnostic. Discuss with your clinician.
+          </p>
         </div>
       )}
     </div>
