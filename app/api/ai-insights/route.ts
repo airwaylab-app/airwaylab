@@ -528,7 +528,7 @@ export async function POST(request: NextRequest) {
     // User discovered AI insights -- cancel the education email about it
     if (adminClient) {
       void cancelSequence(adminClient, user.id, 'feature_education')
-        .catch(() => {}); // Non-blocking
+        .catch(() => { /* Non-blocking: email sequence cancellation is a side effect, not critical path */ });
     }
 
     // Log AI output for MDR compliance monitoring + quality evaluation (non-blocking)

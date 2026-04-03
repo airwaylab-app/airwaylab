@@ -78,11 +78,14 @@ function CopyForumButton({ nights, selectedNight }: Props) {
   );
 }
 
+// TODO: These export functions should surface errors to the user (toast or inline feedback).
+// Currently they only log to console, which is invisible to users.
 function safeExportCSV(nights: NightResult[]): void {
   try {
     const csv = exportCSV(nights);
     downloadFile(csv, 'airwaylab-results.csv', 'text/csv');
     events.export('csv');
+  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
   } catch (err) {
     console.error('CSV export failed:', err);
   }
@@ -93,6 +96,7 @@ function safeExportJSON(nights: NightResult[]): void {
     const json = exportJSON(nights);
     downloadFile(json, 'airwaylab-results.json', 'application/json');
     events.export('json');
+  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
   } catch (err) {
     console.error('JSON export failed:', err);
   }
@@ -102,6 +106,7 @@ function safeOpenPDF(nights: NightResult[]): void {
   try {
     openPDFReport(nights);
     events.export('pdf');
+  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
   } catch (err) {
     console.error('PDF report failed:', err);
   }

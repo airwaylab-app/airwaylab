@@ -68,9 +68,8 @@ export async function storeWaveform(waveform: StoredWaveform): Promise<void> {
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing and quota exceeded.
   } catch (err) {
-    // IndexedDB failures are non-fatal — fall back to in-memory.
-    // Expected in private browsing, strict privacy modes, or quota exceeded.
     console.warn('[waveform-idb] store failed:', err);
   }
 }
@@ -98,14 +97,14 @@ export async function loadWaveform(dateStr: string): Promise<StoredWaveform | nu
 
         // Engine version mismatch → stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deleteWaveform(dateStr).catch(() => {});
+          deleteWaveform(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deleteWaveform(dateStr).catch(() => {});
+          deleteWaveform(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }

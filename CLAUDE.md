@@ -167,6 +167,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 - `airwaylab_` prefix for all localStorage keys
 - Plus Jakarta Sans (body) + JetBrains Mono (code/data)
 - Error messages: never expose raw errors to users; map to user-friendly text
+- **Every catch block must have visible error handling.** Enforced by `airwaylab/no-silent-catch` ESLint rule (`scripts/eslint-rules/no-silent-catch.mjs`). Catches must include Sentry reporting, user-visible error state (setState), re-throw, or a documented `eslint-disable-next-line` with justification. Console-only catches and empty `.catch(() => {})` handlers are flagged as errors. Fire-and-forget patterns (IDB cleanup, non-critical side effects) require an inline comment explaining why silence is safe.
 - Medical compliance: all AI-generated insights must include "discuss with your clinician" language
 - Legal pages: Privacy Policy (`/privacy`), Terms of Service (`/terms`), Accessibility (`/accessibility`), Contact (`/contact`) — keep updated when data flows change
 - Every page that collects or displays health data must include the medical disclaimer component

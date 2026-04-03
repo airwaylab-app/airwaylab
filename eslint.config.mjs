@@ -1,13 +1,22 @@
 import nextConfig from 'eslint-config-next';
 import coreWebVitals from 'eslint-config-next/core-web-vitals';
 import tsConfig from 'eslint-config-next/typescript';
+import noSilentCatch from './scripts/eslint-rules/no-silent-catch.mjs';
 
 const config = [
   ...nextConfig,
   ...coreWebVitals,
   ...tsConfig,
   {
+    plugins: {
+      airwaylab: {
+        rules: {
+          'no-silent-catch': noSilentCatch,
+        },
+      },
+    },
     rules: {
+      'airwaylab/no-silent-catch': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
@@ -82,6 +91,20 @@ const config = [
           ],
         },
       ],
+    },
+  },
+  // ── Disable no-silent-catch in e2e tests (catch-and-return-false is idiomatic) ──
+  {
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'airwaylab/no-silent-catch': 'off',
+    },
+  },
+  // ── Exclude custom ESLint rule definitions from project rules ──
+  {
+    files: ['scripts/eslint-rules/**/*.mjs'],
+    rules: {
+      'airwaylab/no-silent-catch': 'off',
     },
   },
 ];
