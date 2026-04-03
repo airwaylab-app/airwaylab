@@ -1,5 +1,4 @@
 import { ResultAsync, okAsync } from 'neverthrow'
-import * as Sentry from '@sentry/nextjs'
 import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { supabaseInsert } from './supabase-helpers'
@@ -111,20 +110,6 @@ export function submitFeedback(
       message: input.message.trim(),
       email: input.email?.trim() ?? undefined,
     })])
-
-    const isFormatRequest = input.message.startsWith('Oximetry format request')
-    const alertType = isFormatRequest ? 'unsupported_format' : input.type
-    const alertLevel =
-      isFormatRequest || input.type === 'bug' ? 'warning' : 'info'
-
-    Sentry.captureMessage(`New ${alertType} submission`, {
-      level: alertLevel,
-      tags: { route: 'feedback', feedback_type: alertType },
-      extra: {
-        message: input.message.trim().slice(0, 500),
-        page: input.page,
-      },
-    })
 
     return result
   })
