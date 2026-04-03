@@ -6,6 +6,7 @@ export interface FAQItem {
 export interface BlogPost {
   slug: string;
   title: string;
+  seoTitle?: string; // keyword-optimised title tag, separate from h1 display title
   description: string;
   date: string; // ISO date
   readTime: string;
@@ -72,17 +73,18 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'ahi-normal-still-tired',
     title: 'Your AHI Is Normal But You\'re Still Exhausted — Here\'s What Your Data Is Missing',
+    seoTitle: 'Low AHI But Still Tired? What Your CPAP Data Is Missing',
     description:
       'An AHI under 5 doesn\'t mean your therapy is working. Flow limitation, RERAs, and autonomic stress can fragment your sleep without showing up in standard metrics. Here\'s how to find out.',
     date: '2026-03-17',
     readTime: '9 min read',
     tags: ['AHI', 'Fatigue', 'Flow Limitation', 'Getting Started'],
     ogDescription:
-      'Your AHI is normal but you\'re still tired? Flow limitation and RERAs may be disrupting your sleep without triggering scored events. Learn how to check your PAP data.',
+      'Low AHI but still tired after CPAP? Flow limitation and RERAs may be fragmenting your sleep without triggering scored events. Learn what your data is hiding.',
     faqItems: [
       {
-        question: 'Why am I still tired with a normal AHI on CPAP?',
-        answer: 'A normal AHI (under 5) only means your airway isn\'t fully collapsing often. Flow limitation -- partial airway narrowing that restricts airflow without triggering a scored event -- can still fragment your sleep and cause fatigue. RERAs, autonomic stress responses, and sleep architecture disruption are common causes that AHI completely misses.',
+        question: 'Why is my AHI low but I\'m still tired?',
+        answer: 'AHI only counts complete and near-complete airway collapses. It cannot detect flow limitation -- partial airway narrowing that restricts airflow without triggering a scored event. Flow limitation has been associated with sleep fragmentation, autonomic stress responses, and persistent fatigue even when AHI is under 5. Research suggests 15-30% of treated sleep apnea patients report persistent fatigue despite a normal AHI.',
       },
       {
         question: 'What is flow limitation in sleep apnea?',
@@ -97,13 +99,14 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'oscar-alternative',
     title: 'AirwayLab vs OSCAR: What Each Tool Does Best (and How to Use Both)',
+    seoTitle: 'AirwayLab vs OSCAR: How They Compare (and How to Use Both)',
     description:
       'OSCAR shows your waveforms. AirwayLab analyses them. A practical comparison of the two open-source PAP data tools, with a workflow for using both together.',
     date: '2026-03-17',
     readTime: '8 min read',
     tags: ['OSCAR', 'CPAP Software', 'Flow Limitation', 'Comparison'],
     ogDescription:
-      'Comparing OSCAR and AirwayLab for PAP therapy analysis. OSCAR excels at waveform browsing; AirwayLab adds automated flow limitation scoring, RERA detection, and AI insights.',
+      'AirwayLab and OSCAR are both free, open-source PAP tools. OSCAR shows your waveforms; AirwayLab analyses them for flow limitation. Learn how to use both.',
     faqItems: [
       {
         question: 'What is the difference between OSCAR and AirwayLab?',
@@ -213,14 +216,19 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'understanding-flow-limitation',
     title: 'Understanding Flow Limitation in Your PAP Data: The Hidden Metric Beyond AHI',
+    seoTitle: 'CPAP Flow Limitation Explained: What Your Machine Doesn\'t Tell You',
     description:
       'What is cpap flow limitation and why does your machine miss it? Learn how flow limitation differs from apneas, how the Glasgow Index scores it, and how to find it in your breathing data.',
     date: '2026-03-06',
     readTime: '9 min read',
     tags: ['Flow Limitation', 'PAP', 'AHI', 'Glasgow Index', 'NED', 'RERAs', 'Getting Started'],
     ogDescription:
-      'What is cpap flow limitation and why does your machine miss it? Learn how flow limitation differs from apneas, how the Glasgow Index scores it, and how to find it in your breathing data.',
+      'What is CPAP flow limitation and why does your machine miss it? Learn how the Glasgow Index scores it and how to analyse it in your PAP breathing data.',
     faqItems: [
+      {
+        question: 'What is flow limitation on CPAP?',
+        answer: 'Flow limitation on CPAP is partial narrowing of the upper airway during sleep that restricts airflow without causing a complete collapse. Unlike apneas and hypopneas, flow-limited breaths produce a characteristic flat-topped inspiratory waveform rather than the normal rounded shape. CPAP machines track AHI but do not score flow limitation, so it can go undetected even when your airway is significantly narrowed each night.',
+      },
       {
         question: 'What is flow limitation and why does my AHI miss it?',
         answer: 'Flow limitation is partial airway narrowing that restricts airflow during inspiration without fully blocking it. AHI only counts apneas (complete stops) and hypopneas (significant reductions with oxygen drops). Flow limitation falls below these thresholds, so AHI stays low while the underlying breathing pattern shows airway narrowing.',
@@ -238,14 +246,19 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'beyond-ahi',
     title: 'Beyond AHI: Why Your Sleep Apnea Score Might Be Misleading You',
+    seoTitle: 'Beyond AHI: Why Your Sleep Apnea Score Might Be Misleading',
     description:
       'The Apnea-Hypopnea Index has been the gold standard for decades. But a growing body of research shows it misses critical breathing events. Here\'s what you should be tracking instead.',
     date: '2026-02-20',
     readTime: '10 min read',
     tags: ['AHI', 'Sleep Metrics', 'Research'],
     ogDescription:
-      'AHI is the most commonly used metric in sleep medicine, but research shows it misses important breathing patterns. Discover what metrics actually matter.',
+      'AHI has been sleep medicine\'s gold standard for decades, but research shows it misses flow limitation, RERAs, and breathing instability. Learn what matters.',
     faqItems: [
+      {
+        question: 'What does AHI mean and why is it not enough?',
+        answer: 'AHI, or Apnea-Hypopnea Index, counts the number of complete breathing pauses (apneas) and significant partial reductions (hypopneas) per hour of sleep. It is the primary metric used to diagnose and monitor sleep apnea. However, AHI misses flow limitation (partial airway narrowing below event thresholds), RERAs (respiratory effort-related arousals), and breathing irregularity -- patterns that research shows can affect sleep quality even when AHI is normal.',
+      },
       {
         question: 'Why is AHI not a reliable measure of sleep apnea severity?',
         answer: 'AHI counts all events equally regardless of duration (a 10-second apnea equals a 60-second one), ignores oxygen desaturation severity, misses flow limitation and RERAs entirely, and does not account for event clustering. Research shows AHI alone is a poor predictor of cardiovascular outcomes and daytime symptoms.',
@@ -259,14 +272,19 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'pap-data-privacy',
     title: 'Your PAP Data Belongs to You: Privacy in Sleep Medicine',
+    seoTitle: 'CPAP Data Privacy: Who Sees Your Sleep Data and How to Protect It',
     description:
       'Every night, your PAP machine collects intimate health data. Where does it go? Who can see it? And what are your rights? A look at privacy in the age of connected sleep devices.',
     date: '2026-02-05',
     readTime: '7 min read',
     tags: ['Privacy', 'Data Rights', 'ResMed'],
     ogDescription:
-      'Your PAP device collects detailed health data every night. Learn who has access to it, what your rights are, and how to take control of your sleep data.',
+      'Who can see your CPAP data? Your insurer, equipment provider, and device maker may have access. Learn your data rights and how to keep your sleep data private.',
     faqItems: [
+      {
+        question: 'Can my insurance company see my CPAP data?',
+        answer: 'Yes, in many cases. If your PAP machine has a cellular modem (most ResMed AirSense models do), data is automatically transmitted to manufacturer cloud servers. Your DME provider and insurance company can request compliance data, which typically includes AHI, usage hours, and leak rates. Some insurance plans require minimum nightly usage and can affect coverage decisions based on this data. Your insurance contract determines exactly what data they receive.',
+      },
       {
         question: 'Who can see my CPAP data?',
         answer: 'Your PAP data may be accessible to: the device manufacturer (ResMed, Philips) via their cloud servers, your DME (equipment provider) via platforms like AirView, your insurance company for compliance monitoring, and your sleep physician. Modern PAP machines with cellular modems transmit data automatically.',

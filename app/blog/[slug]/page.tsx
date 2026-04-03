@@ -51,7 +51,7 @@ export async function generateMetadata({
   if (!post) return {};
 
   return {
-    title: `${post.title} — AirwayLab`,
+    title: post.seoTitle ?? `${post.title} — AirwayLab`,
     description: post.ogDescription,
     openGraph: {
       title: post.title,
