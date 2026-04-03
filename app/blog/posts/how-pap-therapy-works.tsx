@@ -163,7 +163,10 @@ export default function HowPAPTherapyWorksPost() {
               happens to a floppy pharynx during inspiration: more effort = more collapse = less
               airflow. In respiratory medicine, this paradox is called{' '}
               <strong className="text-foreground">Negative Effort Dependence (NED)</strong>, and
-              it&apos;s one of the hallmarks of an obstructed airway.
+              it&apos;s one of the hallmarks of an obstructed airway. (You can learn more about how this is measured in{' '}
+              <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+                Understanding Flow Limitation
+              </Link>.)
             </p>
           </div>
 
@@ -922,7 +925,9 @@ export default function HowPAPTherapyWorksPost() {
                 <strong className="text-foreground">High flow limitation despite good EPAP?</strong>{' '}
                 Your airway is splinted, but air isn&apos;t getting through efficiently. You may
                 benefit from BiPAP with pressure support to push through the restriction. This is
-                especially relevant for UARS patients who have persistent flow limitation without
+                especially relevant for{' '}
+                <Link href="/glossary#uars" className="text-primary hover:text-primary/80">UARS</Link>{' '}
+                patients who have persistent flow limitation without
                 frank apnoeas.
               </span>
             </li>
@@ -1014,6 +1019,31 @@ export default function HowPAPTherapyWorksPost() {
             educational and does not constitute medical advice. PAP therapy settings should only
             be changed under the guidance of your sleep physician or respiratory therapist. If
             you have concerns about your therapy, discuss them with your clinician.
+          </p>
+        </div>
+      </section>
+
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- how the Glasgow Index, NED, and WAT analysis detect flow limitation in your data.
+          </p>
+          <p>
+            <Link href="/blog/why-ahi-is-lying" className="text-primary hover:text-primary/80">
+              Why Your AHI Is Lying to You
+            </Link>{' '}
+            -- the evidence that AHI misses the majority of breathing problems.
+          </p>
+          <p>
+            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+              AirwayLab vs OSCAR
+            </Link>{' '}
+            -- how to use AirwayLab alongside OSCAR for a complete view of your therapy data.
           </p>
         </div>
       </section>

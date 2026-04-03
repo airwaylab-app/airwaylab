@@ -4,6 +4,7 @@ import { Disclaimer } from '@/components/common/disclaimer';
 import { EmailOptIn } from '@/components/common/email-opt-in';
 import { GitHubStars } from '@/components/common/github-stars';
 import { CommunityCounter } from '@/components/common/community-counter';
+import { blogPosts } from '@/lib/blog-posts';
 import packageJson from '../package.json';
 import {
   Activity,
@@ -28,6 +29,7 @@ import {
   Shield,
   FileText,
   TrendingUp,
+  Clock,
 } from 'lucide-react';
 
 /* ─── Mocked dashboard metrics for hero visualization ─── */
@@ -138,6 +140,17 @@ const trustItems = [
     desc: 'Algorithms ported from peer-reviewed sleep science. Glasgow Index, WAT, NED, and 17-metric oximetry framework.',
   },
 ];
+
+/* ─── Featured blog posts for homepage section ─── */
+const featuredSlugs = [
+  'understanding-flow-limitation',
+  'ahi-normal-still-tired',
+  'pap-data-privacy',
+  'oscar-alternative',
+] as const;
+const featuredPosts = featuredSlugs
+  .map((slug) => blogPosts.find((p) => p.slug === slug))
+  .filter((p): p is NonNullable<typeof p> => p != null);
 
 /* ─── Landing page FAQ (feeds JSON-LD + LLM citation) ─── */
 const landingFaqData = [
@@ -862,6 +875,66 @@ export default function Home() {
                 r/SleepApnea
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Blog / Learn Section ─── */}
+      <section className="border-t border-border/50 bg-card/20">
+        <div className="container mx-auto px-4 py-12 sm:px-6 sm:py-16">
+          <div className="mb-8 flex items-end justify-between sm:mb-10">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Learn About Your Therapy
+              </h2>
+              <p className="mt-2 max-w-lg text-sm text-muted-foreground">
+                Evidence-based articles about flow limitation, AHI, PAP data privacy, and getting more from your therapy data.
+              </p>
+            </div>
+            <Link
+              href="/blog"
+              className="hidden items-center gap-1 text-sm text-primary hover:underline sm:inline-flex"
+            >
+              All articles <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredPosts.map((post) => (
+              <Link
+                key={post.slug}
+                href={`/blog/${post.slug}`}
+                className="group flex flex-col rounded-xl border border-border/50 bg-card/50 p-5 transition-all hover:border-primary/30 hover:bg-card"
+              >
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {post.tags.slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <h3 className="mb-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+                  {post.title}
+                </h3>
+                <p className="mb-3 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                  {post.description}
+                </p>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70">
+                  <Clock className="h-3 w-3" />
+                  {post.readTime}
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-6 text-center sm:hidden">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              All articles <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </section>

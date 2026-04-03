@@ -302,6 +302,25 @@ export default function IFLSymptomSensitivityPost() {
         </div>
       </section>
 
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- what flow limitation is and how the Glasgow Index scores it.
+          </p>
+          <p>
+            <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
+              AHI Normal But Still Exhausted?
+            </Link>{' '}
+            -- why a low AHI does not mean your therapy is working.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:p-8">
         <h2 className="text-xl font-bold sm:text-2xl">Find Out If Your Flow Limitation Matters</h2>

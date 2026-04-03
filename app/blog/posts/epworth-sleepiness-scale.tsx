@@ -230,6 +230,25 @@ export default function EpworthSleepinessScalePost() {
         </div>
       </section>
 
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- how to detect flow limitation in your PAP data with the Glasgow Index and NED.
+          </p>
+          <p>
+            <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
+              AHI Normal But Still Exhausted?
+            </Link>{' '}
+            -- why a low AHI does not mean your therapy is working.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">Look Beyond the Questionnaire</h3>
