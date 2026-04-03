@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { STORAGE_BUCKET } from '@/lib/storage/types';
+
+// This endpoint derives all input from the authenticated session.
+// No request body is accepted; unexpected fields are rejected.
+const BodySchema = z.object({}).strict();
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
 
@@ -16,6 +21,14 @@ export async function POST(request: NextRequest) {
     const ip = getRateLimitKey(request);
     if (await rateLimiter.isLimited(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    const rawBody = await request.json().catch(() => null);
+    if (rawBody !== null) {
+      const parsed = BodySchema.safeParse(rawBody);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'This endpoint does not accept a request body.' }, { status: 400 });
+      }
     }
 
     const supabase = await getSupabaseServer();
