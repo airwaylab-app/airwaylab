@@ -293,7 +293,7 @@ export default function HiddenRespiratoryEventsPost() {
             <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
               AHI Normal But Still Exhausted?
             </Link>{' '}
-            -- why a low AHI does not mean your therapy is working.
+            -- why a low AHI alone may not capture the full picture.
           </p>
         </div>
       </section>
