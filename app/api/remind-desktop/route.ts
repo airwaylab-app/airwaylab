@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const { data: row, error: insertError } = await supabase
       .from('remind_requests')
-      .insert({ email })
+      .insert({ email, reminded_at: new Date().toISOString() })
       .select('unsubscribe_token')
       .single()
 

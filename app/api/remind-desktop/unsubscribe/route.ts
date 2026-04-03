@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { getSupabaseServiceRole } from '@/lib/supabase/server'
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://airwaylab.app'
+
 const UNSUBSCRIBED_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +25,7 @@ const UNSUBSCRIBED_HTML = `<!DOCTYPE html>
     <div class="brand">Airway<span>Lab</span></div>
     <h1>You've been unsubscribed</h1>
     <p>You won't receive any more desktop reminder emails from AirwayLab.</p>
-    <a href="https://airwaylab.app">Back to AirwayLab</a>
+    <a href="${BASE_URL}">Back to AirwayLab</a>
   </div>
 </body>
 </html>`
@@ -49,7 +51,7 @@ const INVALID_TOKEN_HTML = `<!DOCTYPE html>
     <div class="brand">Airway<span>Lab</span></div>
     <h1>Invalid or expired link</h1>
     <p>This unsubscribe link is invalid or has already been used.</p>
-    <a href="https://airwaylab.app">Back to AirwayLab</a>
+    <a href="${BASE_URL}">Back to AirwayLab</a>
   </div>
 </body>
 </html>`
