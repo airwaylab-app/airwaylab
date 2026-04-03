@@ -7,6 +7,9 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
+import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
+
+const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
 
 export async function POST() {
   const supabase = await getSupabaseServer();
@@ -17,6 +20,14 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  // Rate limit by authenticated user
+  if (await limiter.isLimited(getUserRateLimitKey(user.id))) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } }
+    );
   }
 
   const serviceRole = getSupabaseServiceRole();
