@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'What Is PAP Flow Limitation? | AirwayLab',
     description:
-      'Flow limitation is partial airway obstruction during PAP therapy that standard AHI may miss. Learn how to detect and address it.',
+      'Flow limitation is partial airway obstruction during PAP therapy that standard AHI may miss. Learn how AirwayLab measures and visualises it.',
   },
   keywords: [
     'PAP flow limitation', 'what is flow limitation', 'flow limitation sleep apnea',
