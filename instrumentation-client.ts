@@ -3,6 +3,9 @@ import * as Sentry from '@sentry/nextjs';
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+  // Track which deploy introduced each error
+  release: process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'dev',
+
   // Only enable in production
   enabled: process.env.NODE_ENV === 'production',
 
@@ -50,6 +53,16 @@ Sentry.init({
     // Filter out browser extension noise (password managers, ad blockers, etc.)
     const message = event.exception?.values?.[0]?.value ?? event.message ?? '';
     if (/Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/.test(message)) {
+      return null;
+    }
+
+    // Filter common browser errors that aren't actionable AirwayLab bugs
+    if (
+      message.includes('ResizeObserver loop') ||
+      message.includes('Non-Error promise rejection captured') ||
+      message.includes('Load failed') ||
+      message.includes('Failed to fetch')
+    ) {
       return null;
     }
 

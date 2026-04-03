@@ -49,7 +49,7 @@ export function welcomeEmail(
     subject: `You're in. Here's what's unlocked.`,
     html: transactionalLayout(`
       ${heading('Your analysis just got a lot smarter')}
-      ${paragraph('Every time you upload, you\'ll now get AI-powered insights that explain your metrics in plain language -- what your Glasgow Index means for your therapy, whether your flow limitation is improving, and specific settings adjustments to discuss with your clinician.')}
+      ${paragraph('Every time you upload, you\'ll now get AI-powered insights that explain your metrics in plain language -- what your Glasgow Index shows about your breathing patterns, how your flow limitation scores are trending, and patterns and correlations to review with your clinician.')}
       ${paragraph(`Here's what your ${tierLabel} subscription unlocks:`)}
       ${bulletList(TIER_BENEFITS[tier])}
       ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=transactional&utm_campaign=welcome`)}
@@ -104,7 +104,7 @@ export function discordLaunchEmail(
     subject: "You've just unlocked something new",
     html: transactionalLayout(`
       ${heading("We built something the CPAP community has been missing")}
-      ${paragraph("As a " + tierLabel + " subscriber, you now have access to the AirwayLab Discord -- a place where users share analysis insights, ask questions, and help each other get better therapy.")}
+      ${paragraph("As a " + tierLabel + " subscriber, you now have access to the AirwayLab Discord -- a place where users share analysis insights, ask questions, and learn more about their data together.")}
       ${paragraph("Here's what you get:")}
       ${bulletList(DISCORD_TIER_BENEFITS[tier])}
       ${paragraph("Click below to connect your Discord account and get instant access.")}

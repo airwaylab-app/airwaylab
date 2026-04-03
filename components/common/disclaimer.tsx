@@ -3,10 +3,18 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
-export function Disclaimer() {
-  const [state, setState] = useState<'loading' | 'visible' | 'dismissed'>('loading');
+interface DisclaimerProps {
+  /** When true, disclaimer cannot be dismissed and is always visible (for clinical pages). */
+  persistent?: boolean;
+}
+
+export function Disclaimer({ persistent = false }: DisclaimerProps) {
+  const [state, setState] = useState<'loading' | 'visible' | 'dismissed'>(
+    persistent ? 'visible' : 'loading'
+  );
 
   useEffect(() => {
+    if (persistent) return;
     try {
       // Migrate old key → new key
       const oldVal = localStorage.getItem('airwaylab-disclaimer-dismissed');
@@ -20,7 +28,7 @@ export function Disclaimer() {
       // localStorage unavailable (Safari private browsing, quota exceeded)
       setState('visible');
     }
-  }, []);
+  }, [persistent]);
 
   if (state !== 'visible') return null;
 
@@ -35,20 +43,22 @@ export function Disclaimer() {
             <a href="/terms#medical-disclaimer" className="underline underline-offset-2 hover:text-amber-200">Read our medical disclaimer</a>
           </span>
         </div>
-        <button
-          onClick={() => {
-            setState('dismissed');
-            try {
-              localStorage.setItem('airwaylab_disclaimer_dismissed', 'true');
-            } catch {
-              // Dismiss works for this session even if storage fails
-            }
-          }}
-          className="shrink-0 rounded-md p-1 text-amber-500/70 transition-colors hover:bg-amber-500/10 hover:text-amber-400"
-          aria-label="Dismiss disclaimer"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {!persistent && (
+          <button
+            onClick={() => {
+              setState('dismissed');
+              try {
+                localStorage.setItem('airwaylab_disclaimer_dismissed', 'true');
+              } catch {
+                // Dismiss works for this session even if storage fails
+              }
+            }}
+            className="shrink-0 rounded-md p-1 text-amber-500/70 transition-colors hover:bg-amber-500/10 hover:text-amber-400"
+            aria-label="Dismiss disclaimer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );

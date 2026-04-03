@@ -56,8 +56,20 @@ const medicalPageJsonLd = {
     '@type': 'MedicalCondition',
     name: 'Inspiratory Flow Limitation',
     alternateName: 'Upper Airway Resistance',
+    associatedAnatomy: {
+      '@type': 'AnatomicalStructure',
+      name: 'Upper Airway',
+    },
   },
-  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  medicalAudience: {
+    '@type': 'MedicalAudience',
+    audienceType: 'Patient',
+  },
+  lastReviewed: '2026-03-01',
+  mainContentOfPage: {
+    '@type': 'WebPageElement',
+    cssSelector: '.container',
+  },
   isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
 };
 
@@ -252,47 +264,17 @@ export default function FlowLimitationPage() {
           </div>
           <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
             <p>
-              AirwayLab can identify flow limitation patterns, but treatment
-              decisions should always involve your healthcare provider. Common
-              approaches include:
+              AirwayLab identifies flow limitation patterns in your data.
+              Your clinician can review these findings and determine whether
+              any therapy adjustments are appropriate. AirwayLab provides the
+              data to support that conversation.
             </p>
-            <ul className="flex flex-col gap-2 pl-4">
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />
-                <span>
-                  <strong className="text-foreground">Pressure adjustment</strong> &mdash;
-                  Increasing minimum EPAP/IPAP or adjusting AutoSet min/max ranges
-                  to keep the airway more open.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />
-                <span>
-                  <strong className="text-foreground">EPR / pressure relief settings</strong> &mdash;
-                  Sometimes reducing EPR (Expiratory Pressure Relief) can help
-                  maintain airway patency during the transition from expiration to
-                  inspiration.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />
-                <span>
-                  <strong className="text-foreground">Bilevel therapy (VPAP/BiPAP)</strong> &mdash;
-                  For persistent flow limitation that CPAP alone cannot resolve,
-                  bilevel pressure support provides separate inspiratory and
-                  expiratory pressures.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />
-                <span>
-                  <strong className="text-foreground">Positional therapy</strong> &mdash;
-                  Flow limitation is often worse in certain sleeping positions.
-                  AirwayLab&apos;s first-half vs second-half analysis can reveal
-                  positional patterns.
-                </span>
-              </li>
-            </ul>
+            <p>
+              Bring your AirwayLab report to your next appointment -- the
+              metrics, trends, and engine-level detail give your clinician
+              objective evidence to work with alongside your symptoms and
+              clinical history.
+            </p>
           </div>
         </div>
       </section>

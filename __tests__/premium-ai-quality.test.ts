@@ -28,6 +28,7 @@ const mockSupabaseFrom = vi.fn().mockReturnValue({
     Promise.resolve({ data: { tier: mockTier } })
   ),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+  insert: vi.fn().mockResolvedValue({ error: null }),
 });
 const mockRpc = vi.fn().mockResolvedValue({ data: null });
 
@@ -213,7 +214,7 @@ describe('Premium AI Quality — System Prompt', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
-    expect(createArgs.system).toContain('6 to 10 clinical insights');
+    expect(createArgs.system).toContain('6 to 10 data pattern observations');
     expect(createArgs.system).toContain('"correlation"');
     expect(createArgs.system).toContain('"temporal"');
   });
@@ -224,7 +225,7 @@ describe('Premium AI Quality — System Prompt', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
-    expect(createArgs.system).not.toContain('6 to 10 clinical insights');
+    expect(createArgs.system).not.toContain('6 to 10 data pattern observations');
     expect(createArgs.system).not.toContain('"correlation"');
     expect(createArgs.system).not.toContain('"temporal"');
   });
@@ -243,7 +244,7 @@ describe('Premium AI Quality — System Prompt', () => {
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
     expect(createArgs.system).toContain('RERA clustering');
-    expect(createArgs.system).toContain('6 to 10 clinical insights');
+    expect(createArgs.system).toContain('6 to 10 data pattern observations');
   });
 });
 
@@ -336,6 +337,7 @@ describe('Premium AI Quality — Response Fields', () => {
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: { tier: 'community' } }),
       maybeSingle: vi.fn().mockResolvedValue({ data: { count: 1 } }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
     });
     mockAIResponse([validInsight()]);
     const res = await callRoute(validBody());

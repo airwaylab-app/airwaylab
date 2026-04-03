@@ -303,6 +303,31 @@ export default function CNSSensitizationPost() {
         </div>
       </section>
 
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/arousals-vs-flow-limitation" className="text-primary hover:text-primary/80">
+              Arousals Don&apos;t Tell the Whole Story
+            </Link>{' '}
+            -- why arousals may not be the primary driver of symptoms.
+          </p>
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- how the Glasgow Index and NED detect flow limitation in your PAP data.
+          </p>
+          <p>
+            <Link href="/glossary" className="text-primary hover:text-primary/80">
+              AirwayLab Glossary
+            </Link>{' '}
+            -- definitions of all metrics mentioned in this article.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">See If Your Data Shows This Pattern</h3>

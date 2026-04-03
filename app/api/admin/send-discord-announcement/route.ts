@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (fetchError) {
       console.error('[discord-announce] Failed to fetch paid users:', fetchError);
+      Sentry.captureException(fetchError, { tags: { route: 'admin-discord-announcement', action: 'fetch-users' } });
       return NextResponse.json({ error: 'Database query failed' }, { status: 500 });
     }
 

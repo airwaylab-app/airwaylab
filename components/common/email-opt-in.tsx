@@ -106,7 +106,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         </p>
         <p className="mb-3 text-[11px] text-muted-foreground">
           Enter your email and we&apos;ll send a sign-in link. No password needed.
-          You&apos;ll also get occasional therapy tips by email (unsubscribe anytime).
+          You&apos;ll also get occasional tips on reading your data by email (unsubscribe anytime).
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input
@@ -136,7 +136,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
   if (variant === 'post-analysis') {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-4 sm:p-6">
-        <p className="mb-1 text-sm font-medium">Save your results and get therapy tips by email</p>
+        <p className="mb-1 text-sm font-medium">Save your results and get tips on reading your data by email</p>
         <p className="mb-3 text-xs text-muted-foreground sm:mb-4">
           Create a free account to keep your analysis history. We&apos;ll send a sign-in link to
           your email, plus occasional tips on reading your data. Unsubscribe anytime.
@@ -206,7 +206,7 @@ export function EmailOptIn({ variant, source }: EmailOptInProps) {
         </Button>
       </form>
       <p className="mt-1.5 text-[10px] text-muted-foreground/50">
-        Free account + occasional therapy tips. Unsubscribe anytime.
+        Free account + occasional tips on reading your data. Unsubscribe anytime.
       </p>
       {status === 'error' && (
         <p aria-live="polite" className="mt-1 text-[10px] text-red-400">{errorMsg || 'Something went wrong. Please try again.'}</p>

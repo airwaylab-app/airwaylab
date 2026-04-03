@@ -167,28 +167,53 @@ export function DataContribution({
       );
     }
 
-    // Auto-submit failed — fall back to manual retry
+    // Auto-submit failed -- but manual retry may have succeeded or be in-flight.
+    // Internal status overrides the stale parent prop.
     if (autoSubmitStatus === 'error') {
+      // Manual retry succeeded -- show success
+      if (status === 'success') {
+        return (
+          <div aria-live="polite" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <p className="text-sm text-muted-foreground">
+                Data contributed successfully -- thank you
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Manual retry in progress -- show loading
+      if (status === 'sending') {
+        return (
+          <div aria-live="polite" className="rounded-lg border border-primary/10 bg-primary/[0.02] px-4 py-3 animate-fade-in-up">
+            <div className="flex items-center gap-2.5">
+              <Loader2 className="h-4 w-4 animate-spin text-primary/60" />
+              <p className="text-sm text-muted-foreground">
+                Retrying contribution...
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Still in error state -- show retry button
       return (
         <div aria-live="polite" className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 animate-fade-in-up">
           <div className="flex items-center gap-2.5">
             <Heart className="h-4 w-4 text-red-400" />
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm text-muted-foreground">
-                Auto-contribution failed — this can happen due to a temporary network issue.
+                Auto-contribution failed -- this can happen due to a temporary network issue.
               </p>
               <Button
                 size="sm"
                 variant="outline"
                 className="h-6 text-xs"
                 onClick={handleContribute}
-                disabled={status === 'sending'}
               >
-                {status === 'sending' ? (
-                  <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Retrying...</>
-                ) : (
-                  'Tap to retry'
-                )}
+                Tap to retry
               </Button>
             </div>
           </div>

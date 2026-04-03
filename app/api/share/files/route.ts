@@ -215,6 +215,9 @@ export async function GET(request: NextRequest) {
 
       if (signError || !signedData) {
         console.error(`[share/files] Failed to create download URL for ${storagePath}:`, signError?.message);
+        Sentry.captureException(signError ?? new Error(`Failed to create download URL for ${storagePath}`), {
+          tags: { route: 'share-files-download', action: 'create-signed-url' },
+        });
         continue; // Skip failed files, return what we can
       }
 

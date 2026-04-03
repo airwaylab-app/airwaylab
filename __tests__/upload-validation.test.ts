@@ -202,6 +202,18 @@ describe('detectOximetryFormat', () => {
     expect(detectOximetryFormat('time,OXYGEN LEVEL,PULSE RATE')).toBe('viatom');
   });
 
+  it('detects O2Ring format with SpO2(%)', () => {
+    expect(detectOximetryFormat('Time,SpO2(%),Pulse Rate(bpm),Motion,SpO2 Reminder,PR Reminder,')).toBe('o2ring');
+  });
+
+  it('detects O2Ring format case-insensitively', () => {
+    expect(detectOximetryFormat('time,spo2(%),pulse rate(bpm),motion')).toBe('o2ring');
+  });
+
+  it('detects O2Ring format with generic SpO2 + Pulse Rate header', () => {
+    expect(detectOximetryFormat('Time,SpO2,Pulse Rate,Motion')).toBe('o2ring');
+  });
+
   it('returns unknown for unrecognized format', () => {
     expect(detectOximetryFormat('timestamp,spo2,hr,movement')).toBe('unknown');
   });
@@ -219,6 +231,13 @@ describe('checkOximetryFormats', () => {
   it('returns empty array for supported files', async () => {
     const content = 'Time, Oxygen Level, Pulse Rate, Motion\n12:00,98,65,0';
     const file = new File([content], 'oximetry.csv', { type: 'text/csv' });
+    const result = await checkOximetryFormats([file]);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns empty array for O2Ring files', async () => {
+    const content = 'Time,SpO2(%),Pulse Rate(bpm),Motion,SpO2 Reminder,PR Reminder,\n"08:48:26PM Nov 27, 2025",96,72,0,0,0,';
+    const file = new File([content], 'o2ring.csv', { type: 'text/csv' });
     const result = await checkOximetryFormats([file]);
     expect(result).toHaveLength(0);
   });

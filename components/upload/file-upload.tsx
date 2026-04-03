@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
 import { UnsupportedDeviceDialog } from './unsupported-device-dialog';
 import { getFileStructureMetadata } from '@/lib/parsers/device-detector';
 import { events } from '@/lib/analytics';
+import { supportsWebkitGetAsEntry, traverseDataTransferItems, toFilesWithPaths, isIOSDevice } from '@/lib/directory-traversal';
 import * as Sentry from '@sentry/nextjs';
 
 interface FileUploadProps {
@@ -30,6 +31,11 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
     folderStructure: string[];
     totalSizeBytes: number;
   } | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    setIsIOS(isIOSDevice());
+  }, []);
 
   const handleSDChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,14 +58,8 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
             level: 'info',
             tags: { checkpoint: 'unsupported_device', file_count: files.length },
           });
-        } else if (result.edfCount === 0) {
-          const extensions = Array.from(new Set(files.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
-          Sentry.captureMessage('Upload: all files rejected by validation', {
-            level: 'warning',
-            tags: { checkpoint: 'upload_all_rejected', file_count: files.length },
-            extra: { file_types: extensions.join(','), errors: result.errors },
-          });
         }
+        // No Sentry for rejected files — user error (wrong files selected), not a bug
       }
     },
     [onFilesSelected, oxFiles]
@@ -84,46 +84,77 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
     [onFilesSelected, sdFiles, sdValidation]
   );
 
+  const processDroppedFiles = useCallback(
+    (allFiles: File[]) => {
+      if (allFiles.length === 0) return;
+
+      const csvFiles = allFiles.filter((f) =>
+        f.name.toLowerCase().endsWith('.csv')
+      );
+      const edfFiles = allFiles.filter(
+        (f) => !f.name.toLowerCase().endsWith('.csv')
+      );
+
+      if (edfFiles.length > 0) {
+        const result = validateSDFiles(edfFiles);
+        setSdValidation(result);
+        setSdFiles(edfFiles);
+        if (result.valid) {
+          onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : oxFiles, result.deviceType, result.bmcSerial);
+        } else if (result.deviceType === 'unknown') {
+          const fileInfos = edfFiles.map((f) => ({
+            name: f.name,
+            path: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name,
+            size: f.size,
+          }));
+          setUnsupportedDevice(getFileStructureMetadata(fileInfos));
+          Sentry.captureMessage('Upload: unsupported device detected', {
+            level: 'info',
+            tags: { checkpoint: 'unsupported_device', file_count: edfFiles.length },
+          });
+        }
+      }
+      if (csvFiles.length > 0) {
+        const oxResult = validateOximetryFiles(csvFiles);
+        setOxValidation(oxResult);
+        setOxFiles(csvFiles);
+        checkOximetryFormats(csvFiles).then((unsupported) => {
+          if (unsupported.length > 0) setUnsupportedFiles(unsupported);
+        });
+      }
+    },
+    [onFilesSelected, oxFiles]
+  );
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
-      const items = Array.from(e.dataTransfer.files);
-      if (items.length > 0) {
-        const csvFiles = items.filter((f) =>
-          f.name.toLowerCase().endsWith('.csv')
-        );
-        const edfFiles = items.filter(
-          (f) => !f.name.toLowerCase().endsWith('.csv')
-        );
 
-        if (edfFiles.length > 0) {
-          const result = validateSDFiles(edfFiles);
-          setSdValidation(result);
-          setSdFiles(edfFiles);
-          if (result.valid) {
-            onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : oxFiles, result.deviceType, result.bmcSerial);
-          } else if (result.edfCount === 0) {
-            const extensions = Array.from(new Set(edfFiles.map(f => f.name.split('.').pop()?.toLowerCase() ?? 'unknown')));
-            Sentry.captureMessage('Upload: all files rejected by validation', {
-              level: 'warning',
-              tags: { checkpoint: 'upload_all_rejected', file_count: edfFiles.length },
-              extra: { file_types: extensions.join(','), errors: result.errors },
+      // Use webkitGetAsEntry for recursive directory traversal (Safari support)
+      if (supportsWebkitGetAsEntry(e.dataTransfer.items)) {
+        traverseDataTransferItems(e.dataTransfer.items)
+          .then((traversed) => {
+            if (traversed.length > 0) {
+              processDroppedFiles(toFilesWithPaths(traversed));
+            } else {
+              // Traversal returned nothing (e.g. dropped plain files, not a directory)
+              processDroppedFiles(Array.from(e.dataTransfer.files));
+            }
+          })
+          .catch((err) => {
+            Sentry.captureException(err, {
+              tags: { checkpoint: 'directory_traversal_fallback' },
             });
-          }
-        }
-        if (csvFiles.length > 0) {
-          const oxResult = validateOximetryFiles(csvFiles);
-          setOxValidation(oxResult);
-          setOxFiles(csvFiles);
-          // Check for unsupported oximetry formats
-          checkOximetryFormats(csvFiles).then((unsupported) => {
-            if (unsupported.length > 0) setUnsupportedFiles(unsupported);
+            processDroppedFiles(Array.from(e.dataTransfer.files));
           });
-        }
+        return;
       }
+
+      // Fallback: browsers without webkitGetAsEntry support
+      processDroppedFiles(Array.from(e.dataTransfer.files));
     },
-    [onFilesSelected, oxFiles]
+    [processDroppedFiles]
   );
 
   return (
@@ -194,6 +225,14 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   <span className="text-xs text-amber-400">{warn}</span>
                 </div>
               ))}
+            </div>
+          )}
+          {sdFiles.length === 0 && isIOS && (
+            <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+              <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <p className="text-xs leading-snug text-amber-400">
+                Folder selection isn&apos;t supported on iOS. Please use a desktop browser to upload your SD card data.
+              </p>
             </div>
           )}
           {sdFiles.length === 0 && (

@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.error('[subscribe] Supabase not configured', { email: cleanEmail, source: cleanSource });
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'subscribe' },
+      });
     }
 
     return NextResponse.json({ ok: true });

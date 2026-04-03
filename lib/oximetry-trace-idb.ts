@@ -8,7 +8,6 @@
 import type { OximetryTraceData } from './types';
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const STORE_NAME = 'oximetry-traces';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -48,13 +47,9 @@ export async function storeOximetryTrace(
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing.
   } catch (err) {
-    console.error('[oximetry-trace-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB oximetry trace store failed', {
-      level: 'warning',
-      tags: { module: 'oximetry-trace-idb' },
-      extra: { error: String(err) },
-    });
+    console.warn('[oximetry-trace-idb] store failed:', err);
   }
 }
 
@@ -83,14 +78,14 @@ export async function loadOximetryTrace(
 
         // Engine version mismatch → stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deleteOximetryTrace(dateStr).catch(() => {});
+          deleteOximetryTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deleteOximetryTrace(dateStr).catch(() => {});
+          deleteOximetryTrace(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }
@@ -109,10 +104,7 @@ export async function loadOximetryTrace(
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB oximetry trace load unavailable', {
-      level: 'warning',
-      tags: { module: 'oximetry-trace-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -137,10 +129,7 @@ async function deleteOximetryTrace(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB oximetry trace delete failed', {
-      level: 'warning',
-      tags: { module: 'oximetry-trace-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }
 

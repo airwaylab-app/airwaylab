@@ -117,6 +117,7 @@ async function logEmail(
     if (error) {
       console.error('[email-send] email_log insert failed:', error.message)
     }
+  // eslint-disable-next-line airwaylab/no-silent-catch -- Audit log insert is non-critical; the email was already sent. Failure logged for ops visibility.
   } catch (err) {
     console.error('[email-send] email_log insert error:', err)
   }

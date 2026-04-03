@@ -168,7 +168,7 @@ export function validateServerEnv() {
   }
 
   for (const w of warnings) {
-    console.error('[env] validation warning', { detail: w });
+    console.warn('[env] validation warning:', w);
   }
 
   if (errors.length > 0) {

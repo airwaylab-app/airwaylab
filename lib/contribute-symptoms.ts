@@ -3,6 +3,7 @@
 // Builds and submits anonymised symptom rating payloads.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
 import { computeIFLRisk } from './ifl-risk';
 
@@ -90,11 +91,12 @@ export async function contributeSymptoms(
     const res = await fetch('/api/contribute-symptoms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ consent: true, ...payload }),
       signal,
     });
     return res.ok;
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, { tags: { action: 'contribute-symptoms' } });
     return false;
   }
 }

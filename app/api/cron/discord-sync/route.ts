@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/discord-sync
  *
- * Runs every 6 hours via Vercel Cron. Finds paid users who have a
+ * Runs every 15 minutes via Vercel Cron. Finds paid users who have a
  * discord_username but no discord_id, searches the guild for each,
  * and auto-links + assigns the correct tier role.
  *
@@ -19,6 +19,7 @@ import {
   searchGuildMember,
   syncRole,
 } from '@/lib/discord';
+import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,16 +59,32 @@ export async function GET(request: NextRequest) {
     }
 
     if (!unlinked || unlinked.length === 0) {
-      return NextResponse.json({ resolved: 0, checked: 0 });
+      return NextResponse.json({ resolved: 0, checked: 0, errors: 0, not_found: 0 });
     }
 
     let resolved = 0;
+    let errors = 0;
+    let notFound = 0;
 
     for (const profile of unlinked) {
       try {
         const result = await searchGuildMember(profile.discord_username!);
 
-        if (result.status !== 'found') continue;
+        if (result.status === 'error') {
+          errors++;
+          console.error(`[discord-sync] Discord API error for ${profile.discord_username}: ${result.message}`);
+          Sentry.captureMessage(`Discord sync: API error for ${profile.discord_username}`, {
+            level: 'warning',
+            tags: { action: 'discord-sync-cron' },
+            extra: { username: profile.discord_username, error: result.message },
+          });
+          continue;
+        }
+
+        if (result.status === 'not_found') {
+          notFound++;
+          continue;
+        }
 
         // Check this Discord ID isn't already linked to another account
         const { data: existing } = await supabase
@@ -101,9 +118,9 @@ export async function GET(request: NextRequest) {
         await supabase.from('discord_pending_roles').delete().eq('user_id', profile.id);
 
         resolved++;
-        console.log(`[discord-sync] Auto-linked ${profile.discord_username} (${profile.tier})`);
+        console.info(`[discord-sync] Auto-linked ${profile.discord_username} (${profile.tier})`);
       } catch (err) {
-        // Don't let one user's failure stop the rest
+        errors++;
         console.error(`[discord-sync] Failed for ${profile.discord_username}:`, err);
         Sentry.captureException(err, {
           tags: { action: 'discord-sync-cron' },
@@ -112,7 +129,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ resolved, checked: unlinked.length });
+    // Alert ops if Discord API errors are blocking resolution
+    if (errors > 0) {
+      await sendAlert('ops', '', [{
+        title: ':warning: Discord Sync — API Errors',
+        description: `${errors} of ${unlinked.length} users could not be resolved due to Discord API errors. Paying users may be stuck without roles.`,
+        color: COLORS.amber,
+        fields: [
+          { name: 'Checked', value: String(unlinked.length), inline: true },
+          { name: 'Resolved', value: String(resolved), inline: true },
+          { name: 'Errors', value: String(errors), inline: true },
+          { name: 'Not found', value: String(notFound), inline: true },
+        ],
+        footer: { text: 'discord-sync cron' },
+        timestamp: new Date().toISOString(),
+      }]);
+    }
+
+    return NextResponse.json({ resolved, checked: unlinked.length, errors, not_found: notFound });
   } catch (err) {
     console.error('[discord-sync] Cron failed:', err);
     Sentry.captureException(err, { tags: { action: 'discord-sync-cron' } });

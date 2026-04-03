@@ -7,6 +7,31 @@
 import type { NightResult, NightNotes } from './types';
 import { loadNightNotes } from './night-notes';
 
+/**
+ * Strip bulky per-breath/trace arrays from NightResult before contribution.
+ * The server's anonymiseNight() only reads scalar summary fields, so bulk
+ * data (breaths, reras, oximetryTrace, csl.episodes) is dead weight that
+ * inflates the payload from ~2KB/night to tens of MB.
+ *
+ * IMPORTANT: Returns new objects -- does NOT mutate the originals.
+ */
+function stripBulkForContribution(nights: NightResult[]): NightResult[] {
+  return nights.map((n) => ({
+    ...n,
+    ned: {
+      ...n.ned,
+      breaths: [],
+      reras: [],
+    },
+    oximetryTrace: null,
+    // CSL episodes array can grow large for severe Cheyne-Stokes patients.
+    // Server only reads scalar csl fields (totalCSRSeconds, csrPercentage, episodeCount).
+    csl: n.csl
+      ? { ...n.csl, episodes: [] }
+      : null,
+  }));
+}
+
 const CHUNK_SIZE = 1000;
 const RATE_LIMIT_MAX_RETRIES = 3;
 const RATE_LIMIT_BASE_DELAY_MS = 5000;
@@ -79,8 +104,12 @@ export async function contributeNights(
 
   let totalSent = 0;
 
-  for (let i = 0; i < nights.length; i += CHUNK_SIZE) {
-    const chunk = nights.slice(i, i + CHUNK_SIZE);
+  // Strip bulk data (breaths, reras, oximetryTrace, csl.episodes) before sending.
+  // The server's anonymiseNight() only reads scalar summary fields.
+  const strippedNights = stripBulkForContribution(nights);
+
+  for (let i = 0; i < strippedNights.length; i += CHUNK_SIZE) {
+    const chunk = strippedNights.slice(i, i + CHUNK_SIZE);
     const contextChunk = allNightContexts.slice(i, i + CHUNK_SIZE);
     // Only include nightContexts if at least one has data
     const hasAnyContext = contextChunk.some((c) => c !== null);

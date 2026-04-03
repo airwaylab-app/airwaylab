@@ -17,6 +17,9 @@ const SubmitErrorSchema = z.object({
     z.string().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/).nullable()
   ),
   userAgent: z.string().max(500).optional(),
+  // Consent awareness: device error data is less sensitive than health metrics,
+  // so consent is optional but logged when present for audit trail
+  consentAcknowledged: z.boolean().optional(),
 });
 
 const MAX_PAYLOAD_BYTES = 256_000; // 256 KB
@@ -44,7 +47,12 @@ export async function POST(request: NextRequest) {
     }
 
         if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
-      console.error('[submit-error-data] 413 payload too large', { contentLength: request.headers.get('content-length') });
+      const contentLength = request.headers.get('content-length');
+      console.error('[submit-error-data] 413 payload too large', { contentLength });
+      Sentry.captureMessage('Payload too large', {
+        level: 'warning',
+        extra: { route: 'submit-error-data', contentLength },
+      });
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
 
@@ -55,7 +63,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    const { fileNames, errorMessage, email, userAgent } = parsed.data;
+    const { fileNames, errorMessage, email, userAgent, consentAcknowledged } = parsed.data;
+
+    // Log consent status for audit trail (device error data is less sensitive,
+    // so we accept submissions without consent but track it)
+    if (!consentAcknowledged) {
+      console.error('[submit-error-data] Submission without explicit consent acknowledgement', { ip });
+    }
 
     // Sanitize file names -- only keep name and extension, limit count
     const sanitizedFiles = fileNames

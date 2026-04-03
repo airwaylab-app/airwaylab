@@ -5,7 +5,6 @@
 
 import type { StoredWaveform } from './waveform-types';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const DB_NAME = 'airwaylab';
 const STORE_NAME = 'waveforms';
@@ -69,14 +68,9 @@ export async function storeWaveform(waveform: StoredWaveform): Promise<void> {
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing and quota exceeded.
   } catch (err) {
-    // IndexedDB failures are non-fatal — fall back to in-memory
-    console.error('[waveform-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB store failed', {
-      level: 'warning',
-      tags: { module: 'waveform-idb' },
-      extra: { error: String(err) },
-    });
+    console.warn('[waveform-idb] store failed:', err);
   }
 }
 
@@ -103,14 +97,14 @@ export async function loadWaveform(dateStr: string): Promise<StoredWaveform | nu
 
         // Engine version mismatch → stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deleteWaveform(dateStr).catch(() => {});
+          deleteWaveform(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deleteWaveform(dateStr).catch(() => {});
+          deleteWaveform(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }
@@ -124,11 +118,7 @@ export async function loadWaveform(dateStr: string): Promise<StoredWaveform | nu
       };
     });
   } catch {
-    // IndexedDB unavailable (private browsing, etc.)
-    Sentry.captureMessage('IndexedDB load unavailable', {
-      level: 'warning',
-      tags: { module: 'waveform-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -153,11 +143,7 @@ async function deleteWaveform(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    // Non-fatal
-    Sentry.captureMessage('IndexedDB delete failed', {
-      level: 'warning',
-      tags: { module: 'waveform-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }
 
@@ -207,11 +193,7 @@ export async function deleteExpired(): Promise<void> {
     await deleteExpiredFromStore(BREATH_DATA_STORE_NAME);
     await deleteExpiredFromStore(PLD_TRACES_STORE_NAME);
   } catch {
-    // Non-fatal
-    Sentry.captureMessage('IndexedDB cleanup failed', {
-      level: 'warning',
-      tags: { module: 'waveform-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }
 

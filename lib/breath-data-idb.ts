@@ -8,7 +8,6 @@
 import type { Breath } from './types';
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const STORE_NAME = 'breath-data';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -89,13 +88,9 @@ export async function storeBreathData(
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing.
   } catch (err) {
-    console.error('[breath-data-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB breath data store failed', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-      extra: { error: String(err) },
-    });
+    console.warn('[breath-data-idb] store failed:', err);
   }
 }
 
@@ -124,14 +119,14 @@ export async function loadBreathData(
 
         // Engine version mismatch -> stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deleteBreathData(dateStr).catch(() => {});
+          deleteBreathData(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deleteBreathData(dateStr).catch(() => {});
+          deleteBreathData(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }
@@ -145,10 +140,7 @@ export async function loadBreathData(
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB breath data load unavailable', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -173,9 +165,6 @@ async function deleteBreathData(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB breath data delete failed', {
-      level: 'warning',
-      tags: { module: 'breath-data-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }

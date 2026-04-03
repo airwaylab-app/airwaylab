@@ -70,7 +70,7 @@ export const DEVICE_GUIDES: DeviceGuide[] = [
       },
       {
         question: 'Glasgow Index seems very high (above 4)',
-        answer: 'A Glasgow Index above 3-4 suggests significant flow limitation. This could indicate your pressure settings need adjustment. Compare multiple nights before drawing conclusions, and discuss with your sleep clinician.',
+        answer: 'A Glasgow Index above 3-4 suggests significant flow limitation. Compare multiple nights to identify patterns before drawing conclusions, and discuss with your sleep clinician.',
       },
     ],
     metaDescription:

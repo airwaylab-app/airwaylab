@@ -58,6 +58,7 @@ export function ClinicianQuestionsPanel({
         document.execCommand('copy');
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+      // eslint-disable-next-line airwaylab/no-silent-catch -- Last-resort clipboard fallback; no further action possible if execCommand also fails.
       } catch {
         console.error('[AirwayLab] Clipboard API unavailable');
       }

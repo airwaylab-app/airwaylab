@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
@@ -21,9 +22,16 @@ const presignSchema = z.object({
   mimeType: z.string().max(100).nullable().optional(),
 });
 
+const MAX_PAYLOAD_BYTES = 1_000_000; // 1 MB
+
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  if (exceedsPayloadLimit(request, MAX_PAYLOAD_BYTES)) {
+    console.error('[files/presign] 413 payload too large', { contentLength: request.headers.get('content-length') });
+    return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
   }
 
   const supabase = await getSupabaseServer();

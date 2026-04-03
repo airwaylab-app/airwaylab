@@ -85,35 +85,23 @@ describe('safeLocalStorage utility', () => {
   });
 });
 
-// ── Item 2: IndexedDB Sentry captures ───────────────────────────
+// ── Item 2: IndexedDB graceful degradation ───────────────────────────
+// IndexedDB failures are expected in private browsing / strict privacy modes.
+// Errors are logged to console.warn (Vercel logs) — NOT to Sentry, to avoid
+// burning error budget on expected browser behavior.
 
-describe('IndexedDB Sentry captures in waveform-idb.ts', () => {
-  it('all catch blocks call Sentry.captureMessage', () => {
+describe('IndexedDB error handling in waveform-idb.ts', () => {
+  it('catch blocks handle errors gracefully without Sentry', () => {
     const content = fs.readFileSync(
       path.resolve(process.cwd(), 'lib/waveform-idb.ts'),
       'utf-8'
     );
 
-    // Should import Sentry
-    expect(content).toContain("import * as Sentry from '@sentry/nextjs'");
+    // Should NOT import Sentry (graceful degradation, not actionable errors)
+    expect(content).not.toContain("import * as Sentry from '@sentry/nextjs'");
 
-    // Should have captureMessage calls for each operation
-    expect(content).toContain('IndexedDB store failed');
-    expect(content).toContain('IndexedDB load unavailable');
-    expect(content).toContain('IndexedDB delete failed');
-    expect(content).toContain('IndexedDB cleanup failed');
-  });
-
-  it('Sentry messages include module: waveform-idb tag', () => {
-    const content = fs.readFileSync(
-      path.resolve(process.cwd(), 'lib/waveform-idb.ts'),
-      'utf-8'
-    );
-
-    // Count occurrences of the tag pattern
-    const tagMatches = content.match(/module:\s*'waveform-idb'/g);
-    expect(tagMatches).not.toBeNull();
-    expect(tagMatches!.length).toBeGreaterThanOrEqual(4);
+    // Should have catch blocks (non-fatal handling)
+    expect(content).toContain('catch');
   });
 });
 

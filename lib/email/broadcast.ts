@@ -62,15 +62,15 @@ function march2026Update(unsubscribeUrl: string, subjectVariant: BroadcastSubjec
       ${paragraph('Using a different device? Reply to this email or upload your data and we\'ll capture the file structure automatically. We want to make this accessible for every PAP user, not just ResMed and BMC. More devices are on the roadmap.')}
 
       ${subheading('New: IFL Symptom Risk')}
-      ${paragraph('A single 0-100% score that answers: <strong>how much is flow limitation actually driving your symptoms?</strong> It combines FL Score, NED, Flatness Index, and Glasgow into one number. Based on research showing flow limitation causes fatigue independently of arousals. If you\'ve had a "normal" AHI for years and still feel terrible, this is the metric to watch.')}
+      ${paragraph('A combined score that shows the relative level of flow limitation across your four engine results in a single number. It combines FL Score, NED, Flatness Index, and Glasgow into one number. If you\'ve been wanting a single overview of your flow limitation patterns, this is it.')}
 
       ${subheading('Community benchmarks')}
-      ${paragraph('After you upload, you\'ll see where your IFL Risk, Glasgow, FL Score, and RERA Index fall compared to other AirwayLab users. Anonymised, no data contribution required. It\'s one thing to see a number. It\'s another to know what that number means relative to everyone else.')}
+      ${paragraph('After you upload, you\'ll see where your IFL Risk, Glasgow, FL Score, and RERA Index fall compared to other AirwayLab users. Anonymised, no data contribution required. It\'s one thing to see a number. It\'s another to see how it compares to other users -- for context, not clinical reference ranges.')}
 
       ${ctaButton('Upload Your Latest Data', ANALYZE_URL)}
 
       ${subheading('Where this is going')}
-      ${paragraph('Every night of data that users contribute is building something I\'ve wanted to exist for a long time: <strong>therapy algorithms that learn and adapt to individual breathing patterns.</strong> Not the static pressure responses in today\'s machines, but a system that improves based on what thousands of real nights reveal.')}
+      ${paragraph('Every night of data that users contribute is building something I\'ve wanted to exist for a long time: <strong>analysis tools that learn from population-level patterns -- helping researchers and clinicians understand what healthy breathing looks like across thousands of real nights.</strong> The more data we have, the better the analysis gets for everyone.')}
       ${paragraph('The analysis tool you use today is the data foundation for that. More devices, more users, more nights contributed means better algorithms for everyone. That\'s the long game.')}
 
       ${paragraph('If the free analysis has been useful, <a href="' + PRICING_URL + '" style="color:#5eead4;text-decoration:underline;">Supporter and Champion tiers</a> fund this work. You also get AI insights that explain your specific patterns, cloud backup, PDF clinician reports, and a voice in what gets built next.')}
@@ -84,7 +84,7 @@ function march2026Update(unsubscribeUrl: string, subjectVariant: BroadcastSubjec
 
       ${smallText('P.S. New to AirwayLab or tried it once and got lost? There\'s now a <a href="' + GETTING_STARTED_URL + '" style="color:#5eead4;text-decoration:underline;">Getting Started guide</a> and a guided walkthrough that walks you through every tab. And you can see everything we\'ve shipped on the <a href="' + CHANGELOG_URL + '" style="color:#5eead4;text-decoration:underline;">changelog</a>.')}
 
-      ${smallText('AirwayLab is not a medical device. Always discuss therapy changes with your clinician.')}
+      ${smallText('AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.')}
     `, unsubscribeUrl),
   }
 }

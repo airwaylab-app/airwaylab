@@ -298,3 +298,156 @@ describe('enriched contribution payload', () => {
     expect(body.nights[0].settingsMetrics).toBeNull();
   });
 });
+
+// ── Bulk data stripping tests ──────────────────────────────
+
+describe('contribution strips bulk data before sending', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.clearAllMocks();
+  });
+
+  function makeNightWithBulkData(dateStr: string): NightResult {
+    const base = makeNight(dateStr);
+    // Simulate real-world bulk data: breaths with Float32Array, reras, oximetryTrace, csl episodes
+    const breaths = Array.from({ length: 6000 }, (_, i) => ({
+      inspStart: i * 4,
+      inspEnd: i * 4 + 1.5,
+      expStart: i * 4 + 1.5,
+      expEnd: i * 4 + 4,
+      inspFlow: new Float32Array(100).fill(0.5),
+      qPeak: 30,
+      qMid: 20,
+      ti: 1.5,
+      tPeakTi: 0.35,
+      ned: 15,
+      fi: 0.7,
+      isMShape: false,
+      isEarlyPeakFL: false,
+    }));
+    const reras = Array.from({ length: 20 }, (_, i) => ({
+      startBreathIdx: i * 10,
+      endBreathIdx: i * 10 + 5,
+      breathCount: 5,
+      nedSlope: 3.5,
+      hasRecovery: true,
+      hasSigh: false,
+      maxNED: 45,
+      startSec: i * 40,
+      durationSec: 20,
+    }));
+    return {
+      ...base,
+      ned: {
+        ...base.ned,
+        breaths,
+        reras,
+      },
+      oximetryTrace: {
+        trace: Array.from({ length: 10000 }, (_, i) => ({ t: i, spo2: 95, hr: 70 })),
+        durationSeconds: 25200,
+        odi3Events: [100, 200],
+        odi4Events: [300],
+      },
+      csl: {
+        episodes: Array.from({ length: 50 }, (_, i) => ({
+          startSec: i * 600,
+          endSec: i * 600 + 120,
+          durationSec: 120,
+        })),
+        totalCSRSeconds: 6000,
+        csrPercentage: 24,
+        episodeCount: 50,
+      },
+    } as unknown as NightResult;
+  }
+
+  it('strips ned.breaths to empty array in the payload', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    await contributeNights(nights);
+
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0].ned.breaths).toEqual([]);
+  });
+
+  it('strips ned.reras to empty array in the payload', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    await contributeNights(nights);
+
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0].ned.reras).toEqual([]);
+  });
+
+  it('strips oximetryTrace to null in the payload', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    await contributeNights(nights);
+
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0].oximetryTrace).toBeNull();
+  });
+
+  it('strips csl.episodes but preserves scalar CSL fields', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    await contributeNights(nights);
+
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0].csl.episodes).toEqual([]);
+    expect(body.nights[0].csl.totalCSRSeconds).toBe(6000);
+    expect(body.nights[0].csl.csrPercentage).toBe(24);
+    expect(body.nights[0].csl.episodeCount).toBe(50);
+  });
+
+  it('preserves scalar NED summary fields in the payload', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    await contributeNights(nights);
+
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.nights[0].ned.nedMean).toBe(25);
+    expect(body.nights[0].ned.breathCount).toBe(500);
+    expect(body.nights[0].ned.estimatedArousalIndex).toBe(12);
+    expect(body.nights[0].ned.reraIndex).toBe(5);
+  });
+
+  it('does NOT mutate original NightResult objects', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+    const originalBreathCount = (nights[0]!.ned.breaths as unknown[]).length;
+    const originalReraCount = (nights[0]!.ned.reras as unknown[]).length;
+    const originalTraceLength = (nights[0]!.oximetryTrace as { trace: unknown[] }).trace.length;
+    const originalEpisodeCount = nights[0]!.csl!.episodes.length;
+
+    await contributeNights(nights);
+
+    // Originals must still have their full bulk data intact
+    expect((nights[0]!.ned.breaths as unknown[]).length).toBe(originalBreathCount);
+    expect(originalBreathCount).toBe(6000);
+    expect((nights[0]!.ned.reras as unknown[]).length).toBe(originalReraCount);
+    expect(originalReraCount).toBe(20);
+    expect((nights[0]!.oximetryTrace as { trace: unknown[] }).trace.length).toBe(originalTraceLength);
+    expect(originalTraceLength).toBe(10000);
+    expect(nights[0]!.csl!.episodes.length).toBe(originalEpisodeCount);
+    expect(originalEpisodeCount).toBe(50);
+  });
+
+  it('produces a significantly smaller payload than raw data', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const nights = [makeNightWithBulkData('2025-01-01')];
+
+    // Measure raw size (what was sent before this fix)
+    const rawSize = JSON.stringify(nights).length;
+
+    await contributeNights(nights);
+
+    const sentBody = (fetchMock.mock.calls[0]![1] as RequestInit).body as string;
+    const sentSize = sentBody.length;
+
+    // The stripped payload should be dramatically smaller (raw with 6000 breaths
+    // each containing Float32Array is tens of MB, stripped is ~2-3 KB)
+    expect(sentSize).toBeLessThan(rawSize * 0.1);
+  });
+});

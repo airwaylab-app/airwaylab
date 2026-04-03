@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
 - **Persistent rate limiting** — Rate limiting now persists across Vercel cold starts via Upstash Redis. Falls back to in-memory when not configured. Fails open on Redis errors with Sentry logging. (persistent-rate-limiting)
+
+## [1.2.1] - 2026-04-03
+
+### Fixed
+
+- **MDR insight string violations** -- Removed 22+ MDR MUST violations from insight text strings (PR #467)
+- **MDR AI system prompt violations** -- Removed 2 MDR violations from AI system prompt (PR #468)
+- **MDR email template violations** -- Resolved HIGH severity MDR violations in email templates (PR #457)
+
 ## [1.2.0] - 2026-03-12
 
 ### Added

@@ -8,7 +8,6 @@
 
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
-import * as Sentry from '@sentry/nextjs';
 
 const STORE_NAME = 'pld-traces';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -105,13 +104,9 @@ export async function storePLDTrace(
         reject(tx.error);
       };
     });
+  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing.
   } catch (err) {
-    console.error('[pld-trace-idb] store failed:', err);
-    Sentry.captureMessage('IndexedDB PLD trace store failed', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-      extra: { error: String(err) },
-    });
+    console.warn('[pld-trace-idb] store failed:', err);
   }
 }
 
@@ -140,14 +135,14 @@ export async function loadPLDTrace(
 
         // Engine version mismatch -> stale data
         if (result.engineVersion !== ENGINE_VERSION) {
-          deletePLDTrace(dateStr).catch(() => {});
+          deletePLDTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
           resolve(null);
           return;
         }
 
         // TTL check
         if (Date.now() - result.storedAt > TTL_MS) {
-          deletePLDTrace(dateStr).catch(() => {});
+          deletePLDTrace(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
           resolve(null);
           return;
         }
@@ -161,10 +156,7 @@ export async function loadPLDTrace(
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB PLD trace load unavailable', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-    });
+    // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
   }
 }
@@ -189,9 +181,6 @@ async function deletePLDTrace(dateStr: string): Promise<void> {
       };
     });
   } catch {
-    Sentry.captureMessage('IndexedDB PLD trace delete failed', {
-      level: 'warning',
-      tags: { module: 'pld-trace-idb' },
-    });
+    // Non-fatal — best-effort cleanup
   }
 }

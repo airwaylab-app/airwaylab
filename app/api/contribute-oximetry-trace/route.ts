@@ -22,6 +22,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Consent verification (defense-in-depth — client checks consent before calling,
+    // but server must verify the request explicitly confirms consent)
+    if (request.headers.get('x-consent-confirmed') !== 'true') {
+      console.error('[contribute-oximetry-trace] 403 missing consent confirmation');
+      return NextResponse.json(
+        { error: 'Data contribution requires explicit consent.' },
+        { status: 403 }
+      );
+    }
+
     if (exceedsPayloadLimit(request, MAX_BODY_BYTES)) {
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
@@ -69,6 +79,10 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       console.error('[contribute-oximetry-trace] Supabase not configured');
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'contribute-oximetry-trace' },
+      });
       return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 

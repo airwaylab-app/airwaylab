@@ -53,7 +53,15 @@ const medicalPageJsonLd = {
     name: 'Sleep-Disordered Breathing',
     alternateName: 'Nocturnal Hypoxemia',
   },
-  medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+  medicalAudience: {
+    '@type': 'MedicalAudience',
+    audienceType: 'Patient',
+  },
+  lastReviewed: '2026-03-01',
+  mainContentOfPage: {
+    '@type': 'WebPageElement',
+    cssSelector: '.container',
+  },
   isPartOf: { '@type': 'WebSite', name: 'AirwayLab', url: 'https://airwaylab.app' },
 };
 

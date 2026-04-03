@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!stripeSecretKey) {
+    Sentry.captureMessage('Stripe not configured', {
+      level: 'error',
+      tags: { route: 'create-checkout-session' },
+    });
     return NextResponse.json({ error: 'Payments not configured' }, { status: 503 });
   }
 

@@ -16,6 +16,35 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-read-cpap-data',
+    title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
+    description:
+      'Your PAP machine records thousands of data points every night. AHI only shows part of the picture. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics that matter.',
+    date: '2026-04-03',
+    readTime: '12 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Flow Limitation', 'OSCAR'],
+    ogDescription:
+      'Your PAP machine records thousands of data points every night, but AHI only tells part of the story. Learn how to read your CPAP data and understand the metrics beyond AHI.',
+    faqItems: [
+      {
+        question: 'What data does my CPAP machine record?',
+        answer: 'Most modern PAP machines record detailed flow waveforms, pressure data, leak rates, respiratory events, machine settings, and session timing. This data is stored on the SD card in EDF format.',
+      },
+      {
+        question: 'Is AHI the only metric that matters?',
+        answer: 'AHI counts complete and partial airway closures per hour. It doesn\'t capture flow limitation, breathing pattern instability, or RERAs, which can also affect sleep quality. Deeper analysis of your flow data reveals these patterns.',
+      },
+      {
+        question: 'How do I access my CPAP data?',
+        answer: 'Remove the SD card from your PAP machine, insert it into a card reader, and open the data with analysis software like OSCAR (for raw waveforms) or AirwayLab (for automated scoring and pattern analysis).',
+      },
+      {
+        question: 'Does AirwayLab upload my data?',
+        answer: 'No. All analysis runs in your browser. Your data never leaves your device unless you explicitly opt in to optional server features.',
+      },
+    ],
+  },
+  {
     slug: 'why-ahi-is-lying',
     title: 'Why Your AHI Is Lying to You',
     description:
@@ -183,26 +212,26 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: 'understanding-flow-limitation',
-    title: 'Understanding Flow Limitation: What Your PAP Machine Doesn\'t Tell You',
+    title: 'Understanding Flow Limitation in Your PAP Data: The Hidden Metric Beyond AHI',
     description:
-      'Flow limitation is the subtle breathing restriction your AHI score completely ignores. Learn what it is, why it matters, and how to detect it in your own PAP data.',
+      'What is cpap flow limitation and why does your machine miss it? Learn how flow limitation differs from apneas, how the Glasgow Index scores it, and how to find it in your breathing data.',
     date: '2026-03-06',
-    readTime: '8 min read',
-    tags: ['Flow Limitation', 'PAP', 'Sleep Apnea'],
+    readTime: '9 min read',
+    tags: ['Flow Limitation', 'PAP', 'AHI', 'Glasgow Index', 'NED', 'RERAs', 'Getting Started'],
     ogDescription:
-      'Your AHI might be low, but flow limitation could still be disrupting your sleep. Learn what flow limitation is and why it matters for PAP therapy.',
+      'What is cpap flow limitation and why does your machine miss it? Learn how flow limitation differs from apneas, how the Glasgow Index scores it, and how to find it in your breathing data.',
     faqItems: [
       {
         question: 'What is flow limitation and why does my AHI miss it?',
-        answer: 'Flow limitation is partial airway narrowing that restricts airflow during inspiration without causing a complete collapse. AHI only counts apneas (complete stops) and hypopneas (significant reductions with oxygen drops). Flow limitation falls below these thresholds, so AHI stays low while your airway is still significantly narrowed.',
+        answer: 'Flow limitation is partial airway narrowing that restricts airflow during inspiration without fully blocking it. AHI only counts apneas (complete stops) and hypopneas (significant reductions with oxygen drops). Flow limitation falls below these thresholds, so AHI stays low while the underlying breathing pattern shows airway narrowing.',
       },
       {
-        question: 'What causes flow limitation on PAP therapy?',
-        answer: 'Common causes include: pressure set too low (the most common cause), EPR (Expiratory Pressure Relief) set too high, sleeping on your back (supine position increases gravitational airway collapse), and significant mask leak that reduces effective pressure delivery.',
+        question: 'How is flow limitation detected in PAP data?',
+        answer: 'Flow limitation is detected through breath shape analysis of the waveform data recorded on your PAP machine SD card. Key scoring methods include the Glasgow Index (9-component breath shape score, range 0-9), NED (Negative Effort Dependence, measuring whether increased effort decreases airflow), and estimated RERA detection. These require dedicated analysis software that reads the raw EDF files.',
       },
       {
-        question: 'How do I detect flow limitation in my CPAP data?',
-        answer: 'Your ResMed SD card contains detailed flow waveforms that can be analysed for flow limitation patterns. Key metrics include the Glasgow Index (breath shape score), NED (Negative Effort Dependence), Flatness Index, and estimated RERA count. Tools like AirwayLab compute these automatically from your SD card data.',
+        question: 'What is the Glasgow Index?',
+        answer: 'The Glasgow Index is a breath shape scoring system developed at the University of Glasgow. It examines nine components of each inspiratory waveform -- including flatness, skewness, multi-peak patterns, and amplitude variability -- scoring each from 0 to 1 for an overall range of 0 to 9. Higher scores indicate more waveform distortion consistent with flow limitation.',
       },
     ],
   },

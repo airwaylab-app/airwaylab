@@ -121,9 +121,10 @@ export function groupByNight(edfs: EDFFile[]): FileGroup[] {
 }
 
 /**
- * Filter uploaded files to only valid BRP.edf files (> 50KB).
+ * Filter uploaded files to valid flow data files (BRP.edf or FLW.edf, > 50KB).
+ * BRP = AirSense 10/11; FLW = AirCurve 10/11 (bilevel devices).
  * Previous 2MB threshold was too aggressive — short sessions (common with
- * UARS patients who wake frequently) can produce legitimately small BRP files.
+ * UARS patients who wake frequently) can produce legitimately small files.
  */
 export function filterBRPFiles(
   files: { name: string; path: string; size: number }[]
@@ -131,7 +132,8 @@ export function filterBRPFiles(
   return files.filter(
     (f) => {
       const name = f.name.toLowerCase();
-      return (name.endsWith('brp.edf') || name.endsWith('_brp.edf')) &&
+      return (name.endsWith('brp.edf') || name.endsWith('_brp.edf') ||
+              name.endsWith('flw.edf') || name.endsWith('_flw.edf')) &&
         f.size > 50 * 1024;
     }
   );

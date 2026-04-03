@@ -125,7 +125,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'What is a good Glasgow Index score?',
         answer:
-          'A Glasgow Index below 1.0 indicates well-controlled therapy with minimal flow limitation. Scores between 1.0 and 2.0 are borderline and worth monitoring. Scores above 2.0 suggest significant flow limitation that may warrant discussion with your clinician about pressure or settings adjustments.',
+          'A Glasgow Index below 1.0 indicates well-controlled therapy with minimal flow limitation. Scores between 1.0 and 2.0 are borderline and worth monitoring. Scores above 2.0 suggest significant flow limitation that may be worth discussing with your clinician.',
       },
       {
         question: 'Why does my Glasgow Index disagree with my FL Score?',

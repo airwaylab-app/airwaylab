@@ -101,6 +101,10 @@ export async function POST(request: NextRequest) {
       });
     } else {
       console.error('[provider-interest] Supabase not configured -- submission not stored');
+      Sentry.captureMessage('Supabase not configured - data lost', {
+        level: 'error',
+        tags: { route: 'provider-interest' },
+      });
     }
 
     // Discord #user-signals alert (fire-and-forget)

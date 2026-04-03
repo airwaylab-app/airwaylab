@@ -77,14 +77,15 @@ export async function POST(request: NextRequest) {
 
     if (upsertError) {
       Sentry.captureException(upsertError, {
-        extra: { userId: user.id, nightCount: nights.length },
+        tags: { route: 'store-analysis-data', step: 'upsert' },
+        extra: { nightCount: nights.length },
       });
       return NextResponse.json({ error: 'Failed to store analysis data' }, { status: 500 });
     }
 
     return NextResponse.json({ stored: nights.length });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, { tags: { route: 'store-analysis-data' } });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

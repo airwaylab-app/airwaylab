@@ -257,6 +257,31 @@ export default function ArousalsVsFlowLimitationPost() {
         </div>
       </section>
 
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- what flow limitation is, how the Glasgow Index scores it, and how to detect it in your data.
+          </p>
+          <p>
+            <Link href="/blog/flow-limitation-and-sleepiness" className="text-primary hover:text-primary/80">
+              Does Flow Limitation Drive Sleepiness?
+            </Link>{' '}
+            -- the evidence that flow limitation causes daytime symptoms independent of arousals.
+          </p>
+          <p>
+            <Link href="/blog/why-ahi-is-lying" className="text-primary hover:text-primary/80">
+              Why Your AHI Is Lying to You
+            </Link>{' '}
+            -- how AHI misses the majority of breathing problems.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">See Both Sides of the Equation</h3>
