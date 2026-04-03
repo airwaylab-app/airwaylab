@@ -44,9 +44,10 @@ export default function V121ClearerLanguagePost() {
           </div>
 
           <p>
-            Same underlying analysis. Same algorithms. Same depth. The difference is that we now
-            describe <em>what your data shows</em> instead of hinting at what it might mean
-            clinically. That is your clinician&apos;s job, not ours.
+            The left panel shows wording we have eliminated from the product. The right panel shows
+            the replacement. Same underlying analysis. Same algorithms. Same depth. The difference is
+            that we now describe <em>what your data shows</em> instead of hinting at what it might
+            mean clinically. That is your clinician&apos;s job, not ours.
           </p>
         </div>
       </section>
@@ -77,8 +78,9 @@ export default function V121ClearerLanguagePost() {
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             Nothing changes about what AirwayLab can do. Flow limitation analysis, RERA patterns,
-            breath shape scoring, oximetry overlays -- all identical. The wording is simply more
-            precise about what the data describes versus what a clinical interpretation might be.
+            breath shape scoring, oximetry overlays -- all identical. These are visualisations of
+            your recorded data, not clinical assessments. The wording is simply more precise about
+            what the data describes versus what a clinical interpretation might be.
           </p>
           <p>
             As always: your clinician can help interpret findings in your clinical context.
