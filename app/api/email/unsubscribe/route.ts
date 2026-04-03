@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token';
 import { cancelAllPending } from '@/lib/email/sequences';
+
+const UnsubscribeQuerySchema = z.object({
+  token: z.string().min(1, 'Unsubscribe token is required.'),
+});
 
 /**
  * GET /api/email/unsubscribe?token=...
@@ -12,12 +17,15 @@ import { cancelAllPending } from '@/lib/email/sequences';
  * Redirects to a confirmation page.
  */
 export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token');
+  const queryParsed = UnsubscribeQuerySchema.safeParse({
+    token: request.nextUrl.searchParams.get('token') ?? '',
+  });
 
-  if (!token) {
+  if (!queryParsed.success) {
     return NextResponse.redirect(new URL('/contact?unsubscribe=invalid', request.url));
   }
 
+  const { token } = queryParsed.data;
   const userId = verifyUnsubscribeToken(token);
   if (!userId) {
     return NextResponse.redirect(new URL('/contact?unsubscribe=invalid', request.url));
