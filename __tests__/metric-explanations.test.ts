@@ -13,7 +13,7 @@ describe('getGlasgowExplanation', () => {
   it('returns healthy explanation for good values', () => {
     const text = getGlasgowExplanation(0.5, threshold);
     expect(text).toContain('0.5');
-    expect(text).toContain('healthy');
+    expect(text).toContain('lower range');
     expect(text).toContain('minimal flow limitation');
   });
 

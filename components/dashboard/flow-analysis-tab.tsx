@@ -362,7 +362,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
             REM-predominant flow limitation typically worsens in H2 as REM density increases.
-            A significant H2 rise (&gt;3%) may indicate positional or REM-related obstruction.
+            A significant H2 rise (&gt;3%) is a common pattern in the second half of the night, associated with positional changes or REM sleep.
           </p>
         </CardContent>
       </Card>

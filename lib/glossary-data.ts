@@ -1002,7 +1002,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'How much time below 90% SpO2 is concerning?',
         answer:
-          'On PAP therapy, less than 5% of time below 90% is considered good. Between 5-15% is borderline. Above 15% indicates significant nocturnal hypoxemia that warrants clinical discussion about therapy adjustments.',
+          'On PAP therapy, less than 5% of time below 90% is considered good. Between 5-15% is borderline. Above 15% is a level your clinician would typically want to review, as it shows extended time with lower blood oxygen.',
       },
     ],
     category: 'oximetry',

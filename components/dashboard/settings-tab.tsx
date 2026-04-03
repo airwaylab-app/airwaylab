@@ -286,8 +286,8 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
             Trigger metrics measure how quickly the machine detects your inspiration.
             Cycle metrics measure whether it stays at full pressure long enough.
             Ventilation metrics track the volume of air you receive.
-            Together, they help identify which specific setting may need adjustment &mdash;
-            so you can have a targeted conversation with your clinician instead of guessing.
+            Together, they show how your machine responded to your breathing &mdash;
+            information your clinician can use to review your settings.
           </p>
           <p className="mt-2 text-[11px] text-muted-foreground/70">
             Discuss settings changes with your sleep physician before adjusting your machine.

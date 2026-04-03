@@ -81,7 +81,7 @@ const engines = [
   {
     icon: BarChart3,
     title: 'NED Analysis',
-    desc: 'Identifies effort-dependent airway collapse \u2014 a key marker of upper airway resistance that correlates with arousals.',
+    desc: 'Measures negative effort dependence \u2014 a flow pattern associated with upper airway resistance in published research.',
     metrics: ['NED Mean', 'Flatness Index', 'M-Shape', 'RERA Index'],
     example: '6.2',
     unit: 'RERA/hr',
