@@ -226,6 +226,31 @@ export default function FlowLimitationAndSleepinessPost() {
         </div>
       </section>
 
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- how the Glasgow Index, NED, and WAT analysis detect flow limitation in your data.
+          </p>
+          <p>
+            <Link href="/blog/why-ahi-is-lying" className="text-primary hover:text-primary/80">
+              Why Your AHI Is Lying to You
+            </Link>{' '}
+            -- the evidence that AHI misses the majority of breathing problems.
+          </p>
+          <p>
+            <Link href="/blog/ahi-normal-still-tired" className="text-primary hover:text-primary/80">
+              AHI Normal But Still Exhausted?
+            </Link>{' '}
+            -- a practical guide to finding flow limitation in your own data.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">Measure Your Flow Limitation Directly</h3>

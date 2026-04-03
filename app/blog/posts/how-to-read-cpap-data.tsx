@@ -208,7 +208,10 @@ export default function HowToReadCPAPDataPost() {
               OSCAR is the gold standard for viewing raw PAP data. It&apos;s a desktop application
               that reads your SD card and displays detailed waveforms, event flags, pressure graphs,
               and session summaries. If you want to see every individual breath and manually inspect
-              your flow data, OSCAR is the tool for that.
+              your flow data, OSCAR is the tool for that. (For a detailed comparison, see{' '}
+              <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+                AirwayLab vs OSCAR
+              </Link>.)
             </p>
             <p>
               OSCAR&apos;s strength is depth. You can zoom into a specific two-minute window and see
@@ -576,6 +579,31 @@ export default function HowToReadCPAPDataPost() {
             AirwayLab is not a medical device. The analysis provided is informational and
             educational. Always discuss your results with your sleep physician or clinician.
             AirwayLab does not diagnose, treat, or provide clinical recommendations.
+          </p>
+        </div>
+      </section>
+
+      {/* Related articles */}
+      <section className="mt-8 border-t border-border/30 pt-6">
+        <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
+              Understanding Flow Limitation
+            </Link>{' '}
+            -- what flow limitation is, how the Glasgow Index scores it, and how to detect it.
+          </p>
+          <p>
+            <Link href="/blog/why-ahi-is-lying" className="text-primary hover:text-primary/80">
+              Why Your AHI Is Lying to You
+            </Link>{' '}
+            -- the evidence that AHI misses the majority of breathing problems.
+          </p>
+          <p>
+            <Link href="/blog/pap-data-privacy" className="text-primary hover:text-primary/80">
+              Your PAP Data Belongs to You
+            </Link>{' '}
+            -- who can see your sleep data and how to keep control of it.
           </p>
         </div>
       </section>
