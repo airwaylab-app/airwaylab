@@ -81,7 +81,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research indicates this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Discuss these findings with your clinician at your next review.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research shows this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Discuss these findings with your clinician at your next review.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -123,7 +123,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'glasgow-good',
       type: 'positive',
       title: 'Glasgow Index in healthy range',
-      body: `Score of ${fmt(n.glasgow.overall)} indicates minimal flow limitation. Your metrics are in the typical range.`,
+      body: `Score of ${fmt(n.glasgow.overall)} shows minimal flow limitation. Your metrics are in the typical range.`,
       category: 'glasgow',
     });
   } else if (gl === 'bad') {
@@ -131,7 +131,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'glasgow-bad',
       type: 'warning',
       title: 'Elevated breath-shape scores',
-      body: `Glasgow Index of ${fmt(n.glasgow.overall)} indicates elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation and discuss with your clinician.`,
+      body: `Glasgow Index of ${fmt(n.glasgow.overall)} shows elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation and discuss with your clinician.`,
       category: 'glasgow',
     });
   }
@@ -164,7 +164,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'regularity-bad',
       type: 'warning',
       title: 'Highly repetitive breathing pattern',
-      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates very predictable breathing cycles. High regularity during PAP therapy is associated with uniform breathing effort.`,
+      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% shows very predictable breathing cycles. High regularity during PAP therapy is associated with uniform breathing effort.`,
       category: 'wat',
     });
   } else if (regL === 'good') {
@@ -185,7 +185,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-high',
       type: 'info',
       title: 'Elevated respiratory disruption markers',
-      body: `RDI of ${fmt(eaiVal)}/hr indicates a high rate of recovery breaths following flow-limited breathing. Multiple factors can contribute to this pattern. Get personalised observations with AI Analysis.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows a high rate of recovery breaths following flow-limited breathing. Multiple factors can contribute to this pattern. Get personalised observations with AI Analysis.`,
       category: 'ned',
     });
   } else if (eaiL === 'good' && eaiVal > 0) {
@@ -193,7 +193,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-good',
       type: 'positive',
       title: 'Low respiratory disruption burden',
-      body: `RDI of ${fmt(eaiVal)}/hr indicates few detected disruptions. Note: research indicates flow limitation itself can correlate with symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows few disruptions. Note: research shows flow limitation itself can correlate with symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
       category: 'ned',
     });
   }
@@ -205,7 +205,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'sensitization-mismatch',
       type: 'actionable',
       title: 'Low FL scores but high disruption index',
-      body: `Glasgow Index of ${fmt(glasgowVal)} shows mild flow limitation, but RDI of ${fmt(eaiVal)}/hr indicates frequent disruptions. When flow limitation is low but disruptions are high, non-respiratory factors such as congestion, caffeine timing, or stress may be involved. Logging your night context can help identify patterns. Your clinician can help interpret these findings in context.`,
+      body: `Glasgow Index of ${fmt(glasgowVal)} shows mild flow limitation, but RDI of ${fmt(eaiVal)}/hr shows frequent disruptions. When flow limitation is low but disruptions are high, non-respiratory factors such as congestion, caffeine timing, or stress may be involved. Logging your night context can help identify patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Learn more about this pattern', href: '/blog/what-is-cns-sensitization' },
     });
@@ -226,7 +226,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'metric-divergence-wat-low',
       type: 'info',
       title: 'Low WAT FL despite elevated Glasgow/NED',
-      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The obstruction pattern may not involve classic waveform flattening — Glasgow detects skew, spikes, and multi-peak patterns that WAT does not measure.`,
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The obstruction pattern may not involve classic waveform flattening — Glasgow measures skew, spikes, and multi-peak patterns that WAT does not capture.`,
       category: 'wat',
     });
   }
@@ -237,7 +237,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'periodicity-high',
       type: 'warning',
       title: 'Elevated periodicity index',
-      body: `Periodicity index of ${fmt(n.wat.periodicityIndex)}% indicates repetitive breathing cycles (30–100s period). Cyclical breathing patterns observed in the 30-100 second range.`,
+      body: `Periodicity index of ${fmt(n.wat.periodicityIndex)}% shows repetitive breathing cycles (30-100s period). Cyclical breathing patterns observed in the 30-100 second range.`,
       category: 'wat',
     });
   }
@@ -452,7 +452,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'settings-vt-unstable',
         type: 'info',
         title: 'Unstable ventilation',
-        body: `Tidal volume varies significantly breath-to-breath (CV ${fmt(sm.tidalVolumeCv, 0)}%). High breath-to-breath volume variability can affect how effectively your machine delivers support.`,
+        body: `Tidal volume varies significantly breath-to-breath (CV ${fmt(sm.tidalVolumeCv, 0)}%). High breath-to-breath volume variability can affect how your machine delivers pressure support.`,
         category: 'settings',
       });
     }
@@ -482,7 +482,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'odi-high',
         type: 'warning',
         title: 'Frequent oxygen desaturations',
-        body: `ODI-3 of ${fmt(ox.odi3)} events/hr indicates frequent drops in blood oxygen despite PAP therapy.`,
+        body: `ODI-3 of ${fmt(ox.odi3)} events/hr shows frequent drops in blood oxygen during PAP therapy.`,
         category: 'oximetry',
       });
     }
