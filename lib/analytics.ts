@@ -257,4 +257,17 @@ export const events = {
   /** Post-analysis upgrade nudge CTA clicked */
   upgradeNudgeClicked: (source: string) =>
     trackEvent('Upgrade Nudge Clicked', { source }),
+
+  // ── Mobile reminder capture ───────────────────────────────────
+  /** Mobile reminder email capture component shown */
+  mobileReminderShown: () => trackEvent('mobile_reminder_shown'),
+
+  /** User submitted the mobile reminder email form */
+  mobileReminderSubmitted: () => trackEvent('mobile_reminder_submitted'),
+
+  /** Mobile reminder email sent successfully */
+  mobileReminderSuccess: () => trackEvent('mobile_reminder_success'),
+
+  /** Mobile reminder email submission failed */
+  mobileReminderError: () => trackEvent('mobile_reminder_error'),
 } as const;

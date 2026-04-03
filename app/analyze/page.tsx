@@ -8,6 +8,7 @@ import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-
 import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
 import { CloudSyncNudge, hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
+import { MobileEmailCapture } from '@/components/upload/mobile-email-capture';
 import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -564,20 +565,8 @@ function AnalyzePageInner() {
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto max-w-lg">
-          {/* Mobile upload warning */}
-          <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 sm:hidden">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-            <div className="text-xs text-muted-foreground">
-              <p>SD card upload works best on a desktop computer.</p>
-              <button
-                type="button"
-                onClick={loadDemo}
-                className="mt-1 font-medium text-primary hover:underline"
-              >
-                Try the demo to see what AirwayLab can do &rarr;
-              </button>
-            </div>
-          </div>
+          {/* Mobile upload prompt */}
+          <MobileEmailCapture className="mb-4 sm:hidden" />
 
           <FileUpload onFilesSelected={handleFiles} />
 
