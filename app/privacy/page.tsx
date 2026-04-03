@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 17 March 2026
+          Last updated: 3 April 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -138,9 +138,24 @@ export default function PrivacyPolicyPage() {
               stored to enable AI insights and service improvement.
             </li>
             <li>
-              <strong>Data Contribution:</strong> Anonymised aggregate metrics, device model,
-              and your self-reported sleep quality rating (1–5 scale). Used for community insights
-              and research. No dates, timestamps, names, or identifiers are included.
+              <strong>Data Contribution (Aggregate):</strong> Anonymised aggregate metrics,
+              device model, and your self-reported sleep quality rating (1&ndash;5 scale). Used
+              for community insights and research. No dates, timestamps, names, or identifiers
+              are included.
+            </li>
+            <li>
+              <strong>Waveform &amp; Oximetry Trace Contribution:</strong> If you explicitly
+              choose to contribute, flow waveform samples (up to 5 MB) and oximetry traces
+              (up to 2 MB) are uploaded to our servers (Supabase, EU-West) for research
+              purposes. Contributions are anonymised -- no dates, timestamps, names, or
+              identifiers are included. This requires a separate, affirmative consent action
+              each time.
+            </li>
+            <li>
+              <strong>Symptom Contribution:</strong> If you explicitly choose to contribute,
+              your self-reported symptom rating (1&ndash;5 scale) is collected alongside
+              anonymised aggregate analysis metrics (device model, PAP mode, pressure range).
+              No dates, timestamps, names, or identifiers are included.
             </li>
           </ul>
 
@@ -158,6 +173,12 @@ export default function PrivacyPolicyPage() {
               <strong>Performance monitoring:</strong> Collected by Vercel Speed Insights for
               page load performance (Core Web Vitals). No personal data or health data is included.
             </li>
+            <li>
+              <strong>Analysis session tracking:</strong> When you complete an analysis, we
+              record anonymous session metrics (number of nights analysed, whether oximetry
+              data was present, analysis duration, and which engines were used). No personal
+              data, health data, or identifiers are included.
+            </li>
           </ul>
 
           <h3 className="mt-4">3.6 What We Do NOT Collect</h3>
@@ -165,7 +186,7 @@ export default function PrivacyPolicyPage() {
             <li>Cookies (we use none)</li>
             <li>Browser fingerprints</li>
             <li>IP addresses for tracking (Plausible does not store IPs)</li>
-            <li>Raw sleep waveforms (never transmitted to any server)</li>
+            <li>Raw sleep waveforms (never transmitted unless you explicitly contribute them for research -- see section 3.4)</li>
             <li>Device serial numbers or user names from PAP machines</li>
           </ul>
         </section>
@@ -245,7 +266,7 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4 font-medium text-foreground">Supabase</td>
                   <td className="py-2 pr-4">Database &amp; authentication</td>
                   <td className="py-2 pr-4">EU (West)</td>
-                  <td className="py-2">Account data, subscriptions, EDF files, analysis data, contributed metrics</td>
+                  <td className="py-2">Account data, subscriptions, EDF files, analysis data, contributed metrics, waveforms, and traces</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Anthropic (Claude)</td>
