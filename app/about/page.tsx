@@ -61,7 +61,7 @@ const faqData = [
   {
     question: 'How do I interpret the Glasgow Index?',
     answer:
-      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is considered good therapy, 2.0\u20133.0 suggests moderate flow limitation worth discussing with your clinician, and above 3.0 suggests elevated flow limitation scores. Your clinician can help interpret these findings in context.',
+      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is within the reference range used in the research literature, 2.0\u20133.0 shows moderate flow limitation, and above 3.0 shows significant flow limitation. Discuss your results with your clinician.',
   },
   {
     question: 'What is the difference between Glasgow, WAT, and NED?',
@@ -490,11 +490,12 @@ export default function AboutPage() {
             The Glasgow Index scores each breath on 9 flow limitation
             characteristics, producing an overall score from 0 to 8 (lower is
             better). Generally: <strong className="text-foreground">below 2.0</strong> is
-            considered good therapy, <strong className="text-foreground">2.0&ndash;3.0</strong>{' '}
-            suggests moderate flow limitation worth discussing with your
-            clinician, and <strong className="text-foreground">above 3.0</strong> indicates
-            significant flow limitation that may warrant pressure or settings
-            adjustment.
+            within the reference range used in the research literature,{' '}
+            <strong className="text-foreground">2.0&ndash;3.0</strong> shows
+            moderate flow limitation, and{' '}
+            <strong className="text-foreground">above 3.0</strong> shows
+            significant flow limitation. Discuss your results with your
+            clinician.
           </FAQItem>
 
           <FAQItem question="What is the difference between Glasgow, WAT, and NED?">
