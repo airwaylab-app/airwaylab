@@ -123,15 +123,15 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'glasgow-good',
       type: 'positive',
       title: 'Glasgow Index in healthy range',
-      body: `Score of ${fmt(n.glasgow.overall)} indicates minimal flow limitation — current therapy appears effective.`,
+      body: `Score of ${fmt(n.glasgow.overall)} shows minimal flow limitation -- breath-shape metrics are in the typical range.`,
       category: 'glasgow',
     });
   } else if (gl === 'bad') {
     insights.push({
       id: 'glasgow-bad',
       type: 'warning',
-      title: 'Significant flow limitation detected',
-      body: `Glasgow Index of ${fmt(n.glasgow.overall)} indicates elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation and discuss with your clinician.`,
+      title: 'Elevated breath-shape scores',
+      body: `Glasgow Index of ${fmt(n.glasgow.overall)} shows elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation. Your clinician can help interpret these findings in context.`,
       category: 'glasgow',
     });
   }
@@ -164,7 +164,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'regularity-bad',
       type: 'warning',
       title: 'Highly repetitive breathing pattern',
-      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% indicates very predictable breathing cycles. During PAP therapy, this may signal persistent flow limitation with uniform effort.`,
+      body: `Regularity score of ${Math.round(n.wat.regularityScore)}% shows very predictable breathing cycles, which is consistent with uniform breathing effort.`,
       category: 'wat',
     });
   } else if (regL === 'good') {
@@ -185,7 +185,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-high',
       type: 'info',
       title: 'Elevated respiratory disruption markers',
-      body: `RDI of ${fmt(eaiVal)}/hr indicates a high rate of recovery breaths following flow-limited breathing. Areas to investigate: EPR/PS level, positional factors. Get personalised suggestions with AI Analysis.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows a high rate of recovery breaths following flow-limited breathing. AI Analysis can provide personalised observations based on your full data.`,
       category: 'ned',
     });
   } else if (eaiL === 'good' && eaiVal > 0) {
@@ -193,7 +193,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-good',
       type: 'positive',
       title: 'Low respiratory disruption burden',
-      body: `RDI of ${fmt(eaiVal)}/hr indicates few detected disruptions. Note: research indicates flow limitation itself can correlate with symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows few disruptions. Note: research shows flow limitation itself can correlate with symptoms independently of arousals -- your flow limitation metrics provide additional context.`,
       category: 'ned',
     });
   }
@@ -204,8 +204,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
     insights.push({
       id: 'sensitization-mismatch',
       type: 'actionable',
-      title: 'Low FL but high disruptions — investigate further',
-      body: `Glasgow Index of ${fmt(glasgowVal)} shows mild flow limitation, but RDI of ${fmt(eaiVal)}/hr indicates frequent disruptions. This mismatch indicates non-respiratory factors may be worth investigating: check for mask leak, pressure comfort (EPR/ramp), nasal congestion, caffeine timing, or stress. Log your night context to track patterns. If this persists, discuss CNS sensitization with your clinician.`,
+      title: 'Low FL but high disruptions',
+      body: `Glasgow Index of ${fmt(glasgowVal)} shows mild flow limitation, but RDI of ${fmt(eaiVal)}/hr shows frequent disruptions. This divergence between metrics is a pattern worth noting. Log your night context to track patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Learn more about this pattern', href: '/blog/what-is-cns-sensitization' },
     });
@@ -218,7 +218,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'metric-divergence-wat-high',
       type: 'info',
       title: 'WAT FL elevated despite low Glasgow/NED',
-      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% detects inspiratory flow shape flattening that Glasgow (${fmt(n.glasgow.overall)}) and NED (${fmt(n.ned.nedMean)}%) did not flag. These tools measure different aspects of flow limitation — WAT focuses on waveform flatness, while Glasgow and NED use other criteria. This divergence between analysis engines is a common pattern worth noting.`,
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is elevated while Glasgow (${fmt(n.glasgow.overall)}) and NED (${fmt(n.ned.nedMean)}%) are lower. These engines measure different aspects of flow limitation -- WAT focuses on waveform flatness, while Glasgow and NED use other criteria. This divergence is a common pattern worth noting.`,
       category: 'wat',
     });
   } else if ((gl === 'bad' || nedL === 'bad') && watFLL === 'good') {
@@ -236,8 +236,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
     insights.push({
       id: 'periodicity-high',
       type: 'warning',
-      title: 'Periodic breathing detected',
-      body: `Periodicity index of ${fmt(n.wat.periodicityIndex)}% indicates repetitive breathing cycles (30–100s period). Cyclical breathing patterns observed in the 30-100 second range.`,
+      title: 'Cyclical breathing pattern observed',
+      body: `Periodicity index of ${fmt(n.wat.periodicityIndex)}% shows repetitive breathing cycles in the 30-100 second range.`,
       category: 'wat',
     });
   }
@@ -251,7 +251,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'event-control-residual-fl',
       type: 'info',
       title: 'Strong event control with residual flow limitation',
-      body: 'Your therapy effectively controls respiratory events. Red flow limitation metrics show room for further optimisation, not treatment failure. Discuss with your clinician.',
+      body: 'Respiratory event counts are low while flow limitation metrics are elevated. These measure different aspects of breathing. Your clinician can help interpret these findings in context.',
       category: 'therapy',
     });
   }
@@ -282,7 +282,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ned-h1h2',
       type: 'info',
       title: `Flow limitation worse in ${worse} half`,
-      body: `H1 NED ${fmt(n.ned.h1NedMean)}% vs H2 NED ${fmt(n.ned.h2NedMean)}%. ${worse === 'second' ? 'This may relate to REM-dominant obstruction in the latter part of the night.' : 'Early-night obstruction may improve as therapy stabilises.'}`,
+      body: `H1 NED ${fmt(n.ned.h1NedMean)}% vs H2 NED ${fmt(n.ned.h2NedMean)}%. ${worse === 'second' ? 'Flow limitation is higher in the latter part of the night.' : 'Flow limitation is higher in the earlier part of the night.'}`,
       category: 'ned',
     });
   }
@@ -310,7 +310,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-high',
       type: 'warning',
       title: 'High brief obstruction rate',
-      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may fragment sleep. They often do not respond to pressure changes alone — possible causes include swallowing, positional shifts, or epiglottic flutter. Track your sleep position and note patterns. Discuss with your clinician.`,
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may fragment sleep. Track your sleep position and note patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
     });
   }
@@ -336,7 +336,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-h2-gt-h1',
       type: 'info',
       title: 'Brief obstructions increase in the second half',
-      body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr), consistent with REM-related airway changes. These events often do not respond to pressure changes — positional therapy or tracking sleep position may be more informative.`,
+      body: `Brief obstructions are higher in H2 (${fmt(boiH2)}/hr) vs H1 (${fmt(boiH1)}/hr). This second-half increase is a common pattern worth tracking alongside sleep position.`,
       category: 'ned',
     });
   }
@@ -441,7 +441,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
           id: 'settings-pressure-mismatch',
           type: 'warning',
           title: 'Delivered pressure differs from prescribed',
-          body: `Detected EPAP of ${fmt(sm.epapDetected)} cmH₂O differs from your prescribed ${n.settings.epap} cmH₂O by more than 1 cmH₂O. Check for mask leak or machine issues.`,
+          body: `Detected EPAP of ${fmt(sm.epapDetected)} cmH\u2082O differs from your prescribed ${n.settings.epap} cmH\u2082O by more than 1 cmH\u2082O. Your clinician can help interpret these findings in context.`,
           category: 'settings',
         });
       }
@@ -466,7 +466,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'settings-good',
         type: 'positive',
         title: 'Settings delivering as expected',
-        body: 'Your Trigger, Cycle, and pressure delivery metrics are all within expected ranges — your machine appears well-matched to your breathing pattern.',
+        body: 'Your Trigger, Cycle, and pressure delivery metrics are all within typical ranges.',
         category: 'settings',
       });
     }
@@ -482,7 +482,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'odi-high',
         type: 'warning',
         title: 'Frequent oxygen desaturations',
-        body: `ODI-3 of ${fmt(ox.odi3)} events/hr indicates frequent drops in blood oxygen despite PAP therapy.`,
+        body: `ODI-3 of ${fmt(ox.odi3)} events/hr shows frequent oxygen desaturation events.`,
         category: 'oximetry',
       });
     }
@@ -513,7 +513,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'coupled-high',
         type: 'info',
         title: 'Frequent coupled desat + HR surge events',
-        body: `${fmt(ox.coupled3_10)} coupled events/hr — desaturation and heart rate surge occurring within 30 seconds of each other. This indicates a respiratory cause for these specific events. Note: in UARS, most HR surges and desaturations are independent of each other.`,
+        body: `${fmt(ox.coupled3_10)} coupled events/hr -- desaturation and heart rate surge occurring within 30 seconds of each other. Note: in UARS, most HR surges and desaturations are independent of each other.`,
         category: 'oximetry',
       });
     }
@@ -525,7 +525,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'oxi-h1h2',
         type: 'info',
         title: `Desaturations concentrated in ${worse} half`,
-        body: `H1 ODI-3: ${fmt(ox.h1.odi3)}/hr vs H2: ${fmt(ox.h2.odi3)}/hr. ${worse === 'second' ? 'May indicate REM-related desaturations.' : 'May improve as mask seal stabilises.'}`,
+        body: `H1 ODI-3: ${fmt(ox.h1.odi3)}/hr vs H2: ${fmt(ox.h2.odi3)}/hr. Desaturation events are concentrated in the ${worse} half of the night.`,
         category: 'oximetry',
       });
     }
@@ -547,7 +547,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'coupling-low',
         type: 'positive',
         title: 'Low arousal coupling',
-        body: `Only ${fmt(cd.couplingPct)}% of your breathing events caused arousals -- your arousal threshold appears well-managed.`,
+        body: `Only ${fmt(cd.couplingPct)}% of your breathing events are coupled with arousals -- a low coupling rate between events.`,
         category: 'correlation',
       });
     }
@@ -571,7 +571,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'machine-ahi-elevated',
         type: ms.ahi > 10 ? 'warning' : 'actionable',
         title: `Machine AHI is ${fmt(ms.ahi)}`,
-        body: `Your device reported ${fmt(ms.ahi)} apnea/hypopnea events per hour. ${ms.ahi > 10 ? 'This is significantly elevated and indicates your current therapy may not be adequately controlling obstructive events.' : 'This is moderately elevated.'} Discuss with your clinician.`,
+        body: `Your device reported ${fmt(ms.ahi)} apnea/hypopnea events per hour. ${ms.ahi > 10 ? 'This is significantly above the typical range.' : 'This is moderately elevated.'} Your clinician can help interpret these findings in context.`,
         category: 'therapy',
       });
     }
@@ -581,7 +581,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'machine-leak-high',
         type: 'warning',
         title: 'High mask leak detected',
-        body: `95th percentile leak of ${fmt(ms.leak95, 0)} L/min. High leak can reduce therapy effectiveness and make flow data unreliable. Check mask fit and seal.`,
+        body: `95th percentile leak of ${fmt(ms.leak95, 0)} L/min. High leak levels can make flow data less reliable. Your clinician can help interpret these findings in context.`,
         category: 'therapy',
       });
     }
@@ -650,7 +650,7 @@ function trendInsights(
       id: 'trend-ifl-improving',
       type: 'positive',
       title: 'IFL Symptom Risk trending down',
-      body: `Your flow limitation composite has been improving over recent nights \u2014 from ${fmt(iflVals[0]!)}% to ${fmt(iflVals[iflVals.length - 1]!)}%. Your current therapy settings appear to be reducing flow limitation.`,
+      body: `Your flow limitation composite has been decreasing over recent nights -- from ${fmt(iflVals[0]!)}% to ${fmt(iflVals[iflVals.length - 1]!)}%.`,
       category: 'trend',
     });
   } else if (iflTrend === 'worsening') {
@@ -712,7 +712,7 @@ function trendInsights(
       id: 'consistent-good',
       type: 'positive',
       title: 'Consistently good therapy across all nights',
-      body: `All ${nights.length} nights show Glasgow Index in the healthy range. Current settings appear well-optimised.`,
+      body: `All ${nights.length} nights show Glasgow Index in the typical range. Breath-shape scores are consistently low across this period.`,
       category: 'trend',
     });
   } else if (allBad) {
