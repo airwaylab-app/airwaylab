@@ -795,7 +795,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       'AutoSet is ResMed\'s brand name for their auto-adjusting positive airway pressure (APAP) mode. Instead of delivering a single fixed pressure like standard CPAP, AutoSet automatically adjusts the therapeutic pressure within a clinician-set minimum and maximum range based on detected breathing events.\n\nThe AutoSet algorithm increases pressure when it detects flow limitation, snoring, or apneas, and decreases pressure when breathing is stable. This means the pressure tracks your actual needs throughout the night, which can vary with sleep position, sleep stage, alcohol consumption, and other factors.\n\nAutoSet is the default mode on most ResMed AirSense 10 and 11 devices. It provides an effective balance between therapeutic efficacy and comfort, as the average delivered pressure is often lower than the fixed pressure needed to treat the worst-case scenario. AirwayLab can compare the prescribed AutoSet range with the actual delivered pressures to assess whether the range is appropriate.',
     normalRanges: null,
     howAirwayLabMeasures:
-      'AirwayLab reads the prescribed AutoSet pressure range (min/max) from STR.edf and computes the actual delivered pressure from BRP.edf pressure data. Comparing the two shows whether the machine is frequently hitting the pressure ceiling (suggesting the max may need increasing) or staying at the floor (suggesting good control).',
+      'AirwayLab reads the prescribed AutoSet pressure range (min/max) from STR.edf and computes the actual delivered pressure from BRP.edf pressure data. Comparing the two shows whether the machine is frequently hitting the pressure ceiling (the machine is frequently reaching the upper pressure limit) or staying near the floor.',
     relatedTerms: ['cpap', 'epr', 'flow-limitation', 'pressure-support'],
     relatedBlogPosts: [
       { slug: 'how-pap-therapy-works', title: 'How PAP Therapy Actually Works' },
@@ -827,7 +827,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'Does EPR affect flow limitation?',
         answer:
-          'EPR can affect flow limitation because it creates a pressure drop during the expiration-to-inspiration transition. Higher EPR settings (2-3) mean the airway experiences a brief period of lower pressure at the start of each breath, which can allow the airway to narrow. If you have elevated flow limitation, reducing EPR is one potential adjustment to discuss with your clinician.',
+          'EPR can affect flow limitation because it creates a pressure drop during the expiration-to-inspiration transition. Higher EPR settings (2-3) mean the airway experiences a brief period of lower pressure at the start of each breath, which can allow the airway to narrow. Your clinician can assess whether your current EPR setting is appropriate for your breathing patterns.',
       },
     ],
     category: 'pap-therapy',
