@@ -61,7 +61,7 @@ const faqData = [
   {
     question: 'How do I interpret the Glasgow Index?',
     answer:
-      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is considered good therapy, 2.0\u20133.0 suggests moderate flow limitation worth discussing with your clinician, and above 3.0 indicates significant flow limitation that may warrant pressure or settings adjustment.',
+      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is considered good therapy, 2.0\u20133.0 suggests moderate flow limitation worth discussing with your clinician, and above 3.0 suggests elevated flow limitation scores. Your clinician can help interpret these findings in context.',
   },
   {
     question: 'What is the difference between Glasgow, WAT, and NED?',
@@ -337,7 +337,7 @@ export default function AboutPage() {
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Aggregated insights from thousands of real-world nights could help researchers, clinicians, and
-                device manufacturers understand what truly effective therapy looks like — beyond AHI. Better data
+                device manufacturers understand real-world therapy patterns at scale — beyond AHI. Better data
                 means better algorithms. Better algorithms mean better therapy. Better therapy means better sleep
                 for millions of people.
               </p>

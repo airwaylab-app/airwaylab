@@ -207,7 +207,7 @@ const softwareAppJsonLd = {
   operatingSystem: 'Web browser',
   url: 'https://airwaylab.app',
   description:
-    'Free, open-source PAP therapy analysis tool. Detects flow limitation, RERAs, and breathing instability from ResMed SD card data using four research-grade engines, entirely in the browser.',
+    'Free, open-source PAP therapy analysis tool. Analyses flow limitation, RERAs, and breathing patterns from ResMed SD card data using four research-grade engines, entirely in the browser.',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -568,7 +568,7 @@ export default function Home() {
               <h3 className="text-sm font-semibold">Accessible to Everyone</h3>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Not just people with technical skills. Not just those who can afford specialist clinics. Everyone on PAP therapy deserves to know if their treatment is actually working beyond a single number.
+              Not just people with technical skills. Not just those who can afford specialist clinics. Everyone on PAP therapy deserves access to detailed analysis of their therapy data beyond a single number.
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/50 p-5 sm:p-6">
@@ -636,7 +636,7 @@ export default function Home() {
               </div>
               <h3 className="mb-2 text-sm font-semibold">Smarter therapy for everyone</h3>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Aggregated insights from thousands of real-world nights could help researchers, clinicians, and device manufacturers understand what truly effective therapy looks like — beyond AHI.
+                Aggregated insights from thousands of real-world nights could help researchers, clinicians, and device manufacturers understand real-world therapy patterns at scale — beyond AHI.
               </p>
             </div>
           </div>
