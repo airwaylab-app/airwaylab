@@ -585,7 +585,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'How is UARS diagnosed?',
         answer:
-          'UARS is difficult to diagnose because standard sleep studies focus on AHI, which is typically normal in UARS. Diagnosis requires detecting RERAs (via esophageal manometry or flow limitation analysis) and correlating with symptoms. Flow limitation analysis from PAP SD card data, as provided by AirwayLab, can help identify the characteristic patterns.',
+          'UARS is difficult to diagnose because standard sleep studies focus on AHI, which is typically normal in UARS. Diagnosis requires detecting RERAs (via esophageal manometry or flow limitation analysis) and correlating with symptoms. Flow limitation analysis from PAP SD card data shows breathing patterns associated with UARS -- your clinician can interpret these in the context of your full clinical picture.',
       },
     ],
     category: 'sleep-disordered-breathing',
