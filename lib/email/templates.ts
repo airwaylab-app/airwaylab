@@ -163,8 +163,8 @@ export function featureEducationStep1(unsubscribeUrl: string): { subject: string
       ${paragraph('AirwayLab\'s four engines give you detailed metrics -- Glasgow Index, FL Score, NED, RERA counts. But what do they mean for <em>your</em> therapy?')}
       ${paragraph('AI insights translate your metrics into plain-language explanations:')}
       ${bulletList([
-        '"Your Glasgow Index of 2.4 -- your clinician can review what this score means in the context of your therapy."',
-        '"Your RERA index of 6.2 is above the typical range. Your clinician can help interpret what this means alongside your symptoms."',
+        '"Your Glasgow Index of 2.4 -- your clinician can review what this score means alongside your other results."',
+        '"Your RERA index of 6.2 -- your clinician can see how this compares to your other nights alongside your symptoms."',
         '"Your clinician can help interpret what these patterns mean for your therapy."',
       ])}
       ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and highlights findings to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
@@ -206,7 +206,7 @@ function activationStep1(unsubscribeUrl: string): { subject: string; html: strin
         '<strong style="color:#fff;">Select the DATALOG folder</strong> -- AirwayLab will find and parse all the EDF files automatically',
       ])}
       ${paragraph('Everything runs in your browser. Your data never leaves your device unless you choose to share it.')}
-      ${paragraph('Within seconds, you\'ll see scores from four research-grade engines: flow limitation patterns that complement your machine\'s standard reports, breathing regularity, airway resistance, and arousal indicators. These metrics show aspects of your breathing that standard AHI doesn\'t measure.')}
+      ${paragraph('Within seconds, you\'ll see scores from four research-grade engines: flow limitation patterns that complement your machine\'s standard reports, breathing regularity, airway resistance, and arousal indicators. These metrics show additional detail about your breathing patterns alongside what your machine reports.')}
       ${ctaButton('Upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_1`)}
       ${paragraph('Having trouble? Reply to this email and we\'ll help you get started.')}
     `, unsubscribeUrl),
@@ -234,7 +234,7 @@ function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading('Your analysis just got smarter')}
       ${paragraph('Every time you upload now, you\'ll get AI-powered insights alongside the standard engine scores. The AI reads your Glasgow Index, FL Score, NED, and oximetry results together -- connecting patterns across engines that the individual scores can\'t show.')}
-      ${paragraph('It references your pressure settings and analyses your data in context with your current settings. Upload a night and see the difference.')}
+      ${paragraph('It reads your engine scores together, connecting patterns across metrics for a fuller picture of each night. Upload a night and see the difference.')}
       ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_1`)}
     `, unsubscribeUrl),
   };
@@ -246,7 +246,7 @@ function premiumOnboardingStep2(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading('Objective data for your next appointment')}
       ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered interpretation.')}
-      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If you\'ve been struggling to explain why you still feel tired despite "normal" AHI, this report does it for you.')}
+      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If you\'ve been struggling to explain why you still feel tired despite "normal" AHI, this report gives you something to show.')}
       ${ctaButton('Generate Your PDF Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_2`)}
     `, unsubscribeUrl),
   };
