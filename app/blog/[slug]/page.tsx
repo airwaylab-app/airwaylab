@@ -19,9 +19,11 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
+import V121ClearerLanguage from '../posts/v121-clearer-language';
 
 const postComponents: Record<string, React.ComponentType> = {
   'how-to-read-cpap-data': HowToReadCPAPData,
+  'v121-clearer-language': V121ClearerLanguage,
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,

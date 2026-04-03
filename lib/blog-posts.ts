@@ -45,6 +45,17 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'v121-clearer-language',
+    title: 'v1.2.1: Clearer Language, Same Deep Analysis',
+    description:
+      'AirwayLab v1.2.1 updates how insights are worded to be clearer, more accurate, and aligned with EU MDR guidelines. Your analysis stays the same.',
+    date: '2026-04-03',
+    readTime: '3 min read',
+    tags: ['Release', 'MDR Compliance', 'Language'],
+    ogDescription:
+      'AirwayLab v1.2.1 updates how insights are worded to be clearer, more accurate, and aligned with EU MDR guidelines. Your analysis stays the same.',
+  },
+  {
     slug: 'why-ahi-is-lying',
     title: 'Why Your AHI Is Lying to You',
     description:
