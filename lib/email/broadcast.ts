@@ -84,7 +84,7 @@ function march2026Update(unsubscribeUrl: string, subjectVariant: BroadcastSubjec
 
       ${smallText('P.S. New to AirwayLab or tried it once and got lost? There\'s now a <a href="' + GETTING_STARTED_URL + '" style="color:#5eead4;text-decoration:underline;">Getting Started guide</a> and a guided walkthrough that walks you through every tab. And you can see everything we\'ve shipped on the <a href="' + CHANGELOG_URL + '" style="color:#5eead4;text-decoration:underline;">changelog</a>.')}
 
-      ${smallText('AirwayLab is not a medical device. Always discuss therapy changes with your clinician.')}
+      ${smallText('AirwayLab is not a medical device. Always discuss your findings with your clinician.')}
     `, unsubscribeUrl),
   }
 }
