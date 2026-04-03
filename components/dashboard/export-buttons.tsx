@@ -78,55 +78,51 @@ function CopyForumButton({ nights, selectedNight }: Props) {
   );
 }
 
-// TODO: These export functions should surface errors to the user (toast or inline feedback).
-// Currently they only log to console, which is invisible to users.
-function safeExportCSV(nights: NightResult[]): void {
-  try {
-    const csv = exportCSV(nights);
-    downloadFile(csv, 'airwaylab-results.csv', 'text/csv');
-    events.export('csv');
-  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
-  } catch (err) {
-    console.error('CSV export failed:', err);
-  }
-}
-
-function safeExportJSON(nights: NightResult[]): void {
-  try {
-    const json = exportJSON(nights);
-    downloadFile(json, 'airwaylab-results.json', 'application/json');
-    events.export('json');
-  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
-  } catch (err) {
-    console.error('JSON export failed:', err);
-  }
-}
-
-function safeOpenPDF(nights: NightResult[]): void {
-  try {
-    openPDFReport(nights);
-    events.export('pdf');
-  // eslint-disable-next-line airwaylab/no-silent-catch -- TODO: add user-visible error feedback for failed exports
-  } catch (err) {
-    console.error('PDF report failed:', err);
-  }
-}
-
 export const ExportButtons = memo(function ExportButtons({ nights, selectedNight }: Props) {
   const { tier } = useAuth();
   const pdfAllowed = canAccess('pdf_report', tier);
   const [downloaded, setDownloaded] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const handleCSV = useCallback(() => {
-    safeExportCSV(nights);
-    setDownloaded('csv');
-    setTimeout(() => setDownloaded(null), 2000);
+    try {
+      const csv = exportCSV(nights);
+      downloadFile(csv, 'airwaylab-results.csv', 'text/csv');
+      events.export('csv');
+      setDownloaded('csv');
+      setExportError(null);
+      setTimeout(() => setDownloaded(null), 2000);
+    } catch (err) {
+      console.error('CSV export failed:', err);
+      setExportError('csv');
+      setTimeout(() => setExportError(null), 5000);
+    }
   }, [nights]);
 
   const handleJSON = useCallback(() => {
-    safeExportJSON(nights);
-    setDownloaded('json');
-    setTimeout(() => setDownloaded(null), 2000);
+    try {
+      const json = exportJSON(nights);
+      downloadFile(json, 'airwaylab-results.json', 'application/json');
+      events.export('json');
+      setDownloaded('json');
+      setExportError(null);
+      setTimeout(() => setDownloaded(null), 2000);
+    } catch (err) {
+      console.error('JSON export failed:', err);
+      setExportError('json');
+      setTimeout(() => setExportError(null), 5000);
+    }
+  }, [nights]);
+
+  const handlePDF = useCallback(() => {
+    try {
+      openPDFReport(nights);
+      events.export('pdf');
+    } catch (err) {
+      console.error('PDF report failed:', err);
+      setExportError('pdf');
+      setTimeout(() => setExportError(null), 5000);
+    }
   }, [nights]);
 
   return (
@@ -138,15 +134,20 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
             aria-label={`Export ${nights.length} night${nights.length !== 1 ? 's' : ''} as CSV spreadsheet`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            {downloaded === 'csv' ? (
+            {exportError === 'csv' ? (
+              <AlertCircle className="h-3 w-3 text-red-500" />
+            ) : downloaded === 'csv' ? (
               <Check className="h-3 w-3 text-emerald-500" />
             ) : (
               <Download className="h-3 w-3" />
             )}
-            <span className="hidden sm:inline">Spreadsheet </span>{downloaded === 'csv' ? 'Downloaded!' : 'CSV'}
+            <span className="hidden sm:inline">Spreadsheet </span>
+            {exportError === 'csv' ? 'Failed' : downloaded === 'csv' ? 'Downloaded!' : 'CSV'}
           </TooltipTrigger>
           <TooltipContent>
-            All metrics for {nights.length} night{nights.length !== 1 ? 's' : ''} — opens in Excel, Google Sheets
+            {exportError === 'csv'
+              ? 'Export failed — try again or check available disk space'
+              : `All metrics for ${nights.length} night${nights.length !== 1 ? 's' : ''} — opens in Excel, Google Sheets`}
           </TooltipContent>
         </Tooltip>
 
@@ -156,30 +157,42 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
             aria-label={`Export ${nights.length} night${nights.length !== 1 ? 's' : ''} as JSON data`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            {downloaded === 'json' ? (
+            {exportError === 'json' ? (
+              <AlertCircle className="h-3 w-3 text-red-500" />
+            ) : downloaded === 'json' ? (
               <Check className="h-3 w-3 text-emerald-500" />
             ) : (
               <Download className="h-3 w-3" />
             )}
-            <span className="hidden sm:inline">Raw Data </span>{downloaded === 'json' ? 'Downloaded!' : 'JSON'}
+            <span className="hidden sm:inline">Raw Data </span>
+            {exportError === 'json' ? 'Failed' : downloaded === 'json' ? 'Downloaded!' : 'JSON'}
           </TooltipTrigger>
           <TooltipContent>
-            Full structured data for programmatic use
+            {exportError === 'json'
+              ? 'Export failed — try again or check available disk space'
+              : 'Full structured data for programmatic use'}
           </TooltipContent>
         </Tooltip>
 
         {pdfAllowed ? (
           <Tooltip>
             <TooltipTrigger
-              onClick={() => safeOpenPDF(nights)}
+              onClick={handlePDF}
               aria-label={`Open printable PDF report for ${nights.length} night${nights.length !== 1 ? 's' : ''}`}
               className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <FileText className="h-3 w-3" />
-              <span className="hidden sm:inline">Report </span>PDF
+              {exportError === 'pdf' ? (
+                <AlertCircle className="h-3 w-3 text-red-500" />
+              ) : (
+                <FileText className="h-3 w-3" />
+              )}
+              <span className="hidden sm:inline">Report </span>
+              {exportError === 'pdf' ? 'Failed' : 'PDF'}
             </TooltipTrigger>
             <TooltipContent>
-              Open print-ready report — save as PDF from print dialog
+              {exportError === 'pdf'
+                ? 'PDF generation failed — try again'
+                : 'Open print-ready report — save as PDF from print dialog'}
             </TooltipContent>
           </Tooltip>
         ) : (
