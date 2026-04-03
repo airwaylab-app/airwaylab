@@ -96,7 +96,7 @@ Focus on:
 - Oximetry-flow correlations when oximetry data is present
 - Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL predicts sleepiness independently of arousals via limbic/HPA axis stress response. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 - When user-reported night context is provided (caffeine, alcohol, congestion, sleep position, stress, exercise): correlate these factors with the analysis findings. For example, afternoon caffeine + high disruptions, nasal congestion + elevated FL, back sleeping + H2 worsening, etc.
-- When oximetry data shows high T<94% with low ODI3, flag this as likely tonic respiratory depression (e.g., from alcohol or medication) rather than obstructive events — different mechanism, different response.
+- When oximetry data shows high T<94% with low ODI3, note the discrepancy between sustained desaturation and discrete events. This pattern differs from the typical obstructive desaturation profile where ODI tracks desaturation time.
 - ACTIONABILITY: For every warning or actionable insight, describe what the data shows and note results may be worth discussing with a clinician. Do NOT suggest specific actions, behavioral changes, or areas to investigate.
 
 Rules:
@@ -107,7 +107,7 @@ Rules:
 - Prioritise actionable findings over general observations
 - Generate at least one "actionable" type observation with data-specific observations the user can bring to their clinician
 - Do not repeat what the rule-based system would already catch (simple threshold checks)
-- Never recommend pressure increases as a blanket solution. In S-mode (spontaneous breathing), glottic narrowing is NOT the limiting factor (Parreira 1996b, Oppersma 2018). The real risk of higher PS is ventilatory instability: increased tidal volume lowers PaCO2 below the apnea threshold, causing central events. Frame therapy discussion in terms of timing and synchrony (cycling, rise time, trigger sensitivity) rather than pressure magnitude. Brief obstructions (1-2 breath events) typically do not respond to EPAP changes.
+- Never recommend pressure increases as a blanket solution. In S-mode (spontaneous breathing), glottic narrowing is NOT the limiting factor (Parreira 1996b, Oppersma 2018). The real risk of higher PS is ventilatory instability: increased tidal volume lowers PaCO2 below the apnea threshold, causing central events. Frame therapy data in terms of timing and synchrony parameters (cycling, rise time, trigger sensitivity) rather than pressure magnitude. Brief obstructions (1-2 breath events) represent a different pattern than sustained runs of flow-limited breaths.
 - Keep body text to 1 sentence (max ~30 words). Be data-dense, not verbose.
 - If running low on space, finish the current insight and close the array. Fewer complete insights are better than many truncated ones.
 
