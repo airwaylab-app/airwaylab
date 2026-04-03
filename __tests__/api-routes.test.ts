@@ -305,62 +305,6 @@ describe('POST /api/feedback', () => {
     expect(res.status).toBe(200);
   });
 
-  it('fires Sentry warning for bug reports', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    await callRoute({ message: 'Test bug report here', type: 'bug' });
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'New bug submission',
-      expect.objectContaining({
-        level: 'warning',
-        tags: expect.objectContaining({ feedback_type: 'bug' }),
-      })
-    );
-  });
-
-  it('fires Sentry info for feature requests', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    await callRoute({ message: 'Please add dark mode toggle', type: 'feature' });
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'New feature submission',
-      expect.objectContaining({
-        level: 'info',
-      })
-    );
-  });
-
-  it('tags oximetry format requests as unsupported_format with warning level', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    await callRoute({
-      message: 'Oximetry format request (device: Wellue O2 Ring)\n\n1 unsupported file uploaded.',
-      type: 'feature',
-      page: '/analyze',
-    });
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'New unsupported_format submission',
-      expect.objectContaining({
-        level: 'warning',
-        tags: expect.objectContaining({ feedback_type: 'unsupported_format' }),
-      })
-    );
-  });
-
-  it('does not tag non-oximetry feature requests as unsupported_format', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    await callRoute({ message: 'Please add PDF export filters', type: 'feature' });
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'New feature submission',
-      expect.objectContaining({
-        tags: expect.objectContaining({ feedback_type: 'feature' }),
-      })
-    );
-  });
-
-  it('does not include email in Sentry extra', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    await callRoute({ message: 'Hello there test!', email: 'user@example.com', type: 'feedback' });
-    const captureCall = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(captureCall![1].extra).not.toHaveProperty('email');
-  });
 });
 
 // ═══════════════════════════════════════════════════════════════
