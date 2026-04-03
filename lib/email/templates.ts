@@ -84,7 +84,7 @@ export function postUploadStep1(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading('Your breathing data has been analysed')}
       ${paragraph('Four research-grade engines just scored your flow limitation, breathing regularity, and airway resistance. Your results are saved in your browser -- no one sees them but you.')}
-      ${paragraph('One night is a snapshot. Upload a few more nights and you\'ll start to see how your therapy is actually trending -- how your metrics changed after pressure adjustments, which nights are worse, and what your clinician should know.')}
+      ${paragraph('One night is a snapshot. Upload a few more nights and you\'ll start to see how your scores are changing over time -- how your scores compare across nights, which nights are worse, and what your clinician can review.')}
       ${ctaButton('Upload Your Next Night', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_1`)}
     `, unsubscribeUrl),
   };
@@ -95,7 +95,7 @@ export function postUploadStep2(unsubscribeUrl: string): { subject: string; html
     subject: 'One night is a snapshot -- here\'s why that matters',
     html: layout(`
       ${heading('What changes between nights -- and why it matters')}
-      ${paragraph('Sleep breathing varies with body position, alcohol, congestion, and stress. A Glasgow Index of 1.2 one night and 2.8 the next is normal. The question isn\'t "what was my score" -- it\'s "is my therapy trending in the right direction?"')}
+      ${paragraph('Sleep breathing varies with body position, alcohol, congestion, and stress. A Glasgow Index of 1.2 one night and 2.8 the next is normal. The question isn\'t "what was my score" -- it\'s "how do my scores compare night to night?"')}
       ${paragraph('Trends answer that. Each upload adds another data point to the picture your clinician needs:')}
       ${bulletList([
         'See how your flow limitation scores changed over time',
@@ -126,7 +126,7 @@ export function postUploadStep3(unsubscribeUrl: string): { subject: string; html
 
 export function dormancyStep1(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'How\'s your therapy going this month?',
+    subject: 'How are your scores looking this month?',
     html: layout(`
       ${heading('One upload, one minute, one more data point')}
       ${paragraph('Sleep therapy is a long game. Night-to-night scores fluctuate -- that\'s normal. But monthly trends reveal how your scores have changed over time, whether they\'re gradually shifting, or if there are patterns that differ between sleep positions or stages.')}
@@ -160,12 +160,12 @@ export function featureEducationStep1(unsubscribeUrl: string): { subject: string
     subject: 'Your metrics, explained in plain language',
     html: layout(`
       ${heading('Numbers are useful. Explanations are better.')}
-      ${paragraph('AirwayLab\'s four engines give you detailed metrics -- Glasgow Index, FL Score, NED, RERA counts. But what do they mean for <em>your</em> therapy?')}
+      ${paragraph('AirwayLab\'s four engines give you detailed metrics -- Glasgow Index, FL Score, NED, RERA counts. But what do these scores look like across <em>your</em> data?')}
       ${paragraph('AI insights translate your metrics into plain-language explanations:')}
       ${bulletList([
         '"Your Glasgow Index of 2.4 -- your clinician can review what this score means in the context of your therapy."',
         '"Your RERA index of 6.2 is above the typical range. Your clinician can help interpret what this means alongside your symptoms."',
-        '"Your clinician can help interpret what these patterns mean for your therapy."',
+        '"Your clinician can help interpret what these patterns look like in your data."',
       ])}
       ${paragraph('Every analysis includes rule-based insights for free. <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> unlock AI-powered analysis that references your specific pressure settings, compares your patterns to the research literature, and highlights findings to discuss with your clinician. Free users get 3 AI analyses per month to try it.')}
       ${ctaButton('Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_1`)}
@@ -186,7 +186,7 @@ export function featureEducationStep2(unsubscribeUrl: string): { subject: string
         '<strong style="color:#fff;">Forum post</strong> -- formatted for ApneaBoard or r/SleepApnea, with traffic-light indicators.',
       ])}
       ${paragraph('The more data you bring, the better the conversation. Objective data can complement your clinician\'s assessment.')}
-      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get deeper AI analysis that identifies patterns across your data and settings. It\'s the difference between seeing the numbers and understanding what they show about your therapy.')}
+      ${paragraph('For deeper analysis, <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2_upgrade" style="color:#5eead4;text-decoration:underline;">Supporters</a> get deeper AI analysis that identifies patterns across your data and settings. It\'s the difference between seeing the numbers and understanding what they show about your data patterns.')}
       ${ctaButton('Export Your Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=feature_ed_2`)}
     `, unsubscribeUrl),
   };
@@ -258,7 +258,7 @@ function premiumOnboardingStep3(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading("You're funding better sleep analysis for everyone")}
       ${paragraph('AirwayLab is open-source and GPL-licensed. Your subscription funds development of analysis engines that anyone can use, verify, and build on.')}
-      ${paragraph('If you have ideas for what would help your therapy most, reply to this email -- I read everything personally.')}
+      ${paragraph('If you have ideas for what features would be most useful to you, reply to this email -- I read everything personally.')}
       ${ctaButton('See the Roadmap', `${BASE_URL}/changelog?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_3`)}
       ${paragraph('P.S. Your name is on the <a href="' + BASE_URL + '/supporters" style="color:#5eead4;text-decoration:underline;">supporters page</a> (unless you opted out in settings). Thank you.')}
     `, unsubscribeUrl),
