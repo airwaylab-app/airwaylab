@@ -18,8 +18,10 @@ import UnderstandingFlowLimitation from '../posts/understanding-flow-limitation'
 import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
+import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'how-to-read-cpap-data': HowToReadCPAPData,
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
