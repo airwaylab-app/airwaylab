@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://airwaylab.app'),
   title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
   description:
-    'See if your sleep therapy is actually working — beyond AHI. Free, open-source PAP analysis in your browser.',
+    'See what your PAP data actually shows -- beyond AHI. Free, open-source flow limitation analysis in your browser.',
   keywords: [
     'PAP', 'CPAP', 'BiPAP', 'APAP', 'ResMed', 'sleep apnea', 'flow limitation',
     'Glasgow Index', 'OSCAR alternative', 'sleep analysis',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
     description:
-      'See if your sleep therapy is actually working — beyond AHI. Free, open-source PAP analysis in your browser.',
+      'See what your PAP data actually shows -- beyond AHI. Free, open-source flow limitation analysis in your browser.',
     type: 'website',
     url: 'https://airwaylab.app',
     siteName: 'AirwayLab',
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AirwayLab — Free Flow Limitation Analysis for ResMed PAP Data',
     description:
-      'See if your sleep therapy is actually working — beyond AHI. Free, open-source PAP analysis in your browser.',
+      'See what your PAP data actually shows -- beyond AHI. Free, open-source flow limitation analysis in your browser.',
     images: ['/opengraph-image'],
   },
   robots: {
@@ -65,7 +65,7 @@ const jsonLd = {
   '@type': 'SoftwareApplication',
   name: 'AirwayLab',
   description:
-    'See if your sleep therapy is actually working — beyond AHI. Free, open-source PAP analysis in your browser.',
+    'See what your PAP data actually shows -- beyond AHI. Free, open-source flow limitation analysis in your browser.',
   url: 'https://airwaylab.app',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Any (Web Browser)',
