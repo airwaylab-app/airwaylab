@@ -9,9 +9,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { discordLaunchEmail } from '@/lib/email/transactional';
+
+// This endpoint is triggered by admin secret header only.
+// No request body is accepted; unexpected fields are rejected.
+const BodySchema = z.object({}).strict();
 
 const ADMIN_SECRET = process.env.ADMIN_API_KEY;
 const BATCH_SIZE = 10;
@@ -25,6 +30,14 @@ export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-admin-secret');
   if (!ADMIN_SECRET || secret !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rawBody = await request.json().catch(() => null);
+  if (rawBody !== null) {
+    const parsed = BodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'This endpoint does not accept a request body.' }, { status: 400 });
+    }
   }
 
   const supabase = getSupabaseServiceRole();

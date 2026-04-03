@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
+
+const OximetryMetadataSchema = z.object({
+  nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid night date format.'),
+  contributionId: z.string().min(1, 'Contribution ID is required.'),
+  engineVersion: z.string().min(1, 'Engine version is required.'),
+  sampleCount: z.number().int().positive('Sample count must be a positive integer.'),
+  durationSeconds: z.number().positive('Duration must be positive.'),
+  oximetryResultsRaw: z.string().min(1, 'Oximetry results are required.'),
+  deviceModel: z.string().default('Unknown'),
+  papMode: z.string().default('Unknown'),
+});
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -36,31 +48,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large.' }, { status: 413 });
     }
 
-    const nightDate = request.headers.get('x-night-date');
-    const contributionId = request.headers.get('x-contribution-id');
-    const engineVersion = request.headers.get('x-engine-version');
-    const sampleCount = parseInt(request.headers.get('x-sample-count') || '');
-    const durationSeconds = parseFloat(request.headers.get('x-duration-seconds') || '');
-    const deviceModel = request.headers.get('x-device-model') || 'Unknown';
-    const papMode = request.headers.get('x-pap-mode') || 'Unknown';
-    const oximetryResultsRaw = request.headers.get('x-oximetry-results');
+    // Extract and validate metadata from headers
     const isCompressed = request.headers.get('content-encoding') === 'gzip';
+    const rawMetadata = {
+      nightDate: request.headers.get('x-night-date') || '',
+      contributionId: request.headers.get('x-contribution-id') || '',
+      engineVersion: request.headers.get('x-engine-version') || '',
+      sampleCount: parseInt(request.headers.get('x-sample-count') || ''),
+      durationSeconds: parseFloat(request.headers.get('x-duration-seconds') || ''),
+      oximetryResultsRaw: request.headers.get('x-oximetry-results') || '',
+      deviceModel: request.headers.get('x-device-model') || undefined,
+      papMode: request.headers.get('x-pap-mode') || undefined,
+    };
 
-    if (
-      !nightDate ||
-      !contributionId ||
-      !engineVersion ||
-      isNaN(sampleCount) ||
-      isNaN(durationSeconds) ||
-      !oximetryResultsRaw
-    ) {
-      return NextResponse.json({ error: 'Missing required metadata.' }, { status: 400 });
+    const metaParsed = OximetryMetadataSchema.safeParse(rawMetadata);
+    if (!metaParsed.success) {
+      const firstError = metaParsed.error.issues[0]?.message || 'Missing required metadata.';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(nightDate)) {
-      return NextResponse.json({ error: 'Invalid night date format.' }, { status: 400 });
-    }
+    const {
+      nightDate, contributionId, engineVersion,
+      sampleCount, durationSeconds, oximetryResultsRaw,
+      deviceModel, papMode,
+    } = metaParsed.data;
 
+    // Parse oximetry results JSON
     let oximetryResults: unknown;
     try {
       oximetryResults = JSON.parse(oximetryResultsRaw);

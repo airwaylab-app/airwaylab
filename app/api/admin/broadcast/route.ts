@@ -21,11 +21,17 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
+import { z } from 'zod'
 import { getSupabaseServiceRole } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/send'
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
 import { BROADCAST_TEMPLATES, type BroadcastSubjectVariant } from '@/lib/email/broadcast'
 import { sendAlert, formatBroadcastEmbed } from '@/lib/discord-webhook'
+
+const BroadcastSchema = z.object({
+  templateId: z.string().min(1, 'Template ID is required.'),
+  dryRun: z.boolean().default(true),
+})
 
 const ADMIN_SECRET = process.env.ADMIN_API_KEY
 const BATCH_SIZE = 10
@@ -41,20 +47,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { templateId?: string; dryRun?: boolean }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  const { templateId, dryRun = true } = body
-  if (!templateId) {
+  const rawBody = await request.json().catch(() => null)
+  const parsed = BroadcastSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message || 'Invalid request data.'
     return NextResponse.json(
-      { error: 'templateId required', available: Object.keys(BROADCAST_TEMPLATES) },
+      { error: firstError, available: Object.keys(BROADCAST_TEMPLATES) },
       { status: 400 }
     )
   }
+
+  const { templateId, dryRun } = parsed.data
 
   const template = BROADCAST_TEMPLATES[templateId]
   if (!template) {
