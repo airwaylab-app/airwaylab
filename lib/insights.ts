@@ -81,7 +81,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research indicates this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Discuss these findings with your clinician at your next review.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Individual sensitivity to flow limitation varies. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -193,7 +193,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-good',
       type: 'positive',
       title: 'Low respiratory disruption burden',
-      body: `RDI of ${fmt(eaiVal)}/hr indicates few detected disruptions. Note: research indicates flow limitation itself can correlate with symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows few disruptions. Flow limitation metrics may provide additional context alongside disruption counts. Review your flow limitation metrics for the fuller picture.`,
       category: 'ned',
     });
   }
@@ -226,7 +226,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'metric-divergence-wat-low',
       type: 'info',
       title: 'Low WAT FL despite elevated Glasgow/NED',
-      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The obstruction pattern may not involve classic waveform flattening — Glasgow detects skew, spikes, and multi-peak patterns that WAT does not measure.`,
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. Glasgow captures skew, spikes, and multi-peak patterns that WAT does not measure, which may explain the divergence.`,
       category: 'wat',
     });
   }
@@ -452,7 +452,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'settings-vt-unstable',
         type: 'info',
         title: 'Unstable ventilation',
-        body: `Tidal volume varies significantly breath-to-breath (CV ${fmt(sm.tidalVolumeCv, 0)}%). High breath-to-breath volume variability can affect how effectively your machine delivers support.`,
+        body: `Tidal volume varies significantly breath-to-breath (CV ${fmt(sm.tidalVolumeCv, 0)}%). High breath-to-breath volume variability was measured.`,
         category: 'settings',
       });
     }
