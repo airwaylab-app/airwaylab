@@ -54,6 +54,13 @@ export function emailShell(content: string): string {
 
     <!-- Content -->
     ${content}
+
+    <!-- Medical disclaimer -->
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #1e1e21;">
+      <p style="font-size:10px;color:#52525b;line-height:1.5;margin:0;">
+        AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
+      </p>
+    </div>
   </div>
 </body>
 </html>`
