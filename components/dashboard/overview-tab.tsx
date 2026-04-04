@@ -10,7 +10,7 @@ import type { NightResult } from '@/lib/types';
 import { generateInsights } from '@/lib/insights';
 import { NightSummaryHero } from '@/components/dashboard/night-summary-hero';
 import { AIInsightsGate } from '@/components/dashboard/ai-insights-gate';
-import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2, ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react';
+import { HeartPulse, TrendingDown, TrendingUp, ChevronRight, Upload, Info, Settings2, Share2, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SharePrompts } from '@/components/dashboard/share-prompts';
@@ -26,7 +26,7 @@ import { CommunityComparison } from '@/components/dashboard/community-comparison
 import { CommunityBenchmarks } from '@/components/dashboard/community-benchmarks';
 import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
-import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES } from '@/lib/metric-explanations';
+import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES, METRIC_PLAIN_LANGUAGE } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
 import { getTrafficLight, type ThresholdDef } from '@/lib/thresholds';
@@ -120,34 +120,34 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         <NightSummaryHero night={n} />
       </div>
 
-      {/* Treatment Success Banner — contextualises metrics based on RERA control */}
+      {/* Metric Context Banner — contextualises metrics based on machine-reported AHI */}
       {(() => {
-        const reraLight = getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!);
-        if (reraLight === 'good') {
+        const ahi = n.machineSummary?.ahi;
+        if (ahi == null) {
           return (
-            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] px-4 py-3">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500/70" />
+            <div className="flex items-start gap-2.5 rounded-lg border border-border/40 bg-card/30 px-4 py-3">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Your therapy is controlling respiratory events effectively. The metrics below show areas where further optimisation may improve sleep quality.
+                Upload your machine&apos;s SD card data to see your breathing metrics.
               </p>
             </div>
           );
         }
-        if (reraLight === 'warn') {
+        if (ahi < 5) {
           return (
-            <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/70" />
+            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500/70" />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Your respiratory event index is in the elevated range. Discuss these findings with your clinician.
+                Your respiratory event count is in the low range. The metrics below show additional dimensions of your breathing patterns.
               </p>
             </div>
           );
         }
         return (
-          <div className="flex items-start gap-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500/70" />
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/70" />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Your respiratory disruption index is elevated. These findings are worth discussing with your clinician.
+              Your respiratory event index is above the typical range. Your clinician can help interpret these findings in context.
             </p>
           </div>
         );
@@ -250,7 +250,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.iflRisk}
           previousValue={p ? computeIFLRisk(p) : undefined}
           tooltip="Combines FL Score, NED, Flatness Index, and Glasgow Index to estimate how much flow limitation may be driving symptoms. Higher values suggest greater symptom risk from flow limitation."
-          contextHint={getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'bad' ? 'Room to optimise' : getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'warn' ? 'May benefit from optimisation' : undefined}
+          plainLanguage={METRIC_PLAIN_LANGUAGE.iflRisk}
+          contextHint={getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'bad' ? 'Elevated -- this is an independent dimension from your respiratory event count' : getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'warn' ? 'Above the typical range' : undefined}
           onClick={() => openMetric('IFL Symptom Risk', (x) => computeIFLRisk(x), { unit: '%', threshold: THRESHOLDS.iflRisk, description: 'Composite flow limitation symptom risk across all nights' })}
         />
         <MetricCard
@@ -260,7 +261,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.glasgow.overall}
           tooltip="A composite score measuring how abnormal your breathing waveform looks. Lower is better. Based on 9 breath shape components."
           methodology={METRIC_METHODOLOGIES.glasgowIndex}
-          contextHint={getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'warn' ? 'May benefit from optimisation' : undefined}
+          plainLanguage={METRIC_PLAIN_LANGUAGE.glasgowIndex}
+          contextHint={getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'bad' ? 'Elevated -- this is an independent dimension from your respiratory event count' : getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!) === 'warn' ? 'Above the typical range' : undefined}
           onClick={() => openMetric('Glasgow Index', (x) => x.glasgow.overall, { threshold: THRESHOLDS.glasgowOverall, description: 'Composite breath-shape abnormality score across all nights' })}
         />
         <MetricCard
@@ -272,7 +274,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.wat.flScore}
           tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
           methodology={METRIC_METHODOLOGIES.flScore}
-          contextHint={getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'warn' ? 'May benefit from optimisation' : undefined}
+          plainLanguage={METRIC_PLAIN_LANGUAGE.flScore}
+          contextHint={getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'bad' ? 'Elevated -- this is an independent dimension from your respiratory event count' : getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!) === 'warn' ? 'Above the typical range' : undefined}
           onClick={() => openMetric('FL Score', (x) => x.wat.flScore, { unit: '%', threshold: THRESHOLDS.watFL, description: 'Percentage of flow-limited breaths per night' })}
         />
         <MetricCard
@@ -284,7 +287,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.nedMean}
           tooltip="Negative Effort Dependence — measures how much your breathing effort is wasted due to airway obstruction. Lower is better."
           methodology={METRIC_METHODOLOGIES.nedMean}
-          contextHint={getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'bad' ? 'Room to optimise' : getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'warn' ? 'May benefit from optimisation' : undefined}
+          plainLanguage={METRIC_PLAIN_LANGUAGE.nedMean}
+          contextHint={getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'bad' ? 'Elevated -- this is an independent dimension from your respiratory event count' : getTrafficLight(n.ned.nedMean, THRESHOLDS.nedMean!) === 'warn' ? 'Above the typical range' : undefined}
           onClick={() => openMetric('NED Mean', (x) => x.ned.nedMean, { unit: '%', threshold: THRESHOLDS.nedMean, description: 'Average wasted breathing effort due to obstruction' })}
         />
         <MetricCard
@@ -295,7 +299,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           previousValue={p?.ned.reraIndex}
           tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort. Lower is better."
           methodology={METRIC_METHODOLOGIES.reraIndex}
-          contextHint={getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!) === 'bad' ? 'Discuss with clinician' : undefined}
+          plainLanguage={METRIC_PLAIN_LANGUAGE.reraIndex}
+          contextHint={getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!) === 'bad' ? 'Elevated -- your clinician can help interpret these findings in context' : getTrafficLight(n.ned.reraIndex, THRESHOLDS.reraIndex!) === 'warn' ? 'Above the typical range' : undefined}
           onClick={() => openMetric('RERA Index', (x) => x.ned.reraIndex, { unit: '/hr', threshold: THRESHOLDS.reraIndex, description: 'Respiratory effort-related arousals per hour' })}
         />
       </div>

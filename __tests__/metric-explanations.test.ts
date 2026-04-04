@@ -4,6 +4,7 @@ import {
   getEAIExplanation,
   getNEDExplanation,
   getODIExplanation,
+  METRIC_PLAIN_LANGUAGE,
 } from '@/lib/metric-explanations';
 import { THRESHOLDS } from '@/lib/thresholds';
 
@@ -109,5 +110,37 @@ describe('getODIExplanation', () => {
     const text = getODIExplanation(20, threshold);
     expect(text).toContain('frequent');
     expect(text).toContain('clinical attention');
+  });
+});
+
+describe('METRIC_PLAIN_LANGUAGE', () => {
+  const expectedKeys = [
+    'iflRisk',
+    'glasgowIndex',
+    'flScore',
+    'nedMean',
+    'reraIndex',
+    'eai',
+    'regularity',
+    'periodicity',
+    'combinedFL',
+    'odi3',
+    'tBelow90',
+    'spo2Mean',
+    'hrClin10',
+  ];
+
+  it('has plain-language text for all key metrics used in the dashboard', () => {
+    for (const key of expectedKeys) {
+      expect(METRIC_PLAIN_LANGUAGE[key], `Missing plain language for ${key}`).toBeDefined();
+      expect(METRIC_PLAIN_LANGUAGE[key]!.length, `Empty plain language for ${key}`).toBeGreaterThan(10);
+    }
+  });
+
+  it('each entry is a non-empty string', () => {
+    for (const [key, value] of Object.entries(METRIC_PLAIN_LANGUAGE)) {
+      expect(typeof value, `${key} should be a string`).toBe('string');
+      expect(value.trim().length, `${key} should not be empty`).toBeGreaterThan(0);
+    }
   });
 });

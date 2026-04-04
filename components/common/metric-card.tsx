@@ -15,6 +15,8 @@ interface MetricCardProps {
   compact?: boolean;
   tooltip?: string;
   methodology?: string;
+  /** Plain-language "what this means for you" text shown at top of info tooltip */
+  plainLanguage?: string;
   onClick?: () => void;
   /** Short context hint shown below value for amber/red metrics */
   contextHint?: string;
@@ -27,7 +29,7 @@ function formatValue(value: number, format?: string): string {
   return value.toFixed(1);
 }
 
-function InfoTooltip({ text, methodology }: { text: string; methodology?: string }) {
+function InfoTooltip({ text, methodology, plainLanguage }: { text: string; methodology?: string; plainLanguage?: string }) {
   const [show, setShow] = useState(false);
   const [showMethodology, setShowMethodology] = useState(false);
   const [position, setPosition] = useState<'above' | 'below'>('below');
@@ -61,7 +63,7 @@ function InfoTooltip({ text, methodology }: { text: string; methodology?: string
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const estimatedHeight = methodology ? 200 : 120;
+      const estimatedHeight = methodology ? 200 : plainLanguage ? 160 : 120;
       setPosition(spaceBelow < estimatedHeight ? 'above' : 'below');
     }
     setShow(true);
@@ -83,7 +85,10 @@ function InfoTooltip({ text, methodology }: { text: string; methodology?: string
         <Info className="h-3 w-3" />
       </button>
       {show && (
-        <div className={`absolute left-1/2 ${positionClasses} z-50 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md ${methodology ? 'w-72' : 'w-48'}`}>
+        <div className={`absolute left-1/2 ${positionClasses} z-50 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-md ${methodology || plainLanguage ? 'w-72' : 'w-48'}`}>
+          {plainLanguage && (
+            <p className="mb-1.5 text-[11px] font-medium leading-relaxed text-foreground/80">{plainLanguage}</p>
+          )}
           {text}
           {methodology && (
             <>
@@ -118,6 +123,7 @@ export const MetricCard = memo(function MetricCard({
   compact,
   tooltip,
   methodology,
+  plainLanguage,
   onClick,
   contextHint,
 }: MetricCardProps) {
@@ -151,7 +157,7 @@ export const MetricCard = memo(function MetricCard({
     >
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-medium text-muted-foreground sm:text-xs">{label}</span>
-        {tooltip && <InfoTooltip text={tooltip} methodology={methodology} />}
+        {tooltip && <InfoTooltip text={tooltip} methodology={methodology} plainLanguage={plainLanguage} />}
         {light && (
           <span
             className={`inline-block h-2 w-2 rounded-full ${dotColor}`}

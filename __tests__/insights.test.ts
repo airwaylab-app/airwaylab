@@ -375,4 +375,57 @@ describe('generateInsights', () => {
       expect(() => generateInsights([nightNoOx], nightNoOx, null, null)).not.toThrow();
     });
   });
+
+  describe('low-ahi-elevated-fl insight', () => {
+    // night4 (index 3) has Glasgow 2.6 → bad (threshold: good ≤1.0, warn ≤2.0, bad >2.0)
+    // We override machineSummary.ahi to control the AHI value.
+
+    it('triggers when AHI is low (< 5) and Glasgow is red', () => {
+      const night = {
+        ...SAMPLE_NIGHTS[3]!,
+        machineSummary: { ...SAMPLE_NIGHTS[3]!.machineSummary!, ahi: 0.8 },
+      } as NightResult;
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'low-ahi-elevated-fl');
+      expect(insight).toBeDefined();
+      expect(insight!.type).toBe('info');
+      expect(insight!.category).toBe('glasgow');
+      expect(insight!.body).toContain('0.8');
+      expect(insight!.body).toContain('low range');
+      expect(insight!.body).toContain('separate dimension');
+    });
+
+    it('does not trigger when AHI is elevated (>= 5)', () => {
+      const night = {
+        ...SAMPLE_NIGHTS[3]!,
+        machineSummary: { ...SAMPLE_NIGHTS[3]!.machineSummary!, ahi: 8.0 },
+      } as NightResult;
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'low-ahi-elevated-fl');
+      expect(insight).toBeUndefined();
+    });
+
+    it('does not trigger when AHI is null', () => {
+      const night = {
+        ...SAMPLE_NIGHTS[3]!,
+        machineSummary: { ...SAMPLE_NIGHTS[3]!.machineSummary!, ahi: null },
+      } as NightResult;
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'low-ahi-elevated-fl');
+      expect(insight).toBeUndefined();
+    });
+
+    it('does not trigger when both Glasgow and FL are within typical range', () => {
+      // Use night2 (Glasgow 1.2 = warn) with low AHI — neither Glasgow nor FL are 'bad'
+      const night = {
+        ...SAMPLE_NIGHTS[1]!,
+        machineSummary: { ...SAMPLE_NIGHTS[1]!.machineSummary!, ahi: 1.2 },
+      } as NightResult;
+      const result = generateInsights([night], night, null, null);
+      const insight = result.find((i) => i.id === 'low-ahi-elevated-fl');
+      // Only triggers on 'bad' FL or Glasgow, not 'warn'
+      // night2 Glasgow 1.2 is warn, not bad → should not trigger
+      expect(insight).toBeUndefined();
+    });
+  });
 });
