@@ -142,3 +142,38 @@ export function contactConfirmationEmail(
     `, `You're receiving this because you submitted a message on <a href="${BASE_URL}/contact" style="color:#5eead4;text-decoration:none;">airwaylab.app/contact</a>.`),
   }
 }
+
+// ── Remind desktop (mobile email capture) ───────────────────
+
+/**
+ * One-time transactional reminder email for mobile users who cannot upload.
+ * Sent immediately when they submit the MobileEmailCapture form.
+ *
+ * MDR note: no health data, no diagnostic or therapeutic language.
+ */
+export function remindDesktopEmail(
+  unsubscribeUrl: string
+): { subject: string; html: string } {
+  return {
+    subject: 'Your AirwayLab analysis is waiting',
+    html: emailShell(`
+      ${heading('Your SD card data is ready to analyse')}
+      ${paragraph('You visited AirwayLab on a mobile device where SD card uploads aren\'t supported. Head to a desktop or laptop to upload and run your full analysis.')}
+      ${paragraph('Here\'s how to get started:')}
+      ${bulletList([
+        'Locate your CPAP/BiPAP SD card and insert it into your computer',
+        `Visit <a href="${BASE_URL}/analyze?utm_source=email&utm_medium=transactional&utm_campaign=remind_desktop" style="color:#5eead4;text-decoration:underline;">airwaylab.app/analyze</a>`,
+        'Drag and drop your SD card folder -- analysis runs entirely in your browser, no data is uploaded',
+      ])}
+      ${ctaButton('Open AirwayLab on Desktop', `${BASE_URL}/analyze?utm_source=email&utm_medium=transactional&utm_campaign=remind_desktop`)}
+
+      <!-- Unsubscribe footer -->
+      <div style="margin-top:32px;padding-top:16px;border-top:1px solid #1e1e21;">
+        <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0;">
+          You received this because you requested a desktop reminder on <a href="${BASE_URL}" style="color:#52525b;text-decoration:underline;">airwaylab.app</a>.
+          <a href="${unsubscribeUrl}" style="color:#52525b;text-decoration:underline;">Unsubscribe</a>.
+        </p>
+      </div>
+    `),
+  }
+}
