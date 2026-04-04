@@ -100,7 +100,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'ned-mean',
-        stem: 'My flow data shows negative effort dependence — could this indicate upper airway narrowing?',
+        stem: 'My flow data shows negative effort dependence \u2014 can you help me understand what this means for my current therapy?',
         rationale: `Your NED of ${fmt(n.ned.nedMean)}% suggests mid-inspiratory flow reduction consistent with effort-dependent airway narrowing.`,
         category: 'flow-limitation',
         urgency: light,

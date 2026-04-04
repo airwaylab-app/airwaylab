@@ -50,7 +50,7 @@ const engines = [
   {
     icon: BarChart3,
     title: 'NED Effort Dependence',
-    desc: 'Identifies effort-dependent airway collapse \u2014 a key marker of upper airway resistance that correlates with arousals and persistent symptoms.',
+    desc: 'Measures negative effort dependence \u2014 a flow pattern associated with upper airway resistance in published research.',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/20',

@@ -118,7 +118,7 @@ export const SETTINGS_METHODOLOGIES = {
 export function getGlasgowExplanation(value: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {
-    return `Your Glasgow Index of ${fmt(value)} is in the healthy range. Your breathing shows minimal flow limitation — your airway appears to be staying open well during sleep.`;
+    return `Your Glasgow Index of ${fmt(value)} is in the lower range, consistent with minimal flow limitation across breath-shape characteristics.`;
   }
   if (light === 'warn') {
     return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Consider discussing this with your clinician.`;
@@ -155,7 +155,7 @@ export function getNEDExplanation(nedMean: number, reraIndex: number, nedThresho
 export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): string {
   const light = getTrafficLight(value, threshold);
   if (light === 'good') {
-    return 'Your flow limitation composite is low. Your airway appears to be functioning well during therapy.';
+    return 'Your IFL composite score is in the lower range.';
   }
   if (light === 'warn') {
     return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss these findings with your clinician.';
