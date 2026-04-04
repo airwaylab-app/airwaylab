@@ -177,7 +177,7 @@ const landingFaqData = [
   {
     question: 'What is the Glasgow Index?',
     answer:
-      'The Glasgow Index is a 9-component scoring system that evaluates each breath for flow limitation characteristics including skew, spike, flat top, multi-peak, and variable amplitude. Scores range from 0 to 9 where lower is better. Below 2.0 is generally considered good therapy. It was originally developed by DaveSkvn as an open-source analyser and ported to AirwayLab.',
+      'The Glasgow Index is a 9-component scoring system that evaluates each breath for flow limitation characteristics including skew, spike, flat top, multi-peak, and variable amplitude. Scores range from 0 to 9 where lower is better. Below 2.0 is in the lower range. It was originally developed by DaveSkvn as an open-source analyser and ported to AirwayLab.',
   },
   {
     question: 'How is AirwayLab different from OSCAR?',

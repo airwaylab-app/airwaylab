@@ -61,7 +61,7 @@ const faqData = [
   {
     question: 'How do I interpret the Glasgow Index?',
     answer:
-      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is considered good therapy, 2.0\u20133.0 suggests moderate flow limitation worth discussing with your clinician, and above 3.0 suggests elevated flow limitation scores. Your clinician can help interpret these findings in context.',
+      'The Glasgow Index scores each breath on 9 flow limitation characteristics, producing an overall score from 0 to 8 (lower is better). Generally: below 2.0 is in the lower range, 2.0\u20133.0 suggests moderate flow limitation scores, and above 3.0 suggests elevated flow limitation scores. Your clinician can help interpret these findings in context.',
   },
   {
     question: 'What is the difference between Glasgow, WAT, and NED?',
@@ -76,7 +76,7 @@ const faqData = [
   {
     question: 'What is the Estimated Arousal Index (EAI) and how is it calculated?',
     answer:
-      'The Estimated Arousal Index (EAI) estimates how many times per hour your brain briefly wakes up during sleep, based on breathing pattern changes. True arousals can only be measured with EEG (brain wave monitoring), but respiratory pattern changes correlate well with cortical arousals. AirwayLab detects arousals by looking for sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). A 15-second refractory period prevents double-counting. An EAI below 10/hr is generally considered normal. Above 15/hr suggests significant sleep fragmentation worth discussing with your clinician.',
+      'The Estimated Arousal Index (EAI) estimates how many times per hour your brain briefly wakes up during sleep, based on breathing pattern changes. True arousals can only be measured with EEG (brain wave monitoring), but respiratory pattern changes correlate well with cortical arousals. AirwayLab detects arousals by looking for sudden spikes in respiratory rate (>20% above a 120-second rolling baseline) or tidal volume (>30% above baseline). A 15-second refractory period prevents double-counting. An EAI below 10/hr is in the lower range. An EAI above 15/hr is elevated -- your clinician can help interpret this pattern in context.',
   },
   {
     question: 'How is the FL Score calculated?',
@@ -489,12 +489,12 @@ export default function AboutPage() {
           <FAQItem question="How do I interpret the Glasgow Index?">
             The Glasgow Index scores each breath on 9 flow limitation
             characteristics, producing an overall score from 0 to 8 (lower is
-            better). Generally: <strong className="text-foreground">below 2.0</strong> is
-            considered good therapy, <strong className="text-foreground">2.0&ndash;3.0</strong>{' '}
-            suggests moderate flow limitation worth discussing with your
-            clinician, and <strong className="text-foreground">above 3.0</strong> indicates
-            significant flow limitation that may warrant pressure or settings
-            adjustment.
+            better). Generally: <strong className="text-foreground">below 2.0</strong> is in the
+            lower range, <strong className="text-foreground">2.0&ndash;3.0</strong>{' '}
+            suggests moderate flow limitation scores, and{' '}
+            <strong className="text-foreground">above 3.0</strong> suggests elevated
+            flow limitation scores. Your clinician can help interpret these
+            findings in context.
           </FAQItem>
 
           <FAQItem question="What is the difference between Glasgow, WAT, and NED?">
@@ -570,8 +570,8 @@ export default function AboutPage() {
               closely spaced events.
             </p>
             <p>
-              An EAI below 10/hr is generally considered normal. Above 15/hr suggests significant sleep
-              fragmentation that may be worth discussing with your clinician, even if your AHI looks fine.
+              An EAI below 10/hr is in the lower range. An EAI above 15/hr is elevated -- your clinician
+              can help interpret this pattern in context, even if your AHI appears low.
             </p>
           </FAQItem>
 
