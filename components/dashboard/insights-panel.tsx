@@ -174,6 +174,13 @@ export function InsightsPanel({
             })}
           </div>
         )}
+
+        {/* Medical disclaimer */}
+        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/60">
+          These insights are generated from your data for informational purposes
+          only. They are not clinical recommendations. Discuss findings with your
+          clinician.
+        </p>
       </div>
     </details>
   );
