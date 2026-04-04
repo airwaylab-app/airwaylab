@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
       try {
         const { data: aggStats } = await adminForStats.rpc('get_symptom_aggregate_stats');
         if (aggStats && aggStats.total_ratings >= 100) {
-          systemPrompt += `\n\nCommunity context (${aggStats.total_ratings} self-reported sleep quality ratings across all users):\n- Average rating: ${Number(aggStats.avg_rating).toFixed(1)}/5\n- Users with IFL Risk >45% who rated sleep as Poor/Terrible: ${aggStats.high_ifl_poor_pct ?? 0}%\n- Users with IFL Risk <20% who rated sleep as Good/Great: ${aggStats.low_ifl_good_pct ?? 0}%\nUse this context to frame whether this user's experience is typical or atypical relative to the community.`;
+          systemPrompt += `\n\nCommunity context: average sleep rating ${Number(aggStats.avg_rating).toFixed(1)}/5 across ${aggStats.total_ratings} users.`;
         }
       } catch {
         // Non-critical — proceed without aggregate stats
