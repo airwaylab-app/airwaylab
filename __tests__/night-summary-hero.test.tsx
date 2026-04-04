@@ -72,7 +72,7 @@ describe('NightSummaryHero — treatment context framing', () => {
     const { container } = render(<NightSummaryHero night={night} />);
     const hero = container.firstChild as HTMLElement;
     expect(hero.className).toContain('border-emerald');
-    expect(screen.getByText('Your therapy looks effective tonight')).toBeInTheDocument();
+    expect(screen.getByText('Your metrics are in the typical range tonight')).toBeInTheDocument();
   });
 
   // Case 1: events good + FL amber → amber (dual framing)
@@ -158,6 +158,6 @@ describe('NightSummaryHero — treatment context framing', () => {
   it('includes medical disclaimer on all hero variants', () => {
     const night = makeNight();
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText(/discuss results with your sleep physician/i)).toBeInTheDocument();
+    expect(screen.getByText(/sleep physician can help interpret these results/i)).toBeInTheDocument();
   });
 });
