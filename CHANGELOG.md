@@ -38,6 +38,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
 - **Persistent rate limiting** — Rate limiting now persists across Vercel cold starts via Upstash Redis. Falls back to in-memory when not configured. Fails open on Redis errors with Sentry logging. (persistent-rate-limiting)
 
+## [1.2.2] - 2026-04-03
+
+### Security
+
+- **Discord OAuth rate limiting** -- Request throttling on the OAuth flow prevents abuse.
+- **API input validation** -- 7 API endpoints now validate incoming data before processing.
+
+### Changed
+
+- **Informational language throughout** -- Removed all remaining clinical framing from the About page, landing page, and Glasgow FAQ. AirwayLab consistently describes what your data shows. Interpreting those findings in a clinical context is a conversation for you and your care team.
+
+### Fixed
+
+- **Forum copy feedback** -- The "Copy Forum Post" button now shows a clear error when clipboard access is denied (permissions issue, non-HTTPS context). Previously the failure was silent.
+- **More reliable analysis for unusual SD card data** -- EDF files with corrupted or incomplete data no longer halt the analysis pipeline. Affected sessions are skipped with a warning instead of crashing the run.
+- **Better search discoverability** -- FAQ schema markup and updated meta descriptions for 6 key pages make AirwayLab easier to find in search results.
+
 ## [1.2.1] - 2026-04-03
 
 ### Fixed
