@@ -83,7 +83,7 @@ export default function OGImage() {
             maxWidth: 800,
           }}
         >
-          See If Your PAP Therapy Is Actually Working
+          See What Your PAP Data Actually Shows
         </p>
 
         {/* Engine badges */}

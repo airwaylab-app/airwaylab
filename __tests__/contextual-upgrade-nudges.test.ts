@@ -38,7 +38,7 @@ describe('Contextual upgrade nudges', () => {
     it('credits-exhausted state mentions waveform-level depth', () => {
       const content = readFile('components/dashboard/ai-insights-cta.tsx');
       expect(content).toContain('waveform-level');
-      expect(content).toContain('what they mean for your therapy');
+      expect(content).toContain('cross-engine correlations your clinician can review');
     });
 
     it('uses "See supporter benefits" CTA instead of "Support the project"', () => {

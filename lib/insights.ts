@@ -566,6 +566,21 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
   // Machine summary insights
   const ms = n.machineSummary;
   if (ms) {
+    // Low AHI with elevated flow limitation — contextualises red FL metrics for users with good event control
+    if (ms.ahi != null && ms.ahi < 5) {
+      const flLight = getTrafficLight(n.wat.flScore, THRESHOLDS.watFL!);
+      const glLight = getTrafficLight(n.glasgow.overall, THRESHOLDS.glasgowOverall!);
+      if (flLight === 'bad' || glLight === 'bad') {
+        insights.push({
+          id: 'low-ahi-elevated-fl',
+          type: 'info',
+          title: 'Low AHI with elevated flow limitation',
+          body: `Your respiratory event count (AHI ${fmt(ms.ahi)}) is in the low range. Flow limitation metrics measure a separate dimension of breathing patterns. Red indicators here do not mean your respiratory event count is elevated.`,
+          category: 'glasgow',
+        });
+      }
+    }
+
     if (ms.ahi != null && ms.ahi > 5) {
       insights.push({
         id: 'machine-ahi-elevated',

@@ -12,7 +12,7 @@ test.describe('Landing Page', () => {
   });
 
   test('renders hero section with primary CTA', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('PAP Therapy');
+    await expect(page.locator('h1')).toContainText('See What Your PAP Data');
     // Hero has mobile/desktop variants — verify at least one Upload CTA link exists
     const uploadCTAs = page.locator('a[href="/analyze"]').filter({ hasText: 'Upload Your SD Card' });
     await expect(uploadCTAs.first()).toBeAttached();

@@ -33,7 +33,7 @@ export function NextSteps({ selectedNight, hasOximetry, nightCount, onUploadOxim
 
   if (gl === 'bad') {
     steps.push({
-      text: 'Your flow limitation metrics are higher than typical. Consider sharing this report with your clinician for interpretation.',
+      text: 'Your flow limitation metrics are higher than typical. Your clinician can help interpret these findings at your next appointment.',
     });
   }
 
