@@ -206,7 +206,7 @@ function buildAnnouncementEmail(unsubscribeUrl: string): { subject: string; html
 
     ${h3("What we shipped")}
     <ul style="margin:0 0 16px 0;padding-left:20px;">
-      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet.</strong> Deeper, more specific therapy recommendations for Supporters and Champions. Free users still get 3 analyses per month via Haiku.')}
+      ${li('<strong style="color:#fff;">AI insights upgraded to Claude Sonnet.</strong> Deeper, more specific breathing data analysis for Supporters and Champions. Free users still get 3 analyses per month via Haiku.')}
       ${li('<strong style="color:#fff;">Settings dashboard.</strong> See your machine settings (EPAP, IPAP, PS, EPR) and how they changed over time.')}
       ${li('<strong style="color:#fff;">Night comparison.</strong> Compare any two nights side by side across all four engines.')}
       ${li('<strong style="color:#fff;">Cloud sync (free for everyone).</strong> Your SD card files are now stored securely in the EU so you can access your data from any device. You can delete all stored data at any time from your account settings.')}
