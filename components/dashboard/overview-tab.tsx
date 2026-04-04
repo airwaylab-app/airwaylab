@@ -526,7 +526,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           threshold={THRESHOLDS.watPeriodicity}
           previousValue={p?.wat.periodicityIndex}
           compact
-          tooltip="Detects repeating patterns in airflow that may indicate periodic breathing or Cheyne-Stokes. Lower is better."
+          tooltip="Detects repeating patterns in airflow. A high score can be worth discussing with your clinician."
           methodology={METRIC_METHODOLOGIES.periodicity}
           onClick={() => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity })}
         />

@@ -79,7 +79,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             format="pct"
             threshold={THRESHOLDS.watPeriodicity}
             previousValue={p?.wat.periodicityIndex}
-            tooltip="Detects cyclic breathing patterns using FFT on minute ventilation. May indicate periodic breathing or Cheyne-Stokes. Lower is better."
+            tooltip="Detects repeating patterns in airflow. A high score can be worth discussing with your clinician."
             methodology={METRIC_METHODOLOGIES.periodicity}
             onClick={clickable ? () => openMetric('Periodicity', (x) => x.wat.periodicityIndex, { unit: '%', threshold: THRESHOLDS.watPeriodicity }) : undefined}
           />
@@ -361,8 +361,7 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             </div>
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
-            REM-predominant flow limitation typically worsens in H2 as REM density increases.
-            A significant H2 rise (&gt;3%) is a common pattern in the second half of the night, associated with positional changes or REM sleep.
+            A significant H2 rise (&gt;3%) is a pattern worth noting -- your clinician can help assess whether position or sleep stage may be relevant.
           </p>
         </CardContent>
       </Card>

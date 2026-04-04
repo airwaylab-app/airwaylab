@@ -49,7 +49,7 @@ export function DeepInsightTeasers({ night }: Props) {
     if (night.wat.flScore > 30) {
       teasers.push({
         title: 'What is driving your flow limitation',
-        desc: `At ${night.wat.flScore.toFixed(0)}% FL Score, individual breath analysis can identify the obstruction type...`,
+        desc: `At ${night.wat.flScore.toFixed(0)}% FL Score, individual breath analysis can reveal patterns in how your breathing effort changes across the night...`,
       });
     }
   }
@@ -59,7 +59,7 @@ export function DeepInsightTeasers({ night }: Props) {
     if (!teasers.some((t) => t.title.includes('Breath Pattern'))) {
       teasers.push({
         title: 'Breath Pattern Classification',
-        desc: 'Individual breath shapes analysed for obstruction type...',
+        desc: 'Individual breath shapes analysed for breathing effort patterns...',
       });
     }
     if (!teasers.some((t) => t.title.includes('Temporal'))) {
