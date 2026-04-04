@@ -147,7 +147,7 @@ export function getNEDExplanation(nedMean: number, reraIndex: number, nedThresho
     return `Your RERA index of ${fmt(reraIndex)}/hr means your breathing effort increases frequently before triggering a brief arousal. These events don't show up in AHI but can significantly fragment sleep.`;
   }
   if (light === 'bad') {
-    return `Your NED mean of ${fmt(nedMean)}% indicates sustained breathing effort throughout the night. This suggests your airway is working harder than it should, even if full apneas aren't occurring.`;
+    return `Your NED mean of ${fmt(nedMean)}% shows mid-inspiratory flow reduction throughout the night. This level of breathing effort is elevated, even if full apneas aren't occurring.`;
   }
   return `Your NED analysis shows moderate breathing effort (mean ${fmt(nedMean)}%) with ${fmt(reraIndex)} RERAs/hr. Some residual flow limitation is present.`;
 }

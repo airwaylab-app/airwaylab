@@ -80,9 +80,9 @@ describe('getNEDExplanation', () => {
     expect(text).toContain('12.0');
   });
 
-  it('returns sustained effort for bad NED', () => {
+  it('returns elevated effort for bad NED', () => {
     const text = getNEDExplanation(30, 8, threshold);
-    expect(text).toContain('sustained');
+    expect(text).toContain('elevated');
   });
 
   it('returns moderate explanation for borderline values', () => {

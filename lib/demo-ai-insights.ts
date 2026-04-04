@@ -43,7 +43,7 @@ export const DEMO_AI_INSIGHTS: Insight[] = [
     id: 'demo-ai-trend-7night',
     type: 'positive',
     title: '7-night trend shows consistent post-change improvement',
-    body: 'Across all 7 nights, AHI dropped from a pre-change average of 6.5/hr (nights 4\u20137) to 3.2/hr (nights 1\u20133). The flow limitation engines confirm this is a genuine improvement: combined FL percentage fell from 29% to 19%, and RERA index from 8.8 to 5.4. The trend is holding over 3 post-change nights, suggesting the settings adjustment is effective.',
+    body: 'Across all 7 nights, AHI dropped from a pre-change average of 6.5/hr (nights 4\u20137) to 3.2/hr (nights 1\u20133). The flow limitation engines confirm this is a genuine improvement: combined FL percentage fell from 29% to 19%, and RERA index from 8.8 to 5.4. The trend is consistent across 3 post-change nights.',
     category: 'therapy',
   },
   {
