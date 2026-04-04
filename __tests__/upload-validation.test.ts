@@ -123,7 +123,7 @@ describe('validateSDFiles', () => {
     ];
     const result = validateSDFiles(files);
     expect(result.valid).toBe(true);
-    expect(result.warnings.some((w) => w.includes('DATALOG folder'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('not a subfolder'))).toBe(true);
   });
 
   it('mentions "ResMed" in error when ResMed device detected but no flow data', () => {
@@ -133,15 +133,14 @@ describe('validateSDFiles', () => {
     expect(result.deviceType).toBe('unknown');
   });
 
-  it('mentions "ResMed" in folder structure warning when ResMed device detected', () => {
+  it('warns about atypical folder structure when ResMed device detected', () => {
     const files = [
       mockFile('BRP.edf', 100_000),
       mockFile('STR.edf'),
     ];
     const result = validateSDFiles(files);
     expect(result.deviceType).toBe('resmed');
-    const folderWarning = result.warnings.find((w) => w.includes('DATALOG'));
-    // ResMed-specific warnings now correctly mention ResMed
+    const folderWarning = result.warnings.find((w) => w.includes('not a subfolder'));
     expect(folderWarning).toBeDefined();
   });
 

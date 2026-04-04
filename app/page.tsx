@@ -448,6 +448,18 @@ export default function Home() {
             </Link>
           </div>
 
+          {/* Mid-page CTA */}
+          <div className="mx-auto mt-10 max-w-2xl text-center sm:mt-14">
+            <p className="text-sm text-muted-foreground">
+              Ready? Upload your SD card to see your results in 60 seconds.
+            </p>
+            <Link href="/analyze" prefetch={false} className="mt-4 inline-block">
+              <Button size="lg" className="gap-2">
+                <Upload className="h-4 w-4" /> Upload Your SD Card
+              </Button>
+            </Link>
+          </div>
+
           {/* What You'll Need */}
           <div className="mx-auto mt-10 max-w-4xl rounded-xl border border-border/50 bg-card/50 p-5 sm:mt-14 sm:p-6">
             <h3 className="mb-3 text-sm font-semibold">What You&apos;ll Need</h3>
