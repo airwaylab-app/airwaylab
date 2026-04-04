@@ -82,7 +82,7 @@ export default function TwitterImage() {
             maxWidth: 800,
           }}
         >
-          See If Your PAP Therapy Is Actually Working
+          See What Your PAP Data Actually Shows
         </p>
 
         {/* Engine badges */}

@@ -250,9 +250,9 @@ export default function Home() {
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                See If Your PAP Therapy
+                See What Your PAP Data
                 <br />
-                <span className="text-primary">Is Actually Working</span>
+                <span className="text-primary">Actually Shows</span>
               </h1>
 
               {/* Trust signals — prominent above the fold */}
