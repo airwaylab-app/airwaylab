@@ -40,20 +40,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.2] - 2026-04-03
 
-### Security
+### Added
 
-- **Discord OAuth rate limiting** -- Request throttling on the OAuth flow prevents abuse.
-- **API input validation** -- 7 API endpoints now validate incoming data before processing.
+- **New headline** -- "See What Your PAP Data Actually Shows" replaces effectiveness-framing headline with data-descriptive copy.
+- **Metrics comprehension framing** -- AHI context banner explaining what AHI does and doesn't capture, plain language tooltips for key metrics, and a new insight for low-AHI users who may still have flow limitation.
+- **UX quick wins** -- Upload progress stage labels ("Reading files", "Analyzing nights"), simplified upload instructions, and a mid-page CTA on the landing page.
+- **Social proof on pricing** -- Testimonials section and community stats bar on the pricing page.
+- **Mobile email capture** -- Desktop reminder signup on /analyze for mobile visitors (recovers ~40% of mobile traffic that can't upload SD card data).
+- **Desktop reminder emails** -- POST /api/remind-desktop endpoint with unsubscribe flow for mobile-to-desktop conversion.
+- **v1.2.1 blog post** -- "Clearer Language, Same Deep Analysis" release announcement.
+- **Internal linking** -- Homepage blog section and cross-linked blog posts for SEO.
+- **Point-of-use medical disclaimers** -- Disclaimer components on AI insights, clinician questions, and metric info popovers.
 
 ### Changed
 
-- **Informational language throughout** -- Removed all remaining clinical framing from the About page, landing page, and Glasgow FAQ. AirwayLab consistently describes what your data shows. Interpreting those findings in a clinical context is a conversation for you and your care team.
+- **MDR compliance sweep** -- Comprehensive review and rewrite of all user-facing copy across 10+ PRs. Removed therapeutic recommendation language, diagnostic claims, and effectiveness framing from dashboard, insights, email templates, about pages, demo mode, settings tab, FAQ sections, and AI prompts. AirwayLab now consistently describes what your data shows without clinical interpretation.
+- **Better search discoverability** -- FAQ schema markup, updated meta descriptions for 6 key pages, canonical URLs, and sitemap corrections.
 
 ### Fixed
 
 - **Forum copy feedback** -- The "Copy Forum Post" button now shows a clear error when clipboard access is denied (permissions issue, non-HTTPS context). Previously the failure was silent.
 - **More reliable analysis for unusual SD card data** -- EDF files with corrupted or incomplete data no longer halt the analysis pipeline. Affected sessions are skipped with a warning instead of crashing the run.
-- **Better search discoverability** -- FAQ schema markup and updated meta descriptions for 6 key pages make AirwayLab easier to find in search results.
+- **Privacy policy accuracy** -- Corrected waveform and oximetry data flow disclosures to accurately reflect what data is shared and when.
+- **Email template compliance** -- Removed MDR MUST violations from email templates (therapeutic recommendation language in announce and preview templates).
+- **Sentry feedback noise** -- Removed unnecessary Sentry capture on successful feedback submissions.
+
+### Security
+
+- **Discord OAuth rate limiting** -- Request throttling on the OAuth flow prevents abuse.
+- **API input validation** -- 7 API endpoints now validate incoming data with Zod schemas before processing.
 
 ## [1.2.1] - 2026-04-03
 
