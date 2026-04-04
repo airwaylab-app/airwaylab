@@ -321,10 +321,10 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
             Green, amber, and red indicators show where each metric falls relative to research-based thresholds.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Flow limitation metrics (Glasgow Index, FL Score, NED) measure a different dimension than event-based metrics like RERA. Red flow limitation scores mean room to optimise, not that treatment is failing.
+            Flow limitation metrics (Glasgow Index, FL Score, NED) measure a different dimension than event-based metrics like RERA. Red flow limitation scores indicate elevated values for this dimension. Flow limitation is measured independently of respiratory event count.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Always discuss findings with your clinician before making therapy changes.
+            Your clinician can help interpret these findings in the context of your overall care.
           </p>
           <Link
             href="/glossary"
@@ -688,8 +688,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         const ifl = computeIFLRisk(n);
         const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk!);
         const msg = iflTier === 'good'
-          ? 'Your therapy looks effective. Supporters get deeper analysis to understand exactly why -- and what to watch for over time.'
-          : 'Your flow limitation patterns suggest room for therapy optimisation. Get AI-powered analysis of what your breathing data means for your settings.';
+          ? 'Your metrics look typical. Supporters get deeper analysis to understand the details and what to watch for over time.'
+          : 'Your flow limitation patterns show characteristics worth exploring further. Get AI-powered analysis of what your breathing data shows.';
         return <UpgradePrompt feature={msg} />;
       })()}
 

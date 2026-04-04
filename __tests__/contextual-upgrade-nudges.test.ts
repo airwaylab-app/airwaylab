@@ -89,8 +89,8 @@ describe('Contextual upgrade nudges', () => {
       const content = readFile('components/dashboard/overview-tab.tsx');
       // Should have contextual logic based on IFL tier
       expect(content).toContain('iflTier');
-      expect(content).toContain('therapy looks effective');
-      expect(content).toContain('room for therapy optimisation');
+      expect(content).toContain('metrics look typical');
+      expect(content).toContain('worth exploring further');
     });
   });
 });

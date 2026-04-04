@@ -128,7 +128,7 @@ describe('NightSummaryHero', () => {
   it('shows green headline for low IFL Risk with good events', () => {
     const night = makeNight({ glasgow: 0.5 });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText('Your therapy looks effective tonight')).toBeInTheDocument();
+    expect(screen.getByText('Your metrics are in the typical range tonight')).toBeInTheDocument();
   });
 
   it('shows dual framing headline when events good but IFL Risk is red', () => {
@@ -147,7 +147,7 @@ describe('NightSummaryHero', () => {
   it('includes medical disclaimer', () => {
     const night = makeNight();
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText(/discuss results with your sleep physician/i)).toBeInTheDocument();
+    expect(screen.getByText(/sleep physician can help interpret these results/i)).toBeInTheDocument();
   });
 });
 

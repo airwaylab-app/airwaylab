@@ -13,7 +13,7 @@ const STEPS = [
   {
     selector: '[data-walkthrough="summary-hero"]',
     name: 'summary-hero',
-    text: 'This is your headline result. Green means therapy looks effective, amber means worth monitoring, red means discuss with your clinician.',
+    text: 'This is your headline result. Green means metrics are in the typical range, amber means worth monitoring, red means values are elevated.',
   },
   {
     selector: '[data-walkthrough="metrics-grid"]',

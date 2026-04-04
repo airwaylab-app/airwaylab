@@ -71,8 +71,8 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
     if (eventGood && !hasFLConcern) {
       // Case 2: all good
       tier = 'good';
-      headlineText = 'Your therapy looks effective tonight';
-      bodyText = `IFL Symptom Risk of ${fmt(iflRisk)}% indicates your airway is functioning well during therapy. Current settings appear effective.`;
+      headlineText = 'Your metrics are in the typical range tonight';
+      bodyText = `IFL Symptom Risk of ${fmt(iflRisk)}% is in the lower range for this metric. Current readings are within expected ranges.`;
     } else if (eventGood && hasFLConcern) {
       // Case 1: dual framing — events controlled, FL elevated
       tier = 'warn';
@@ -119,7 +119,7 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
               </button>
             )}
             <span className="text-[10px] text-muted-foreground/70">
-              Always discuss results with your sleep physician before making therapy changes.
+              Your sleep physician can help interpret these results in the context of your overall care.
             </span>
           </div>
         </div>
