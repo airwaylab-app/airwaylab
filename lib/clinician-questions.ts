@@ -86,7 +86,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       return {
         id: 'glasgow',
         stem: 'My breath shape analysis shows flow-limited patterns. Can you help me understand what this means?',
-        rationale: `Your Glasgow Index of ${fmt(n.glasgow.overall)} indicates altered inspiratory flow shapes${compText}.`,
+        rationale: `Your Glasgow Index of ${fmt(n.glasgow.overall)} is above the typical range for this metric${compText}.`,
         category: 'flow-limitation',
         urgency: light,
       };
@@ -100,8 +100,8 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'ned-mean',
-        stem: 'My flow data shows negative effort dependence \u2014 can you help me understand what this means for my current therapy?',
-        rationale: `Your NED of ${fmt(n.ned.nedMean)}% suggests mid-inspiratory flow reduction consistent with effort-dependent airway narrowing.`,
+        stem: 'My flow data shows negative effort dependence. Can you help me understand what this means?',
+        rationale: `Your NED of ${fmt(n.ned.nedMean)}% is above the typical range for this metric.`,
         category: 'flow-limitation',
         urgency: light,
       };

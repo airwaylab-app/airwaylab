@@ -72,7 +72,7 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
         ) : (
           <p>
             Your free analyses reset next month. Supporters get unlimited AI analysis with waveform-level
-            depth -- understanding not just what your numbers are, but what they mean for your therapy.{' '}
+            depth -- exploring your data patterns with cross-engine correlations your clinician can review.{' '}
             <Link
               href="/pricing"
               className="font-medium text-primary/70 underline underline-offset-2 hover:text-primary"
