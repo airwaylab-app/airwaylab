@@ -141,7 +141,7 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {
   const light = getTrafficLight(nedMean, nedThreshold);
   if (light === 'good' && reraIndex < 5) {
-    return `Your NED mean of ${fmt(nedMean)}% with ${fmt(reraIndex)} RERAs/hr shows well-controlled breathing effort. Your therapy is effectively keeping your airway open.`;
+    return `Your NED mean of ${fmt(nedMean)}% with ${fmt(reraIndex)} RERAs/hr is in the low range, consistent with well-controlled breathing effort.`;
   }
   if (reraIndex >= 10) {
     return `Your RERA index of ${fmt(reraIndex)}/hr means your breathing effort increases frequently before triggering a brief arousal. These events don't show up in AHI but can significantly fragment sleep.`;
