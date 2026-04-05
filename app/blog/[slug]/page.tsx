@@ -20,8 +20,10 @@ import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
 import V121ClearerLanguage from '../posts/v121-clearer-language';
+import V122YourDataExplained from '../posts/v122-your-data-explained-not-judged';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
   'v121-clearer-language': V121ClearerLanguage,
   'why-ahi-is-lying': WhyAHIIsLying,

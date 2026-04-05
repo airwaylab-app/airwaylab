@@ -17,6 +17,17 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'v1-2-2-your-data-explained-not-judged',
+    title: 'v1.2.2: Your Data, Explained -- Not Judged',
+    description:
+      'AirwayLab v1.2.2 ships 23 PRs: MDR compliance sweep, dashboard improvements, and honest data framing. Your PAP data, explained -- not judged.',
+    date: '2026-04-04',
+    readTime: '5 min read',
+    tags: ['Release', 'MDR Compliance', 'Dashboard', 'UX'],
+    ogDescription:
+      'AirwayLab v1.2.2 ships 23 PRs: MDR compliance sweep, dashboard improvements, and honest data framing. Your PAP data, explained -- not judged.',
+  },
+  {
     slug: 'how-to-read-cpap-data',
     title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
     description:
