@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { CommunityCounter } from '@/components/common/community-counter';
 
+const UPGRADE_INTENT_KEY = 'airwaylab_upgrade_intent';
+
 const PRICES = {
   supporter: {
     monthly: process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID,
@@ -95,6 +97,19 @@ export default function PricingPage() {
     events.pricingViewed();
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    let pendingPriceId: string | null = null;
+    try {
+      pendingPriceId = sessionStorage.getItem(UPGRADE_INTENT_KEY);
+      if (pendingPriceId) sessionStorage.removeItem(UPGRADE_INTENT_KEY);
+    } catch { /* storage unavailable */ }
+    if (pendingPriceId) {
+      handleCheckout(pendingPriceId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const handleCheckout = async (priceId: string | undefined) => {
     if (!priceId) {
       console.error('[pricing] Missing price ID for checkout — env var not configured');
@@ -105,6 +120,9 @@ export default function PricingPage() {
 
     if (!user) {
       events.authStarted('pricing');
+      try {
+        sessionStorage.setItem(UPGRADE_INTENT_KEY, priceId);
+      } catch { /* storage unavailable -- non-critical */ }
       setAuthModalOpen(true);
       return;
     }
