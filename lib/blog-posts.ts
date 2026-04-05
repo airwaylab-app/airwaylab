@@ -306,6 +306,118 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'what-is-glasgow-index-cpap',
+    title: 'What Is the Glasgow Index in CPAP/BiPAP Data?',
+    description:
+      'The Glasgow Index scores the shape of each breath during sleep on nine components. AirwayLab calculates it automatically from your ResMed EDF data -- free, in your browser.',
+    date: '2026-04-05',
+    readTime: '5 min read',
+    tags: ['Glasgow Index', 'Flow Limitation', 'CPAP', 'Metrics'],
+    ogDescription:
+      'The Glasgow Index scores the shape of each breath during sleep on nine components. AirwayLab calculates it automatically from your ResMed EDF data -- free, in your browser.',
+    faqItems: [
+      {
+        question: 'What is the Glasgow Index in CPAP data?',
+        answer:
+          'The Glasgow Index measures the shape of your inspiratory flow curve during sleep. It analyses each breath on nine components -- including skew, flat top, and variable amplitude -- to detect waveform irregularities associated with upper airway narrowing. A higher score means more irregularities were detected across the night.',
+      },
+      {
+        question: 'Where does the Glasgow Index appear in AirwayLab?',
+        answer:
+          'Open the Glasgow tab after loading your ResMed SD card data. You will see your overall nightly score, a component-level breakdown, and a trend view across multiple nights.',
+      },
+      {
+        question: 'Is a high Glasgow Index a problem?',
+        answer:
+          'The Glasgow Index is a data description of your breathing waveform shapes. It is not a clinical finding or diagnosis. A high score describes a pattern -- its clinical significance depends on context that only your clinician can assess.',
+      },
+    ],
+  },
+  {
+    slug: 'what-is-wat-score-cpap',
+    title: 'What Is the WAT Score in CPAP Data?',
+    description:
+      'WAT (Wobble Analysis Tool) is three metrics in one: FL Score, breathing regularity, and periodic breathing detection. AirwayLab calculates it from your ResMed EDF files.',
+    date: '2026-04-05',
+    readTime: '5 min read',
+    tags: ['WAT Score', 'Flow Limitation', 'CPAP', 'Metrics'],
+    ogDescription:
+      'WAT (Wobble Analysis Tool) bundles FL Score, breathing regularity, and periodic breathing into one view. AirwayLab calculates all three from your ResMed EDF data -- nothing uploaded.',
+    faqItems: [
+      {
+        question: 'What does WAT stand for in CPAP analysis?',
+        answer:
+          'WAT stands for Wobble Analysis Tool. It is a bundle of three independent metrics calculated by AirwayLab from your inspiratory flow data: FL Score (flow limitation percentage), Regularity (sample entropy of minute ventilation), and Periodicity Index (cyclical breathing detection via Fourier analysis).',
+      },
+      {
+        question: 'What is the FL Score in AirwayLab?',
+        answer:
+          "AirwayLab's FL Score is a continuous 0-100 percentage measuring how much of your inspiratory waveform shows flattening compared to a normal rounded profile. It is calculated per breath from your raw EDF data, independent of ResMed's firmware.",
+      },
+      {
+        question: 'What is the Periodicity Index in CPAP data?',
+        answer:
+          'The Periodicity Index uses Fourier analysis to detect cyclical breathing patterns repeating on a 30-100 second cycle. A higher value suggests oscillating breathing patterns rather than stable ventilation throughout the night.',
+      },
+    ],
+  },
+  {
+    slug: 'what-is-ned-sleep-apnea',
+    title: 'What Is NED (Negative Effort Dependence) in PAP Therapy Data?',
+    description:
+      'NED measures a breathing pattern where greater respiratory effort produces less airflow. AirwayLab calculates NED per breath from your ResMed EDF data, free in your browser.',
+    date: '2026-04-05',
+    readTime: '6 min read',
+    tags: ['NED', 'Flow Limitation', 'CPAP', 'RERA', 'Metrics'],
+    ogDescription:
+      'NED (Negative Effort Dependence) describes breaths where harder effort produces less airflow. AirwayLab scores NED per breath from your ResMed SD card data -- free, private, browser-only.',
+    faqItems: [
+      {
+        question: 'What is Negative Effort Dependence (NED) in sleep apnea?',
+        answer:
+          'NED is a breathing characteristic where increasing respiratory effort produces less inspiratory airflow rather than more -- the opposite of normal breathing. In a NED breath, the harder the respiratory muscles work, the more the airway resists. NED is calculated per breath from the shape of the inspiratory flow waveform.',
+      },
+      {
+        question: 'What is the NED score formula?',
+        answer:
+          'AirwayLab calculates the NED score as: (peak flow - mid-inspiration flow) / peak flow x 100. A higher percentage means a larger drop in flow during the mid-inspiratory phase, the waveform signature of effort-dependent restriction.',
+      },
+      {
+        question: 'What is RERA detection in AirwayLab?',
+        answer:
+          "AirwayLab's RERA detection identifies sequences of 3-15 consecutive breaths showing progressive flow limitation features followed by a recovery breath. It uses NED slope, recovery breath shape, and sigh detection. This is a flow-based heuristic from EDF data -- it is not equivalent to polysomnography-based RERA scoring by a sleep clinician.",
+      },
+    ],
+  },
+  {
+    slug: 'cpap-flow-limitation-score-0-5-meaning',
+    title: 'CPAP Flow Limitation Score Explained: What 0, 0.5, and 1.0 Mean',
+    description:
+      'ResMed devices report flow limitation on a 0, 0.5, 1.0 scale. Here is what each value means in your data, how it appears in OSCAR, and how AirwayLab\'s FL Score relates to it.',
+    date: '2026-04-05',
+    readTime: '5 min read',
+    tags: ['Flow Limitation', 'FL Score', 'OSCAR', 'CPAP', 'ResMed'],
+    ogDescription:
+      "ResMed devices record flow limitation as 0, 0.5, or 1.0. Learn what each value means, how OSCAR plots it, and how AirwayLab's continuous FL Score gives more granular insight.",
+    faqItems: [
+      {
+        question: 'What does 0.5 flow limitation mean on a CPAP?',
+        answer:
+          'A flow limitation value of 0.5 from a ResMed device means the machine detected moderate flattening of the inspiratory waveform at that moment. The airway is narrowing enough to restrict airflow, but not at maximum severity. These values are assigned by ResMed firmware and stored in the FLOW_LIMIT channel of your EDF data.',
+      },
+      {
+        question: 'What does a FL score of 1.0 mean on a ResMed device?',
+        answer:
+          'A FL value of 1.0 means the device detected significant waveform flattening -- the top of the inspiratory curve is flat rather than rounded, indicating strong airway narrowing. This is the most severe categorical level in ResMed\'s three-point scale.',
+      },
+      {
+        question: "What is the difference between OSCAR's FL channel and AirwayLab's FL Score?",
+        answer:
+          "OSCAR plots ResMed's FL channel: a categorical 0/0.5/1.0 snapshot updated every ~2 seconds by device firmware. AirwayLab's FL Score is a continuous 0-100 percentage calculated per breath from the raw inspiratory waveform, independent of ResMed's firmware. Both describe the same underlying flow signal from different perspectives.",
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
