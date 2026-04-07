@@ -46,6 +46,7 @@ import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
 import { Disclaimer } from '@/components/common/disclaimer';
+import { CommunityCounter } from '@/components/common/community-counter';
 import * as Sentry from '@sentry/nextjs';
 import {
   RotateCcw,
@@ -565,6 +566,19 @@ function AnalyzePageInner() {
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto max-w-lg">
+          {/* Social proof trust strip */}
+          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground/70">
+            <CommunityCounter className="flex items-center gap-1.5" />
+            <span className="flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5" />
+              Open source
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Moon className="h-3.5 w-3.5" />
+              Private by default
+            </span>
+          </div>
+
           {/* Mobile upload prompt */}
           <MobileEmailCapture className="mb-4 sm:hidden" />
 
