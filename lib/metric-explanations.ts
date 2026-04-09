@@ -9,7 +9,7 @@ import { fmt } from './format-utils';
 
 export const METRIC_PLAIN_LANGUAGE: Record<string, string> = {
   iflRisk:
-    'A composite score estimating how much flow limitation may be affecting your sleep quality. Higher values suggest greater symptom risk.',
+    'A composite score combining multiple flow limitation metrics into a single number. Higher values indicate more flow limitation across metrics.',
   glasgowIndex:
     'A breath-shape score measuring how far your breathing deviates from normal flow patterns.',
   flScore:
