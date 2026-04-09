@@ -132,7 +132,7 @@ export default function V122YourDataExplainedPost() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Every metric popover, every clinician-questions section, every insight card now carries
+            Every metric popover, every data-highlights section, every insight card now carries
             a clear, direct disclaimer: this is informational data, not medical advice. Discuss your
             findings with your clinician.
           </p>
