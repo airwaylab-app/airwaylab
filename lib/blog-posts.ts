@@ -429,6 +429,93 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'resmed-sd-card-browser-analysis',
+    title: 'How to Read Your ResMed SD Card Data in Your Browser',
+    seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
+    description:
+      'Learn how to read EDF files from your ResMed SD card directly in your browser. AirwayLab runs analysis locally — no software to install, no data uploaded.',
+    date: '2026-04-09',
+    readTime: '7 min read',
+    tags: ['ResMed', 'SD Card', 'EDF', 'CPAP', 'Getting Started'],
+    ogDescription:
+      'Learn how to read EDF files from your ResMed SD card directly in your browser. AirwayLab runs analysis locally — no software to install, no data uploaded.',
+    faqItems: [
+      {
+        question: 'What files are stored on a ResMed SD card?',
+        answer:
+          'ResMed CPAP and APAP devices store session data as EDF (European Data Format) files on the SD card. These files contain detailed flow, pressure, and event waveform data recorded during each night.',
+      },
+      {
+        question: 'Can I read my ResMed SD card data without downloading software?',
+        answer:
+          'Yes. AirwayLab reads EDF files directly in your browser using local processing — no software installation is required and no data leaves your device.',
+      },
+      {
+        question: 'Does the browser need to upload my CPAP data to read it?',
+        answer:
+          'No. AirwayLab analysis runs entirely on your device via Web Workers. Your sleep data never leaves your browser.',
+      },
+    ],
+  },
+  {
+    slug: 'cpap-data-analysis-browser-no-download',
+    title: 'Analyse Your CPAP Data Without Installing Anything',
+    seoTitle: 'Analyse CPAP Data in Your Browser — No Download, No Cloud, No Account',
+    description:
+      'AirwayLab analyses your CPAP data locally in your browser. Drag in your SD card files — no install, no cloud upload. Privacy-first CPAP data review.',
+    date: '2026-04-09',
+    readTime: '6 min read',
+    tags: ['CPAP', 'Privacy', 'Browser', 'No Install', 'Getting Started'],
+    ogDescription:
+      'AirwayLab analyses your CPAP data locally in your browser. Drag in your SD card files — no install, no cloud upload. Privacy-first CPAP data review.',
+    faqItems: [
+      {
+        question: 'Is AirwayLab a replacement for OSCAR?',
+        answer:
+          'AirwayLab is a browser-based complement to desktop tools like OSCAR. It is designed for users who want to quickly review their CPAP data without installing software, while OSCAR provides a full-featured desktop experience.',
+      },
+      {
+        question: 'Does AirwayLab upload my CPAP data to a server?',
+        answer:
+          'No. All analysis in AirwayLab runs locally in your browser using Web Workers. Your data is never transmitted to any server.',
+      },
+      {
+        question: 'What CPAP data formats does AirwayLab support?',
+        answer:
+          'AirwayLab supports EDF files from ResMed CPAP, APAP, and AirCurve BiPAP devices.',
+      },
+    ],
+  },
+  {
+    slug: 'bipap-data-analysis-aircurve-10',
+    title: 'BiPAP Data Analysis: Read Your AirCurve 10 Data for Free',
+    seoTitle: 'BiPAP Data Analysis: How to Read Your AirCurve 10 Data for Free',
+    description:
+      'AirwayLab reads AirCurve 10 EDF data in your browser — free, no install. Understand your BiPAP session data including pressure support and flow limitation.',
+    date: '2026-04-09',
+    readTime: '6 min read',
+    tags: ['BiPAP', 'AirCurve', 'ResMed', 'EDF', 'Getting Started'],
+    ogDescription:
+      'AirwayLab reads AirCurve 10 EDF data in your browser — free, no install. Understand your BiPAP session data including pressure support and flow limitation.',
+    faqItems: [
+      {
+        question: 'Can AirwayLab read AirCurve 10 BiPAP data?',
+        answer:
+          'Yes. AirwayLab supports EDF files from the AirCurve 10 ST and VAuto models. Load your SD card files directly in the browser for a session-by-session data view.',
+      },
+      {
+        question: 'What BiPAP metrics can I see in AirwayLab?',
+        answer:
+          'AirwayLab displays pressure support levels, flow limitation scores, and session overview data from AirCurve 10 EDF files. Discuss clinical interpretation with your care team.',
+      },
+      {
+        question: 'Is BiPAP data analysis in AirwayLab free?',
+        answer:
+          'Yes. AirwayLab is free to use. Analysis runs entirely in your browser — no account or subscription required.',
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
