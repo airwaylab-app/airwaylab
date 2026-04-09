@@ -1,7 +1,7 @@
 // ============================================================
-// AirwayLab — Clinician Questions Generator
-// Translates metric patterns into informed questions users can
-// bring to their next sleep clinic appointment.
+// AirwayLab — Data Highlights Generator
+// Translates metric patterns into observational highlights users
+// can bring to their next sleep clinic appointment.
 // Education, not prescription — never recommend therapy changes.
 // ============================================================
 
@@ -11,7 +11,7 @@ import { getTrafficLight } from './thresholds';
 import { getStoredThresholds } from './threshold-overrides';
 import { fmt, mean } from './format-utils';
 
-export interface ClinicianQuestion {
+export interface DataHighlight {
   id: string;
   stem: string;
   rationale: string;
@@ -21,12 +21,11 @@ export interface ClinicianQuestion {
     | 'breathing-stability'
     | 'oximetry'
     | 'h1h2-shift'
-    | 'settings'
     | 'trend';
   urgency: TrafficLight;
 }
 
-const MAX_QUESTIONS = 4;
+const MAX_HIGHLIGHTS = 4;
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -40,20 +39,20 @@ function urgencyRank(u: TrafficLight): number {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Single-night question rules                                       */
+/*  Single-night highlight rules                                      */
 /* ------------------------------------------------------------------ */
 
-interface QuestionRule {
+interface HighlightRule {
   id: string;
-  category: ClinicianQuestion['category'];
-  /** Return a question or null if the rule doesn't fire */
+  category: DataHighlight['category'];
+  /** Return a highlight or null if the rule doesn't fire */
   evaluate: (
     night: NightResult,
     thresholds: Record<string, ThresholdDef>
-  ) => ClinicianQuestion | null;
+  ) => DataHighlight | null;
 }
 
-const SINGLE_NIGHT_RULES: QuestionRule[] = [
+const SINGLE_NIGHT_RULES: HighlightRule[] = [
   // --- Flow Limitation (deduplicated below) ---
   {
     id: 'fl-score',
@@ -63,7 +62,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'fl-score',
-        stem: 'My AirwayLab report shows elevated FL metrics. Can you help me understand what this means?',
+        stem: 'Your FL Score is above the typical range, indicating elevated flow limitation.',
         rationale: `Your FL Score of ${Math.round(n.wat.flScore)}% is above the typical range for this metric.`,
         category: 'flow-limitation',
         urgency: light,
@@ -85,7 +84,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       const compText = elevated.length > 0 ? ` (${elevated.join(', ')})` : '';
       return {
         id: 'glasgow',
-        stem: 'My breath shape analysis shows flow-limited patterns. Can you help me understand what this means?',
+        stem: 'Your Glasgow Index shows flow-limited breath shapes.',
         rationale: `Your Glasgow Index of ${fmt(n.glasgow.overall)} is above the typical range for this metric${compText}.`,
         category: 'flow-limitation',
         urgency: light,
@@ -100,7 +99,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'ned-mean',
-        stem: 'My flow data shows negative effort dependence. Can you help me understand what this means?',
+        stem: 'Your NED is above the typical range, indicating negative effort dependence.',
         rationale: `Your NED of ${fmt(n.ned.nedMean)}% is above the typical range for this metric.`,
         category: 'flow-limitation',
         urgency: light,
@@ -117,7 +116,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'rera-index',
-        stem: 'My data shows frequent respiratory effort-related arousals. Can you help me understand what might be causing this?',
+        stem: 'Your estimated RERA Index indicates respiratory effort-related arousals beyond what AHI captures.',
         rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr is above the typical range.`,
         category: 'arousals',
         urgency: light,
@@ -133,8 +132,8 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'eai',
-        stem: 'My estimated arousal index is elevated. What might be contributing to this?',
-        rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr is elevated compared to the typical range.`,
+        stem: 'Your Estimated Arousal Index is elevated, suggesting sleep fragmentation.',
+        rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr is above the typical range for this metric.`,
         category: 'arousals',
         urgency: light,
       };
@@ -150,8 +149,8 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'periodicity',
-        stem: 'My breathing shows cyclical patterns. Could you help me understand what this periodicity pattern means?',
-        rationale: `Your Periodicity Index of ${fmt(n.wat.periodicityIndex)}% shows a recurring pattern at 30–100 second intervals.`,
+        stem: 'Your Periodicity Index shows cyclical breathing patterns at 30\u2013100 second intervals.',
+        rationale: `Your Periodicity Index of ${fmt(n.wat.periodicityIndex)}% is above the typical range for this metric.`,
         category: 'breathing-stability',
         urgency: light,
       };
@@ -165,8 +164,8 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'regularity',
-        stem: 'My breathing rhythm is quite variable. Is this expected with my current settings?',
-        rationale: `Your breathing regularity score of ${Math.round(n.wat.regularityScore)}% indicates significant variation in breathing patterns.`,
+        stem: 'Your breathing regularity score indicates significant variation in breathing patterns.',
+        rationale: `Your breathing regularity score of ${Math.round(n.wat.regularityScore)}% is above the typical range for this metric.`,
         category: 'breathing-stability',
         urgency: light,
       };
@@ -183,7 +182,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'odi3',
-        stem: 'My oxygen levels dip frequently during sleep. Is my current therapy adequately covering all events?',
+        stem: 'Your ODI-3 indicates frequent oxygen desaturations during sleep.',
         rationale: `Your ODI-3 of ${fmt(n.oximetry.odi3)}/hr means your oxygen dropped by 3%+ approximately ${Math.round(n.oximetry.odi3)} times per hour.`,
         category: 'oximetry',
         urgency: light,
@@ -200,7 +199,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       const light: TrafficLight = n.oximetry.coupled3_10 > 6 ? 'bad' : 'warn';
       return {
         id: 'coupled-events',
-        stem: 'My oxygen dips correlate with breathing disruptions. Would a combined review help identify the cause?',
+        stem: 'Your data shows correlated oxygen desaturations and breathing disturbances.',
         rationale: `Your data shows ${fmt(n.oximetry.coupled3_10)}/hr events where oxygen drops and breathing disturbances occur together.`,
         category: 'oximetry',
         urgency: light,
@@ -215,80 +214,45 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     evaluate: (n) => {
       const diff = Math.abs(n.ned.h1NedMean - n.ned.h2NedMean);
       if (diff <= 15) return null;
-      const worseHalf = n.ned.h2NedMean > n.ned.h1NedMean ? 'worse' : 'better';
       return {
         id: 'h1h2-ned',
-        stem: `My flow limitation is notably ${worseHalf} in the second half of the night. Could REM sleep or position be involved?`,
-        rationale: `First-half NED: ${fmt(n.ned.h1NedMean)}%, second-half NED: ${fmt(n.ned.h2NedMean)}% — a ${fmt(diff)}% difference suggests time-dependent or sleep-stage-related changes.`,
+        stem: 'Your flow limitation differs between the first and second halves of the night.',
+        rationale: `First-half NED: ${fmt(n.ned.h1NedMean)}%, second-half NED: ${fmt(n.ned.h2NedMean)}% \u2014 a ${fmt(diff)}% difference.`,
         category: 'h1h2-shift',
         urgency: 'warn',
-      };
-    },
-  },
-
-  // --- Settings (BiPAP) ---
-  {
-    id: 'premature-cycle',
-    category: 'settings',
-    evaluate: (n, th) => {
-      if (!n.settingsMetrics) return null;
-      const light = getTrafficLight(n.settingsMetrics.prematureCyclePct, th.settingsPrematureCycle!);
-      if (light === 'good') return null;
-      return {
-        id: 'premature-cycle',
-        stem: 'My BiPAP data suggests possible premature cycling. Can you review whether my Cycle settings are appropriate?',
-        rationale: `Your inspiratory time patterns suggest the machine may be ending breaths before you're ready to exhale (${fmt(n.settingsMetrics.prematureCyclePct, 0)}% of breaths).`,
-        category: 'settings',
-        urgency: light,
-      };
-    },
-  },
-  {
-    id: 'late-cycle',
-    category: 'settings',
-    evaluate: (n, th) => {
-      if (!n.settingsMetrics) return null;
-      const light = getTrafficLight(n.settingsMetrics.lateCyclePct, th.settingsLateCycle!);
-      if (light === 'good') return null;
-      return {
-        id: 'late-cycle',
-        stem: 'My BiPAP data shows patterns that may indicate late cycling. Can you review whether my settings are appropriate?',
-        rationale: `Your data shows patterns consistent with the machine continuing to deliver pressure after your inspiratory effort has ended (${fmt(n.settingsMetrics.lateCyclePct, 0)}% of breaths).`,
-        category: 'settings',
-        urgency: light,
       };
     },
   },
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Deduplication: consolidate FL category into single question       */
+/*  Deduplication: consolidate FL category into single highlight      */
 /* ------------------------------------------------------------------ */
 
-function deduplicateFlowLimitation(questions: ClinicianQuestion[]): ClinicianQuestion[] {
-  const flQuestions = questions.filter((q) => q.category === 'flow-limitation');
-  const others = questions.filter((q) => q.category !== 'flow-limitation');
+function deduplicateFlowLimitation(highlights: DataHighlight[]): DataHighlight[] {
+  const flHighlights = highlights.filter((q) => q.category === 'flow-limitation');
+  const others = highlights.filter((q) => q.category !== 'flow-limitation');
 
-  if (flQuestions.length <= 1) return questions;
+  if (flHighlights.length <= 1) return highlights;
 
   // Consolidate: pick the most urgent, reference all triggered metrics
-  const worstUrgency = flQuestions.reduce<TrafficLight>(
+  const worstUrgency = flHighlights.reduce<TrafficLight>(
     (worst, q) => (urgencyRank(q.urgency) < urgencyRank(worst) ? q.urgency : worst),
     'good'
   );
 
-  const metricNames = flQuestions.map((q) => {
+  const metricNames = flHighlights.map((q) => {
     if (q.id === 'fl-score') return 'FL Score';
     if (q.id === 'glasgow') return 'Glasgow Index';
     if (q.id === 'ned-mean') return 'NED';
     return q.id;
   });
 
-  const metricDetails = flQuestions.map((q) => q.rationale).join(' ');
+  const metricDetails = flHighlights.map((q) => q.rationale).join(' ');
 
-  const consolidated: ClinicianQuestion = {
+  const consolidated: DataHighlight = {
     id: 'fl-consolidated',
-    stem: 'Multiple flow limitation metrics are elevated. Can you help me understand what this means for my therapy?',
+    stem: 'Multiple flow limitation metrics are elevated.',
     rationale: `Your ${metricNames.join(', ')} all indicate flow limitation. ${metricDetails}`,
     category: 'flow-limitation',
     urgency: worstUrgency,
@@ -298,16 +262,16 @@ function deduplicateFlowLimitation(questions: ClinicianQuestion[]): ClinicianQue
 }
 
 /* ------------------------------------------------------------------ */
-/*  Trend questions (5+ nights required)                               */
+/*  Trend highlights (5+ nights required)                              */
 /* ------------------------------------------------------------------ */
 
-function trendQuestions(
+function trendHighlights(
   nights: NightResult[],
   thresholds: Record<string, ThresholdDef>
-): ClinicianQuestion[] {
+): DataHighlight[] {
   if (nights.length < 5) return [];
 
-  const questions: ClinicianQuestion[] = [];
+  const highlights: DataHighlight[] = [];
   const chrono = [...nights].reverse(); // oldest first
 
   // Check key metrics for worsening trend (>20% increase over the period)
@@ -330,69 +294,69 @@ function trendQuestions(
       const latestLight = getTrafficLight(lastVal, metric.threshold);
       if (latestLight === 'good') continue;
 
-      questions.push({
+      highlights.push({
         id: `trend-${metric.name.toLowerCase().replace(/\s+/g, '-')}`,
-        stem: `My ${metric.name} has been trending upward recently. Should we review whether anything has changed?`,
+        stem: `Your ${metric.name} has been trending upward over recent nights.`,
         rationale: `Over the past ${nights.length} nights, your ${metric.name} has increased by ${Math.round(pctChange)}% (${fmt(firstVal)} to ${fmt(lastVal)}).`,
         category: 'trend',
         urgency: latestLight,
       });
-      // Only one trend question to avoid repetition
+      // Only one trend highlight to avoid repetition
       break;
     }
   }
 
-  return questions;
+  return highlights;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Public API                                                         */
 /* ------------------------------------------------------------------ */
 
-export function generateClinicianQuestions(
+export function generateDataHighlights(
   nights: NightResult[],
   selectedNight: NightResult,
   _previousNight: NightResult | null,
   _therapyChangeDate: string | null
-): ClinicianQuestion[] {
+): DataHighlight[] {
   const thresholds = getStoredThresholds();
 
   // Evaluate all single-night rules
-  let questions: ClinicianQuestion[] = [];
+  let highlights: DataHighlight[] = [];
   for (const rule of SINGLE_NIGHT_RULES) {
     const q = rule.evaluate(selectedNight, thresholds);
-    if (q) questions.push(q);
+    if (q) highlights.push(q);
   }
 
   // Deduplicate flow limitation category
-  questions = deduplicateFlowLimitation(questions);
+  highlights = deduplicateFlowLimitation(highlights);
 
-  // Add trend questions
-  const trends = trendQuestions(nights, thresholds);
-  questions.push(...trends);
+  // Add trend highlights
+  const trends = trendHighlights(nights, thresholds);
+  highlights.push(...trends);
 
   // Sort by urgency: bad first, then warn, then good
-  questions.sort((a, b) => urgencyRank(a.urgency) - urgencyRank(b.urgency));
+  highlights.sort((a, b) => urgencyRank(a.urgency) - urgencyRank(b.urgency));
 
-  // Cap at MAX_QUESTIONS
-  return questions.slice(0, MAX_QUESTIONS);
+  // Cap at MAX_HIGHLIGHTS
+  return highlights.slice(0, MAX_HIGHLIGHTS);
 }
 
 /**
- * Format questions as plain text for clipboard copy.
+ * Format highlights as plain text for clipboard copy.
  */
-export function formatQuestionsForClipboard(
-  questions: ClinicianQuestion[],
+export function formatHighlightsForClipboard(
+  highlights: DataHighlight[],
   dateStr: string
 ): string {
-  const header = `Questions for my sleep clinic appointment — generated by AirwayLab (${dateStr})`;
-  const separator = '—'.repeat(40);
+  const header = `Data highlights for your sleep clinic appointment \u2014 generated by AirwayLab (${dateStr})`;
+  const separator = '\u2014'.repeat(40);
 
-  const body = questions
+  const body = highlights
     .map((q, i) => `${i + 1}. ${q.stem}\n   ${q.rationale}`)
     .join('\n\n');
 
-  const footer = `Generated by AirwayLab (airwaylab.app). Not medical advice — discuss with your clinician.`;
+  const footer = `Generated by AirwayLab (airwaylab.app). Not medical advice \u2014 discuss with your clinician.`;
 
   return `${header}\n${separator}\n\n${body}\n\n${separator}\n${footer}`;
 }
