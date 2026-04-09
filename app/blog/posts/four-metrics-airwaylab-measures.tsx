@@ -99,22 +99,23 @@ export default function FourMetricsAirwayLabMeasures() {
               href="/blog/what-is-wat-score-cpap"
               className="text-primary hover:text-primary/80"
             >
-              WAT (Wakefulness After Therapy Onset) Score
+              WAT (Wobble Analysis Tool)
             </Link>{' '}
-            describes how much wakefulness is present in your recording after therapy begins. It is
-            derived from your breathing patterns rather than brain wave data — AirwayLab runs
-            entirely in your browser and has no access to EEG — but studies indicate that breathing
-            variability correlates with sleep state well enough to produce a useful signal.
+            bundles three independent metrics that describe breathing stability during PAP therapy.
+            FL Score measures inspiratory flatness — how flow-limited each breath is. Regularity
+            uses sample entropy to quantify how variable your minute ventilation is over time.
+            Periodicity Index uses spectral analysis to detect cyclical breathing patterns in the
+            30–100 second range.
           </p>
           <p>
-            A low WAT score indicates more stable, sleep-consistent breathing throughout the
-            session. A high WAT score indicates more variability, which may correspond to periods of
-            wakefulness or light sleep. The WAT score describes what&apos;s in your data; it does
-            not diagnose insomnia or any sleep disorder.
+            Together, these three metrics describe breathing &ldquo;wobble&rdquo; — the instability
+            that sits below the threshold of formal apneas and hypopneas. A stable night shows low
+            FL scores, low entropy, and no periodic pattern. An unstable night shows elevated values
+            across one or more of these dimensions.
           </p>
           <p>
-            It&apos;s particularly useful as a cross-session trend: if your WAT score is
-            consistently elevated, that&apos;s worth discussing with your clinician.
+            WAT is particularly useful as a cross-session trend: if one or more of these stability
+            metrics is consistently elevated, that&apos;s worth discussing with your clinician.
           </p>
         </div>
       </section>
@@ -162,9 +163,9 @@ export default function FourMetricsAirwayLabMeasures() {
           <p>
             AHI tells you how many times your breathing fully stopped or significantly reduced. The
             Flow Limitation Score and Glasgow Index describe what&apos;s happening to your airway{' '}
-            <em>between</em> those events. The WAT score shows how consistently your breathing
-            patterns indicated sleep during therapy. NED shows whether your airway anatomy is
-            contributing to resistance under increased respiratory effort.
+            <em>between</em> those events. The WAT score shows how stable your breathing is across
+            the session — flatness, variability, and cyclical patterns. NED shows whether your
+            airway anatomy is contributing to resistance under increased respiratory effort.
           </p>
           <p>
             None of these metrics is a diagnosis. Together, they give you a richer picture of what

@@ -113,7 +113,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'What metrics does AirwayLab calculate beyond AHI?',
         answer:
-          'AirwayLab calculates four main metrics beyond AHI: the Flow Limitation Score (breath shape on a 0–1 scale), the Glasgow Index (cumulative flow limitation burden across nine waveform components), the WAT Score (breathing variability as a proxy for sleep continuity), and NED — Negative Effort Dependence (effort-to-flow relationship per breath). All are derived from your PAP machine SD card data entirely in your browser.',
+          'AirwayLab calculates four main metrics beyond AHI: the Flow Limitation Score (breath shape on a 0–1 scale), the Glasgow Index (cumulative flow limitation burden across nine waveform components), the WAT Score (Wobble Analysis Tool — three breathing stability metrics: FL Score, regularity, and periodicity), and NED — Negative Effort Dependence (effort-to-flow relationship per breath). All are derived from your PAP machine SD card data entirely in your browser.',
       },
       {
         question: 'What is the Flow Limitation Score in AirwayLab?',
@@ -123,7 +123,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'What does the WAT score measure in CPAP data?',
         answer:
-          'The WAT score measures how much wakefulness is present in your recording based on breathing variability. A lower score indicates stable, sleep-consistent breathing; a higher score indicates more variability that may correspond to light sleep or wakefulness. It is derived from flow patterns, not EEG, and describes data rather than diagnosing any condition.',
+          'WAT stands for Wobble Analysis Tool. It bundles three breathing stability metrics: FL Score (inspiratory flatness, 0–100), Regularity (sample entropy of minute ventilation — higher means more variable), and Periodicity Index (spectral analysis detecting cyclical breathing in the 30–100 second range). All three are calculated from your flow data entirely in your browser.',
       },
     ],
   },
