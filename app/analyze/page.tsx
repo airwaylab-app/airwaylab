@@ -93,6 +93,7 @@ function AnalyzePageInner() {
   const [state, setState] = useState<AnalysisState>(orchestrator.getState());
   const [selectedNight, setSelectedNight] = useState<number>(0);
   const [isDemo, setIsDemo] = useState(false);
+  const [showPurchaseBanner, setShowPurchaseBanner] = useState(false);
   const [persistedData, setPersistedData] = useState<{
     nights: NightResult[];
     therapyChangeDate: string | null;
@@ -158,6 +159,21 @@ function AnalyzePageInner() {
     // Clean up URL param
     const params = new URLSearchParams(searchParams.toString());
     params.delete('auth_error');
+    const cleanUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+  }, [searchParams]);
+
+  // Post-purchase activation banner — run when searchParams include checkout=success
+  useEffect(() => {
+    if (searchParams.get('checkout') !== 'success') return;
+
+    setShowPurchaseBanner(true);
+    events.subscriptionStarted('unknown', 'unknown', 'checkout_redirect');
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('checkout');
     const cleanUrl = params.toString()
       ? `${window.location.pathname}?${params.toString()}`
       : window.location.pathname;
@@ -468,6 +484,23 @@ function AnalyzePageInner() {
             onClick={() => setAuthError(null)}
             className="shrink-0 rounded p-0.5 text-amber-400 hover:text-amber-200"
             aria-label="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Post-purchase activation banner */}
+      {showPurchaseBanner && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <span className="flex-1">
+            Your subscription is activating. AI insights will appear automatically — discuss any questions about your data with your clinician.
+          </span>
+          <button
+            onClick={() => setShowPurchaseBanner(false)}
+            className="shrink-0 rounded p-0.5 text-emerald-400 hover:text-emerald-200"
+            aria-label="Dismiss subscription banner"
           >
             <X className="h-3.5 w-3.5" />
           </button>

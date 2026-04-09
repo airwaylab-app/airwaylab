@@ -11,9 +11,11 @@ import { useFocusTrap } from '@/hooks/use-focus-trap';
 interface Props {
   open: boolean;
   onClose: () => void;
+  redirectPath?: string;
+  context?: 'pricing' | 'default';
 }
 
-export function AuthModal({ open, onClose }: Props) {
+export function AuthModal({ open, onClose, redirectPath, context = 'default' }: Props) {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export function AuthModal({ open, onClose }: Props) {
         }
       }
 
-      const { error: signInError } = await signIn(trimmed);
+      const { error: signInError } = await signIn(trimmed, redirectPath);
       setLoading(false);
 
       if (signInError) {
@@ -68,7 +70,7 @@ export function AuthModal({ open, onClose }: Props) {
       setSent(true);
       events.authMagicLinkSent();
     },
-    [email, emailOptIn, signIn]
+    [email, emailOptIn, redirectPath, signIn]
   );
 
   const handleClose = useCallback(() => {
@@ -122,10 +124,13 @@ export function AuthModal({ open, onClose }: Props) {
         ) : (
           <>
             <div className="mb-5 flex flex-col gap-1">
-              <h2 className="text-lg font-semibold">Sign in to AirwayLab</h2>
+              <h2 className="text-lg font-semibold">
+                {context === 'pricing' ? 'Sign in to complete your upgrade' : 'Sign in to AirwayLab'}
+              </h2>
               <p className="text-sm text-muted-foreground">
-                Free cloud backup for your SD card data, AI insights, and more.
-                Enter your email — no password needed.
+                {context === 'pricing'
+                  ? 'After verifying, your upgrade will resume automatically.'
+                  : 'Free cloud backup for your SD card data, AI insights, and more. Enter your email — no password needed.'}
               </p>
             </div>
 
