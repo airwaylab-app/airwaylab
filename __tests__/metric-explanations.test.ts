@@ -28,7 +28,7 @@ describe('getGlasgowExplanation', () => {
   it('returns significant explanation for bad values', () => {
     const text = getGlasgowExplanation(3.0, threshold);
     expect(text).toContain('3.0');
-    expect(text).toContain('significant');
+    expect(text).toContain('elevated');
     expect(text).toContain('clinician');
   });
 
@@ -83,7 +83,7 @@ describe('getNEDExplanation', () => {
 
   it('returns elevated effort for bad NED', () => {
     const text = getNEDExplanation(30, 8, threshold);
-    expect(text).toContain('elevated');
+    expect(text).toContain('mid-inspiratory flow reduction');
   });
 
   it('returns moderate explanation for borderline values', () => {
@@ -103,13 +103,13 @@ describe('getODIExplanation', () => {
   it('returns moderate explanation for warn values', () => {
     const text = getODIExplanation(8, threshold);
     expect(text).toContain('moderate');
-    expect(text).toContain('stress response');
+    expect(text).toContain('from a recent baseline');
   });
 
   it('returns frequent explanation for bad values', () => {
     const text = getODIExplanation(20, threshold);
     expect(text).toContain('frequent');
-    expect(text).toContain('clinical attention');
+    expect(text).toContain('Discuss with your clinician');
   });
 });
 

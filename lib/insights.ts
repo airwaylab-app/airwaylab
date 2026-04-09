@@ -262,7 +262,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'rera-high',
       type: 'info',
       title: 'Elevated RERA events',
-      body: `RERA index of ${fmt(n.ned.reraIndex)} events/hr is above the clinical threshold. These effort-related arousals fragment sleep. Elevated RERA events observed. Multiple factors can influence this metric. AI Analysis can provide personalised observations based on your full data.`,
+      body: `RERA index of ${fmt(n.ned.reraIndex)} events/hr is above the typical range. Elevated RERA events observed. Multiple factors can influence this metric. AI Analysis can provide personalised observations based on your full data.`,
       category: 'ned',
     });
   } else if (n.ned.reraIndex < 5 && nedL === 'good') {
@@ -349,7 +349,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       insights.push({
         id: 'symptom-fl-correlation',
         type: 'warning',
-        title: 'Flow limitation may be affecting your sleep quality',
+        title: 'Elevated flow limitation correlates with symptom rating',
         body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. This pattern shows elevated flow limitation correlating with your reported experience. Discuss these findings with your clinician.`,
         category: 'ned',
       });
