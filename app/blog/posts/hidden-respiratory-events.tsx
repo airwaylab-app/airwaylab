@@ -207,9 +207,9 @@ export default function HiddenRespiratoryEventsPost() {
               <div>
                 <p className="text-sm font-semibold text-foreground">Check the H1/H2 pattern</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  If brief obstructions increase in the second half of the night, this is consistent
-                  with REM-related airway laxity. Positional therapy or pressure adjustments targeting
-                  REM may help.
+                  If brief obstructions increase in the second half of the night, this pattern is
+                  consistent with REM-related airway laxity. Discuss these findings with your
+                  clinician.
                 </p>
               </div>
             </div>

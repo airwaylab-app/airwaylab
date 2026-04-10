@@ -110,10 +110,9 @@ export default function IFLSymptomSensitivityPost() {
                 <p className="text-sm font-semibold text-amber-400">High IFL + Feeling Bad</p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Your flow limitation is elevated and you feel it. This is the most actionable
-                pattern: your FL metrics are correlating with your symptoms, which means reducing
-                flow limitation (through pressure adjustments, positional changes, or other
-                interventions) is likely to improve how you feel. Discuss with your clinician.
+                Your flow limitation metrics are correlating with your reported symptoms. This
+                pattern may be worth discussing with your clinician, who can evaluate these
+                findings in your clinical context.
               </p>
             </div>
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">

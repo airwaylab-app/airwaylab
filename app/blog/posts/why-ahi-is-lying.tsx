@@ -296,7 +296,7 @@ export default function WhyAHIIsLyingPost() {
                 &quot;I still feel tired&quot; is easy for a clinician to dismiss. A report showing
                 elevated Glasgow scores, high FL percentage, and estimated RERAs despite a low AHI is
                 not. Objective data changes the conversation from &quot;your numbers look fine&quot; to
-                &quot;let&apos;s look at pressure adjustments.&quot;
+                &quot;let&apos;s take a closer look at these flow patterns.&quot;
               </p>
             </div>
           </div>
