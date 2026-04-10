@@ -211,8 +211,8 @@ export default function CompareOscarPage() {
               <p className="text-sm font-semibold text-emerald-400">Glasgow Index</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 A 9-component breath shape scoring system that synthesises thousands of breaths into
-                a single actionable score. Track it over time to measure therapy effectiveness
-                objectively.
+                a single actionable score. Track it over time to see how your breathing patterns
+                change across nights.
               </p>
             </div>
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
