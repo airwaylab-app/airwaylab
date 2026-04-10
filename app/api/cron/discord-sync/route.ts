@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
     let resolved = 0;
     let errors = 0;
     let notFound = 0;
+    const errorCategories: Record<string, number> = {};
 
     for (const profile of unlinked) {
       try {
@@ -72,11 +73,12 @@ export async function GET(request: NextRequest) {
 
         if (result.status === 'error') {
           errors++;
-          console.error(`[discord-sync] Discord API error for ${profile.discord_username}: ${result.message}`);
+          errorCategories[result.category] = (errorCategories[result.category] ?? 0) + 1;
+          console.error(`[discord-sync] Discord API error for ${profile.discord_username}: ${result.message} (category: ${result.category})`);
           Sentry.captureMessage(`Discord sync: API error for ${profile.discord_username}`, {
             level: 'warning',
             tags: { action: 'discord-sync-cron' },
-            extra: { username: profile.discord_username, error: result.message },
+            extra: { username: profile.discord_username, error: result.message, category: result.category },
           });
           continue;
         }
@@ -131,6 +133,9 @@ export async function GET(request: NextRequest) {
 
     // Alert ops if Discord API errors are blocking resolution
     if (errors > 0) {
+      const categoryBreakdown = Object.entries(errorCategories)
+        .map(([cat, count]) => `${cat}: ${count}`)
+        .join(', ');
       await sendAlert('ops', '', [{
         title: ':warning: Discord Sync — API Errors',
         description: `${errors} of ${unlinked.length} users could not be resolved due to Discord API errors. Paying users may be stuck without roles.`,
@@ -140,6 +145,7 @@ export async function GET(request: NextRequest) {
           { name: 'Resolved', value: String(resolved), inline: true },
           { name: 'Errors', value: String(errors), inline: true },
           { name: 'Not found', value: String(notFound), inline: true },
+          { name: 'Error categories', value: categoryBreakdown || 'none', inline: false },
         ],
         footer: { text: 'discord-sync cron' },
         timestamp: new Date().toISOString(),

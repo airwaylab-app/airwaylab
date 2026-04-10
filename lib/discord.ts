@@ -153,7 +153,7 @@ export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
 export type GuildSearchResult =
   | { status: 'found'; discordId: string }
   | { status: 'not_found' }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; category: 'config' | 'auth' | 'rate_limit' | 'network' | 'unknown' };
 
 /**
  * Search the guild for a member by exact username match.
@@ -164,7 +164,7 @@ export type GuildSearchResult =
  * username and nickname. We filter results for an exact username match.
  */
 export async function searchGuildMember(username: string): Promise<GuildSearchResult> {
-  if (!isDiscordConfigured()) return { status: 'error', message: 'Discord not configured' };
+  if (!isDiscordConfigured()) return { status: 'error', message: 'Discord not configured', category: 'config' };
 
   try {
     const { guildId } = getConfig();
@@ -175,7 +175,15 @@ export async function searchGuildMember(username: string): Promise<GuildSearchRe
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[discord] searchGuildMember failed (${res.status}): ${errText}`);
-      return { status: 'error', message: `Discord API error (${res.status})` };
+      let category: 'auth' | 'rate_limit' | 'unknown';
+      if (res.status === 401 || res.status === 403) {
+        category = 'auth';
+      } else if (res.status === 429) {
+        category = 'rate_limit';
+      } else {
+        category = 'unknown';
+      }
+      return { status: 'error', message: `Discord API error (${res.status})`, category };
     }
 
     const members = await res.json() as Array<{
@@ -198,7 +206,7 @@ export async function searchGuildMember(username: string): Promise<GuildSearchRe
       tags: { action: 'discord-search-member' },
       extra: { username },
     });
-    return { status: 'error', message: 'Failed to search Discord server' };
+    return { status: 'error', message: 'Failed to search Discord server', category: 'network' };
   }
 }
 
