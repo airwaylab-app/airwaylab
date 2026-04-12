@@ -25,8 +25,14 @@ import WhatIsGlasgowIndexCPAP from '../posts/what-is-glasgow-index-cpap';
 import WhatIsWATScoreCPAP from '../posts/what-is-wat-score-cpap';
 import WhatIsNEDSleepApnea from '../posts/what-is-ned-sleep-apnea';
 import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-score-0-5-meaning';
+import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
+import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
+import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
+  'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
+  'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
   'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
   'v121-clearer-language': V121ClearerLanguage,
