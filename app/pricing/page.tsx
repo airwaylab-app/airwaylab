@@ -36,7 +36,6 @@ const SUPPORTER_FEATURES = [
   '6-10 deep AI insights per analysis (unlimited)',
   '90-day analysis history with AI re-analysis',
   'Cloud sync across devices',
-  '90-day analysis history',
   'PDF clinician reports',
   'Enhanced export with annotations',
   'Detailed metric explanations',
@@ -468,7 +467,7 @@ export default function PricingPage() {
         </div>
       </div>
 
-      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} redirectPath="/pricing" context="pricing" />
     </>
   );
 }

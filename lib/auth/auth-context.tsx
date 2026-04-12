@@ -38,7 +38,7 @@ interface AuthContextValue {
   isLoading: boolean;
   tier: Tier;
   isPaid: boolean;
-  signIn: (email: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, redirectPath?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   markWalkthroughComplete: () => Promise<void>;
@@ -235,16 +235,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, fetchProfile]);
 
-  const signIn = useCallback(async (email: string): Promise<{ error: string | null }> => {
+  const signIn = useCallback(async (email: string, redirectPath?: string): Promise<{ error: string | null }> => {
     if (!supabase) {
       return { error: 'Authentication is not configured.' };
     }
+
+    const emailRedirectTo = redirectPath
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`
+      : `${window.location.origin}/auth/callback`;
 
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo,
         },
       });
 
