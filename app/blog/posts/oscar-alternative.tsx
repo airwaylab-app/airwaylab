@@ -306,7 +306,7 @@ export default function OSCARAlternativePost() {
               <p className="text-sm font-semibold text-emerald-400">AirwayLab is best if you...</p>
               <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                 <li>Want automated flow limitation analysis</li>
-                <li>Need a quick summary of how your therapy is working</li>
+                <li>Want a quick summary of your breathing patterns and metrics</li>
                 <li>Want metrics that go beyond AHI (Glasgow, NED, RERA)</li>
                 <li>Prefer browser-based tools with no installation</li>
                 <li>Want AI-powered insights about your patterns</li>
