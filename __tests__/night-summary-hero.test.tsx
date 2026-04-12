@@ -124,7 +124,7 @@ describe('NightSummaryHero — treatment context framing', () => {
   it('body text includes "respiratory events" language when event control is good and FL is elevated', () => {
     const night = makeNight({ glasgow: 1.5, wat: { flScore: 35 }, ned: { nedMean: 20 } });
     render(<NightSummaryHero night={night} />);
-    expect(screen.getByText(/keeping respiratory events low/i)).toBeInTheDocument();
+    expect(screen.getByText(/respiratory event counts are in the lower range/i)).toBeInTheDocument();
   });
 
   it('body text includes distinction between event control and flow limitation for dual framing', () => {

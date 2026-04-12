@@ -77,7 +77,7 @@ export function NightSummaryHero({ night, onExplainClick }: Props) {
       // Case 1: dual framing — events controlled, FL elevated
       tier = 'warn';
       headlineText = 'Good event control \u2014 flow patterns worth monitoring';
-      bodyText = `Your therapy is keeping respiratory events low (RERA ${fmt(n.ned.reraIndex)}/hr). Flow limitation metrics show additional breathing patterns that standard event counting doesn\u2019t capture \u2014 this is common and worth tracking over time. Discuss with your sleep physician if you\u2019re experiencing symptoms.`;
+      bodyText = `Respiratory event counts are in the lower range (RERA ${fmt(n.ned.reraIndex)}/hr). Flow limitation metrics show additional breathing patterns that standard event counting doesn\u2019t capture \u2014 this is common and worth tracking over time. Discuss with your sleep physician if you\u2019re experiencing symptoms.`;
     } else if (!eventGood && hasFLConcern) {
       // Case 3: both bad
       tier = 'bad';
