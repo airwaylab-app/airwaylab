@@ -459,7 +459,7 @@ export const blogPosts: BlogPost[] = [
     readTime: '9 min read',
     tags: ['Flow Limitation', 'Research', 'UARS', 'Sleepiness'],
     ogDescription:
-      'Research shows inspiratory flow limitation predicts sleepiness independent of arousals and AHI. Learn what this means for tracking your PAP therapy.',
+      'Research into inspiratory flow limitation and its relationship to sleepiness. Learn what this means for tracking your PAP data.',
     faqItems: [
       {
         question: 'Does flow limitation on CPAP cause daytime sleepiness?',
