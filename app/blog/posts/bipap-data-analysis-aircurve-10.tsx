@@ -54,8 +54,12 @@ export default function BiPAPDataAnalysisAirCurve10Post() {
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
               <span>
-                <strong className="text-foreground">Flow limitation</strong> &mdash; a description
-                of partial upper airway narrowing during inspiration
+                <strong className="text-foreground">
+                  <Link href="/glossary/flow-limitation" className="text-foreground hover:text-primary">
+                    Flow limitation
+                  </Link>
+                </strong>{' '}
+                &mdash; a description of partial upper airway narrowing during inspiration
               </span>
             </li>
             <li className="flex gap-2">
@@ -237,6 +241,27 @@ export default function BiPAPDataAnalysisAirCurve10Post() {
               How to Read Your CPAP Data
             </Link>{' '}
             &mdash; full guide to PAP data metrics.
+          </p>
+        </div>
+        <p className="mb-2 mt-4 text-xs font-semibold text-foreground">Glossary</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/glossary/flow-limitation" className="text-primary hover:text-primary/80">
+              Flow limitation
+            </Link>{' '}
+            &mdash; what it means and how AirwayLab measures it.
+          </p>
+          <p>
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
+              RERA
+            </Link>{' '}
+            &mdash; respiratory effort-related arousals explained.
+          </p>
+          <p>
+            <Link href="/glossary/ned-mean" className="text-primary hover:text-primary/80">
+              NED Mean
+            </Link>{' '}
+            &mdash; per-breath negative effort dependence metric.
           </p>
         </div>
       </section>

@@ -39,8 +39,15 @@ export default function ResMedSDCardBrowserAnalysisPost() {
           </ul>
           <p>
             The EDF files are where the detail lives. They contain the flow signal that makes it
-            possible to look at things like flow limitation and RERA patterns &mdash; aspects of
-            your breathing that a headline AHI score doesn&apos;t capture.
+            possible to look at things like{' '}
+            <Link href="/glossary/flow-limitation" className="text-primary hover:text-primary/80">
+              flow limitation
+            </Link>{' '}
+            and{' '}
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
+              RERA patterns
+            </Link>{' '}
+            &mdash; aspects of your breathing that a headline AHI score doesn&apos;t capture.
           </p>
         </div>
       </section>
@@ -265,6 +272,27 @@ export default function ResMedSDCardBrowserAnalysisPost() {
               Analyse CPAP Data in Your Browser
             </Link>{' '}
             &mdash; no download, no cloud, no account.
+          </p>
+        </div>
+        <p className="mb-2 mt-4 text-xs font-semibold text-foreground">Glossary</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/glossary/flow-limitation" className="text-primary hover:text-primary/80">
+              Flow limitation
+            </Link>{' '}
+            &mdash; what it means and how AirwayLab measures it.
+          </p>
+          <p>
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
+              RERA (Respiratory Effort-Related Arousal)
+            </Link>{' '}
+            &mdash; how RERAs differ from apneas and why they matter.
+          </p>
+          <p>
+            <Link href="/glossary/glasgow-index" className="text-primary hover:text-primary/80">
+              Glasgow Index
+            </Link>{' '}
+            &mdash; the 9-component breath shape scoring system.
           </p>
         </div>
       </section>

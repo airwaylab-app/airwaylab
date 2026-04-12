@@ -160,8 +160,19 @@ export default function CPAPDataAnalysisBrowserNoDownloadPost() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            AirwayLab&apos;s core analysis &mdash; including flow limitation, RERAs, Glasgow Index,
-            and the full flow waveform &mdash; is free and always will be. Premium supports
+            AirwayLab&apos;s core analysis &mdash; including{' '}
+            <Link href="/glossary/flow-limitation" className="text-primary hover:text-primary/80">
+              flow limitation
+            </Link>
+            ,{' '}
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
+              RERAs
+            </Link>
+            ,{' '}
+            <Link href="/glossary/glasgow-index" className="text-primary hover:text-primary/80">
+              Glasgow Index
+            </Link>
+            , and the full flow waveform &mdash; is free and always will be. Premium supports
             continued development and adds some conveniences, but it doesn&apos;t gate the analysis
             that most users are here for.
           </p>
@@ -231,6 +242,33 @@ export default function CPAPDataAnalysisBrowserNoDownloadPost() {
               Beyond AHI
             </Link>{' '}
             &mdash; why AHI alone doesn&apos;t tell the whole story.
+          </p>
+        </div>
+        <p className="mb-2 mt-4 text-xs font-semibold text-foreground">Glossary</p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <Link href="/glossary/glasgow-index" className="text-primary hover:text-primary/80">
+              Glasgow Index
+            </Link>{' '}
+            &mdash; the 9-component breath shape scoring system.
+          </p>
+          <p>
+            <Link href="/glossary/fl-score" className="text-primary hover:text-primary/80">
+              FL Score
+            </Link>{' '}
+            &mdash; population-level flow limitation measure from the WAT engine.
+          </p>
+          <p>
+            <Link href="/glossary/ned-mean" className="text-primary hover:text-primary/80">
+              NED Mean
+            </Link>{' '}
+            &mdash; per-breath negative effort dependence metric.
+          </p>
+          <p>
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
+              RERA
+            </Link>{' '}
+            &mdash; respiratory effort-related arousals explained.
           </p>
         </div>
       </section>
