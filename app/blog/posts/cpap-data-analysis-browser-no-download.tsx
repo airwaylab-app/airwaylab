@@ -44,7 +44,11 @@ export default function CPAPDataAnalysisBrowserNoDownloadPost() {
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             AirwayLab reads the detailed EDF files that ResMed CPAP, APAP, and BiPAP machines
-            record to their SD cards. From those files, it displays:
+            record to their SD cards. See our{' '}
+            <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+              ResMed SD card guide
+            </Link>{' '}
+            for step-by-step instructions on accessing your data. From those files, it displays:
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {[

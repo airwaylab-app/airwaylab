@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -617,12 +618,39 @@ function AnalyzePageInner() {
 
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
-        isFirstSession ? (
-          <FirstRunWelcome onLoadDemo={loadDemo} onFilesSelected={handleFiles} />
-        ) : isIOS ? (
-          <div className="mx-auto max-w-lg">
-            <MobileEmailCapture className="mb-4" />
-            <DemoCTA onLoadDemo={loadDemo} />
+        <div className="mx-auto max-w-lg">
+          {/* Mobile upload prompt */}
+          <MobileEmailCapture className="mb-4 sm:hidden" />
+
+          <FileUpload onFilesSelected={handleFiles} />
+
+          {/* Contextual help link */}
+          <p className="mt-3 text-center text-xs text-muted-foreground/70">
+            Not sure how to get your data?{' '}
+            <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+              How to get your ResMed data
+            </Link>
+          </p>
+
+          {/* Demo CTA — shown immediately after upload for discoverability */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
+              <div className="h-px flex-1 bg-border/50" />
+              <span>or</span>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadDemo}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <Play className="h-3.5 w-3.5" />
+              See sample data
+            </Button>
+            <p className="text-[11px] text-muted-foreground/50">
+              See what AirwayLab looks like with 7 nights of example data
+            </p>
           </div>
         ) : (
           <div className="mx-auto max-w-lg">

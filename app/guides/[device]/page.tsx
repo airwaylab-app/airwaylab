@@ -235,6 +235,30 @@ export default async function DeviceGuidePage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground">{tip}</p>
             </li>
           ))}
+          {guide.slug === 'airsense-10' && (
+            <li className="flex gap-2.5 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <p className="text-sm text-muted-foreground">
+                For detailed instructions on finding and accessing your data files, see the{' '}
+                <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+                  step-by-step AirSense 10 SD card guide
+                </Link>
+                .
+              </p>
+            </li>
+          )}
+          {guide.slug === 'airsense-11' && (
+            <li className="flex gap-2.5 rounded-lg border border-border/50 bg-card/30 px-4 py-3">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <p className="text-sm text-muted-foreground">
+                For detailed instructions on finding and accessing your data files, see the{' '}
+                <Link href="/blog/resmed-airsense-11-sd-card" className="text-primary hover:text-primary/80">
+                  step-by-step AirSense 11 SD card guide
+                </Link>
+                .
+              </p>
+            </li>
+          )}
         </ul>
       </section>
 
