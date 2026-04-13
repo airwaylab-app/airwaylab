@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { ChevronRight, Stethoscope, Copy, Check } from 'lucide-react';
 import { getTrafficDotColor } from '@/lib/thresholds';
 import {
-  generateClinicianQuestions,
-  formatQuestionsForClipboard,
-  type ClinicianQuestion,
-} from '@/lib/clinician-questions';
+  generateDataHighlights,
+  formatHighlightsForClipboard,
+  type DataHighlight,
+} from '@/lib/data-highlights';
 import type { NightResult } from '@/lib/types';
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   therapyChangeDate: string | null;
 }
 
-export function ClinicianQuestionsPanel({
+export function DataHighlightsPanel({
   nights,
   selectedNight,
   previousNight,
@@ -25,23 +25,23 @@ export function ClinicianQuestionsPanel({
 }: Props) {
   const [copied, setCopied] = useState(false);
 
-  let questions: ClinicianQuestion[];
+  let highlights: DataHighlight[];
   try {
-    questions = generateClinicianQuestions(
+    highlights = generateDataHighlights(
       nights,
       selectedNight,
       previousNight,
       therapyChangeDate
     );
   } catch (err) {
-    console.error('[AirwayLab] Failed to generate clinician questions:', err);
+    console.error('[AirwayLab] Failed to generate data highlights:', err);
     return null;
   }
 
-  const count = questions.length;
+  const count = highlights.length;
 
   async function handleCopy() {
-    const text = formatQuestionsForClipboard(questions, selectedNight.dateStr);
+    const text = formatHighlightsForClipboard(highlights, selectedNight.dateStr);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -72,8 +72,7 @@ export function ClinicianQuestionsPanel({
       <div className="flex items-center gap-2.5 rounded-xl border border-border/50 bg-card/30 px-4 py-3">
         <Stethoscope className="h-4 w-4 shrink-0 text-emerald-500/70" />
         <p className="text-xs text-muted-foreground">
-          Your metrics are in the healthy range. No specific questions to flag
-          for your clinician right now.
+          All metrics are within the typical range.
         </p>
       </div>
     );
@@ -84,15 +83,15 @@ export function ClinicianQuestionsPanel({
       <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
         <Stethoscope className="h-4 w-4" />
-        <span>Prepare for Your Appointment</span>
+        <span>Data Highlights</span>
         <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-          {count} {count === 1 ? 'question' : 'questions'}
+          {count} {count === 1 ? 'highlight' : 'highlights'}
         </span>
       </summary>
 
       <div className="flex flex-col gap-3 border-t border-border/30 px-4 pb-4 pt-3">
-        {/* Question cards */}
-        {questions.map((q) => (
+        {/* Highlight cards */}
+        {highlights.map((q) => (
           <div
             key={q.id}
             className="flex items-start gap-3 rounded-lg border border-border/30 bg-card/50 px-4 py-3"
@@ -136,10 +135,10 @@ export function ClinicianQuestionsPanel({
 
         {/* Medical disclaimer */}
         <p className="text-[10px] leading-relaxed text-muted-foreground/60">
-          AirwayLab is not a medical device. These questions are generated from
+          AirwayLab is not a medical device. These highlights are generated from
           your data to support conversations with your sleep specialist — they
-          are not clinical recommendations. Always discuss changes to your
-          therapy with your clinician.
+          are not clinical recommendations. Always discuss your findings with
+          your clinician.
         </p>
       </div>
     </details>
