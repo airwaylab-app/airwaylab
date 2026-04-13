@@ -35,8 +35,10 @@ import ResmedAirsense10SdCard from '../posts/resmed-airsense-10-sd-card';
 import ResmedAirsense11SdCard from '../posts/resmed-airsense-11-sd-card';
 import ResmedAircurveBipapSdCard from '../posts/resmed-aircurve-bipap-sd-card';
 import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-flow-limitation-reras';
+import UnderstandingCPAPPressureSettings from '../posts/understanding-cpap-pressure-settings';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,

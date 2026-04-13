@@ -100,6 +100,40 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'understanding-cpap-pressure-settings',
+    title: 'Understanding Your CPAP Pressure Settings: What the Numbers Actually Mean',
+    seoTitle: 'Understanding Your CPAP Pressure Settings',
+    description:
+      'Learn what CPAP pressure settings mean, the difference between fixed and auto pressure, and how to read your pressure data — without clinical jargon.',
+    date: '2026-04-13',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Pressure Settings', 'APAP', 'BiPAP', 'Getting Started'],
+    ogDescription:
+      'Learn what CPAP pressure settings mean, the difference between fixed and auto pressure, and how to read your pressure data — without clinical jargon.',
+    faqItems: [
+      {
+        question: 'What does cmH2O mean on a CPAP machine?',
+        answer:
+          'cmH2O stands for centimetres of water, a unit of pressure. A CPAP setting of 10 cmH2O means the machine pushes air at a pressure equivalent to the weight of a 10-centimetre column of water. Most prescribed pressures fall between 4 and 20 cmH2O.',
+      },
+      {
+        question: 'What is the difference between CPAP and APAP?',
+        answer:
+          'CPAP delivers one fixed pressure all night. APAP (Auto-adjusting Positive Airway Pressure) monitors your breathing and adjusts pressure within a set range — backing off when breathing is stable and increasing when it detects flow limitation or events.',
+      },
+      {
+        question: 'What is pressure support on a BiPAP machine?',
+        answer:
+          'Pressure support is the difference between IPAP (inspiratory pressure) and EPAP (expiratory pressure) on a bilevel device. A wider pressure support means the machine provides more assistance during each inhale.',
+      },
+      {
+        question: 'What does the 95th percentile pressure mean on my CPAP?',
+        answer:
+          'The 95th percentile pressure is the level at or below which your APAP machine spent 95% of the night. If this number is near your maximum pressure setting, your machine may be constrained and spending significant time at its upper limit.',
+      },
+    ],
+  },
+  {
     slug: 'resmed-sd-card-browser-analysis',
     title: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
     seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
