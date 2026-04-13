@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
@@ -90,6 +91,8 @@ export default function AnalyzePage() {
 
 function AnalyzePageInner() {
   const searchParams = useSearchParams();
+  const checkoutParam = searchParams.get('checkout');
+  const [showCheckoutBanner, setShowCheckoutBanner] = useState(checkoutParam === 'success');
   const [state, setState] = useState<AnalysisState>(orchestrator.getState());
   const [selectedNight, setSelectedNight] = useState<number>(0);
   const [isDemo, setIsDemo] = useState(false);
@@ -820,6 +823,34 @@ function AnalyzePageInner() {
               </Button>
             </div>
           </div>
+
+          {/* Post-purchase activation banner — shown once per checkout redirect */}
+          {showCheckoutBanner && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Your subscription is activating
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      AI insights will appear automatically on your next upload.
+                      Manage your subscription in{' '}
+                      <Link href="/account" className="underline hover:text-foreground">account settings</Link>.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCheckoutBanner(false)}
+                  className="shrink-0 rounded p-0.5 text-muted-foreground/50 hover:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Tabbed Views — right after controls, above nudge banners */}
           <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
