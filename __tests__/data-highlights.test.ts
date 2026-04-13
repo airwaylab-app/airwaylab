@@ -405,12 +405,14 @@ describe('generateDataHighlights', () => {
     const trendHighlights = generateDataHighlights(nights, nights[0]!, nights[1]!, null);
     const allHighlights = [...singleHighlights, ...trendHighlights];
 
-    const forbiddenKeywords = ['adjust', 'settings', 'therapy', 'could', 'should', 'help me', 'review whether'];
+    const forbiddenKeywords = ['adjust', 'settings', 'therapy', 'could', 'should', 'help me', 'review whether', 'suggesting', 'fragmentation'];
 
     for (const h of allHighlights) {
       const stemLower = h.stem.toLowerCase();
+      const rationaleLower = h.rationale.toLowerCase();
       for (const keyword of forbiddenKeywords) {
         expect(stemLower).not.toContain(keyword);
+        expect(rationaleLower).not.toContain(keyword);
       }
     }
   });

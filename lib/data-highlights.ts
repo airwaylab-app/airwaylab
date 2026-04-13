@@ -116,8 +116,8 @@ const SINGLE_NIGHT_RULES: HighlightRule[] = [
       if (light === 'good') return null;
       return {
         id: 'rera-index',
-        stem: 'Your estimated RERA Index indicates respiratory effort-related arousals beyond what AHI captures.',
-        rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr is above the typical range.`,
+        stem: 'Your estimated RERA Index is above the typical range.',
+        rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr is above the typical range for this metric.`,
         category: 'arousals',
         urgency: light,
       };
@@ -132,7 +132,7 @@ const SINGLE_NIGHT_RULES: HighlightRule[] = [
       if (light === 'good') return null;
       return {
         id: 'eai',
-        stem: 'Your Estimated Arousal Index is elevated, suggesting sleep fragmentation.',
+        stem: 'Your Estimated Arousal Index is above the typical range.',
         rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr is above the typical range for this metric.`,
         category: 'arousals',
         urgency: light,
@@ -182,7 +182,7 @@ const SINGLE_NIGHT_RULES: HighlightRule[] = [
       if (light === 'good') return null;
       return {
         id: 'odi3',
-        stem: 'Your ODI-3 indicates frequent oxygen desaturations during sleep.',
+        stem: 'Your ODI-3 is above the typical range.',
         rationale: `Your ODI-3 of ${fmt(n.oximetry.odi3)}/hr means your oxygen dropped by 3%+ approximately ${Math.round(n.oximetry.odi3)} times per hour.`,
         category: 'oximetry',
         urgency: light,
