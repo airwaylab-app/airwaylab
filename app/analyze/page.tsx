@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FileUpload } from '@/components/upload/file-upload';
@@ -602,6 +603,14 @@ function AnalyzePageInner() {
           <MobileEmailCapture className="mb-4 sm:hidden" />
 
           <FileUpload onFilesSelected={handleFiles} />
+
+          {/* Contextual help link */}
+          <p className="mt-3 text-center text-xs text-muted-foreground/70">
+            Not sure how to get your data?{' '}
+            <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+              How to get your ResMed data
+            </Link>
+          </p>
 
           {/* Demo CTA — shown immediately after upload for discoverability */}
           <div className="mt-6 flex flex-col items-center gap-2">

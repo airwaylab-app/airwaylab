@@ -496,6 +496,12 @@ export default function UnderstandingFlowLimitationPost() {
               </Link>{' '}
               &mdash; evidence linking flow limitation directly to daytime symptoms.
             </p>
+            <p className="mt-1">
+              <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+                four metrics AirwayLab measures beyond AHI
+              </Link>{' '}
+              &mdash; how flow limitation fits into AirwayLab&apos;s full measurement framework.
+            </p>
           </div>
         </div>
       </section>

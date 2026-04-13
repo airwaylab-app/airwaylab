@@ -150,6 +150,12 @@ export default function WhatIsGlasgowIndexCPAP() {
             </Link>{' '}
             -- definitions of all metrics used in AirwayLab.
           </p>
+          <p>
+            <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+              see all four metrics AirwayLab tracks
+            </Link>{' '}
+            -- how the Glasgow Index fits alongside the other metrics AirwayLab measures.
+          </p>
         </div>
       </section>
 
