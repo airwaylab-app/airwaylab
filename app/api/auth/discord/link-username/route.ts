@@ -82,6 +82,13 @@ export async function POST(request: NextRequest) {
 
     if (searchResult.status === 'error') {
       // Discord API failure — save username but tell the user about the real issue
+      Sentry.withScope((scope) => {
+        scope.setExtra('discord_error_category', searchResult.category);
+        scope.setExtra('username', username);
+        scope.setTag('action', 'discord-link-username');
+        Sentry.captureMessage(`Discord link-username: search failed (${searchResult.category})`, 'warning');
+      });
+
       await serviceRole
         .from('profiles')
         .update({
