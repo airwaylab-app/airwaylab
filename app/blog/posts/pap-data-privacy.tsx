@@ -251,7 +251,11 @@ export default function PAPDataPrivacyPost() {
                 <p className="text-sm font-medium text-foreground">Use your SD card</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Always keep an SD card in your machine. This gives you a local copy of your data
-                  that no one else controls. Pull it periodically and analyze your data yourself.
+                  that no one else controls. Pull it periodically and{' '}
+                  <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+                    analyse SD card data locally
+                  </Link>{' '}
+                  using a tool like AirwayLab — your data never leaves your device.
                 </p>
               </div>
             </div>

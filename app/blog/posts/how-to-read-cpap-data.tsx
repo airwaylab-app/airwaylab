@@ -486,7 +486,11 @@ export default function HowToReadCPAPDataPost() {
                 <p className="text-sm font-semibold text-foreground">Your SD card</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Remove it from your PAP machine. Most ResMed machines use a standard SD card in a
-                  slot on the side or back.
+                  slot on the side or back. See our guide on{' '}
+                  <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+                    getting your SD card data into AirwayLab
+                  </Link>
+                  .
                 </p>
               </div>
             </div>
@@ -616,6 +620,11 @@ export default function HowToReadCPAPDataPost() {
         <p className="mt-2 text-sm text-muted-foreground">
           Drag your SD card folder into AirwayLab and see your breathing patterns scored and
           visualised in 30 seconds. Free, open source, and your data never leaves your browser.
+          Learn more about{' '}
+          <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+            what AirwayLab specifically measures
+          </Link>
+          .
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
           <Link

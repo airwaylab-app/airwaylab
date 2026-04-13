@@ -154,6 +154,12 @@ export default function WhatIsWATScoreCPAP() {
             </Link>{' '}
             -- definitions of all metrics used in AirwayLab.
           </p>
+          <p>
+            <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+              see all four metrics AirwayLab tracks
+            </Link>{' '}
+            -- how WAT fits alongside the other metrics AirwayLab measures beyond AHI.
+          </p>
         </div>
       </section>
 
