@@ -279,7 +279,7 @@ export function cpapTipsStep1(unsubscribeUrl: string): { subject: string; html: 
         '<strong style="color:#fff;">Mouth breathing</strong> -- if your mouth falls open at night, you\'ll lose pressure and your AHI may spike.',
         '<strong style="color:#fff;">Aerophagia</strong> -- that bloated, gassy feeling from swallowing air. More common at higher pressures.',
         '<strong style="color:#fff;">Pressure discomfort</strong> -- feeling like you\'re fighting the machine to exhale.',
-        '<strong style="color:#fff;">AHI fluctuating night to night</strong> -- completely normal early on. Look for trends over a week or more.',
+        '<strong style="color:#fff;">AHI fluctuating night to night</strong> -- common early on. Look for trends over a week or more.',
       ])}
       ${paragraph('Once you upload your SD card to AirwayLab, you\'ll see a session summary with AHI, leak rate, and usage hours. Even if your first few sessions look rough, that data is valuable.')}
       ${ctaButton('Upload Your First Session', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=cpap_tips_1`)}
@@ -300,7 +300,7 @@ export function cpapTipsStep2(unsubscribeUrl: string): { subject: string; html: 
         '<strong style="color:#fff;">Leak rate</strong> -- your mask has intentional vents that release CO2. High <em>unintentional</em> leak means your device can\'t maintain the pressure it needs.',
         '<strong style="color:#fff;">Usage hours</strong> -- how long you wore the mask. Consistency across the week matters as much as any single night.',
       ])}
-      ${paragraph('In AirwayLab, you can see your leak rate alongside your AHI to spot whether a bad night was a therapy problem or a leak problem.')}
+      ${paragraph('In AirwayLab, you can see your leak rate alongside your AHI for a fuller picture of each night.')}
       ${ctaButton('Open Your Session Dashboard', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=cpap_tips_2`)}
       ${paragraph('<em>This content is informational only. It is not medical advice. Discuss any concerns with your prescribing clinician or sleep specialist.</em>')}
     `, unsubscribeUrl),
@@ -315,11 +315,11 @@ export function cpapTipsStep3(unsubscribeUrl: string): { subject: string; html: 
       ${paragraph('Something a lot of CPAP users run into: AHI looks fine -- under 5, sometimes under 2 -- but they\'re still waking up exhausted.')}
       ${paragraph('If that\'s you, your data might be showing something that standard AHI doesn\'t capture.')}
       ${bulletList([
-        '<strong style="color:#fff;">Flow limitation</strong> -- partial airway resistance that doesn\'t trigger a scored event but disrupts the quality of airflow.',
-        '<strong style="color:#fff;">RERAs</strong> (Respiratory Effort-Related Arousals) -- brief arousals caused by increased respiratory effort. Standard AHI doesn\'t count them.',
+        '<strong style="color:#fff;">Flow limitation</strong> -- a pattern in the flow waveform that the standard AHI count does not include.',
+        '<strong style="color:#fff;">RERAs</strong> (Respiratory Effort-Related Arousals) -- a type of breathing event that standard AHI does not count.',
       ])}
-      ${paragraph('Alongside your AHI, AirwayLab surfaces a flow limitation score derived from your flow waveform data. You can see whether individual breaths look restricted, even on nights when your AHI looks clean.')}
-      ${paragraph('This isn\'t a diagnosis. It\'s a pattern in your data that may be worth discussing with your clinician.')}
+      ${paragraph('Alongside your AHI, AirwayLab surfaces a flow limitation score derived from your flow waveform data. You can see whether individual breaths show elevated flow limitation scores, even on nights when your AHI looks clean.')}
+      ${paragraph('This isn\'t a diagnosis. It\'s a pattern in your data. Your clinician can help interpret these findings in context.')}
       ${ctaButton('Check Your Flow Limitation Score', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=cpap_tips_3`)}
       ${paragraph('<em>This content is informational only. It is not medical advice. Discuss any concerns with your prescribing clinician or sleep specialist.</em>')}
     `, unsubscribeUrl),
@@ -351,7 +351,7 @@ export function cpapTipsStep5(unsubscribeUrl: string): { subject: string; html: 
     html: layout(`
       ${heading('Three weeks of data for your clinician')}
       ${paragraph('Three weeks of data is genuinely useful. If you have a sleep clinic visit coming up -- or if you\'re due to schedule one -- here\'s how to make the most of it.')}
-      ${paragraph('By now you can see trends rather than noise: whether your AHI has been stable, improving, or creeping up; whether your leak rate has been consistently low or intermittently high.')}
+      ${paragraph('By now you can see trends rather than noise: whether your AHI has been stable, decreasing, or increasing; whether your leak rate has been consistently low or intermittently high.')}
       ${paragraph('Before your appointment, spend five minutes with the trend view in AirwayLab. Any patterns you notice are worth mentioning. You don\'t need to interpret them -- that\'s your clinician\'s job. You just need to be able to show the data.')}
       ${paragraph('AirwayLab can export a session summary with your key metrics and trends. It\'s designed to be readable by a sleep specialist, not just a CPAP enthusiast.')}
       ${paragraph('We\'re a tool for informed conversations -- not a substitute for clinical review. That\'s what we\'re here for.')}
