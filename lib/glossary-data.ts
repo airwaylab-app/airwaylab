@@ -522,12 +522,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'Can flow limitation cause symptoms even with a normal AHI?',
         answer:
-          'Yes. Research shows that flow limitation can drive fatigue, unrefreshing sleep, and other symptoms independently of AHI. The increased respiratory effort triggers a stress response that fragments sleep even without full cortical arousals. This is the core mechanism in Upper Airway Resistance Syndrome (UARS).',
+          'Research has studied the relationship between flow limitation and symptoms like fatigue and unrefreshing sleep. Individual sensitivity to flow limitation varies, and the mechanisms are an active area of research.',
       },
       {
         question: 'How is flow limitation treated?',
         answer:
-          'Common approaches include increasing CPAP pressure, adjusting EPR (Expiratory Pressure Relief) settings, switching from CPAP to BiPAP for more pressure support during inspiration, and addressing positional factors. The specific approach depends on the pattern and severity of flow limitation detected. Always discuss changes with your clinician.',
+          'Treatment approaches vary based on the pattern and severity of flow limitation. Your clinician can recommend the right approach based on your complete clinical picture.',
       },
     ],
     category: 'sleep-disordered-breathing',

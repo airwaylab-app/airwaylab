@@ -63,10 +63,10 @@ export const METRIC_METHODOLOGIES = {
     'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Flatness Index exceeds 0.85. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
 
   eai:
-    'Estimated by detecting breaths where both respiratory rate (>35% above a 120-second rolling baseline) and tidal volume (>50% above baseline) spike simultaneously, and where at least 2 of the preceding 5 breaths showed flow limitation (NED >= 20% or FI >= 0.85). A 30-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG, and research suggests flow limitation itself drives symptoms independently of arousals. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
+    'Estimated by detecting breaths where both respiratory rate (>35% above a 120-second rolling baseline) and tidal volume (>50% above baseline) spike simultaneously, and where at least 2 of the preceding 5 breaths showed flow limitation (NED >= 20% or FI >= 0.85). A 30-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
 
   regularity:
-    'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing often indicates a persistently narrowed airway forcing uniform restricted breaths. Lower scores reflect healthy natural breath-to-breath variability.',
+    'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing is associated with elevated flow limitation scores. Lower scores reflect healthy natural breath-to-breath variability.',
 
   periodicity:
     'Applies FFT (frequency spectrum analysis) to minute ventilation, looking for power concentrated in the 0.01\u20130.03 Hz band. This band corresponds to 30\u2013100 second breathing cycles, characteristic of periodic breathing or Cheyne-Stokes respiration.',
@@ -172,5 +172,5 @@ export function getODIExplanation(odi3: number, threshold: ThresholdDef): string
   if (light === 'warn') {
     return `Your ODI-3 of ${fmt(odi3)}/hr shows moderate oxygen drops during sleep. Each desaturation event means your blood oxygen briefly dropped by 3% or more, from a recent baseline.`;
   }
-  return `Your ODI-3 of ${fmt(odi3)}/hr indicates frequent oxygen desaturations. Your blood oxygen is dropping frequently during sleep. Discuss with your clinician.`;
+  return `Your ODI-3 of ${fmt(odi3)}/hr shows frequent oxygen drops during sleep. Your blood oxygen is dropping frequently during sleep. Your clinician can help interpret these findings in context.`;
 }

@@ -193,7 +193,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'eai-good',
       type: 'positive',
       title: 'Low respiratory disruption burden',
-      body: `RDI of ${fmt(eaiVal)}/hr shows few disruptions. Note: research shows flow limitation itself can correlate with symptoms independently of arousals — check your flow limitation metrics for the fuller picture.`,
+      body: `RDI of ${fmt(eaiVal)}/hr shows few disruptions. Check your flow limitation metrics (Glasgow, FL Score, NED) for the fuller picture.`,
       category: 'ned',
     });
   }
