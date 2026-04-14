@@ -160,8 +160,7 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
             <Link href="/glossary#fl-score" className="text-primary hover:text-primary/80">
               FL Score
             </Link>{' '}
-            (percentage of breaths with significant flattening). These metrics make sub-threshold
-            airway narrowing visible across entire sessions.
+            (percentage of breaths with significant flattening). These metrics make breath-shape patterns visible across entire sessions.
           </p>
         </div>
       </section>
@@ -281,15 +280,14 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
               <p className="text-sm font-semibold text-green-400">FL Score</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 The percentage of breaths in a session with clinically significant flow
-                limitation. Lower is better; elevated values suggest persistent airway
-                narrowing.
+                limitation. Lower values are typical of less flattened breath shapes; elevated values indicate more breath-shape flattening across the session.
               </p>
             </div>
             <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
               <p className="text-sm font-semibold text-green-400">NED + estimated RERA</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Normalised Event Density and an estimated RERA count derived from flow waveform
-                analysis, giving a picture of arousal burden beyond AHI.
+                analysis, giving a picture of respiratory event patterns beyond AHI.
               </p>
             </div>
           </div>
@@ -377,7 +375,7 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
               <span>
-                Elevated Glasgow Index or FL Score that has not improved or is trending upward
+                Elevated Glasgow Index or FL Score that has remained elevated or is trending upward
                 over weeks
               </span>
             </li>
