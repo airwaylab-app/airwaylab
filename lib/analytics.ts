@@ -31,7 +31,7 @@ export function capturePostHog(
     if (posthog.__loaded) {
       posthog.capture(event, props);
     }
-  }).catch(() => { /* no-op */ });
+  }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
 }
 
 // ── Existing events ──────────────────────────────────────────
