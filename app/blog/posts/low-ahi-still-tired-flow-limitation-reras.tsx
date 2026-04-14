@@ -273,8 +273,8 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
             <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
               <p className="text-sm font-semibold text-green-400">Glasgow Index</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Scores each breath&apos;s shape on a scale from 0 (normal) to 4 (severely
-                flow-limited). Session averages show trends over time.
+                Scores each breath&apos;s shape on 9 components (0–1 each) for an overall
+                score from 0 (normal) to 9 (severely flow-limited). Session averages show trends over time.
               </p>
             </div>
             <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
@@ -318,9 +318,8 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" />
               <span>
                 <strong className="text-foreground">Track trends over time.</strong> A Glasgow
-                Index or FL Score that has been gradually increasing may warrant a conversation
-                with your clinician about whether your current settings still address your airway
-                patterns.
+                Index or FL Score that has been gradually increasing gives your clinician
+                additional context when interpreting your overall breathing patterns.
               </span>
             </li>
             <li className="flex gap-2">
