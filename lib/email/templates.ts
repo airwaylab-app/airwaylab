@@ -422,7 +422,7 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
   },
   cpap_tips: {
     totalSteps: 5,
-    delays: [3, 7, 12, 18, 25], // days post-signup; scheduled from user's created_at
+    delays: [3, 7, 12, 18, 25], // days after welcome sequence completes (~days 10/14/19/25/32 from signup)
     getTemplate: (step, url) => {
       if (step === 1) return cpapTipsStep1(url);
       if (step === 2) return cpapTipsStep2(url);

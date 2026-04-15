@@ -15,6 +15,7 @@ import {
   SEQUENCES,
   type SequenceName,
 } from '@/lib/email/templates';
+import { WELCOME_SEQUENCE_DAYS } from '@/lib/email/sequences';
 
 const UNSUB_URL = 'https://airwaylab.app/unsubscribe?token=test-token';
 
@@ -87,7 +88,7 @@ describe('Feature education sequence templates', () => {
 // ── CPAP tips sequence templates ───────────────────────────────
 
 describe('CPAP tips sequence templates', () => {
-  it('step 1 (day 3) covers first-week expectations', () => {
+  it('step 1 (~day 10 from signup) covers first-week expectations', () => {
     const { subject, html } = cpapTipsStep1(UNSUB_URL);
     expect(subject).toContain('first week');
     expect(html).toContain('Mask leak');
@@ -95,7 +96,7 @@ describe('CPAP tips sequence templates', () => {
     expect(html).toContain('Upload Your First Session');
   });
 
-  it('step 2 (day 7) explains AHI, leak, usage hours', () => {
+  it('step 2 (~day 14 from signup) explains AHI, leak, usage hours', () => {
     const { subject, html } = cpapTipsStep2(UNSUB_URL);
     expect(subject).toContain('AHI');
     expect(html).toContain('Apnea-Hypopnea');
@@ -103,7 +104,7 @@ describe('CPAP tips sequence templates', () => {
     expect(html).toContain('Open Your Session Dashboard');
   });
 
-  it('step 3 (day 12) covers flow limitation / fatigue with low AHI', () => {
+  it('step 3 (~day 19 from signup) covers flow limitation / fatigue with low AHI', () => {
     const { subject, html } = cpapTipsStep3(UNSUB_URL);
     expect(subject).toContain('Low AHI');
     expect(html).toContain('Flow limitation');
@@ -111,7 +112,7 @@ describe('CPAP tips sequence templates', () => {
     expect(html).toContain('Check Your Flow Limitation Score');
   });
 
-  it('step 4 (day 18) covers five feature highlights', () => {
+  it('step 4 (~day 25 from signup) covers five feature highlights', () => {
     const { subject, html } = cpapTipsStep4(UNSUB_URL);
     expect(subject).toContain('Five things');
     expect(html).toContain('Compare two sessions');
@@ -119,7 +120,7 @@ describe('CPAP tips sequence templates', () => {
     expect(html).toContain('Try Session Comparison');
   });
 
-  it('step 5 (day 25) prepares for clinic visit', () => {
+  it('step 5 (~day 32 from signup) prepares for clinic visit', () => {
     const { subject, html } = cpapTipsStep5(UNSUB_URL);
     expect(subject).toContain('Three weeks');
     expect(html).toContain('Generate a Session Summary');
@@ -232,5 +233,12 @@ describe('SEQUENCES registry', () => {
   it('cpap_tips has 5 steps with delays [3, 7, 12, 18, 25]', () => {
     expect(SEQUENCES.cpap_tips.totalSteps).toBe(5);
     expect(SEQUENCES.cpap_tips.delays).toEqual([3, 7, 12, 18, 25]);
+  });
+
+  it('cpap_tips first email starts after post_upload last email when offset by WELCOME_SEQUENCE_DAYS', () => {
+    const postUploadLastDay = Math.max(...SEQUENCES.post_upload.delays);
+    const cpapTipsFirstDay = Math.min(...SEQUENCES.cpap_tips.delays);
+    const effectiveFirstCpapTipsDay = WELCOME_SEQUENCE_DAYS + cpapTipsFirstDay;
+    expect(effectiveFirstCpapTipsDay).toBeGreaterThan(postUploadLastDay);
   });
 });
