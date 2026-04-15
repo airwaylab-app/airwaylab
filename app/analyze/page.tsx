@@ -598,10 +598,9 @@ function AnalyzePageInner() {
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto max-w-lg">
-          {/* Mobile upload prompt */}
-          <MobileEmailCapture className="mb-4 sm:hidden" />
-
           <FileUpload onFilesSelected={handleFiles} />
+          {/* Mobile reminder — secondary, shown below file picker */}
+          <MobileEmailCapture className="mt-4 sm:hidden" />
 
           {/* Demo CTA — shown immediately after upload for discoverability */}
           <div className="mt-6 flex flex-col items-center gap-2">
