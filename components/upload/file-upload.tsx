@@ -8,7 +8,7 @@ import { UnsupportedFormatDialog } from './unsupported-format-dialog';
 import { UnsupportedDeviceDialog } from './unsupported-device-dialog';
 import { getFileStructureMetadata } from '@/lib/parsers/device-detector';
 import { events } from '@/lib/analytics';
-import { supportsWebkitGetAsEntry, traverseDataTransferItems, toFilesWithPaths, isIOSDevice } from '@/lib/directory-traversal';
+import { supportsWebkitGetAsEntry, traverseDataTransferItems, toFilesWithPaths, isMobileDevice } from '@/lib/directory-traversal';
 import * as Sentry from '@sentry/nextjs';
 
 interface FileUploadProps {
@@ -19,6 +19,7 @@ interface FileUploadProps {
 export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
   const sdInputRef = useRef<HTMLInputElement>(null);
   const oxInputRef = useRef<HTMLInputElement>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
   const [sdFiles, setSdFiles] = useState<File[]>([]);
   const [oxFiles, setOxFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -31,10 +32,10 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
     folderStructure: string[];
     totalSizeBytes: number;
   } | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    setIsIOS(isIOSDevice());
+    setIsMobile(isMobileDevice());
   }, []);
 
   const handleSDChange = useCallback(
@@ -82,6 +83,43 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
       }
     },
     [onFilesSelected, sdFiles, sdValidation]
+  );
+
+  const handleMobileFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        events.uploadStart();
+        events.mobileFilePickerTapped();
+        // Reuse the same split logic as drag-drop: CSVs → oximetry, rest → SD
+        const csvFiles = files.filter((f) => f.name.toLowerCase().endsWith('.csv'));
+        const edfFiles = files.filter((f) => !f.name.toLowerCase().endsWith('.csv'));
+        if (edfFiles.length > 0) {
+          const result = validateSDFiles(edfFiles);
+          setSdValidation(result);
+          setSdFiles(edfFiles);
+          if (result.valid) {
+            onFilesSelected(edfFiles, csvFiles.length > 0 ? csvFiles : [], result.deviceType, result.bmcSerial);
+          } else if (result.deviceType === 'unknown') {
+            const fileInfos = edfFiles.map((f) => ({
+              name: f.name,
+              path: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name,
+              size: f.size,
+            }));
+            setUnsupportedDevice(getFileStructureMetadata(fileInfos));
+          }
+        } else if (csvFiles.length > 0) {
+          // Only CSV files — treat as oximetry-only upload
+          const oxResult = validateOximetryFiles(csvFiles);
+          setOxValidation(oxResult);
+          setOxFiles(csvFiles);
+          checkOximetryFormats(csvFiles).then((unsupported) => {
+            if (unsupported.length > 0) setUnsupportedFiles(unsupported);
+          });
+        }
+      }
+    },
+    [onFilesSelected]
   );
 
   const processDroppedFiles = useCallback(
@@ -229,7 +267,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           )}
           {sdFiles.length === 0 && (
             <div className="mt-2 flex flex-col gap-1.5 text-left">
-              {[
+              {!isMobile && [
                 'Remove the SD card from your PAP machine',
                 'Insert it into your computer (use an adapter if needed)',
                 'Click here and choose your SD card drive',
@@ -243,15 +281,17 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   </span>
                 </div>
               ))}
-              <div className="mt-2 space-y-0.5">
-                <p className="text-[10px] text-muted-foreground/70">
-                  Supports ResMed AirSense 10/11, AirCurve 10, and BMC Luna 2 / RESmart G2.
-                </p>
-                <p className="text-[10px] text-muted-foreground/70">
-                  Using another device? Upload your data and enable data sharing so we can analyse the structure and add support.
-                </p>
-              </div>
-              {!isIOS && (
+              {!isMobile && (
+                <div className="mt-2 space-y-0.5">
+                  <p className="text-[10px] text-muted-foreground/70">
+                    Supports ResMed AirSense 10/11, AirCurve 10, and BMC Luna 2 / RESmart G2.
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70">
+                    Using another device? Upload your data and enable data sharing so we can analyse the structure and add support.
+                  </p>
+                </div>
+              )}
+              {!isMobile && (
                 <a
                   href="/getting-started"
                   className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
@@ -260,6 +300,22 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   First time? See the getting started guide
                   <ArrowRight className="h-3 w-3" />
                 </a>
+              )}
+              {isMobile && (
+                <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="w-full h-12"
+                    onClick={() => !disabled && mobileFileInputRef.current?.click()}
+                    disabled={disabled}
+                  >
+                    Choose files (.edf, .csv)
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground text-center">
+                    Files are processed in your browser — nothing is sent to a server
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -273,6 +329,15 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
           directory=""
           multiple
           onChange={handleSDChange}
+          disabled={disabled}
+        />
+        <input
+          ref={mobileFileInputRef}
+          type="file"
+          className="hidden"
+          accept=".edf,.csv"
+          multiple
+          onChange={handleMobileFileChange}
           disabled={disabled}
         />
       </div>

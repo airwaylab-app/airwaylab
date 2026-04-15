@@ -68,8 +68,13 @@ export function MobileEmailCapture({ className }: MobileEmailCaptureProps) {
 
   return (
     <div className={cn('rounded-xl border border-border/60 bg-card/40 p-5 text-center', className)}>
-      <Monitor className="h-8 w-8 text-primary mx-auto mb-3" aria-hidden="true" />
-      <p className="text-base font-semibold text-foreground">
+      <div className="flex items-center gap-3 mb-4 text-muted-foreground/50">
+        <div className="h-px flex-1 bg-border/50" />
+        <span className="text-xs">or</span>
+        <div className="h-px flex-1 bg-border/50" />
+      </div>
+      <Monitor className="h-5 w-5 text-primary mx-auto mb-3" aria-hidden="true" />
+      <p className="text-sm font-medium text-muted-foreground">
         We&apos;ll remind you when you&apos;re at your desktop
       </p>
       <p className="text-sm text-muted-foreground mt-1">
