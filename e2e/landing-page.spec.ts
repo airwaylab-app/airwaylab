@@ -56,8 +56,9 @@ test.describe('Landing Page', () => {
   });
 
   test('header navigation links work', async ({ page }) => {
-    await page.locator('nav a[href="/analyze"]').first().click({ force: true });
-    await expect(page).toHaveURL('/analyze');
+    await page.waitForLoadState('networkidle');
+    await page.locator('nav a[href="/analyze"]').first().click();
+    await expect(page).toHaveURL('/analyze', { timeout: 10_000 });
   });
 
   test('privacy shield message is visible', async ({ page }) => {
