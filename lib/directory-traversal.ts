@@ -132,6 +132,15 @@ export async function traverseDataTransferItems(
  * the path via Object.defineProperty so downstream code that reads
  * `webkitRelativePath` works correctly.
  */
+/**
+ * Detects whether the current device is a mobile (iOS/Android) device.
+ * Used to show the file input fallback instead of drag-and-drop.
+ */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
 export function toFilesWithPaths(traversed: TraversedFile[]): File[] {
   return traversed.map(({ file, relativePath }) => {
     const newFile = new File([file], file.name, {

@@ -121,10 +121,10 @@ describe('A2 — Getting started link in upload zone', () => {
     expect(fileUploadSrc).toContain('getting started guide');
   });
 
-  it('link is gated on !isIOS', () => {
+  it('link is gated on !isMobile', () => {
     const linkIndex = fileUploadSrc.indexOf('href="/getting-started"');
-    const iosCheckBefore = fileUploadSrc.lastIndexOf('!isIOS', linkIndex);
-    expect(iosCheckBefore).toBeGreaterThan(-1);
+    const mobileCheckBefore = fileUploadSrc.lastIndexOf('!isMobile', linkIndex);
+    expect(mobileCheckBefore).toBeGreaterThan(-1);
   });
 
   it('link is inside sdFiles.length === 0 block', () => {

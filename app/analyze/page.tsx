@@ -621,10 +621,9 @@ function AnalyzePageInner() {
       {status === 'idle' && !isDemo && (
         !persistedData ? (
           <div className="mx-auto max-w-lg">
-            {/* Mobile upload prompt */}
-            <MobileEmailCapture className="mb-4 sm:hidden" />
-
             <FileUpload onFilesSelected={handleFiles} />
+            {/* Mobile reminder — secondary, shown below file picker */}
+            <MobileEmailCapture className="mt-4 sm:hidden" />
 
             {/* Contextual help link */}
             <p className="mt-3 text-center text-xs text-muted-foreground/70">
@@ -657,9 +656,9 @@ function AnalyzePageInner() {
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
-            {/* Mobile upload prompt */}
-            <MobileEmailCapture className="mb-4 sm:hidden" />
             <FileUpload onFilesSelected={handleFiles} />
+            {/* Mobile reminder — secondary, shown below file picker */}
+            <MobileEmailCapture className="mt-4 sm:hidden" />
             <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
