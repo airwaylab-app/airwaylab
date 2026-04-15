@@ -17,6 +17,35 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-export-and-understand-your-cpap-data',
+    title: 'How to Export and Understand Your CPAP Data',
+    seoTitle: 'How to Export and Understand Your CPAP Data',
+    description:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    date: '2026-04-15',
+    readTime: '8 min read',
+    tags: ['CPAP', 'Getting Started', 'ResMed', 'SD Card', 'Flow Limitation', 'AHI'],
+    ogDescription:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    faqItems: [
+      {
+        question: 'How do I export data from my ResMed CPAP machine?',
+        answer:
+          'Power off your ResMed machine, remove the SD card from the side panel (AirSense 10/11) or under the humidifier chamber (S9), insert it into a card reader, and open the EDF files in an analysis tool like OSCAR or AirwayLab. No account or cloud service is required.',
+      },
+      {
+        question: 'What does flow limitation mean in CPAP data?',
+        answer:
+          'Flow limitation is partial narrowing of the upper airway during sleep that restricts airflow without triggering a full apnoea or hypopnoea event. It appears as a flat-topped inspiratory waveform rather than a normal rounded peak. It can persist even when AHI is low.',
+      },
+      {
+        question: 'Can I read my CPAP data without uploading it to the cloud?',
+        answer:
+          'Yes. Your machine stores detailed data on its SD card. Tools like AirwayLab process this data entirely in your browser — nothing is uploaded and your data never leaves your device.',
+      },
+    ],
+  },
+  {
     slug: 'resmed-sd-card-browser-analysis',
     title: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
     seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
