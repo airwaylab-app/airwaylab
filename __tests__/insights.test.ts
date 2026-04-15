@@ -154,7 +154,7 @@ describe('generateInsights', () => {
       expect(tonic!.type).toBe('info');
       expect(tonic!.category).toBe('oximetry');
       expect(tonic!.body).toContain('baseline oxygen');
-      expect(tonic!.body).toContain('alcohol');
+      expect(tonic!.body).toContain('Your clinician can help interpret these findings in context');
     });
 
     it('does not generate tonic-desat when both T<94% and ODI3 are elevated', () => {
