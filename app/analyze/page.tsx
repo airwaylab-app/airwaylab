@@ -601,7 +601,7 @@ function AnalyzePageInner() {
           {/* Mobile upload prompt */}
           <MobileEmailCapture className="mb-4 sm:hidden" />
 
-          <FileUpload onFilesSelected={handleFiles} />
+          <FileUpload onFilesSelected={handleFiles} isFirstRun={isNewUser && lifetimeNights === 0} />
 
           {/* Demo CTA — shown immediately after upload for discoverability */}
           <div className="mt-6 flex flex-col items-center gap-2">
@@ -811,6 +811,13 @@ function AnalyzePageInner() {
                     <EmailOptIn variant="inline" source={isDemo ? 'demo-dashboard' : 'analyze-dashboard'} />
                   )}
                 </div>
+              )}
+              {!isDemo && currentNight && !currentNight.oximetry && (
+                <Button variant="outline" size="sm" onClick={handleOximetryUpload} className="gap-1.5">
+                  <HeartPulse className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Add pulse oximetry data</span>
+                  <span className="sm:hidden">Add O₂</span>
+                </Button>
               )}
               {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]!} sdFiles={sdFilesRef.current} />}
               {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]!} />}

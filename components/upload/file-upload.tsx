@@ -14,9 +14,10 @@ import * as Sentry from '@sentry/nextjs';
 interface FileUploadProps {
   onFilesSelected: (sdFiles: File[], oximetryFiles: File[], deviceType?: string, bmcSerial?: string) => void;
   disabled?: boolean;
+  isFirstRun?: boolean;
 }
 
-export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
+export function FileUpload({ onFilesSelected, disabled, isFirstRun }: FileUploadProps) {
   const sdInputRef = useRef<HTMLInputElement>(null);
   const oxInputRef = useRef<HTMLInputElement>(null);
   const [sdFiles, setSdFiles] = useState<File[]>([]);
@@ -285,73 +286,75 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
         />
       </div>
 
-      {/* Oximetry Upload */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={oxFiles.length > 0 ? `${oxFiles.length} oximetry file${oxFiles.length !== 1 ? 's' : ''} selected. Click to change.` : 'Upload pulse oximetry CSV files (optional). Click to browse.'}
-        className={`group cursor-pointer rounded-xl border border-dashed transition-all ${
-          oxFiles.length > 0
-            ? 'border-emerald-500/50 bg-emerald-500/5'
-            : 'border-border/50 hover:border-border hover:bg-card/50'
-        } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
-        onClick={() => !disabled && oxInputRef.current?.click()}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!disabled) oxInputRef.current?.click(); } }}
-      >
-        <div className="flex items-center gap-3 px-5 py-4">
-          <div
-            className={`rounded-lg p-2 ${
-              oxFiles.length > 0 ? 'bg-emerald-500/10' : 'bg-muted'
-            }`}
-          >
-            {oxFiles.length > 0 ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            ) : (
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            )}
+      {/* Oximetry Upload — hidden for first-run users until after initial analysis */}
+      {!isFirstRun && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={oxFiles.length > 0 ? `${oxFiles.length} oximetry file${oxFiles.length !== 1 ? 's' : ''} selected. Click to change.` : 'Upload pulse oximetry CSV files (optional). Click to browse.'}
+          className={`group cursor-pointer rounded-xl border border-dashed transition-all ${
+            oxFiles.length > 0
+              ? 'border-emerald-500/50 bg-emerald-500/5'
+              : 'border-border/50 hover:border-border hover:bg-card/50'
+          } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+          onClick={() => !disabled && oxInputRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!disabled) oxInputRef.current?.click(); } }}
+        >
+          <div className="flex items-center gap-3 px-5 py-4">
+            <div
+              className={`rounded-lg p-2 ${
+                oxFiles.length > 0 ? 'bg-emerald-500/10' : 'bg-muted'
+              }`}
+            >
+              {oxFiles.length > 0 ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Pulse Oximetry CSVs{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {oxFiles.length > 0
+                  ? `${oxFiles.length} file${oxFiles.length !== 1 ? 's' : ''} selected`
+                  : 'Viatom / Checkme O2 Max exports'}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs" tabIndex={-1}>
+              Browse
+            </Button>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium">
-              Pulse Oximetry CSVs{' '}
-              <span className="text-muted-foreground">(optional)</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {oxFiles.length > 0
-                ? `${oxFiles.length} file${oxFiles.length !== 1 ? 's' : ''} selected`
-                : 'Viatom / Checkme O2 Max exports'}
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" className="text-xs" tabIndex={-1}>
-            Browse
-          </Button>
+          {/* Oximetry validation feedback */}
+          {oxValidation && (oxValidation.errors.length > 0 || oxValidation.warnings.length > 0) && (
+            <div className="flex flex-col gap-1 px-5 pb-3">
+              {oxValidation.errors.map((err, i) => (
+                <div key={`e${i}`} className="flex items-start gap-1.5">
+                  <XCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
+                  <span className="text-xs text-red-400">{err}</span>
+                </div>
+              ))}
+              {oxValidation.warnings.map((warn, i) => (
+                <div key={`w${i}`} className="flex items-start gap-1.5">
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                  <span className="text-xs text-amber-400">{warn}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <input
+            ref={oxInputRef}
+            type="file"
+            className="hidden"
+            accept=".csv"
+            multiple
+            onChange={handleOxChange}
+            disabled={disabled}
+          />
         </div>
-        {/* Oximetry validation feedback */}
-        {oxValidation && (oxValidation.errors.length > 0 || oxValidation.warnings.length > 0) && (
-          <div className="flex flex-col gap-1 px-5 pb-3">
-            {oxValidation.errors.map((err, i) => (
-              <div key={`e${i}`} className="flex items-start gap-1.5">
-                <XCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
-                <span className="text-xs text-red-400">{err}</span>
-              </div>
-            ))}
-            {oxValidation.warnings.map((warn, i) => (
-              <div key={`w${i}`} className="flex items-start gap-1.5">
-                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                <span className="text-xs text-amber-400">{warn}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <input
-          ref={oxInputRef}
-          type="file"
-          className="hidden"
-          accept=".csv"
-          multiple
-          onChange={handleOxChange}
-          disabled={disabled}
-        />
-      </div>
+      )}
       {/* Unsupported Oximetry Format Dialog */}
       {unsupportedFiles.length > 0 && (
         <UnsupportedFormatDialog
