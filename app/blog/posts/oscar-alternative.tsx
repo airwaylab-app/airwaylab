@@ -4,10 +4,11 @@ import {
   BarChart3,
   BookOpen,
   Globe,
-  Layers,
+  Lightbulb,
   Lock,
   Monitor,
   Scale,
+  Sparkles,
 } from 'lucide-react';
 
 export default function OSCARAlternativePost() {
@@ -88,49 +89,51 @@ export default function OSCARAlternativePost() {
         </div>
       </section>
 
-      {/* What OSCAR Doesn't Do */}
+      {/* What AirwayLab Adds */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Layers className="h-5 w-5 text-amber-400" />
+          <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold sm:text-2xl">
-            Where OSCAR Stops and AirwayLab Starts
+            What AirwayLab Adds to the Picture
           </h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            OSCAR shows you what happened. AirwayLab tells you what it means. The difference
-            is automated analysis:
+            While OSCAR excels at interactive waveform inspection, AirwayLab focuses on a
+            different layer: automated breath-by-breath analysis and composite metrics. These
+            are complementary approaches to understanding the same data.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">No <Link href="/glossary#flow-limitation" className="hover:text-amber-300">Flow Limitation</Link> Scoring</p>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground"><Link href="/glossary#flow-limitation" className="text-foreground hover:text-primary">Flow Limitation</Link> Scoring</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                OSCAR displays the raw flow waveform but doesn&apos;t compute flow limitation
-                metrics. You have to visually identify flat-topped breaths yourself, which requires
-                training and is subjective. AirwayLab runs four algorithms automatically.
+                AirwayLab runs four algorithms on the flow waveform to quantify flow limitation
+                automatically. This complements OSCAR&apos;s visual waveform inspection with
+                numerical metrics.
               </p>
             </div>
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">No <Link href="/glossary#rera" className="hover:text-amber-300">RERA</Link> Detection</p>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground"><Link href="/glossary#rera" className="text-foreground hover:text-primary">RERA</Link> Estimation</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                OSCAR can&apos;t identify sequences of flow-limited breaths that end in arousals.
-                AirwayLab&apos;s NED engine detects these automatically and estimates a RERA index
-                and Respiratory Disturbance Index.
+                AirwayLab&apos;s NED engine identifies sequences of flow-limited breaths that
+                may represent respiratory effort-related arousals, and estimates a RERA index
+                from the flow signal alone.
               </p>
             </div>
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">No Composite Metrics</p>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Composite Metrics</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                AirwayLab computes the Glasgow Index (9-component breath shape score), FL Score,
-                Regularity, Periodicity, and more. These synthesise thousands of breaths into
-                actionable numbers you can track over time.
+                The Glasgow Index (9-component breath shape score), FL Score, Regularity,
+                Periodicity, and more synthesise thousands of breaths into numbers you can
+                track over time.
               </p>
             </div>
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">Desktop-Only</p>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Browser-Based</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                OSCAR requires installation on Windows, macOS, or Linux. AirwayLab runs in your
-                browser on any device. Upload your SD card, get results, no installation needed.
+                AirwayLab runs in your browser with no installation. Upload your SD card and
+                get results on any device. OSCAR is a desktop application with more control
+                over local data management.
               </p>
             </div>
           </div>
@@ -156,42 +159,47 @@ export default function OSCARAlternativePost() {
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Interactive waveform zoom</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">Viewer only</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Viewer only</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Multi-device support</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Yes (5+)</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">ResMed</td>
+              </tr>
+              <tr className="border-b border-border/30">
+                <td className="py-2.5 pr-4">Event-by-event timeline</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">ResMed only</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Summary view</td>
+              </tr>
+              <tr className="border-b border-border/30">
+                <td className="py-2.5 pr-4">Historical data management</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Per-session</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Flow limitation scoring</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Visual inspection</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">4 engines</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">RERA detection</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Yes (NED)</td>
+                <td className="py-2.5 pr-4">RERA estimation</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Different focus</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">NED engine</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">Glasgow Index</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
+                <td className="py-2.5 pr-4">Composite metrics</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Raw data view</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Glasgow, FL, NED</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Oximetry analysis</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">Basic</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">17 metrics</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">AI-powered insights</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Yes (opt-in)</td>
-              </tr>
-              <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">Runs in browser</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
+                <td className="py-2.5 pr-4">Platform</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Desktop app</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">Browser</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Privacy</td>
@@ -202,11 +210,6 @@ export default function OSCARAlternativePost() {
                 <td className="py-2.5 pr-4">Open source</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes (GPL-3.0)</td>
-              </tr>
-              <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">Community data contribution</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Yes (opt-in)</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-4">Cost</td>
@@ -352,6 +355,22 @@ export default function OSCARAlternativePost() {
               OSCAR Official Site
             </a>{' '}
             &mdash; download and documentation for OSCAR.
+          </p>
+        </div>
+      </section>
+
+      {/* Medical disclaimer */}
+      <section className="mt-8">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+          <div className="flex items-center gap-2.5">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            <p className="text-xs font-semibold text-foreground">A note on self-analysis</p>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Both OSCAR and AirwayLab are informational tools, not diagnostic devices. Flow
+            limitation analysis from SD card data is an estimate, not a polysomnography-grade
+            measurement. Always discuss your data with your sleep physician. The metrics
+            provided are for educational purposes and to inform clinical conversations.
           </p>
         </div>
       </section>
