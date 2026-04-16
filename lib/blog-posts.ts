@@ -17,6 +17,28 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'understanding-cpap-mask-leak-rate',
+    title: 'Understanding CPAP Mask Leak Rate: What Your Data Shows',
+    seoTitle: 'Understanding CPAP Mask Leak Rate: What Your Data Shows — AirwayLab',
+    description:
+      'Learn what CPAP mask leak rate data actually means, how it\'s recorded on your SD card, and how to read it in AirwayLab. Data literacy, not equipment advice.',
+    date: '2026-04-15',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Mask Leak', 'Data Literacy', 'ResMed', 'Getting Started'],
+    ogDescription:
+      'CPAP mask leak rate explained from the SD card up — what total leak vs. unintentional leak means, how the Large Leak flag works, and how to read it in AirwayLab.',
+    faqItems: [
+      {
+        question: 'What is a good CPAP leak rate?',
+        answer: 'ResMed devices log a \'large leak\' flag when unintentional leak exceeds approximately 24 L/min in the raw data. Whether a given number is clinically significant is a question for your sleep physician — AirwayLab shows you what the data says, not what to do about it.',
+      },
+      {
+        question: 'What is the difference between total leak and unintentional leak on CPAP?',
+        answer: 'Total leak is all air leaving the mask circuit, including the intentional exhaust vent built into the mask. Unintentional leak (also called mask leak) is total leak minus that designed vent flow. Your device reports both; unintentional leak is the number most relevant to mask fit.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
