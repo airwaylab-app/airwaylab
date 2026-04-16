@@ -164,7 +164,7 @@ export async function markSent(
 export async function scheduleDormancySequences(
   supabase: SupabaseClient
 ): Promise<number> {
-  const DORMANCY_DAYS = 7;
+  const DORMANCY_DAYS = 14;
   const cutoff = new Date(Date.now() - DORMANCY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // Find users who already have a dormancy sequence (to exclude them)
@@ -175,7 +175,7 @@ export async function scheduleDormancySequences(
 
   const excludeIds = existingDormancy?.map((r) => r.user_id) ?? [];
 
-  // Find users who are dormant (no upload in 7 days), opted in, no existing dormancy sequence
+  // Find users who are dormant (no upload in 14 days), opted in, no existing dormancy sequence
   let query = supabase
     .from('profiles')
     .select('id')
