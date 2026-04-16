@@ -248,8 +248,8 @@ export default function GlasgowIndexPage() {
               <span className="text-sm font-semibold text-emerald-400">Below 1.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Low flow limitation scores observed. Your current pressure settings
-              appear to be managing your airway well.
+              Low flow limitation scores observed. Your Glasgow Index is in the
+              typical range for this metric.
             </p>
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -268,8 +268,8 @@ export default function GlasgowIndexPage() {
               <span className="text-sm font-semibold text-red-400">Above 2.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Significant flow limitation. Your airway may be partially obstructed
-              despite therapy. The original Glasgow Index author describes a score
+              Significant flow limitation. Your Glasgow Index is elevated. Your
+              clinician can help interpret this in context. The original Glasgow Index author describes a score
               of 3 as &ldquo;significant problems.&rdquo; Your sleep physician can help interpret these findings in context.
             </p>
           </div>

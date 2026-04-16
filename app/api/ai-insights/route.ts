@@ -61,7 +61,7 @@ const PREMIUM_INSIGHT_EXTENSION = `
 Generate 6 to 10 data pattern observations for this analysis. As a premium analysis, be thorough — cover all engines with specific findings.
 
 In addition to the standard categories, you may use these categories for premium-depth analysis:
-- "correlation": Cross-engine correlations (e.g. Glasgow flat-top + high NED suggests steady-state FL; WAT periodicity + oximetry ODI coupling suggests central component)
+- "correlation": Cross-engine correlations (e.g. Glasgow flat-top scoring is elevated while NED M-shape percentage is low; WAT periodicity and oximetry ODI values are both elevated)
 - "temporal": Time-based patterns (e.g. progressive FL worsening across H1→H2, periodic clustering at specific intervals, REM-associated breath shape changes, positional transitions visible in H1/H2 splits)
 
 Prioritise correlation and temporal insights — these are the analysis patterns that go beyond what rule-based systems detect.
@@ -89,7 +89,7 @@ Your task is to generate 3–6 data pattern observations in JSON format. Each in
 }
 
 Focus on:
-- Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top high while NED shows low M-shape suggests steady-state flow limitation rather than oscillatory obstruction)
+- Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top scoring is elevated while NED M-shape percentage is low)
 - Patterns between WAT regularity/periodicity and Glasgow component breakdown
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
 - Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Describe how these settings relate to the data patterns observed. Do NOT suggest specific adjustments or changes.
