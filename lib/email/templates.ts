@@ -153,6 +153,20 @@ export function dormancyStep2(unsubscribeUrl: string): { subject: string; html: 
   };
 }
 
+export function dormancyStep3(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Still here if you need us',
+    html: layout(`
+      ${heading('No pressure, no guilt')}
+      ${paragraph('It\'s been a while. You might have settled into therapy, started working with a specialist, or simply moved on -- and that\'s completely fine.')}
+      ${paragraph('AirwayLab is still free and private. Your data stays in your browser. Whenever you want a snapshot of how a recent night compared to the last time you tracked, it\'s here.')}
+      ${paragraph('This is the last email in this sequence. We won\'t send more re-engagement emails unless you upload new data.')}
+      ${ctaButton('Your data is ready when you are', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_3`)}
+      ${paragraph('<em>AirwayLab is not a medical device. This email contains no health data. Your clinician can help interpret your results in the context of your care.</em>')}
+    `, unsubscribeUrl),
+  };
+}
+
 // ── Sequence 3: Feature Education ────────────────────────────
 
 export function featureEducationStep1(unsubscribeUrl: string): { subject: string; html: string } {
@@ -288,11 +302,12 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
     },
   },
   dormancy: {
-    totalSteps: 2,
-    delays: [0, 7],
+    totalSteps: 3,
+    delays: [0, 14, 31],
     getTemplate: (step, url) => {
       if (step === 1) return dormancyStep1(url);
       if (step === 2) return dormancyStep2(url);
+      if (step === 3) return dormancyStep3(url);
       return null;
     },
   },
