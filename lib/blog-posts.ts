@@ -325,31 +325,35 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: 'how-to-read-cpap-data',
-    title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
-    seoTitle: 'How to Read Your CPAP Data — AirwayLab',
+    title: 'How to Read Your CPAP Data \u2014 A Beginner\u2019s Guide',
+    seoTitle: 'How to Read Your CPAP Data \u2014 A Beginner\u2019s Guide | AirwayLab',
     description:
-      'Your PAP machine records thousands of data points every night. AHI only shows part of the picture. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics that matter.',
-    date: '2026-04-03',
-    readTime: '12 min read',
-    tags: ['CPAP', 'Getting Started', 'AHI', 'Flow Limitation', 'OSCAR'],
+      'Learn what your CPAP data actually shows you \u2014 AHI, leak rate, pressure, flow limitation \u2014 and how to start reading therapy patterns worth discussing with your clinician.',
+    date: '2026-04-16',
+    readTime: '10 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Leak Rate', 'OSCAR', 'Beginner Guide'],
     ogDescription:
-      'Your PAP machine records thousands of data points every night, but AHI only tells part of the story. Learn how to read your CPAP data and understand the metrics beyond AHI.',
+      'New to CPAP data? We explain what AHI, leak rate, pressure, and flow limitation mean \u2014 and how to start spotting patterns in your therapy report.',
     faqItems: [
       {
-        question: 'What data does my CPAP machine record?',
-        answer: 'Most modern PAP machines record detailed flow waveforms, pressure data, leak rates, respiratory events, machine settings, and session timing. This data is stored on the SD card in EDF format.',
+        question: 'What does my CPAP machine record every night?',
+        answer: 'Your machine records usage hours, AHI (apnoeas and hypopnoeas per hour), leak rate, pressure, flow limitation, and a breakdown of event types. Not every machine records all of these \u2014 older or basic models may only report AHI and usage.',
       },
       {
-        question: 'Is AHI the only metric that matters?',
-        answer: 'AHI counts complete and partial airway closures per hour. It doesn\'t capture flow limitation, breathing pattern instability, or RERAs, which can also affect sleep quality. Deeper analysis of your flow data reveals these patterns.',
+        question: 'What is the difference between therapy AHI and diagnostic AHI?',
+        answer: 'Your therapy AHI is what your machine counts during treated sleep. A diagnostic AHI from a sleep study measures untreated events. They are not directly comparable.',
       },
       {
-        question: 'How do I access my CPAP data?',
-        answer: 'Remove the SD card from your PAP machine, insert it into a card reader, and open the data with analysis software like OSCAR (for raw waveforms) or AirwayLab (for automated scoring and pattern analysis).',
+        question: 'How do I access my CPAP data beyond the app?',
+        answer: 'Remove the SD card from your machine, insert it into a card reader, and open the data with OSCAR (free desktop software for full waveform detail) or AirwayLab (browser-based for multi-night pattern review). No account required for either.',
+      },
+      {
+        question: 'What should I bring to my provider appointment?',
+        answer: 'Screenshots of patterns rather than just averages, leak data if elevated, pressure graphs if you are on APAP and frequently hitting the ceiling, and event type breakdowns if you have an unusual distribution. Your provider can adjust settings; your clinician can interpret the full picture.',
       },
       {
         question: 'Does AirwayLab upload my data?',
-        answer: 'No. All analysis runs in your browser. Your data never leaves your device unless you explicitly opt in to optional server features.',
+        answer: 'No. All analysis runs in your browser. Your breathing data never leaves your device \u2014 there is no cloud upload and no account required to get started.',
       },
     ],
   },
