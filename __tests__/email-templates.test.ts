@@ -5,8 +5,14 @@ import {
   postUploadStep3,
   dormancyStep1,
   dormancyStep2,
+  dormancyStep3,
   featureEducationStep1,
   featureEducationStep2,
+  cpapTipsStep1,
+  cpapTipsStep2,
+  cpapTipsStep3,
+  cpapTipsStep4,
+  cpapTipsStep5,
   SEQUENCES,
   type SequenceName,
 } from '@/lib/email/templates';
@@ -59,6 +65,15 @@ describe('Dormancy sequence templates', () => {
     expect(html).toContain('Upload When You');
     expect(html).toContain('tracking');
   });
+
+  it('step 3 is warm final touchpoint with no-pressure messaging', () => {
+    const { subject, html } = dormancyStep3(UNSUB_URL);
+    expect(subject).toBe('Still here if you need us');
+    expect(html).toContain('No pressure, no guilt');
+    expect(html).toContain('dormancy_3');
+    expect(html).toContain(UNSUB_URL);
+    expect(html).toContain('not a medical device');
+  });
 });
 
 describe('Feature education sequence templates', () => {
@@ -79,6 +94,50 @@ describe('Feature education sequence templates', () => {
   });
 });
 
+// ── CPAP tips sequence templates ───────────────────────────────
+
+describe('CPAP tips sequence templates', () => {
+  it('step 1 (day 3) covers first-week expectations', () => {
+    const { subject, html } = cpapTipsStep1(UNSUB_URL);
+    expect(subject).toContain('first week');
+    expect(html).toContain('Mask leak');
+    expect(html).toContain('clinician');
+    expect(html).toContain('Upload Your First Session');
+  });
+
+  it('step 2 (day 7) explains AHI, leak, usage hours', () => {
+    const { subject, html } = cpapTipsStep2(UNSUB_URL);
+    expect(subject).toContain('AHI');
+    expect(html).toContain('Apnea-Hypopnea');
+    expect(html).toContain('Leak rate');
+    expect(html).toContain('Open Your Session Dashboard');
+  });
+
+  it('step 3 (day 12) covers flow limitation / fatigue with low AHI', () => {
+    const { subject, html } = cpapTipsStep3(UNSUB_URL);
+    expect(subject).toContain('Low AHI');
+    expect(html).toContain('Flow limitation');
+    expect(html).toContain('clinician');
+    expect(html).toContain('Check Your Flow Limitation Score');
+  });
+
+  it('step 4 (day 18) covers five feature highlights', () => {
+    const { subject, html } = cpapTipsStep4(UNSUB_URL);
+    expect(subject).toContain('Five things');
+    expect(html).toContain('Compare two sessions');
+    expect(html).toContain('trend charts');
+    expect(html).toContain('Try Session Comparison');
+  });
+
+  it('step 5 (day 25) prepares for clinic visit', () => {
+    const { subject, html } = cpapTipsStep5(UNSUB_URL);
+    expect(subject).toContain('Three weeks');
+    expect(html).toContain('Generate a Session Summary');
+    expect(html).toContain('clinician');
+    expect(html).toContain('clinical review');
+  });
+});
+
 // ── Structural invariants ──────────────────────────────────────
 
 describe('All templates — structural invariants', () => {
@@ -88,8 +147,14 @@ describe('All templates — structural invariants', () => {
     { name: 'postUpload3', fn: postUploadStep3 },
     { name: 'dormancy1', fn: dormancyStep1 },
     { name: 'dormancy2', fn: dormancyStep2 },
+    { name: 'dormancy3', fn: dormancyStep3 },
     { name: 'featureEd1', fn: featureEducationStep1 },
     { name: 'featureEd2', fn: featureEducationStep2 },
+    { name: 'cpapTips1', fn: cpapTipsStep1 },
+    { name: 'cpapTips2', fn: cpapTipsStep2 },
+    { name: 'cpapTips3', fn: cpapTipsStep3 },
+    { name: 'cpapTips4', fn: cpapTipsStep4 },
+    { name: 'cpapTips5', fn: cpapTipsStep5 },
   ];
 
   it.each(allTemplates)('$name has non-empty subject', ({ fn }) => {
@@ -132,7 +197,7 @@ describe('All templates — structural invariants', () => {
 // ── SEQUENCES registry ─────────────────────────────────────────
 
 describe('SEQUENCES registry', () => {
-  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education', 'activation', 'premium_onboarding'];
+  const sequenceNames: SequenceName[] = ['post_upload', 'dormancy', 'feature_education', 'activation', 'premium_onboarding', 'cpap_tips'];
 
   it.each(sequenceNames)('%s has correct totalSteps matching delays array', (name) => {
     const config = SEQUENCES[name];
@@ -160,9 +225,9 @@ describe('SEQUENCES registry', () => {
     expect(SEQUENCES.post_upload.delays).toEqual([0, 3, 7]);
   });
 
-  it('dormancy has 2 steps with delays [0, 7]', () => {
-    expect(SEQUENCES.dormancy.totalSteps).toBe(2);
-    expect(SEQUENCES.dormancy.delays).toEqual([0, 7]);
+  it('dormancy has 3 steps with delays [0, 14, 31]', () => {
+    expect(SEQUENCES.dormancy.totalSteps).toBe(3);
+    expect(SEQUENCES.dormancy.delays).toEqual([0, 14, 31]);
   });
 
   it('feature_education has 2 steps with delays [10, 17]', () => {
@@ -173,5 +238,10 @@ describe('SEQUENCES registry', () => {
   it('premium_onboarding has 3 steps with delays [0, 3, 7]', () => {
     expect(SEQUENCES.premium_onboarding.totalSteps).toBe(3);
     expect(SEQUENCES.premium_onboarding.delays).toEqual([0, 3, 7]);
+  });
+
+  it('cpap_tips has 5 steps with delays [3, 7, 12, 18, 25]', () => {
+    expect(SEQUENCES.cpap_tips.totalSteps).toBe(5);
+    expect(SEQUENCES.cpap_tips.delays).toEqual([3, 7, 12, 18, 25]);
   });
 });
