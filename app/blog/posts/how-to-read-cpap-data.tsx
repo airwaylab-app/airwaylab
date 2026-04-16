@@ -1,17 +1,13 @@
 import Link from 'next/link';
 import {
-  Activity,
   ArrowRight,
   BarChart3,
   BookOpen,
-  Brain,
-  FileBarChart,
   HardDrive,
-  Heart,
   Lightbulb,
-  MonitorSmartphone,
-  Share2,
+  Monitor,
   Stethoscope,
+  TrendingUp,
   Wind,
 } from 'lucide-react';
 
@@ -19,556 +15,424 @@ export default function HowToReadCPAPDataPost() {
   return (
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-        Your PAP machine records thousands of data points every night. Breathing flow, leak rates,
-        pressure changes, events per hour. All of it sitting on an SD card, waiting to be read.
+        You&apos;ve started CPAP therapy. Your machine has been collecting data every night
+        &mdash; pressure, events, leak rate, flow &mdash; and at some point someone told you to
+        check it. So you downloaded an app, opened a file, and stared at a wall of numbers and
+        coloured graphs that made very little sense.
       </p>
       <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-        But most people never look at it. And the ones who do? They see a single number: AHI.
+        This happens to almost everyone. The data your machine records is genuinely useful, but
+        the tools that display it were often designed by engineers, for engineers. Nobody hands
+        you a glossary when you pick up your mask.
       </p>
       <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-        Here&apos;s the thing. An AHI of 2 doesn&apos;t mean your therapy is sorted. Millions of
-        PAP users have an AHI under 5 and still wake up exhausted. The reason is that AHI only
-        counts complete airway closures and significant partial closures. It misses the subtler
-        stuff -- flow limitation, breathing pattern instability, respiratory effort-related arousals
-        (RERAs) -- that can fragment your sleep just as effectively.
-      </p>
-      <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-        If you want to actually understand what&apos;s happening while you sleep, you need to learn
-        how to read your CPAP data properly. All of it. Not just the summary screen on your machine.
+        This article is that glossary. We&apos;ll walk through what your CPAP machine actually
+        records, what the key metrics mean, and how to start reading your data in a way that&apos;s
+        useful &mdash; whether you&apos;re reviewing it yourself or preparing for a conversation
+        with your equipment provider or sleep clinician.
       </p>
 
-      {/* What Your PAP Machine Actually Records */}
+      {/* Medical disclaimer at top */}
+      <blockquote className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          <strong className="text-foreground">Medical disclaimer:</strong> The information in this
+          article is educational only. Nothing here constitutes medical advice, a diagnosis, or a
+          treatment recommendation. CPAP data is informational &mdash; please discuss any
+          observations or concerns with your clinician or equipment provider.
+        </p>
+      </blockquote>
+
+      {/* What Your CPAP Machine Actually Records */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <HardDrive className="h-5 w-5 text-blue-400" />
           <h2 className="text-xl font-bold sm:text-2xl">
-            What Your PAP Machine Actually Records
+            What Your CPAP Machine Actually Records
           </h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            Every modern ResMed and Philips machine writes detailed session data to its SD card. The
-            exact data varies by model, but typically includes:
-          </p>
+          <p>Your machine is running a quiet sensor session every night. Here&apos;s what it&apos;s capturing:</p>
           <div className="space-y-3">
             <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-400" />
-                <p className="text-sm font-semibold text-foreground">Flow waveform data</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                The raw airflow signal, measured breath by breath, usually at 25 samples per second.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-400" />
-                <p className="text-sm font-semibold text-foreground">Pressure data</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                The pressure your machine delivered throughout the night.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-foreground">Leak rate</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                How much air escaped from your mask seal.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-red-400" />
-                <p className="text-sm font-semibold text-foreground">Events</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Apneas (complete airway closures), hypopneas (partial closures), and sometimes
-                central events.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-purple-400" />
-                <p className="text-sm font-semibold text-foreground">Machine settings</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Your prescribed pressure, mode, and response settings.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-cyan-400" />
-                <p className="text-sm font-semibold text-foreground">Session timing</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                When you put the mask on, when you took it off, total usage time.
-              </p>
-            </div>
-          </div>
-          <p>
-            This data is stored in EDF (European Data Format) files. Your machine&apos;s summary
-            screen only shows a fraction of what&apos;s in there.
-          </p>
-        </div>
-      </section>
-
-      {/* The AHI Problem */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <BarChart3 className="h-5 w-5 text-amber-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">
-            The AHI Problem
-          </h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            AHI (Apnea-Hypopnea Index) is the standard metric. It counts the number of apneas and
-            hypopneas per hour of sleep. An AHI under 5 is generally considered in the typical range
-            for treated PAP users.
-          </p>
-          <p>But AHI has blind spots:</p>
-          <div className="space-y-3">
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-foreground">Flow limitation</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                When your airway narrows but doesn&apos;t collapse enough to register as an event,
-                your AHI stays low while your breathing quality degrades.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-foreground">RERAs</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Respiratory effort-related arousals cause brief wake-ups that fragment sleep, but
-                most machines don&apos;t count them in AHI.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-foreground">
-                  Breathing pattern instability
-                </p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Periodic breathing, irregular tidal volume, and variable breath timing all affect
-                sleep quality without showing up in the AHI count.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-foreground">
-                  Positional and temporal patterns
-                </p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Your AHI might average 2 for the whole night but spike to 8 in the first half,
-                suggesting something specific is happening in early sleep.
-              </p>
-            </div>
-          </div>
-          <p>
-            This is why the PAP community has been reading raw data for years. People on forums
-            like ApneaBoard and r/SleepApnea learned long ago that AHI alone doesn&apos;t tell the
-            full story.
-          </p>
-        </div>
-      </section>
-
-      {/* How to Read Your CPAP Data: Tools and Approaches */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <FileBarChart className="h-5 w-5 text-emerald-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">
-            How to Read Your CPAP Data: Tools and Approaches
-          </h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            There are several ways to dig into your data. Each has strengths depending on what
-            you&apos;re looking for.
-          </p>
-        </div>
-
-        {/* OSCAR */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-foreground">
-            OSCAR (Open Source CPAP Analysis Reporter)
-          </h3>
-          <div className="mt-3 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            <p>
-              OSCAR is the gold standard for viewing raw PAP data. It&apos;s a desktop application
-              that reads your SD card and displays detailed waveforms, event flags, pressure graphs,
-              and session summaries. If you want to see every individual breath and manually inspect
-              your flow data, OSCAR is the tool for that. (For a detailed comparison, see{' '}
-              <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
-                AirwayLab vs OSCAR
-              </Link>.)
-            </p>
-            <p>
-              OSCAR&apos;s strength is depth. You can zoom into a specific two-minute window and see
-              exactly what your airflow looked like during a cluster of events. It&apos;s invaluable
-              for understanding what&apos;s happening breath by breath.
-            </p>
-            <p>
-              The tradeoff is that OSCAR shows you everything and leaves interpretation up to you.
-              Reading raw waveforms requires time and knowledge. Many people download OSCAR, see the
-              dense graphs, and aren&apos;t sure what they&apos;re looking at.
-            </p>
-          </div>
-        </div>
-
-        {/* AirwayLab */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-foreground">
-            AirwayLab (Browser-Based Analysis)
-          </h3>
-          <div className="mt-3 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            <p>
-              AirwayLab takes a different approach. Instead of showing you raw waveforms, it runs
-              your flow data through scoring algorithms -- the Glasgow Index for breath shape
-              analysis, NED for negative effort dependence, WAT for breathing regularity and
-              periodicity -- and presents the results as scored metrics with context.
-            </p>
-            <p>
-              You drag your SD card folder into your browser. AirwayLab parses the EDF files, runs
-              all four analysis engines, and gives you a dashboard with traffic-light indicators,
-              trend charts, and night-by-night comparisons. Everything runs in your browser. Your
-              data never leaves your device.
-            </p>
-            <p>
-              AirwayLab complements OSCAR. OSCAR shows you the raw waveforms. AirwayLab scores and
-              interprets the patterns across nights. Many users use both -- OSCAR for deep-dive
-              investigation and AirwayLab for the bigger picture.
-            </p>
-          </div>
-        </div>
-
-        {/* Manufacturer Apps */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-foreground">
-            Your Machine&apos;s App (myAir, DreamMapper)
-          </h3>
-          <div className="mt-3 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            <p>
-              Manufacturer apps like myAir provide a simplified summary. They&apos;re convenient but
-              limited to what the manufacturer chooses to show -- usually AHI, usage hours, leak
-              rate, and a compliance score. They don&apos;t expose the raw flow data or any analysis
-              beyond basic event counting.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Key Metrics Beyond AHI */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <Activity className="h-5 w-5 text-purple-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">
-            Key Metrics Beyond AHI
-          </h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            Once you start reading your CPAP data beyond the summary screen, here are the metrics
-            that tell you more:
-          </p>
-        </div>
-
-        {/* Flow Limitation Metrics */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2.5">
-            <Wind className="h-4 w-4 text-blue-400" />
-            <h3 className="text-lg font-bold text-foreground">Flow Limitation Metrics</h3>
-          </div>
-          <div className="mt-3 space-y-4">
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Glasgow Index</p>
+              <p className="text-sm font-semibold text-foreground">Usage hours</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Scores the shape of each inspiratory flow curve on a 0 to 9 scale. A normal breath
-                has a rounded inspiratory flow shape. As the airway narrows, the shape flattens,
-                skews, or develops multiple peaks. The Glasgow Index captures this with nine
-                components: skew, spike, flat top, top-heavy, multi-peak, no-pause, inspiratory
-                rate, multi-breath, and variable amplitude. Higher scores indicate more distorted
-                breath shapes.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">FL Score</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Measures inspiratory flatness on a 0 to 100 scale. Flat-topped inspiratory flow
-                curves are a characteristic pattern seen in flow-limited breathing. Higher values
-                indicate flatter, more restricted breathing patterns.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Breathing Pattern Metrics */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2.5">
-            <Brain className="h-4 w-4 text-purple-400" />
-            <h3 className="text-lg font-bold text-foreground">Breathing Pattern Metrics</h3>
-          </div>
-          <div className="mt-3 space-y-4">
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Regularity (Sample Entropy)</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Quantifies how predictable your minute-by-minute breathing pattern is. Lower entropy
-                means more regular breathing. Higher values indicate more variable breathing
-                patterns.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Periodicity Index</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Uses frequency analysis to detect cyclical breathing patterns in the 30 to 100
-                second range. This is the frequency range associated with periodic breathing
-                patterns, where ventilation rises and falls in a repeating wave pattern.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Effort and Arousal Metrics */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2.5">
-            <Stethoscope className="h-4 w-4 text-emerald-400" />
-            <h3 className="text-lg font-bold text-foreground">Effort and Arousal Metrics</h3>
-          </div>
-          <div className="mt-3 space-y-4">
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">
-                NED (Negative Effort Dependence)
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Measures whether airflow decreases during a breath despite continued effort. High
-                NED values indicate that airflow decreases during the breath despite continued
-                inspiratory effort.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Flatness Index</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                The ratio of mean to peak flow within each breath. Lower values mean more peaked,
-                less restricted breathing. Higher values indicate flatter, more restricted flow
-                profiles.
+                How long the machine was running. This is the most basic metric and the one your
+                provider usually checks first.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-semibold text-foreground">
-                Estimated Arousal Index (EAI)
+                AHI (Apnoea-Hypopnoea Index)
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Identifies brief spikes in respiratory rate and tidal volume that coincide with
-                changes in breathing pattern, even when they don&apos;t trigger a scored event.
+                The number of apnoeas (complete pauses in breathing) and hypopnoeas (partial
+                reductions in airflow) per hour of therapy. Your machine counts events it detects
+                while running; this is not the same as a diagnostic AHI from a sleep study, which
+                measures untreated events. A therapy AHI is what your machine reports during
+                treated sleep.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Leak rate</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                The total air escaping from the system, measured in litres per minute (L/min). This
+                includes the intentional vent flow built into every mask (which flushes exhaled CO&#x2082;)
+                as well as any unintentional mask leak around the seal. The unintentional component
+                is the one to watch.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Pressure</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                The pressure your machine is delivering, measured in cmH&#x2082;O. Fixed-pressure (CPAP)
+                machines hold one level all night. Auto-adjusting (APAP/CPAP) machines titrate
+                within a set range based on detected events.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Flow limitation</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                How much your breathing is being squeezed or flattened, even without a full apnoea
+                or hypopnoea being scored. Flow limitation is often how upper airway resistance and
+                RERAs (Respiratory Effort Related Arousals) show up in the data. It&apos;s a
+                subtler signal that some providers find clinically meaningful alongside AHI.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Events breakdown</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Most machines split the AHI total into component event types: obstructive apnoeas,
+                central apnoeas, hypopnoeas, and sometimes RERAs (if your machine scores them
+                separately). The breakdown matters because different event types can point to
+                different causes.
               </p>
             </div>
           </div>
+          <p>
+            Not every machine records all of these &mdash; older devices or basic models may only
+            report AHI and usage. And not all data is equally accessible depending on your machine
+            and what SD card or app access you have.
+          </p>
         </div>
+      </section>
 
-        {/* Oximetry Metrics */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2.5">
-            <Heart className="h-4 w-4 text-red-400" />
-            <h3 className="text-lg font-bold text-foreground">
-              Oximetry Metrics (If You Have a Pulse Oximeter)
-            </h3>
+      {/* Where to Find Your Data */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Monitor className="h-5 w-5 text-emerald-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">Where to Find Your Data</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>Your machine stores data in one of a few ways:</p>
+          <div className="space-y-3">
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">SD card</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Most ResMed and Philips/Respironics machines use a standard SD card. You can remove
+                it, insert it into your computer, and view the raw data files. Dedicated software
+                reads these files and presents the data visually.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Machine app or cloud dashboard
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                ResMed&apos;s myAir and Philips&apos; DreamMapper/SleepMapper sync summary data to
+                a phone app or web portal. These are convenient but often only show you a simplified
+                view &mdash; AHI, usage hours, leak summary &mdash; without the full waveform detail
+                available from the SD card.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">OSCAR</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                OSCAR (Open Source CPAP Analysis Reporter) is the community standard for reading SD
+                card data in detail. It&apos;s free, open source, and runs on Windows, macOS, and
+                Linux. OSCAR shows you full waveform data: every breath, every pressure change,
+                every event flagged across the night. It&apos;s the tool most CPAP community members
+                use for serious data review and is widely recommended in the PAP community.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">AirwayLab</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                AirwayLab is a browser-based analysis tool that imports your CPAP data from OSCAR
+                exports or direct upload. It&apos;s designed to make patterns easier to spot,
+                particularly across multiple nights. Your data never leaves your browser &mdash; all
+                processing is local. The source code is GPL-3.0 licensed, so what it does is
+                verifiable, not just claimed. AirwayLab complements OSCAR rather than replacing it.
+              </p>
+            </div>
           </div>
-          <div className="mt-3 space-y-4">
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">ODI-3 and ODI-4</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Oxygen Desaturation Indices counting drops of 3% or 4% from a rolling baseline.
-                These correlate with respiratory events but are measured independently from airflow.
+          <p>
+            For most users, the path looks like this: SD card &rarr; OSCAR (full detail view) &rarr;
+            AirwayLab (multi-night pattern view, easy visual summaries).
+          </p>
+        </div>
+      </section>
+
+      {/* What the Key Metrics Mean */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <BarChart3 className="h-5 w-5 text-purple-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">What the Key Metrics Mean</h2>
+        </div>
+        <div className="mt-4 space-y-6 text-sm leading-relaxed text-muted-foreground sm:text-base">
+
+          {/* AHI */}
+          <div>
+            <h3 className="text-lg font-bold text-foreground">AHI</h3>
+            <div className="mt-3 space-y-3">
+              <p>
+                Your therapy AHI is the central number most people focus on first. A lower number
+                means fewer breathing events are being scored by the machine during the night &mdash;
+                but AHI alone doesn&apos;t tell the whole story. An AHI of 2 on a night where your
+                leak was 60 L/min means the AHI figure may be unreliable, because high leak can
+                prevent the machine from accurately detecting events.
+              </p>
+              <p>
+                AHI is a count, not a complete picture of sleep quality. Some people have residual
+                flow limitation and RERAs that don&apos;t show up in AHI but may still affect how
+                they feel. This is one reason why looking at more than just AHI is worthwhile.
+              </p>
+              <p>
+                What counts as a &ldquo;good&rdquo; therapy AHI is something to discuss with your
+                clinician, not something to benchmark from an article. Context matters &mdash; your
+                pre-treatment AHI, your symptoms, and how you feel are all part of the picture.
               </p>
             </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Heart rate surges</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Brief increases in heart rate that often accompany respiratory arousals. Counted
-                using clinical thresholds (8, 10, 12, and 15 bpm above baseline).
+          </div>
+
+          {/* Leak Rate */}
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Leak Rate</h3>
+            <div className="mt-3 space-y-3">
+              <p>
+                Your leak rate combines two things: the intentional vent flow your mask needs to
+                flush CO&#x2082; (typically 20&ndash;40 L/min depending on mask type and pressure),
+                and any unintentional leak escaping around the seal. The second number is what you
+                want to minimise.
+              </p>
+              <p>
+                Some machines and software (including OSCAR) separate these and show &ldquo;mask
+                leak&rdquo; directly. Others only report total leak.{' '}
+                <Link
+                  href="/blog/cpap-leak-rate-explained"
+                  className="text-primary hover:text-primary/80"
+                >
+                  Understanding your leak rate
+                </Link>{' '}
+                in detail can help you identify whether high-leak nights are a mask fit issue, a
+                positional issue, or a mouth-breathing issue &mdash; all of which have different
+                solutions.
               </p>
             </div>
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">Coupled events</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                When an oxygen desaturation and a heart rate surge occur within 30 seconds of each
-                other, they are counted as a coupled event.
+          </div>
+
+          {/* Pressure */}
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Pressure</h3>
+            <div className="mt-3">
+              <p>
+                If you&apos;re on a fixed-pressure CPAP, your pressure is set and doesn&apos;t
+                change. If you&apos;re on APAP, your machine is adjusting throughout the night.
+                Reviewing your pressure data tells you how actively your machine is working. An APAP
+                machine frequently at the top of its pressure range is a pattern visible in your
+                data.
+              </p>
+            </div>
+          </div>
+
+          {/* Flow Limitation and RERAs */}
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Flow Limitation and RERAs</h3>
+            <div className="mt-3 space-y-3">
+              <p>
+                Flow limitation is visible in your waveform data as a flattening of the normal
+                breathing curve. RERAs (Respiratory Effort Related Arousals) are events where
+                increased breathing effort triggers an arousal, even without a scored apnoea or
+                hypopnoea. Not all machines score RERAs &mdash; some higher-end devices do, and
+                OSCAR can display the flow limitation waveform even when RERAs aren&apos;t scored
+                directly.
+              </p>
+              <p>
+                If you feel you&apos;re sleeping the expected number of hours but still waking up
+                unrefreshed, flow limitation and RERAs are worth reviewing in the context of your
+                data. Bring observations to your clinician rather than drawing conclusions from
+                them.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Reading Your Data: A Practical Example */}
+      {/* How to Spot Patterns Over Multiple Nights */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <BookOpen className="h-5 w-5 text-cyan-400" />
+          <TrendingUp className="h-5 w-5 text-cyan-400" />
           <h2 className="text-xl font-bold sm:text-2xl">
-            Reading Your Data: A Practical Example
+            How to Spot Patterns Over Multiple Nights
           </h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Say you pull your SD card and load your data. Your AHI is{' '}
-            <span className="font-mono text-foreground">1.8</span> -- well within the typical
-            range. But you&apos;re still tired.
+            Single-night data is noisy. A bad night might be explained by a cold, a late meal,
+            position, or stress. What matters in CPAP data is trends.
           </p>
-          <p>Here&apos;s what deeper analysis might show:</p>
+          <p>Things worth watching across multiple nights:</p>
           <div className="space-y-3">
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">Glasgow Index of{' '}
-                  <span className="font-mono">4.2</span>
-                </span>{' '}
-                -- Your breath shapes are moderately distorted. This is higher than the lower range
-                where most unrestricted breathing falls.
+              <p className="text-sm font-semibold text-foreground">AHI variability</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Is your AHI consistently low, or does it spike on certain nights? Spikes on nights
+                when your pressure also went high, or when your leak was elevated, may suggest a
+                pattern worth noting.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">FL Score of{' '}
-                  <span className="font-mono">62</span>
-                </span>{' '}
-                -- Inspiratory flow curves are substantially flattened, as reflected in an elevated
-                FL Score. These patterns are not captured by event-based AHI scoring.
+              <p className="text-sm font-semibold text-foreground">Leak consistency</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Is high leak a regular occurrence at a particular time of night (e.g., always after
+                3am)? That&apos;s more useful information than a single average figure.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">Periodicity Index of{' '}
-                  <span className="font-mono">0.15</span>
-                </span>{' '}
-                -- There&apos;s a cyclical component to your breathing in the 30 to 100 second
-                range.
+              <p className="text-sm font-semibold text-foreground">Pressure trends</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                On APAP, is your machine consistently comfortable in the middle of its range, or is
+                it frequently at its ceiling? Sustained high-pressure activity is a pattern worth
+                discussing.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">First-half vs second-half split</span> -- Your NED
-                values are <span className="font-mono">28%</span> in the first half of the night
-                and <span className="font-mono">12%</span> in the second half, showing the pattern
-                is concentrated in early sleep.
+              <p className="text-sm font-semibold text-foreground">Event type distribution</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                If your events are predominantly central rather than obstructive, or if the ratio is
+                changing over time, that&apos;s the kind of observation to bring to a sleep
+                clinician.
               </p>
             </div>
           </div>
-          <p>
-            None of these show up in AHI. But together, they paint a much more detailed picture of
-            your breathing patterns -- the kind of information your clinician can interpret alongside
-            your clinical history.
-          </p>
         </div>
       </section>
 
-      {/* Getting Started */}
+      {/* How AirwayLab Visualises Your Therapy Data */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <MonitorSmartphone className="h-5 w-5 text-emerald-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">Getting Started</h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>Reading your data takes three things:</p>
-          <div className="space-y-3">
-            <div className="flex gap-3 rounded-xl border border-border/50 p-4">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                1
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Your SD card</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Remove it from your PAP machine. Most ResMed machines use a standard SD card in a
-                  slot on the side or back.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 rounded-xl border border-border/50 p-4">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                2
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">A card reader</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Any USB SD card reader works. Many laptops have built-in slots.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 rounded-xl border border-border/50 p-4">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                3
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">An analysis tool</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Load your data into OSCAR for raw waveform viewing, AirwayLab for automated
-                  scoring and pattern analysis, or both for the complete picture.
-                </p>
-              </div>
-            </div>
-          </div>
-          <p>
-            With AirwayLab, you drag your SD card&apos;s DATALOG folder into the browser window.
-            Analysis runs in about 30 seconds for a typical card with weeks of data. No account
-            required, no data uploaded, no installation needed. Your results are saved locally and
-            persist for 30 days.
-          </p>
-          <p>
-            If you also use a Viatom or Checkme O2 Max pulse oximeter, you can upload that CSV
-            alongside your SD card data for combined respiratory and oximetry analysis.
-          </p>
-        </div>
-      </section>
-
-      {/* Sharing Your Results */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <Share2 className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">Sharing Your Results</h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            Your data gives you a detailed picture of your breathing patterns. This information is
-            most valuable when shared with your sleep physician or clinician, who can interpret it
-            alongside your full clinical context -- your sleep study results, symptoms, medical
-            history, and physical examination.
-          </p>
-          <p>
-            The PAP community is also a great resource. Forums like ApneaBoard, r/SleepApnea, and
-            r/CPAP have knowledgeable members who&apos;ve been reading their own data for years.
-            AirwayLab includes a forum export feature that formats your results for sharing in these
-            communities, complete with all relevant metrics and context.
-          </p>
-        </div>
-      </section>
-
-      {/* Your Data Belongs to You */}
-      <section className="mt-10">
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <h2 className="text-xl font-bold text-foreground sm:text-2xl">
-            Your Data Belongs to You
+          <Wind className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold sm:text-2xl">
+            How AirwayLab Visualises Your Therapy Data
           </h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Your PAP machine generates detailed information about your breathing every single night.
-            That data belongs to you. Reading it, understanding it, and sharing it with your
-            clinician is how you become an informed participant in your own care.
+            AirwayLab is built specifically to make multi-night pattern review easier. After you
+            import your CPAP data (from an OSCAR export or direct SD card upload), it shows your
+            key metrics plotted over time so patterns become visible at a glance.
           </p>
           <p>
-            AHI is a starting point, not the finish line. The real story is in the flow shapes, the
-            breathing patterns, the temporal trends across nights and weeks. Learning how to read
-            your CPAP data is the first step toward understanding that story.
+            You can overlay AHI, leak rate, flow limitation, and pressure on a shared timeline and
+            compare nights side by side. The goal is to help you notice &mdash; not to interpret
+            for you.
+          </p>
+          <p>
+            Everything runs in your browser. Your breathing data never leaves your device &mdash;
+            there&apos;s no cloud upload, no account required to get started. The analysis is free
+            and always will be. If you want to verify that for yourself, the source code is
+            published under GPL-3.0.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/analyze"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+            >
+              Analyse your CPAP data with AirwayLab <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* What to Bring to Your Provider */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Stethoscope className="h-5 w-5 text-amber-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">What to Bring to Your Provider</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            Your data doesn&apos;t interpret itself &mdash; and it shouldn&apos;t. The observations
+            you make from reviewing your CPAP data are most useful as conversation material with
+            your equipment provider or sleep clinician, not as a basis for self-adjusting therapy.
+          </p>
+          <p>Useful things to bring to an appointment:</p>
+          <div className="space-y-3">
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Screenshots of patterns</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Not just averages. &ldquo;My AHI was 4.2 last month&rdquo; is less useful than
+                &ldquo;my AHI spikes to 8&ndash;12 every Thursday night and I can&apos;t figure
+                out why.&rdquo;
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Leak patterns if leak is elevated
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Along with what you&apos;ve already tried (mask brand, cushion age, whether
+                you&apos;ve noticed mouth breathing).
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Pressure graphs if you&apos;re on APAP
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Particularly if you&apos;re frequently hitting the top of your range.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Event type breakdowns</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                If you have a high proportion of centrals or an unusual distribution.
+              </p>
+            </div>
+          </div>
+          <p>
+            Your equipment provider can adjust pressure ranges and mask recommendations. Your sleep
+            clinician can review your data in full clinical context.
           </p>
         </div>
       </section>
 
-      {/* Medical disclaimer */}
+      {/* A Few Things Worth Knowing */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <BookOpen className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-bold sm:text-2xl">A Few Things Worth Knowing</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            Your CPAP machine is not a medical device in the sense that its data is diagnostic
+            &mdash; it&apos;s a therapeutic device whose monitoring data gives you and your care
+            team visibility into how therapy is going. The numbers it reports are useful reference
+            points, not verdicts.
+          </p>
+          <p>
+            The CPAP community is genuinely helpful for new users learning to read data. Forums,
+            subreddits, and OSCAR documentation have collectively built a large body of practical
+            knowledge. Tools like OSCAR and AirwayLab exist because the community wanted better
+            visibility into their own therapy.
+          </p>
+          <p>
+            Learning to read your data doesn&apos;t mean managing your therapy alone. It means
+            having more informed conversations with the people who are helping you get there.
+          </p>
+        </div>
+      </section>
+
+      {/* Medical disclaimer at bottom */}
       <section className="mt-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
           <div className="flex items-center gap-2.5">
@@ -576,53 +440,59 @@ export default function HowToReadCPAPDataPost() {
             <p className="text-xs font-semibold text-foreground">Medical disclaimer</p>
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            AirwayLab is not a medical device. The analysis provided is informational and
-            educational. Always discuss your results with your sleep physician or clinician.
-            AirwayLab does not diagnose, treat, or provide clinical recommendations.
+            The information in this article is for educational purposes only and does not
+            constitute medical advice. AirwayLab does not diagnose, treat, or provide clinical
+            recommendations. Always discuss CPAP therapy and data observations with your clinician
+            or equipment provider.
           </p>
         </div>
       </section>
 
-      {/* Related articles */}
+      {/* Related reading */}
       <section className="mt-8 border-t border-border/30 pt-6">
         <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
-              Understanding Flow Limitation
+            <Link
+              href="/blog/cpap-leak-rate-explained"
+              className="text-primary hover:text-primary/80"
+            >
+              CPAP Leak Rate Explained
             </Link>{' '}
-            -- what flow limitation is, how the Glasgow Index scores it, and how to detect it.
+            &mdash; what the numbers mean and how to reduce unintentional mask leak.
           </p>
           <p>
-            <Link href="/blog/why-ahi-is-lying" className="text-primary hover:text-primary/80">
-              Why Your AHI Is Lying to You
+            <Link
+              href="/blog/understanding-flow-limitation"
+              className="text-primary hover:text-primary/80"
+            >
+              Understanding Flow Limitation
             </Link>{' '}
-            -- the evidence that AHI misses the majority of breathing problems.
+            &mdash; what flow limitation is, how it affects your sleep, and how it shows in your
+            data.
           </p>
           <p>
             <Link href="/blog/pap-data-privacy" className="text-primary hover:text-primary/80">
               Your PAP Data Belongs to You
             </Link>{' '}
-            -- who can see your sleep data and how to keep control of it.
+            &mdash; who can see your sleep data and how to keep control of it.
           </p>
         </div>
       </section>
 
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
-        <h3 className="text-lg font-bold">
-          See Your Breathing Patterns Scored and Visualised
-        </h3>
+        <h3 className="text-lg font-bold">Analyse Your CPAP Data with AirwayLab</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Drag your SD card folder into AirwayLab and see your breathing patterns scored and
-          visualised in 30 seconds. Free, open source, and your data never leaves your browser.
+          Upload your CPAP data and see your key metrics plotted over time. Free, open source, and
+          your data never leaves your browser.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
           <Link
             href="/analyze"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-glow transition-colors hover:bg-primary/90"
           >
-            Analyze Your Data <ArrowRight className="h-4 w-4" />
+            Analyse Your Data <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             href="/getting-started"
