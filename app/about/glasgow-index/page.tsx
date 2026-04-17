@@ -77,7 +77,7 @@ const components = [
   {
     name: 'Spike',
     description:
-      'Detects sharp transient peaks at the beginning of inspiration. A brief spike followed by reduced flow suggests the airway briefly opens then narrows, a hallmark of partial obstruction.',
+      'Detects sharp transient peaks at the beginning of inspiration. A brief spike followed by reduced flow shows a pattern where the waveform briefly opens then narrows.',
   },
   {
     name: 'Flat Top',
@@ -92,22 +92,22 @@ const components = [
   {
     name: 'Multi-Peak',
     description:
-      'Detects oscillatory flow patterns with multiple peaks during a single inspiration. Multi-peak patterns suggest upper airway instability and flutter, often seen with moderate flow limitation.',
+      'Detects oscillatory flow patterns with multiple peaks during a single inspiration. Multi-peak patterns show oscillation in the flow waveform, often seen with moderate flow limitation.',
   },
   {
     name: 'No Pause',
     description:
-      'Assesses whether there is an adequate pause between expiration and the next inspiration. Absent pauses can indicate increased respiratory drive, often a compensatory response to flow limitation.',
+      'Assesses whether there is an adequate pause between expiration and the next inspiration. Absent pauses are associated with higher respiratory rate, often a compensatory response to flow limitation.',
   },
   {
     name: 'Inspiratory Rate',
     description:
-      'Evaluates the peak inspiratory flow rate relative to the breath population. Abnormally high rates suggest increased respiratory effort to overcome airway resistance.',
+      'Evaluates the peak inspiratory flow rate relative to the breath population. Abnormally high rates may reflect higher respiratory rate.',
   },
   {
     name: 'Multi-Breath',
     description:
-      'Detects sequences of breaths with progressively worsening flow limitation characteristics, suggesting a crescendo pattern that may precede an arousal or obstructive event.',
+      'Detects sequences of breaths with progressively worsening flow limitation characteristics, showing a crescendo pattern in the waveform.',
   },
   {
     name: 'Variable Amplitude',
