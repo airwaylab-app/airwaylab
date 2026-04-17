@@ -162,8 +162,10 @@ export default function PrivacyPolicyPage() {
           <h3 className="mt-4">3.5 Automatically Collected Data</h3>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              <strong>Page views:</strong> Collected by Plausible Analytics — a privacy-first,
-              cookie-free analytics service. No personal data, no IP tracking, no fingerprinting.
+              <strong>Page views &amp; conversion events:</strong> Collected by Plausible Analytics
+              (privacy-first, cookie-free, no personal data) and PostHog (product analytics and
+              session replay). PostHog session recording is disabled on all health-data pages.
+              No health data is included in any analytics event.
             </li>
             <li>
               <strong>Error reports:</strong> Collected by Sentry when errors occur. May include
@@ -291,6 +293,12 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4">Privacy-first analytics</td>
                   <td className="py-2 pr-4">EU</td>
                   <td className="py-2">Page views only, no personal data</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">PostHog</td>
+                  <td className="py-2 pr-4">Product analytics &amp; session replay</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes).</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Sentry</td>
