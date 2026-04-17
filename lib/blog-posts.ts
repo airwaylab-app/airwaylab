@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-export-understand-cpap-data',
+    title: 'How to Export and Understand Your CPAP Data',
+    seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
+    description:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    date: '2026-04-15',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Getting Started', 'Data Export', 'AHI', 'ResMed'],
+    ogDescription:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    faqItems: [
+      {
+        question: 'How do I get data off my CPAP machine?',
+        answer:
+          'Most machines use a standard SD card. Power off, remove the card, and insert it into your computer. Tools like OSCAR and AirwayLab can then read the data files directly.',
+      },
+      {
+        question: 'What is the difference between AHI and flow limitation?',
+        answer:
+          'AHI counts discrete breathing events (apnoeas and hypopnoeas) per hour. Flow limitation measures partial airway narrowing that may not meet the threshold for a scored event. Both are visible in full flow data from your SD card.',
+      },
+      {
+        question: 'Can I analyse my CPAP data without installing software?',
+        answer:
+          'Yes. AirwayLab runs entirely in your browser — no download or install needed. Open the upload page, drag in your SD card files, and your data loads immediately.',
+      },
+      {
+        question: 'Does my CPAP data leave my device when using AirwayLab?',
+        answer:
+          'No. AirwayLab processes all data locally in your browser. Nothing is uploaded to a server. Optional features like AI insights require explicit consent before any data is sent.',
+      },
+      {
+        question: 'Which CPAP machines does AirwayLab support?',
+        answer:
+          'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. Support for additional manufacturers is planned.',
+      },
+    ],
+  },
+  {
     slug: 'resmed-sd-card-browser-analysis',
     title: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
     seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
