@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 3 April 2026
+          Last updated: 16 April 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -166,8 +166,10 @@ export default function PrivacyPolicyPage() {
               cookie-free analytics service. No personal data, no IP tracking, no fingerprinting.
             </li>
             <li>
-              <strong>Error reports:</strong> Collected by Sentry when errors occur. May include
-              browser type, page URL, and error stack traces. Does not include health data.
+              <strong>Error reports &amp; session replay:</strong> Collected by Sentry when errors
+              occur. Includes browser type, page URL, and error stack traces. On errors, an
+              anonymised session replay may be captured (all text is masked and all media is
+              blocked). Does not include health data.
             </li>
             <li>
               <strong>Performance monitoring:</strong> Collected by Vercel Speed Insights for
@@ -294,15 +296,21 @@ export default function PrivacyPolicyPage() {
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Sentry</td>
-                  <td className="py-2 pr-4">Error monitoring</td>
+                  <td className="py-2 pr-4">Error monitoring &amp; session replay</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Error traces, browser type, page URL</td>
+                  <td className="py-2">Error traces, browser type, page URL. Session Replay captures anonymised interaction recordings on errors (all text masked, all media blocked). No health data is included.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Vercel</td>
                   <td className="py-2 pr-4">Speed Insights (RUM)</td>
                   <td className="py-2 pr-4">Global edge</td>
                   <td className="py-2">Core Web Vitals (LCP, CLS, INP), no personal data</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">Upstash</td>
+                  <td className="py-2 pr-4">Rate limiting</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">User IDs and hashed IP addresses (transient, rate-limit windows only)</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Resend</td>
@@ -315,6 +323,12 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4">Community (opt-in, paid subscribers only)</td>
                   <td className="py-2 pr-4">US</td>
                   <td className="py-2">Discord user ID and username only. No health data is sent to Discord.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">GitHub API</td>
+                  <td className="py-2 pr-4">Repository star count display</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">No personal data. Server-side fetch of public repository metadata only.</td>
                 </tr>
               </tbody>
             </table>
@@ -418,9 +432,9 @@ export default function PrivacyPolicyPage() {
           <h2>11. International Data Transfers</h2>
           <p>
             Our primary database is hosted in the EU (Supabase EU-West region). Some services
-            (Anthropic, Sentry, Resend) process data in the US. For EU users, these transfers are
-            governed by Standard Contractual Clauses (SCCs) or the EU-US Data Privacy Framework
-            where applicable.
+            (Anthropic, Sentry, Resend, Upstash) process data in the US. For EU users, these
+            transfers are governed by Standard Contractual Clauses (SCCs) or the EU-US Data
+            Privacy Framework where applicable.
           </p>
           <p>
             AI insights are opt-in. If you choose not to use AI features, no health-related data
