@@ -671,9 +671,9 @@ function trendInsights(
   } else if (iflTrend === 'worsening') {
     insights.push({
       id: 'trend-ifl-worsening',
-      type: 'actionable',
+      type: 'info',
       title: 'IFL Symptom Risk trending upward',
-      body: `Your flow limitation composite is increasing over ${nights.length} nights (${fmt(iflVals[0]!)}% \u2192 ${fmt(iflVals[iflVals.length - 1]!)}%). An upward trend in flow limitation metrics was observed across this period.`,
+      body: `Your flow limitation composite is increasing over ${nights.length} nights (${fmt(iflVals[0]!)}% \u2192 ${fmt(iflVals[iflVals.length - 1]!)}%). This proxy composite is trending higher. Check outcome metrics (ODI, SpO₂) for whether this pattern is reflected in direct measurements.`,
       category: 'trend',
     });
   }
@@ -690,11 +690,30 @@ function trendInsights(
   } else if (gTrend === 'worsening') {
     insights.push({
       id: 'trend-glasgow-worsening',
-      type: 'actionable',
+      type: 'info',
       title: 'Glasgow Index trending upward',
-      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}). Review flow waveforms alongside this trend for context.`,
+      body: `Flow limitation is increasing over ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}). This context-tier metric is trending higher. It reflects flow shape patterns, not direct outcomes.`,
       category: 'trend',
     });
+  }
+
+  // Proxy-outcome divergence: Tier 2 proxy adverse but Tier 1 outcome stable
+  const nedVals = chrono.map((n) => n.ned.nedMean);
+  const nedTrend = trendLowerBetter(nedVals);
+  const proxyAdverse = iflTrend === 'worsening' || nedTrend === 'worsening';
+  const oximetryNights = chrono.filter((n) => n.oximetry != null);
+  if (proxyAdverse && oximetryNights.length >= 3) {
+    const odiVals = oximetryNights.map((n) => n.oximetry!.odi3);
+    const odiTrend = trendLowerBetter(odiVals);
+    if (odiTrend === 'stable' || odiTrend === 'improving') {
+      insights.push({
+        id: 'proxy-outcome-divergence',
+        type: 'info',
+        title: 'Pattern metrics trending differently from outcome metrics',
+        body: `Your flow limitation proxy metrics are trending higher, but your direct outcome measurements (ODI, SpO₂) remain stable. This divergence is common and does not necessarily indicate a problem — your clinician can help interpret these findings in context.`,
+        category: 'trend',
+      });
+    }
   }
 
   // Therapy change impact
