@@ -183,6 +183,50 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'understanding-cpap-data',
+    title: 'Understanding Your CPAP Data: A Plain-Language Guide to AHI, Leaks, and Flow Limitations',
+    seoTitle: 'Understanding Your CPAP Data: AHI, Leaks, and Flow Limitations Explained',
+    description:
+      "New to CPAP data analysis? Learn what AHI, leak rates, flow limitations, and RERAs actually mean — and how AirwayLab helps you see your therapy clearly.",
+    date: '2026-04-18',
+    readTime: '6 min read',
+    tags: ['CPAP', 'AHI', 'Flow Limitation', 'Getting Started', 'Leak Rate'],
+    ogDescription:
+      "New to CPAP data analysis? Learn what AHI, leak rates, flow limitations, and RERAs actually mean — and how AirwayLab helps you see your therapy clearly.",
+    faqItems: [
+      {
+        question: 'What is AHI on a CPAP report?',
+        answer:
+          'AHI (Apnea-Hypopnea Index) is the average number of breathing pauses per hour during sleep. Your clinician can help you understand what your AHI means in context. This tool is informational only.',
+      },
+      {
+        question: 'What do flow limitations mean on my CPAP data?',
+        answer:
+          'Flow limitations indicate partial airway restriction that may not appear in your AHI count. Your clinician can help you understand what frequent flow limitation patterns mean for your situation. This tool is informational only.',
+      },
+      {
+        question: 'What is a RERA in CPAP data?',
+        answer:
+          "A Respiratory Effort Related Arousal is a brief sleep disruption from increased breathing effort that doesn't meet the full criteria for a hypopnea.",
+      },
+      {
+        question: 'How do I read my CPAP data?',
+        answer:
+          'Tools like OSCAR and AirwayLab can help you visualise your SD card data. AirwayLab runs in your browser with no upload required.',
+      },
+      {
+        question: 'What causes high leak rate on CPAP?',
+        answer:
+          'Common causes include mask fit issues, mouth breathing, or positional factors. Your care team can help you understand what your leak rate data means. This tool is informational only.',
+      },
+      {
+        question: 'Is AirwayLab free?',
+        answer:
+          'Yes. AirwayLab is free and always will be. Premium features support ongoing development but the core analysis is always available at no cost.',
+      },
+    ],
+  },
+  {
     slug: 'understanding-cpap-pressure-settings',
     title: 'Understanding Your CPAP Pressure Settings: What the Numbers Actually Mean',
     seoTitle: 'Understanding Your CPAP Pressure Settings',
