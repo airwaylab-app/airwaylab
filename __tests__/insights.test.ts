@@ -214,9 +214,12 @@ describe('generateInsights', () => {
 
     it('IFL worsening insight uses type info, not actionable', () => {
       // newest-first: high flScore first (worsening IFL trend when reversed to chrono)
+      // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
       const makeNight = (flScore: number, dateStr: string): NightResult => ({
         ...SAMPLE_NIGHTS[0]!,
         dateStr,
+        machineSummary: null,
+        settingsMetrics: null,
         wat: { ...SAMPLE_NIGHTS[0]!.wat, flScore },
         ned: { ...SAMPLE_NIGHTS[0]!.ned, nedMean: 15 },
         oximetry: { ...SAMPLE_NIGHTS[0]!.oximetry!, odi3: 3 },
@@ -230,19 +233,22 @@ describe('generateInsights', () => {
       ];
       const result = generateInsights(nights, nights[0]!, nights[1]!, null);
       const iflWorsen = result.find((i) => i.id === 'trend-ifl-worsening');
-      if (iflWorsen) {
-        expect(iflWorsen.type).toBe('info');
-        expect(iflWorsen.body).toContain('proxy composite');
-        expect(iflWorsen.body).toContain('ODI');
-      }
+      expect(iflWorsen).toBeDefined();
+      expect(iflWorsen!.type).toBe('info');
+      expect(iflWorsen!.body).toContain('proxy composite');
+      expect(iflWorsen!.body).toContain('ODI');
     });
 
     it('Glasgow worsening insight uses type info, not actionable', () => {
+      // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
       const makeNight = (glasgow: number, dateStr: string): NightResult => ({
         ...SAMPLE_NIGHTS[0]!,
         dateStr,
+        machineSummary: null,
+        settingsMetrics: null,
         glasgow: { ...SAMPLE_NIGHTS[0]!.glasgow, overall: glasgow },
-        oximetry: { ...SAMPLE_NIGHTS[0]!.oximetry!, odi3: 3 },
+        oximetry: null,
+        oximetryTrace: null,
       });
       // newest-first: high glasgow first (worsening trend when reversed to chrono)
       const nights = [
@@ -254,11 +260,10 @@ describe('generateInsights', () => {
       ];
       const result = generateInsights(nights, nights[0]!, nights[1]!, null);
       const gWorsen = result.find((i) => i.id === 'trend-glasgow-worsening');
-      if (gWorsen) {
-        expect(gWorsen.type).toBe('info');
-        expect(gWorsen.body).toContain('context-tier metric');
-        expect(gWorsen.body).toContain('flow shape patterns');
-      }
+      expect(gWorsen).toBeDefined();
+      expect(gWorsen!.type).toBe('info');
+      expect(gWorsen!.body).toContain('context-tier metric');
+      expect(gWorsen!.body).toContain('flow shape patterns');
     });
 
     describe('proxy-outcome divergence', () => {
@@ -279,20 +284,20 @@ describe('generateInsights', () => {
 
       it('fires when IFL worsening and ODI-3 stable with ≥3 oximetry nights', () => {
         // newest-first: high IFL recently (worsening proxy), flat ODI-3 (stable outcome)
+        // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
         const nights = [
           makeOxNight(80, 15, 3.0, '2025-02-05'),
           makeOxNight(70, 14, 3.2, '2025-02-04'),
           makeOxNight(60, 14, 3.1, '2025-02-03'),
           makeOxNight(50, 13, 2.9, '2025-02-02'),
           makeOxNight(40, 13, 3.0, '2025-02-01'),
-        ];
+        ].map((n) => ({ ...n, machineSummary: null, settingsMetrics: null }));
         const result = generateInsights(nights, nights[0]!, nights[1]!, null);
         const divergence = result.find((i) => i.id === 'proxy-outcome-divergence');
-        if (divergence) {
-          expect(divergence.type).toBe('info');
-          expect(divergence.category).toBe('trend');
-          expect(divergence.body).toContain('clinician');
-        }
+        expect(divergence).toBeDefined();
+        expect(divergence!.type).toBe('info');
+        expect(divergence!.category).toBe('trend');
+        expect(divergence!.body).toContain('clinician');
       });
 
       it('does not fire when ODI-3 is also worsening', () => {
