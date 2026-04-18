@@ -4,8 +4,14 @@ import {
   getTrafficColor,
   getTrafficBg,
   getTrafficDotColor,
+  getThresholdKeysByPanel,
+  getMetricPanel,
+  isProxyMetric,
   THRESHOLDS,
+  PANEL_LABELS,
+  PANEL_DESCRIPTIONS,
   type ThresholdDef,
+  type MetricPanel,
 } from '@/lib/thresholds';
 
 describe('getTrafficLight', () => {
@@ -182,5 +188,91 @@ describe('THRESHOLDS object', () => {
         expect(def.green).toBeGreaterThanOrEqual(def.amber);
       }
     }
+  });
+});
+
+describe('metric tier hierarchy', () => {
+  it('every threshold has a tier assignment', () => {
+    for (const [key, def] of Object.entries(THRESHOLDS)) {
+      expect(def.tier, `${key} missing tier`).toBeDefined();
+    }
+  });
+
+  it('every threshold has a panel assignment', () => {
+    for (const [key, def] of Object.entries(THRESHOLDS)) {
+      expect(def.panel, `${key} missing panel`).toBeDefined();
+    }
+  });
+
+  it('outcome panel contains Tier 1 oximetry metrics', () => {
+    const outcomeKeys = getThresholdKeysByPanel('outcome');
+    expect(outcomeKeys).toContain('odi3');
+    expect(outcomeKeys).toContain('spo2Mean');
+    expect(outcomeKeys).toContain('hrClin10');
+    expect(outcomeKeys).toContain('tBelow94');
+  });
+
+  it('pattern panel contains Tier 2 proxy metrics', () => {
+    const patternKeys = getThresholdKeysByPanel('pattern');
+    expect(patternKeys).toContain('iflRisk');
+    expect(patternKeys).toContain('nedMean');
+    expect(patternKeys).toContain('reraIndex');
+    expect(patternKeys).toContain('eai');
+  });
+
+  it('context panel contains Tier 3 metrics', () => {
+    const contextKeys = getThresholdKeysByPanel('context');
+    expect(contextKeys).toContain('glasgowOverall');
+    expect(contextKeys).toContain('watFL');
+    expect(contextKeys).toContain('watRegularity');
+  });
+
+  it('device panel contains machine and settings metrics', () => {
+    const deviceKeys = getThresholdKeysByPanel('device');
+    expect(deviceKeys).toContain('machineAhi');
+    expect(deviceKeys).toContain('leak95');
+    expect(deviceKeys).toContain('settingsTriggerDelay');
+  });
+
+  it('machineAhi is Tier 1-asym (alarm-only)', () => {
+    expect(THRESHOLDS.machineAhi!.tier).toBe('1-asym');
+  });
+
+  it('getMetricPanel returns correct panel', () => {
+    expect(getMetricPanel('odi3')).toBe('outcome');
+    expect(getMetricPanel('nedMean')).toBe('pattern');
+    expect(getMetricPanel('glasgowOverall')).toBe('context');
+    expect(getMetricPanel('machineAhi')).toBe('device');
+  });
+
+  it('getMetricPanel returns null for unknown key', () => {
+    expect(getMetricPanel('nonexistent')).toBeNull();
+  });
+
+  it('isProxyMetric identifies Tier 2/3 correctly', () => {
+    expect(isProxyMetric('iflRisk')).toBe(true);
+    expect(isProxyMetric('nedMean')).toBe(true);
+    expect(isProxyMetric('glasgowOverall')).toBe(true);
+    expect(isProxyMetric('odi3')).toBe(false);
+    expect(isProxyMetric('machineAhi')).toBe(false);
+  });
+
+  it('all four panels have labels and descriptions', () => {
+    const panels: MetricPanel[] = ['outcome', 'pattern', 'context', 'device'];
+    for (const panel of panels) {
+      expect(PANEL_LABELS[panel]).toBeTruthy();
+      expect(PANEL_DESCRIPTIONS[panel]).toBeTruthy();
+    }
+  });
+
+  it('no threshold key is unclassified (panel covers all)', () => {
+    const allPanelKeys = new Set([
+      ...getThresholdKeysByPanel('outcome'),
+      ...getThresholdKeysByPanel('pattern'),
+      ...getThresholdKeysByPanel('context'),
+      ...getThresholdKeysByPanel('device'),
+    ]);
+    const allKeys = Object.keys(THRESHOLDS);
+    expect(allPanelKeys.size).toBe(allKeys.length);
   });
 });
