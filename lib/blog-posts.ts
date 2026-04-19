@@ -485,6 +485,45 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'cpap-data-without-cloud',
+    title: 'CPAP Data Without Cloud: How to Analyse Your Sleep Data Privately',
+    seoTitle: 'CPAP Data Without Cloud: How to Analyse Your Sleep Data Privately',
+    description:
+      "Your CPAP machine records detailed sleep data every night. Here's where it goes by default, why many users prefer local analysis, and which tools keep your data off the cloud.",
+    date: '2026-04-19',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Privacy', 'OSCAR', 'Data Rights', 'Browser'],
+    ogDescription:
+      "Your CPAP machine records detailed sleep data every night. Here's where it goes by default, why many users prefer local analysis, and which tools keep your data off the cloud.",
+    faqItems: [
+      {
+        question: 'Can I turn off myAir cloud sync and still record data locally?',
+        answer:
+          "Yes. Your ResMed machine continues to function and record to the SD card regardless of whether cloud sync is active. The SD card data is what OSCAR and AirwayLab read. Disabling cloud sync simply stops the automatic overnight transmission to ResMed's servers. If you're enrolled in a provider-monitored compliance programme, disabling sync may affect compliance reporting — worth discussing with your care team before making the change.",
+      },
+      {
+        question: 'Is CPAP data covered by HIPAA in the US?',
+        answer:
+          "HIPAA covers health data held by covered entities — typically healthcare providers and insurers. Data you sync directly to a device manufacturer's app may or may not fall under HIPAA protections depending on the specifics of your arrangement. Tools like AirwayLab and OSCAR sidestep this question entirely: if your data never leaves your device, there's no cloud record to regulate.",
+      },
+      {
+        question: 'Does AirwayLab work offline?',
+        answer:
+          "The initial page load requires an internet connection. Once loaded, analysis runs locally — your CPAP file is processed by your own device's CPU, not a remote server. An offline-capable version is on the roadmap.",
+      },
+      {
+        question: 'Will using local tools affect my insurance compliance reporting?',
+        answer:
+          'Not necessarily. Many providers who require compliance reporting accept manually exported summaries, or allow you to remain enrolled in cloud monitoring while also analysing locally with separate tools. Some users do both: cloud sync for their provider, SD card data in OSCAR or AirwayLab for personal review. The approaches are not mutually exclusive.',
+      },
+      {
+        question: "How can I verify AirwayLab isn't uploading my data?",
+        answer:
+          "The source code is public under GPL-3.0. You can read it, or ask a technically inclined friend to. For additional assurance, your browser's developer tools will show every network request the page makes — you can confirm directly that no data is transmitted when you load a file.",
+      },
+    ],
+  },
+  {
     slug: 'what-is-uars',
     title: 'What Is UARS? Upper Airway Resistance Syndrome Explained for PAP Users',
     seoTitle: 'What Is UARS? Upper Airway Resistance Syndrome Explained for PAP Users',
