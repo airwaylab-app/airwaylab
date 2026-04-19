@@ -29,6 +29,7 @@ import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-scor
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
+import WhatIsFlowLimitationCPAP from '../posts/what-is-flow-limitation-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
@@ -55,6 +56,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
   'pap-data-privacy': PAPDataPrivacy,
+  'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
 };
 
 export function generateStaticParams() {

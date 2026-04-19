@@ -550,6 +550,45 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'what-is-flow-limitation-cpap',
+    title: 'What Is Flow Limitation on CPAP?',
+    seoTitle: 'What Is Flow Limitation on CPAP? | AirwayLab',
+    description:
+      'Flow limitation on CPAP means your airway is partially narrowing during sleep. Learn what the waveform shows, why it matters when AHI looks fine, and what to note for your clinician.',
+    date: '2026-04-19',
+    readTime: '6 min read',
+    tags: ['Flow Limitation', 'CPAP', 'AHI', 'UARS', 'RERA'],
+    ogDescription:
+      'Flow limitation on CPAP means your airway is partially narrowing during sleep. Learn what the waveform shows, why it matters when AHI looks fine, and what to note for your clinician.',
+    faqItems: [
+      {
+        question: 'What does flow limitation mean on CPAP?',
+        answer:
+          'Flow limitation on CPAP refers to a partial narrowing of the upper airway during inspiration that causes the flow rate curve to flatten, meaning airflow is capped despite continued breathing effort. It is not a complete obstruction and is not scored in AHI, but can appear in your waveform data.',
+      },
+      {
+        question: 'Is flow limitation the same as an apnea?',
+        answer:
+          'No. An apnea is a complete cessation of airflow. Flow limitation is a partial narrowing that constrains airflow without stopping it. It sits below the threshold for a scored apnea or qualifying hypopnea.',
+      },
+      {
+        question: 'Can you have flow limitation with a low AHI?',
+        answer:
+          'Yes. AHI counts apneas and qualifying hypopneas; flow limitation events are not included in that count. Some users see frequent flow limitation in their waveform data while their AHI remains in a normal range.',
+      },
+      {
+        question: 'How do I see flow limitation in OSCAR or AirwayLab?',
+        answer:
+          'Look at the Flow Rate waveform. Breaths affected by flow limitation show a flattened or plateaued top on the inspiratory curve rather than a smooth rounded arch. AirwayLab lets you zoom into individual breaths to inspect the curve shape.',
+      },
+      {
+        question: 'Should I be worried about flow limitation on CPAP?',
+        answer:
+          'This is a question for your clinician. Flow limitation is one data point among many. Whether it is clinically significant in your situation depends on your full history, how you are sleeping, and what your care team observes. Bring your data to your next appointment and discuss what you are seeing.',
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
