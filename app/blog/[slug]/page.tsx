@@ -37,6 +37,7 @@ import ResmedAirsense11SdCard from '../posts/resmed-airsense-11-sd-card';
 import ResmedAircurveBipapSdCard from '../posts/resmed-aircurve-bipap-sd-card';
 import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-flow-limitation-reras';
 import UnderstandingCPAPPressureSettings from '../posts/understanding-cpap-pressure-settings';
+import WhatIsFlowLimitationCPAP from '../posts/what-is-flow-limitation-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
@@ -71,6 +72,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
   'pap-data-privacy': PAPDataPrivacy,
+  'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
 };
 
 export function generateStaticParams() {
