@@ -6,6 +6,9 @@ import { AlertCircle, CheckCircle2, Loader2, Monitor } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
+import { z } from 'zod';
+
+const emailSchema = z.string().email();
 
 export function IosUploadGate() {
   const [email, setEmail] = useState('');
@@ -24,7 +27,7 @@ export function IosUploadGate() {
   }, []);
 
   async function handleSubmit() {
-    if (!email.includes('@') || !consent || status !== 'idle') return;
+    if (!emailSchema.safeParse(email).success || !consent || status !== 'idle') return;
     setStatus('sending');
     events.mobileReminderSubmitted();
     try {
@@ -111,7 +114,7 @@ export function IosUploadGate() {
             </div>
             <Button
               onClick={handleSubmit}
-              disabled={!email.includes('@') || !consent || status !== 'idle'}
+              disabled={!emailSchema.safeParse(email).success || !consent || status !== 'idle'}
               aria-label={status === 'sending' ? 'Sending reminder...' : undefined}
               className="mt-4 w-full"
             >
