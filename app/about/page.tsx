@@ -160,7 +160,7 @@ const engines = [
     methodology: [
       'NED = (Qpeak \u2212 Qmid) / Qpeak, where Qpeak is peak inspiratory flow and Qmid is flow at 50% of inspiratory time. Higher NED indicates more flow limitation.',
       'Flatness Index (FI) measures how flat the inspiratory flow plateau is. FI \u2265 0.85 indicates significant flow limitation.',
-      'M-shape detection identifies breaths with a characteristic mid-inspiratory dip suggesting upper airway oscillation.',
+      'M-shape detection identifies breaths with a characteristic mid-inspiratory dip showing oscillation in the flow waveform.',
       'RERA detection: sequences of \u22653 breaths with progressively rising NED slope, terminated by a recovery breath with sudden NED drop. Reported as events per hour.',
     ],
     reference: 'NED concept from Tamisier et al. RERA detection adapted from clinical scoring criteria.',

@@ -35,7 +35,7 @@ export default function ArousalsVsFlowLimitationPost() {
           </p>
           <p>
             In this model, the arousal is the pivot point. It&apos;s the thing that breaks
-            your sleep. Treatment success means fewer arousals.
+            your sleep. Fewer arousals is one metric clinicians track.
           </p>
           <p>
             This model works well for severe obstructive sleep apnea. But at the milder end
@@ -71,7 +71,7 @@ export default function ArousalsVsFlowLimitationPost() {
               </p>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <p className="text-sm font-semibold text-amber-400">3. Flow Limitation Predicts Symptoms After Controlling for Arousals</p>
+              <p className="text-sm font-semibold text-amber-400">3. Flow Limitation Associated With Symptoms After Controlling for Arousals</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 The 2024 Mann et al. study found that inspiratory flow limitation predicted
                 excessive daytime sleepiness in people with AHI below 15, and this
