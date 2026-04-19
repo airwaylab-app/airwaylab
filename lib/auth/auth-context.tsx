@@ -148,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session (with retry for Supabase lock contention)
     async function initSession() {
       let initialSession: Session | null = null;
+      let isFromAuthCallback = false;
 
       try {
         const result = await supabase.auth.getSession();
@@ -166,22 +167,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // If we just came back from a magic link redirect (auth=success param),
-      // but getSession() didn't find a session yet, retry with getUser()
-      // which reads the cookie set by the auth callback route.
-      if (!initialSession && typeof window !== 'undefined') {
+      // retry session pickup if needed and track for signup analytics.
+      if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         if (params.has('auth')) {
-          const { data: { user: freshUser } } = await supabase.auth.getUser();
-          if (freshUser) {
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            initialSession = freshSession;
+          isFromAuthCallback = true;
+
+          // If getSession() didn't find a session yet, retry with getUser()
+          // which reads the cookie set by the auth callback route.
+          if (!initialSession) {
+            const { data: { user: freshUser } } = await supabase.auth.getUser();
+            if (freshUser) {
+              const { data: { session: freshSession } } = await supabase.auth.getSession();
+              initialSession = freshSession;
+            }
           }
+
           // Clean up the URL param without triggering a navigation
           params.delete('auth');
           const cleanUrl = params.toString()
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;
           window.history.replaceState({}, '', cleanUrl);
+        }
+      }
+
+      // Fire signupCompleted for new users arriving from auth callback
+      // (mirrors the 60-second new-signup detection in app/auth/callback/route.ts)
+      if (isFromAuthCallback && initialSession?.user?.created_at) {
+        const createdAt = new Date(initialSession.user.created_at).getTime();
+        if (Date.now() - createdAt < 60_000) {
+          const source = window.location.pathname.replace(/^\//, '') || 'direct';
+          import('@/lib/analytics').then(({ events }) => {
+            events.signupCompleted(source);
+          }).catch(() => { /* analytics failure is non-critical — never block auth flow */ });
         }
       }
 
