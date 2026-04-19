@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'what-is-flow-limitation-cpap',
+    title: 'What Is Flow Limitation on Your CPAP? (And Why It Matters More Than AHI)',
+    seoTitle: 'What Is Flow Limitation CPAP? (And Why It Matters More Than AHI)',
+    description:
+      "Flow limitation is partial upper airway narrowing that doesn't always appear in your AHI. Learn what it is, how the waveform looks, and how to see it in your CPAP data.",
+    date: '2026-05-01',
+    readTime: '7 min read',
+    tags: ['Flow Limitation', 'AHI', 'RERA', 'Waveform', 'CPAP'],
+    ogDescription:
+      "Flow limitation is partial upper airway narrowing that doesn't always appear in your AHI. Learn what it is, how the waveform looks, and how to see it in your CPAP data.",
+    faqItems: [
+      {
+        question: 'What causes flow limitation on CPAP?',
+        answer:
+          'Flow limitation occurs when the upper airway partially narrows during sleep, restricting airflow without fully closing. Common contributing factors include sleep position, REM sleep (when airway muscle tone is lower), and pressure dynamics during sleep. Your clinician can help interpret these patterns in the context of your overall therapy.',
+      },
+      {
+        question: 'Is flow limitation the same as a hypopnea?',
+        answer:
+          'No. A hypopnea requires airflow to drop by a defined threshold and is associated with oxygen desaturation or arousal. Flow limitation can occur without meeting those criteria — the airway is partially narrowed but airflow continues. Many flow-limited breaths are not counted in AHI.',
+      },
+      {
+        question: 'What is a RERA and how does it relate to flow limitation?',
+        answer:
+          'A RERA (Respiratory Effort-Related Arousal) is a sequence of increasingly effortful breaths — often showing flow limitation in the waveform — that ends in a brief arousal. RERAs are counted in the RDI (Respiratory Disturbance Index) but not in standard AHI.',
+      },
+      {
+        question: 'Can I see flow limitation in my CPAP data?',
+        answer:
+          'Yes. CPAP machines record continuous airflow data on the SD card. Tools like AirwayLab render this as a waveform, where flow-limited breaths are visible as a flattened inspiratory curve rather than the smooth rounded arch of a normal breath.',
+      },
+      {
+        question: 'Does AirwayLab diagnose flow limitation?',
+        answer:
+          'No. AirwayLab is an informational tool that visualises your recorded data. It does not provide medical diagnoses or clinical recommendations. If you have concerns about patterns in your data, discuss them with your clinician.',
+      },
+    ],
+  },
+  {
     slug: 'resmed-sd-card-browser-analysis',
     title: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
     seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
