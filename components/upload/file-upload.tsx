@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, Monitor, ArrowRight } from 'lucide-react';
+import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, Monitor, ArrowRight, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
@@ -240,7 +241,7 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
               {[
                 'Remove the SD card from your PAP machine',
                 'Insert it into your computer (use an adapter if needed)',
-                'Click here and choose your SD card drive',
+                'Click here and select the DATALOG folder on your SD card',
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
@@ -248,6 +249,18 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   </span>
                   <span className="text-xs leading-snug text-muted-foreground">
                     {step}
+                    {i === 2 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="inline cursor-help align-middle">
+                            <Info className="ml-1 h-3 w-3 text-muted-foreground/60" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-center">
+                            The DATALOG folder is inside the root of your SD card. You can also select the entire SD card — we&apos;ll find the folder automatically.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </span>
                 </div>
               ))}

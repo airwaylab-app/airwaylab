@@ -661,7 +661,7 @@ function AnalyzePageInner() {
                 <p className="text-sm text-red-400">{error}</p>
               </div>
               <p className="pl-[26px] text-xs text-muted-foreground">
-                Make sure you selected the DATALOG folder from your SD card. Need help?{' '}
+                No DATALOG folder found. Select the DATALOG folder from your SD card, or select the entire SD card and we&apos;ll locate it. Need help?{' '}
                 <a href="/getting-started" className="text-primary hover:underline">See the guide</a>.
               </p>
             </div>
