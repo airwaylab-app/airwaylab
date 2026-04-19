@@ -215,13 +215,72 @@ function activationStep1(unsubscribeUrl: string): { subject: string; html: strin
 
 function activationStep2(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Your CPAP data has insights waiting to be found',
+    subject: 'What your CPAP data can tell you',
     html: layout(`
-      ${heading('What one upload reveals')}
-      ${paragraph('When you upload a week of SD card data, AirwayLab shows additional metrics alongside your machine\'s standard reports -- subtle flow limitation, periodic breathing, and arousal patterns that standard reports don\'t show.')}
-      ${paragraph('Your machine has been recording detailed flow waveforms every night. AirwayLab\'s four engines analyse those waveforms at the breath level -- something OSCAR and your machine\'s built-in reports can\'t do.')}
-      ${ctaButton('Start Your First Analysis', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_2`)}
-      ${paragraph('This is the last activation email we\'ll send. If you\'re not ready yet, your account will be here when you are.')}
+      ${heading('Before we talk about how to get your data in, here is what you will actually see when you do')}
+      ${paragraph('Your CPAP records a lot more than the single number on the machine display. When you run an analysis, you get:')}
+      ${bulletList([
+        '<strong style="color:#fff;">Your Glasgow Index</strong> -- a single score that tracks how your therapy sessions compare over time, so you can spot trends without having to interpret raw numbers',
+        '<strong style="color:#fff;">Nightly event breakdown</strong> -- AHI, flow limitations, snore events, and leak rates, laid out per session so you can see what changed and when',
+        '<strong style="color:#fff;">Leak trend charts</strong> -- so you can see if your mask seal is holding consistently or drifting over time',
+        '<strong style="color:#fff;">Pressure and timing data</strong> -- exactly what your device was doing and when',
+      ])}
+      ${paragraph('None of this is a diagnosis. It is your data, presented in a way that is actually readable -- and useful to bring to a conversation with your clinician.')}
+      ${paragraph('Getting your data in is simpler than it sounds. Remove the SD card from your machine, plug it in, and drag the data folder onto the page. Everything runs in your browser. Your data never leaves your device.')}
+      ${ctaButton('See what your data shows', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_2`)}
+    `, unsubscribeUrl),
+  };
+}
+
+function activationStep3(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'How one CPAP user gets more from their data',
+    html: layout(`
+      ${heading('We hear versions of this story often')}
+      ${paragraph('Someone starts CPAP therapy, gets the basic numbers from their machine or app, and assumes that is all there is. The AHI looks okay. The machine says things are fine. But something still does not feel quite right, and there is no easy way to dig deeper with the summary they have been given.')}
+      ${paragraph('Then they upload their data for the first time.')}
+      ${paragraph('One community member described it like this:')}
+      ${paragraph('<em style="color:#d4d4d8;">"I had been on CPAP for almost two years and figured I was doing fine. When I ran the analysis and looked at the full breakdown, I could see my leak rates were creeping up on certain nights -- the kind of pattern you would never notice from a single nightly score. I brought the chart to my next appointment and we looked at my mask fit together. It was genuinely useful to have something concrete to point at."</em>')}
+      ${paragraph('That is not a medical outcome. It is just what happens when you can actually see your data instead of receiving a summary handed to you by the machine.')}
+      ${paragraph('Your CPAP data contains that same level of detail. The analysis takes about 30 seconds. AirwayLab is free and always will be.')}
+      ${ctaButton('See your full data breakdown', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_3`)}
+    `, unsubscribeUrl),
+  };
+}
+
+function activationStep4(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Glasgow Index, trend charts, and what they show you',
+    html: layout(`
+      ${heading('A quick look at what you will find when you run your first analysis')}
+      ${paragraph('<strong style="color:#fff;">Glasgow Index</strong>')}
+      ${paragraph('The Glasgow Index is a single composite score calculated from your nightly CPAP session data. It gives you one number to track over time rather than juggling AHI, leak rate, and event counts separately. If something changes -- a new mask, a pressure adjustment, a different sleep position -- the direction of the trend shows up in the score.')}
+      ${paragraph('<strong style="color:#fff;">Nightly trend charts</strong>')}
+      ${paragraph('Every session is plotted so you can see patterns across days and weeks. AHI over time, leak rates, event distributions. These patterns are in your raw data already -- the charts make them visible at a glance.')}
+      ${paragraph('<strong style="color:#fff;">Event breakdown</strong>')}
+      ${paragraph('Per-session tables showing obstructive events, hypopneas, flow limitations, snore indices, and central events where your device records them. Useful context for understanding what your machine has been seeing, or for preparing for a conversation with your clinician.')}
+      ${paragraph('<strong style="color:#fff;">AI-assisted pattern detection</strong>')}
+      ${paragraph('AirwayLab can flag sessions that look different compared to your baseline -- not as a diagnosis, but as a prompt to look closer. You see the note alongside the raw data and decide whether it is relevant to you.')}
+      ${paragraph('Everything runs in your browser. Nothing is stored on our servers.')}
+      ${ctaButton('Run your analysis', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_4`)}
+    `, unsubscribeUrl),
+  };
+}
+
+function activationStep5(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Your CPAP data is here whenever you are ready',
+    html: layout(`
+      ${heading('This is the last time we will reach out about getting started')}
+      ${paragraph('If the timing has not been right, or this just has not been a priority -- that is completely fine. We are not going anywhere.')}
+      ${paragraph('A few things worth knowing for whenever you do circle back:')}
+      ${bulletList([
+        'AirwayLab is free and always will be',
+        'Your data never leaves your browser -- no account needed to run an analysis',
+        'You can come back any time, even months from now',
+      ])}
+      ${paragraph('If you are ever curious about what your CPAP has been recording, the analyze page will be there.')}
+      ${ctaButton('Your data is ready when you are', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_5`)}
     `, unsubscribeUrl),
   };
 }
@@ -306,11 +365,16 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
     },
   },
   activation: {
-    totalSteps: 2,
-    delays: [0, 3], // step 1 at trigger (48h after signup), step 2 at t+3
+    totalSteps: 5,
+    // delays are from sequence start (sequence is scheduled ~48h after signup)
+    // Email 1: day 2, Email 2: day 5, Email 3: day 8, Email 4: day 12, Email 5: day 16
+    delays: [0, 3, 6, 10, 14],
     getTemplate: (step, url) => {
       if (step === 1) return activationStep1(url);
       if (step === 2) return activationStep2(url);
+      if (step === 3) return activationStep3(url);
+      if (step === 4) return activationStep4(url);
+      if (step === 5) return activationStep5(url);
       return null;
     },
   },
