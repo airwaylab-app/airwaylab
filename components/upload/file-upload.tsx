@@ -8,7 +8,8 @@ import { UnsupportedFormatDialog } from './unsupported-format-dialog';
 import { UnsupportedDeviceDialog } from './unsupported-device-dialog';
 import { getFileStructureMetadata } from '@/lib/parsers/device-detector';
 import { events } from '@/lib/analytics';
-import { supportsWebkitGetAsEntry, traverseDataTransferItems, toFilesWithPaths, isMobileDevice } from '@/lib/directory-traversal';
+import { supportsWebkitGetAsEntry, traverseDataTransferItems, toFilesWithPaths, isMobileDevice, isIOSDevice } from '@/lib/directory-traversal';
+import { IosUploadGate } from './ios-upload-gate';
 import * as Sentry from '@sentry/nextjs';
 
 interface FileUploadProps {
@@ -33,9 +34,11 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
     totalSizeBytes: number;
   } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     setIsMobile(isMobileDevice());
+    setIsIOS(isIOSDevice());
   }, []);
 
   const handleSDChange = useCallback(
@@ -301,7 +304,12 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   <ArrowRight className="h-3 w-3" />
                 </a>
               )}
-              {isMobile && (
+              {isIOS && (
+                <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                  <IosUploadGate />
+                </div>
+              )}
+              {!isIOS && isMobile && (
                 <div className="w-full" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="default"
