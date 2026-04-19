@@ -34,7 +34,7 @@ export function CommunityJoinPrompt({ sessionCount, isDemo }: CommunityJoinPromp
     try {
       localStorage.setItem(DISMISSED_KEY, '1');
     } catch {
-      // ignore
+      // localStorage write failure is non-critical — prompt stays dismissed in memory for this session
     }
     setDismissed(true);
     events.communityPromptDismissed();

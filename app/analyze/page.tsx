@@ -10,6 +10,7 @@ import { StorageProgressBanner } from '@/components/upload/storage-progress-bann
 import { CloudSyncNudge, hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 import { MobileEmailCapture } from '@/components/upload/mobile-email-capture';
 import { FirstRunWelcome } from '@/components/upload/first-run-welcome';
+import { DemoCTA } from '@/components/upload/demo-cta';
 import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
 import { CommunityJoinPrompt } from '@/components/dashboard/community-join-prompt';
 import { AuthModal } from '@/components/auth/auth-modal';
@@ -59,7 +60,6 @@ import {
   Waves,
   HeartPulse,
   TrendingUp,
-  Play,
   Upload,
   ArrowLeftRight,
   Star,
@@ -609,55 +609,14 @@ function AnalyzePageInner() {
         ) : isIOS ? (
           <div className="mx-auto max-w-lg">
             <MobileEmailCapture className="mb-4" />
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-                <div className="h-px flex-1 bg-border/50" />
-                <span>or</span>
-                <div className="h-px flex-1 bg-border/50" />
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={loadDemo}
-                aria-label="Load 7-night sample dataset"
-                className="gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Try sample data
-              </Button>
-              <p className="text-[11px] text-muted-foreground/50">
-                7 nights of example BiPAP data - no file needed
-              </p>
-            </div>
+            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
             {/* Mobile upload prompt */}
             <MobileEmailCapture className="mb-4 sm:hidden" />
-
             <FileUpload onFilesSelected={handleFiles} />
-
-            {/* Demo CTA */}
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-                <div className="h-px flex-1 bg-border/50" />
-                <span>or</span>
-                <div className="h-px flex-1 bg-border/50" />
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={loadDemo}
-                aria-label="Load 7-night sample dataset"
-                className="gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Try sample data
-              </Button>
-              <p className="text-[11px] text-muted-foreground/50">
-                7 nights of example BiPAP data - no file needed
-              </p>
-            </div>
+            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
       )}

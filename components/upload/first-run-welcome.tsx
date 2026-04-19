@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Play, Shield, Zap, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Shield, Zap, BarChart3 } from 'lucide-react';
 import { FileUpload } from './file-upload';
 import { MobileEmailCapture } from './mobile-email-capture';
+import { DemoCTA } from './demo-cta';
 import { isIOSDevice } from '@/lib/directory-traversal';
 
 interface FirstRunWelcomeProps {
@@ -25,34 +25,11 @@ export function FirstRunWelcome({ onLoadDemo, onFilesSelected }: FirstRunWelcome
     setIsIOS(isIOSDevice());
   }, []);
 
-  const demoCta = (
-    <div className="mt-6 flex flex-col items-center gap-2">
-      <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-        <div className="h-px flex-1 bg-border/50" />
-        <span>or</span>
-        <div className="h-px flex-1 bg-border/50" />
-      </div>
-      <Button
-        variant="outline"
-        size="default"
-        onClick={onLoadDemo}
-        aria-label="Load 7-night sample dataset"
-        className="gap-2"
-      >
-        <Play className="h-4 w-4" aria-hidden="true" />
-        Try sample data
-      </Button>
-      <p className="text-[11px] text-muted-foreground/50">
-        7 nights of example BiPAP data - no file needed
-      </p>
-    </div>
-  );
-
   if (isIOS) {
     return (
       <div className="mx-auto max-w-lg">
         <MobileEmailCapture className="mb-4" />
-        {demoCta}
+        <DemoCTA onLoadDemo={onLoadDemo} />
       </div>
     );
   }
@@ -99,7 +76,7 @@ export function FirstRunWelcome({ onLoadDemo, onFilesSelected }: FirstRunWelcome
         {/* RIGHT: upload zone + demo CTA */}
         <div className="min-w-0 flex-1">
           <FileUpload onFilesSelected={onFilesSelected} />
-          {demoCta}
+          <DemoCTA onLoadDemo={onLoadDemo} />
         </div>
       </div>
     </div>
