@@ -249,8 +249,8 @@ export default function WhatAreRerasSleepApnea() {
               How to Read Your CPAP Data
             </Link>{' '}
             and{' '}
-            <Link href="/blog/how-to-analyse-cpap-data" className="text-primary hover:text-primary/80">
-              How to Analyse CPAP Data with AirwayLab
+            <Link href="/blog/how-to-export-understand-cpap-data" className="text-primary hover:text-primary/80">
+              How to Export and Understand Your CPAP Data
             </Link>{' '}
             are good starting points.
           </p>
