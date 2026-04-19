@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'free-cpap-data-analysis-software',
+    title: 'Free CPAP Data Analysis Software Compared: OSCAR, SleepHQ, and AirwayLab',
+    seoTitle: 'Free CPAP Data Analysis Software Compared: OSCAR, SleepHQ, and AirwayLab',
+    description:
+      'An honest comparison of free CPAP data analysis tools — OSCAR, SleepHQ, and AirwayLab — covering platform, privacy, features, and when each one shines.',
+    date: '2026-05-07',
+    readTime: '8 min read',
+    tags: ['CPAP Software', 'OSCAR', 'Comparison', 'Privacy', 'Getting Started'],
+    ogDescription:
+      'An honest comparison of free CPAP data analysis tools — OSCAR, SleepHQ, and AirwayLab — covering platform, privacy, features, and when each one shines.',
+    faqItems: [
+      {
+        question: 'Is OSCAR still the best free CPAP analysis software?',
+        answer:
+          'OSCAR remains the most powerful free desktop CPAP analysis tool available, with the deepest per-night analysis and strong community support. Browser-based alternatives like AirwayLab now offer privacy-first analysis without installation required.',
+      },
+      {
+        question: 'Is SleepHQ free?',
+        answer:
+          "SleepHQ has a free tier, but full access requires a paid subscription. Your data is stored on SleepHQ's servers.",
+      },
+      {
+        question: 'Does AirwayLab send my data to a server?',
+        answer:
+          'No. AirwayLab processes all analysis in your browser. Your CPAP data never leaves your device. This is verifiable because AirwayLab is GPL-3.0 open source.',
+      },
+      {
+        question: 'Can I use OSCAR and AirwayLab together?',
+        answer:
+          'Yes. Many PAP users use OSCAR for deep desktop analysis and AirwayLab for quick browser-based access and flow limitation visualisation. The tools are designed to complement each other.',
+      },
+      {
+        question: 'What is the best free CPAP data analysis software for privacy?',
+        answer:
+          'Both OSCAR and AirwayLab process data locally with no data upload required. OSCAR is a desktop application; AirwayLab runs in your browser with no installation needed.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
