@@ -50,6 +50,8 @@ import WhatIsCentralApneaCPAP from '../posts/what-is-central-apnea-cpap';
 import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
 import AHIVsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 
+import FreeCPAPDataAnalysisSoftware from '../posts/free-cpap-data-analysis-software';
+
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
@@ -60,6 +62,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'what-are-reras-sleep-apnea': WhatAreRerasSleepApnea,
   'ahi-vs-rdi-sleep-apnea': AHIVsRDISleepApnea,
   'cpap-compliance-tracking': CPAPComplianceTracking,
+  'free-cpap-data-analysis-software': FreeCPAPDataAnalysisSoftware,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
