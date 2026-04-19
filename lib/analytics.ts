@@ -258,6 +258,19 @@ export const events = {
   upgradeNudgeClicked: (source: string) =>
     trackEvent('Upgrade Nudge Clicked', { source }),
 
+  // ── Track progress prompt ─────────────────────────────────────
+  /** Track progress return prompt shown to new user */
+  trackProgressShown: () => trackEvent('track_progress_shown'),
+
+  /** User clicked Bookmark this page in track progress prompt */
+  trackProgressBookmarkClicked: () => trackEvent('track_progress_bookmark_clicked'),
+
+  /** User clicked Get an email reminder in track progress prompt */
+  trackProgressEmailClicked: () => trackEvent('track_progress_email_clicked'),
+
+  /** User dismissed track progress prompt */
+  trackProgressDismissed: () => trackEvent('track_progress_dismissed'),
+
   // ── Mobile reminder capture ───────────────────────────────────
   /** Mobile reminder email capture component shown */
   mobileReminderShown: () => trackEvent('mobile_reminder_shown'),

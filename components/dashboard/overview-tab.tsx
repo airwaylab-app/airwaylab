@@ -26,6 +26,7 @@ import { CommunityComparison } from '@/components/dashboard/community-comparison
 import { CommunityBenchmarks } from '@/components/dashboard/community-benchmarks';
 import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
+import { TrackProgressPrompt } from '@/components/dashboard/track-progress-prompt';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES, METRIC_PLAIN_LANGUAGE } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
 import type { GlasgowComponents } from '@/lib/types';
@@ -692,6 +693,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           : 'Your flow limitation patterns show characteristics worth exploring further. Get AI-powered analysis of what your breathing data shows.';
         return <UpgradePrompt feature={msg} />;
       })()}
+
+      {/* Track your progress — return prompt for first-time analysers */}
+      <TrackProgressPrompt isNewUser={isNewUser} isDemo={isDemo} />
 
       {/* Metric Detail Modal */}
       {detailMetric && (
