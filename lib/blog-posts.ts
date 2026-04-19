@@ -112,6 +112,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'how-to-read-cpap-data',
     title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
+    seoTitle: 'How to Read Your CPAP Data — AirwayLab',
     description:
       'Your PAP machine records thousands of data points every night. AHI only shows part of the picture. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics that matter.',
     date: '2026-04-03',
