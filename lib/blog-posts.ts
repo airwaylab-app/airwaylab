@@ -61,6 +61,45 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'how-to-read-oscar-cpap-charts',
+    title: 'How to Read OSCAR CPAP Charts (A Plain-English Guide)',
+    seoTitle: 'How to Read OSCAR CPAP Charts (A Plain-English Guide) | AirwayLab',
+    description:
+      'Learn how to read OSCAR CPAP charts — AHI events, flow rate, pressure, and leaks — explained in plain English for PAP therapy users.',
+    date: '2026-04-27',
+    readTime: '8 min read',
+    tags: ['OSCAR', 'CPAP', 'Getting Started', 'Flow Limitation', 'AHI'],
+    ogDescription:
+      'Learn how to read OSCAR CPAP charts — AHI events, flow rate, pressure, and leaks — explained in plain English for PAP therapy users.',
+    faqItems: [
+      {
+        question: 'What does AHI mean in OSCAR?',
+        answer:
+          'AHI stands for Apnea-Hypopnea Index — the number of apneas and hypopneas per hour of recorded therapy time. OSCAR calculates it from the event log your machine stores on its SD card.',
+      },
+      {
+        question: 'What is a normal AHI in OSCAR?',
+        answer:
+          'AHI thresholds are defined clinically and should be interpreted by a qualified clinician in the context of your specific prescription and symptoms. Discussing your nightly numbers with your sleep team gives you the most meaningful guidance.',
+      },
+      {
+        question: 'What do flow limitations mean in OSCAR?',
+        answer:
+          "Flow limitations appear as a flattening of the inhalation curve in OSCAR's flow rate panel. They reflect a flattened inhalation waveform that the machine records as flow limitation. High flow limitation counts can be worth discussing with your clinician, particularly if you're on APAP therapy.",
+      },
+      {
+        question: 'Is OSCAR better than the ResMed or Philips app?',
+        answer:
+          'OSCAR accesses the detailed data log stored on your SD card, while manufacturer apps typically show a simplified nightly summary. They serve different purposes — the manufacturer app is convenient for a quick overview; OSCAR (and AirwayLab) are for deeper exploration of your therapy data.',
+      },
+      {
+        question: 'Can I use AirwayLab instead of OSCAR?',
+        answer:
+          'AirwayLab reads the same SD card files as OSCAR and shows your data in a browser without requiring a desktop app. The two tools are complementary — many users use both depending on the task.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
