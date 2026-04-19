@@ -245,9 +245,7 @@ export default function WhatIsFlowLimitationCPAPPost() {
           </ul>
           <p>
             Your clinician can interpret these data points in the context of your full clinical
-            picture &mdash; including whether a pressure adjustment, positional therapy, or
-            additional investigation is appropriate. That judgement belongs with them; the data is
-            yours to bring.
+            picture. That judgement belongs with them; the data is yours to bring.
           </p>
         </div>
       </section>
