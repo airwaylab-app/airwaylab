@@ -705,6 +705,50 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'what-is-uars',
+    title: 'What Is UARS? Upper Airway Resistance Syndrome Explained for PAP Users',
+    seoTitle: 'What Is UARS? Upper Airway Resistance Syndrome Explained for PAP Users',
+    description:
+      'Upper Airway Resistance Syndrome (UARS) is a sleep breathing disorder standard AHI scoring routinely misses. Learn what UARS is, how it differs from OSA, and what your PAP data can reveal.',
+    date: '2026-04-19',
+    readTime: '10 min read',
+    tags: ['UARS', 'Flow Limitation', 'AHI', 'RERAs', 'Sleep Apnea'],
+    ogDescription:
+      'What is UARS sleep apnea? Learn how Upper Airway Resistance Syndrome differs from OSA, why AHI misses it, and what your PAP data can reveal.',
+    faqItems: [
+      {
+        question: 'Is UARS the same as sleep apnea?',
+        answer:
+          'UARS and obstructive sleep apnea (OSA) are related but distinct conditions. Both involve airway narrowing during sleep and disrupted sleep architecture. The key difference is the type of event: OSA is defined by apneas and hypopneas, while UARS is characterized by increased airway resistance and respiratory effort-related arousals without the airflow reduction threshold being met. Many clinicians consider UARS part of a spectrum of sleep-disordered breathing rather than a completely separate category.',
+      },
+      {
+        question: 'Can someone have a normal sleep study but still have UARS?',
+        answer:
+          'Yes. Standard polysomnography and most home sleep tests score AHI (apneas + hypopneas per hour). UARS events — RERAs — are not included in AHI. A person with significant UARS may have an AHI below the diagnostic threshold for OSA while experiencing dozens of respiratory-effort arousals per hour.',
+      },
+      {
+        question: 'Why do I still feel tired even though my CPAP data looks good?',
+        answer:
+          'A low AHI on your device report does not mean your breathing was undisturbed. Flow limitation can persist without triggering scored events. Other causes include suboptimal pressure, pressure setting mismatch, mask leak, or sleep disorders not related to airway function. Discuss persistent fatigue with your clinical team.',
+      },
+      {
+        question: 'Can PAP therapy treat UARS?',
+        answer:
+          'PAP therapy (CPAP, APAP, or BiPAP) is commonly used by people with UARS. Positive airway pressure addresses airway resistance by maintaining open airway patency throughout the night, which can reduce the frequency of effort-related arousals. Your clinician can help interpret your full data picture in context.',
+      },
+      {
+        question: 'How is UARS diagnosed?',
+        answer:
+          'There is no single universally accepted diagnostic standard. In practice, evaluation may involve in-lab polysomnography with attention to RERA scoring, clinical history, symptom presentation, and sometimes esophageal pressure monitoring. A sleep specialist familiar with RERA-based scoring and flow limitation analysis can provide further evaluation if UARS is suspected.',
+      },
+      {
+        question: 'What is a RERA?',
+        answer:
+          'A Respiratory Effort-Related Arousal is a brief awakening from sleep caused by increased respiratory effort against airway resistance, without meeting the criteria for a scored apnea or hypopnea. RERAs are the defining event of UARS. AirwayLab can display RERA data when it is present in your device recording.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-flow-limitation-score-0-5-meaning',
     title: 'CPAP Flow Limitation Score Explained: What 0, 0.5, and 1.0 Mean',
     description:
