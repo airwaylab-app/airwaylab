@@ -523,6 +523,45 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'what-is-flow-limitation-cpap',
+    title: 'What Is Flow Limitation on CPAP?',
+    seoTitle: 'What Is Flow Limitation on CPAP? | AirwayLab',
+    description:
+      'Flow limitation in CPAP data refers to partial airway narrowing that flattens the inspiratory waveform. Learn what it means, how it differs from apneas, and how to view it in AirwayLab.',
+    date: '2026-04-19',
+    readTime: '6 min read',
+    tags: ['Flow Limitation', 'CPAP', 'Sleep Apnea', 'CPAP Data', 'AHI'],
+    ogDescription:
+      "Learn what flow limitation means in your CPAP data, how it differs from apneas and hypopneas, and how to view it in AirwayLab's free browser-based viewer.",
+    faqItems: [
+      {
+        question: 'What does flow limitation mean in CPAP data?',
+        answer:
+          'Flow limitation in CPAP data refers to a characteristic flattening of the inspiratory airflow curve, indicating that airflow is being restricted during inhalation even when an apnea or hypopnea is not scored. It is recorded as a numeric index in your CPAP report.',
+      },
+      {
+        question: 'How is flow limitation different from apneas and hypopneas?',
+        answer:
+          'An apnea is a complete cessation of airflow; a hypopnea is a significant reduction in airflow meeting a scoring threshold. Flow limitation is a subtler restriction that does not meet either threshold — it shows up as a flattened waveform rather than a scored event.',
+      },
+      {
+        question: 'What causes flow limitation during sleep?',
+        answer:
+          'Flow limitation is typically caused by partial narrowing of the upper airway during sleep — related to anatomy, sleeping position, or nasal congestion. It may also be associated with upper airway resistance syndrome (UARS).',
+      },
+      {
+        question: 'How many flow limitation events are considered normal?',
+        answer:
+          "CPAP devices report a flow limitation index, but there is no universally accepted clinical threshold for 'normal.' The significance of your specific readings should be discussed with your healthcare provider. AirwayLab is an informational data viewer and does not provide clinical interpretation.",
+      },
+      {
+        question: 'Can you see flow limitation events in AirwayLab?',
+        answer:
+          'Yes. AirwayLab reads CPAP SD card data in your browser — no upload required — and displays flow limitation events alongside other therapy metrics. Your data never leaves your device.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-flow-limitation-score-0-5-meaning',
     title: 'CPAP Flow Limitation Score Explained: What 0, 0.5, and 1.0 Mean',
     description:

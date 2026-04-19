@@ -26,6 +26,7 @@ import WhatIsGlasgowIndexCPAP from '../posts/what-is-glasgow-index-cpap';
 import WhatIsWATScoreCPAP from '../posts/what-is-wat-score-cpap';
 import WhatIsNEDSleepApnea from '../posts/what-is-ned-sleep-apnea';
 import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-score-0-5-meaning';
+import WhatIsFlowLimitationCPAP from '../posts/what-is-flow-limitation-cpap';
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
@@ -41,6 +42,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'what-is-glasgow-index-cpap': WhatIsGlasgowIndexCPAP,
   'what-is-wat-score-cpap': WhatIsWATScoreCPAP,
   'what-is-ned-sleep-apnea': WhatIsNEDSleepApnea,
+  'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
   'cpap-flow-limitation-score-0-5-meaning': CPAPFlowLimitationScore05Meaning,
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
