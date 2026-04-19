@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const STAGE_LABELS: Array<{ match: string; label: string }> = [
@@ -28,6 +29,15 @@ interface ProgressDisplayProps {
 export function ProgressDisplay({ current, total, stage, isAuthenticated }: ProgressDisplayProps) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
   const friendlyLabel = getFriendlyLabel(stage);
+  const [isOverdue, setIsOverdue] = useState(false);
+
+  useEffect(() => {
+    setIsOverdue(false);
+    const timer = setTimeout(() => {
+      setIsOverdue(true);
+    }, 90_000);
+    return () => clearTimeout(timer);
+  }, [stage]);
 
   return (
     <div className="rounded-xl border border-border/50 bg-card p-6">
@@ -57,6 +67,12 @@ export function ProgressDisplay({ current, total, stage, isAuthenticated }: Prog
         </span>
         <span className="font-mono tabular-nums">{pct}%</span>
       </div>
+
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        {isOverdue
+          ? 'Taking a little longer than usual — hang tight, still working...'
+          : 'Usually 30–90 seconds depending on SD card size'}
+      </p>
 
       {pct > 30 && !isAuthenticated && (
         <p className="mt-3 text-center text-[11px] text-muted-foreground/70">
