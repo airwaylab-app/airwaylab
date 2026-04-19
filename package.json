@@ -3,8 +3,8 @@
   "version": "1.2.2",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "node scripts/check-version.mjs && next build --webpack",
+    "dev": "next dev --turbopack",
+    "build": "node scripts/check-version.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "check": "tsc --noEmit && eslint . && vitest run",
