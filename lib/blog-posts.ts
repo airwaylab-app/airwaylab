@@ -100,6 +100,50 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'cpap-leak-rate-explained',
+    title: 'Understanding CPAP Mask Leak Rate: What the Numbers Mean',
+    seoTitle: 'Understanding CPAP Mask Leak Rate | AirwayLab',
+    description:
+      'Learn what CPAP mask leak rate means, how it\'s measured, and what the data shows. Explore your leak data free in your browser with AirwayLab.',
+    date: '2026-04-19',
+    readTime: '8 min read',
+    tags: ['CPAP', 'Leak Rate', 'ResMed', 'Getting Started'],
+    ogDescription:
+      'Learn what CPAP mask leak rate means, how it\'s measured, and what the data shows. Explore your leak data free in your browser with AirwayLab.',
+    faqItems: [
+      {
+        question: 'What is a good CPAP mask leak rate?',
+        answer:
+          "ResMed's published documentation references 24 L/min as a threshold for unintentional leak, but what's appropriate varies by machine model, mask type, and therapy mode. Your clinician can help you interpret what your specific numbers mean.",
+      },
+      {
+        question: 'What is the difference between large leak and unintentional leak on CPAP?',
+        answer:
+          'These terms are used differently by different manufacturers. ResMed reports a continuous unintentional leak figure (in L/min) that subtracts the expected intentional vent flow. Philips DreamStation devices report "large leak" as a binary flag when leak is high enough to affect therapy delivery for a sustained period.',
+      },
+      {
+        question: 'Does a high leak rate affect my AHI reading?',
+        answer:
+          'Yes. Significant unintentional leak distorts the flow signal your machine uses to detect breathing events. On high-leak nights, AHI figures may be less reliable — either underreporting events missed in the noise, or over-counting artefacts flagged as events.',
+      },
+      {
+        question: 'How do I check my CPAP leak rate without software?',
+        answer:
+          'ResMed myAir displays a mask seal rating derived from leak data. For the raw L/min figures, you need SD card analysis software: OSCAR (free, local) or AirwayLab (free, browser-based). Both read the same underlying data.',
+      },
+      {
+        question: 'What does it mean when my CPAP reports a leak rate of 0?',
+        answer:
+          'A reported unintentional leak of 0 L/min means the device detected no leak above the expected vent flow. This is normal for a well-fitting mask on a given night. If you see 0 L/min consistently across all nights, double-check that your device is reporting unintentional leak rather than a different column.',
+      },
+      {
+        question: 'Can I see my CPAP leak rate data for free?',
+        answer:
+          'Yes. AirwayLab reads your ResMed SD card data in your browser — no account required, no upload to any server. Your data never leaves your device. The analysis is free and always will be.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
