@@ -9,7 +9,10 @@ import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
 import { CloudSyncNudge, hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 import { MobileEmailCapture } from '@/components/upload/mobile-email-capture';
+import { FirstRunWelcome } from '@/components/upload/first-run-welcome';
+import { DemoCTA } from '@/components/upload/demo-cta';
 import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
+import { CommunityJoinPrompt } from '@/components/dashboard/community-join-prompt';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
@@ -42,6 +45,7 @@ import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
+import { isIOSDevice } from '@/lib/directory-traversal';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
@@ -56,7 +60,6 @@ import {
   Waves,
   HeartPulse,
   TrendingUp,
-  Play,
   Upload,
   ArrowLeftRight,
   Star,
@@ -115,6 +118,9 @@ function AnalyzePageInner() {
   const [lifetimeNights, setLifetimeNights] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isFirstSession, setIsFirstSession] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [isIOS, setIsIOS] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const { user } = useAuth();
@@ -140,9 +146,15 @@ function AnalyzePageInner() {
       const next = count + 1;
       localStorage.setItem('airwaylab_session_count', String(next));
       setIsNewUser(next <= 5);
+      setIsFirstSession(next === 1);
+      setSessionCount(next);
     } catch {
       setIsNewUser(true); // Default to beginner if localStorage unavailable
     }
+  }, []);
+
+  useEffect(() => {
+    setIsIOS(isIOSDevice());
   }, []);
 
   // Handle auth error from callback redirect
@@ -507,11 +519,6 @@ function AnalyzePageInner() {
         </div>
       )}
 
-      {/* Medical disclaimer — persistent on clinical pages (MDR compliance) */}
-      <div className="-mx-4 mb-4">
-        <Disclaimer persistent />
-      </div>
-
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -597,34 +604,27 @@ function AnalyzePageInner() {
 
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
-        <div className="mx-auto max-w-lg">
-          {/* Mobile upload prompt */}
-          <MobileEmailCapture className="mb-4 sm:hidden" />
-
-          <FileUpload onFilesSelected={handleFiles} />
-
-          {/* Demo CTA — shown immediately after upload for discoverability */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-              <div className="h-px flex-1 bg-border/50" />
-              <span>or</span>
-              <div className="h-px flex-1 bg-border/50" />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={loadDemo}
-              className="gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <Play className="h-3.5 w-3.5" />
-              See sample data
-            </Button>
-            <p className="text-[11px] text-muted-foreground/50">
-              See what AirwayLab looks like with 7 nights of example data
-            </p>
+        isFirstSession ? (
+          <FirstRunWelcome onLoadDemo={loadDemo} onFilesSelected={handleFiles} />
+        ) : isIOS ? (
+          <div className="mx-auto max-w-lg">
+            <MobileEmailCapture className="mb-4" />
+            <DemoCTA onLoadDemo={loadDemo} />
           </div>
-        </div>
+        ) : (
+          <div className="mx-auto max-w-lg">
+            {/* Mobile upload prompt */}
+            <MobileEmailCapture className="mb-4 sm:hidden" />
+            <FileUpload onFilesSelected={handleFiles} />
+            <DemoCTA onLoadDemo={loadDemo} />
+          </div>
+        )
       )}
+
+      {/* Medical disclaimer — below upload/welcome zone (MDR compliance) */}
+      <div className="-mx-4 mt-4 mb-4">
+        <Disclaimer persistent />
+      </div>
 
       {/* Processing State with Skeleton Preview */}
       {(status === 'uploading' || status === 'processing') && !isDemo && (
@@ -696,6 +696,9 @@ function AnalyzePageInner() {
               </p>
             </div>
           )}
+
+          {/* Community Join Prompt — shown to new users after first analysis */}
+          <CommunityJoinPrompt sessionCount={sessionCount} isDemo={isDemo} />
 
           {/* Restored Session Banner */}
           {!isDemo && persistedData && (
