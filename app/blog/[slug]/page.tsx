@@ -39,10 +39,12 @@ import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-fl
 import UnderstandingCPAPPressureSettings from '../posts/understanding-cpap-pressure-settings';
 import WhatIsFlowLimitationCPAP from '../posts/what-is-flow-limitation-cpap';
 import HowToReadOSCARCPAPCharts from '../posts/how-to-read-oscar-cpap-charts';
+import CPAPLeakRateMeaning from '../posts/cpap-leak-rate-meaning';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
+  'cpap-leak-rate-meaning': CPAPLeakRateMeaning,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,

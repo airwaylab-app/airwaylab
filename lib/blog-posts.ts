@@ -917,6 +917,45 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'cpap-leak-rate-meaning',
+    title: 'CPAP Leak Rate: What It Means and When to Worry',
+    seoTitle: 'CPAP Leak Rate: What It Means and When to Worry — AirwayLab',
+    description:
+      "Your CPAP records total and unintentional leak rate every night. Learn what the numbers mean, what's acceptable, and how to read leak data in OSCAR and AirwayLab.",
+    date: '2026-04-20',
+    readTime: '6 min read',
+    tags: ['Leak Rate', 'CPAP', 'OSCAR', 'ResMed', 'Data Quality'],
+    ogDescription:
+      "Your CPAP records total and unintentional leak rate every night. Learn what the numbers mean, what's acceptable, and how to read leak data in OSCAR and AirwayLab.",
+    faqItems: [
+      {
+        question: 'What is a normal CPAP leak rate?',
+        answer:
+          "There's no single universal figure — it depends on your mask type, therapy pressure, and machine brand. ResMed machines typically flag sessions with sustained unintentional leak above ~24 L/min as \"Large Leak.\" In OSCAR, a 95th percentile unintentional leak below roughly 24 L/min is often cited as a reasonable reference point, but what's appropriate for your specific setup is a question for your clinician.",
+      },
+      {
+        question: 'What is the difference between total leak and unintentional leak?',
+        answer:
+          'Total leak is all the air leaving your CPAP circuit, including the intentional vent leak your mask is designed to produce (to flush exhaled CO₂). Unintentional leak — also called residual leak — is total leak minus the designed vent flow. Unintentional leak is the figure that indicates whether your mask seal is holding.',
+      },
+      {
+        question: 'What does "Large Leak" mean on my ResMed machine?',
+        answer:
+          '"Large Leak" is ResMed\'s flag in myAir and AirSense device reports, indicating that unintentional leak exceeded a threshold for a meaningful portion of your session. It\'s primarily a data-quality indicator: event detection (AHI, flow limitation readings) may be less reliable for that session. Your clinician can help assess recurring Large Leak flags in your therapy context.',
+      },
+      {
+        question: 'Can high leak rate affect my AHI reading?',
+        answer:
+          "Yes. When unintentional leak is high, the pressure algorithm's ability to accurately detect apnoeas and hypopnoeas is reduced. AHI figures from high-leak nights may be less reliable. Your clinician can help interpret these figures in the context of your therapy.",
+      },
+      {
+        question: 'How do I read my leak rate in OSCAR?',
+        answer:
+          'Open OSCAR and load your CPAP data from your SD card. In the daily view, look for the "Leak Rate" chart. OSCAR calculates unintentional (residual) leak by subtracting the vent flow curve for your mask model. The statistics panel shows 95th percentile, median, and maximum values. Make sure OSCAR has your correct mask selected in settings — the right mask profile is essential for an accurate calculation.',
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
