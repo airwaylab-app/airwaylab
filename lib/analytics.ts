@@ -51,6 +51,9 @@ export const events = {
   /** User loaded demo mode */
   demoLoaded: () => trackEvent('Demo Loaded'),
 
+  /** User tapped the mobile file picker (iOS/Android) */
+  mobileFilePickerTapped: () => trackEvent('Mobile File Picker Tapped'),
+
   /** User exported data */
   export: (format: 'csv' | 'json' | 'forum' | 'pdf' | 'chart_image') =>
     trackEvent('Export', { format }),
