@@ -10,6 +10,7 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 import { cancelSequence } from '@/lib/email/sequences';
+import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
 // Vercel Pro default is 15s — far too short for Claude Sonnet (10-25s typical).
 // 60s allows for cold starts + slow responses + deep mode with large payloads.
@@ -314,6 +315,7 @@ export async function POST(request: NextRequest) {
   const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
   if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
     console.error('[ai-insights] Rate limit hit', { userId: user.id.slice(0, 8), tier: userTier });
+    void sendOpsRateLimitAlert(user.id, userTier); // Non-blocking ops alert
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
