@@ -7,7 +7,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
 
 /**
  * Validate the `next` redirect parameter to prevent open redirect attacks.
@@ -99,15 +98,12 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Detect new signups: if user was created within the last 60 seconds, it's a new signup
+  // Log new signups (detected if account created within the last 60 seconds)
   if (user?.created_at) {
     const createdAt = new Date(user.created_at).getTime();
     const now = Date.now();
     if (now - createdAt < 60_000) {
-      void sendAlert('growth', '', [formatGrowthEmbed({
-        event: 'new_signup',
-        email: user.email ?? undefined,
-      })]);
+      console.error('[auth/callback] New signup', { userId: user.id });
     }
   }
 
