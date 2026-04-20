@@ -140,6 +140,10 @@ export const blogPosts: BlogPost[] = [
         question: 'Can I see my CPAP leak rate data for free?',
         answer:
           'Yes. AirwayLab reads your ResMed SD card data in your browser — no account required, no upload to any server. Your data never leaves your device. The analysis is free and always will be.',
+      },
+    ],
+  },
+  {
     slug: 'what-are-reras-sleep-apnea',
     title: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
     seoTitle: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
