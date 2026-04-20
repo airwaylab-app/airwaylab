@@ -121,9 +121,9 @@ export function getGlasgowExplanation(value: number, threshold: ThresholdDef): s
     return `Your Glasgow Index of ${fmt(value)} is in the lower range, consistent with minimal flow limitation across breath-shape characteristics.`;
   }
   if (light === 'warn') {
-    return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Consider discussing this with your clinician.`;
+    return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Your clinician can help interpret these findings in context.`;
   }
-  return `Your Glasgow Index of ${fmt(value)} shows elevated breath-shape scores across analysis characteristics. Discuss these patterns with your clinician.`;
+  return `Your Glasgow Index of ${fmt(value)} shows elevated breath-shape scores across analysis characteristics. Your clinician can help interpret these findings in context.`;
 }
 
 export function getEAIExplanation(value: number, threshold: ThresholdDef): string {
@@ -135,7 +135,7 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
   if (light === 'warn') {
     return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. This is a secondary marker \u2014 your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Note: this flow-based estimate typically reads higher than an in-lab arousal index.`;
   }
-  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Important: this flow-based estimate typically reads 2\u20133x higher than an in-lab arousal index measured with EEG, because it detects respiratory recovery patterns that don\u2019t always correspond to cortical arousals. This is a secondary marker \u2014 check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Discuss with your clinician if concerned.`;
+  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Important: this flow-based estimate typically reads 2\u20133x higher than an in-lab arousal index measured with EEG, because it detects respiratory recovery patterns that don\u2019t always correspond to cortical arousals. This is a secondary marker \u2014 check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Your clinician can help interpret these findings in context.`;
 }
 
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {
@@ -158,9 +158,9 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Your IFL composite score is in the lower range.';
   }
   if (light === 'warn') {
-    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity to this level of flow limitation varies. Your clinician can help interpret these findings in context.';
+    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Your clinician can help interpret these findings in context.';
   }
-  return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Discuss with your clinician if you have concerns.';
+  return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Your clinician can help interpret these findings in context.';
 }
 
 

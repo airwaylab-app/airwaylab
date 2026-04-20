@@ -81,7 +81,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Your clinician can help interpret these findings in context.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research shows this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -131,7 +131,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'glasgow-bad',
       type: 'warning',
       title: 'Elevated breath-shape scores',
-      body: `Glasgow Index of ${fmt(n.glasgow.overall)} shows elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation and discuss with your clinician.`,
+      body: `Glasgow Index of ${fmt(n.glasgow.overall)} shows elevated breath-shape scores across analysis engines. Review your flow waveforms for visual confirmation. Your clinician can help interpret these findings in context.`,
       category: 'glasgow',
     });
   }
@@ -350,7 +350,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'symptom-fl-correlation',
         type: 'warning',
         title: 'Elevated flow limitation correlates with symptom rating',
-        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. Your flow limitation scores are elevated alongside your subjective rating of this night. Your clinician can help interpret these findings in context.`,
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. This pattern shows elevated flow limitation correlating with your reported experience. Your clinician can help interpret these findings in context.`,
         category: 'ned',
       });
     } else if (iflRisk > 45 && symptomRating >= 4) {
@@ -366,7 +366,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'symptom-non-fl-cause',
         type: 'info',
         title: 'Poor sleep quality despite low flow limitation',
-        body: `You rated this night as ${ratingLabel} despite low flow limitation (${fmt(iflRisk)}%). Other factors may be contributing \u2014 check your night context (congestion, stress, alcohol) for patterns. If poor sleep persists, discuss with your clinician.`,
+        body: `You rated this night as ${ratingLabel} despite low flow limitation (${fmt(iflRisk)}%). Other factors may be contributing \u2014 check your night context (congestion, stress, alcohol) for patterns. Your clinician can help interpret these findings in context.`,
         category: 'ned',
       });
     }
@@ -503,7 +503,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'tonic-desat',
         type: 'info',
         title: 'Baseline oxygen lower than usual',
-        body: `${fmt(ox.tBelow94)}% of time below 94% SpO2 but only ${fmt(ox.odi3)} desaturation events/hr. This pattern is consistent with a lower baseline oxygen level rather than repeated discrete desaturation events. Common causes include alcohol, sedating medication, or nasal congestion. If this persists without an obvious cause, discuss with your clinician.`,
+        body: `${fmt(ox.tBelow94)}% of time below 94% SpO2 but only ${fmt(ox.odi3)} desaturation events/hr. This pattern is consistent with a lower baseline oxygen level rather than repeated discrete desaturation events. Your clinician can help interpret these findings in context.`,
         category: 'oximetry',
       });
     }
@@ -632,7 +632,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'machine-mixed-events',
         type: 'info',
         title: 'Both obstructive and central events',
-        body: `OAI ${fmt(ms.oai)}/hr and CAI ${fmt(ms.cai)}/hr -- both obstructive and central event types are elevated. Discuss with your clinician.`,
+        body: `OAI ${fmt(ms.oai)}/hr and CAI ${fmt(ms.cai)}/hr -- both obstructive and central event types are elevated. Your clinician can help interpret these findings in context.`,
         category: 'therapy',
       });
     }
