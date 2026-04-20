@@ -24,6 +24,15 @@ import type { NightResult, EDFFile } from './types';
 const MAX_COMPRESSED_BYTES = 5 * 1024 * 1024; // 5 MB per night
 
 /**
+ * In-memory dedup guard for failed waveform dates within the current page session.
+ * Survives localStorage failures (quota exceeded, private browsing) so the same date
+ * is never retried more than once per session even when the persistent failed-dates
+ * list cannot be written. Exported with underscore prefix to signal test-only usage.
+ */
+const sessionFailedDates = new Set<string>();
+export { sessionFailedDates as _sessionFailedDates };
+
+/**
  * Anonymise a NightResult for inclusion alongside waveform data.
  * Same shape as the existing contribute-data anonymisation.
  */
@@ -316,11 +325,16 @@ export async function contributeWaveformsBackground(
     clearContributedWaveformDates();
   }
 
-  // Filter to only new nights (skip already contributed and recently failed)
+  // Filter to only new nights (skip already contributed and recently failed).
+  // sessionFailedDates acts as an in-memory guard that survives localStorage
+  // failures within the current page session (see module-level declaration).
   const contributedDates = getContributedWaveformDates();
   const failedDates = getFailedWaveformDates();
   const newNights = nights.filter(
-    (n) => !contributedDates.has(n.dateStr) && !failedDates.has(n.dateStr)
+    (n) =>
+      !contributedDates.has(n.dateStr) &&
+      !failedDates.has(n.dateStr) &&
+      !sessionFailedDates.has(n.dateStr)
   );
   if (newNights.length === 0) return;
 
@@ -393,6 +407,8 @@ export async function contributeWaveformsBackground(
       if (result.ok) {
         trackContributedWaveformDate(night.dateStr);
       } else {
+        // Update in-memory guard first — survives even if localStorage write fails below
+        sessionFailedDates.add(night.dateStr);
         trackFailedWaveformDate(night.dateStr);
         // Rate-limited (429) is expected behavior -- log locally only, never to Sentry.
         // Actual failures (4xx/5xx) are reported to Sentry as warnings.
@@ -412,6 +428,8 @@ export async function contributeWaveformsBackground(
         }
       }
     } catch (err) {
+      // Update in-memory guard first — survives even if localStorage write fails below
+      sessionFailedDates.add(night.dateStr);
       trackFailedWaveformDate(night.dateStr);
       Sentry.captureException(err, {
         tags: { feature: 'waveform-contribution', nightDate: night.dateStr },

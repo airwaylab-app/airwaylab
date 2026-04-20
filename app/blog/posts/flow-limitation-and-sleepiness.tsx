@@ -80,7 +80,7 @@ export default function FlowLimitationAndSleepinessPost() {
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <Wind className="h-5 w-5 text-emerald-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">Flow Limitation Predicts Sleepiness After Controlling for Arousals</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">Flow Limitation Associated With Sleepiness After Controlling for Arousals</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
