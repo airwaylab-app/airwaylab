@@ -15,6 +15,7 @@ interface AIInsightsResult {
 /**
  * Strip NightResult down to only fields that buildUserPrompt() reads.
  * Removes oximetryTrace (~800KB/night), per-breath arrays, and unused modules.
+ * Used for the selected night and the previous night (full context needed).
  */
 function stripNightForAIPayload(night: NightResult): Record<string, unknown> {
   const { breaths: _breaths, reras: _reras, ...nedSummary } = night.ned;
@@ -30,6 +31,22 @@ function stripNightForAIPayload(night: NightResult): Record<string, unknown> {
     machineSummary: night.machineSummary ?? undefined,
     settingsFingerprint: night.settingsFingerprint ?? undefined,
     // Explicitly excluded: oximetryTrace, settingsMetrics, crossDevice, csl, pldSummary, date
+  };
+}
+
+/**
+ * Strip a trend night down to the three scalar fields that buildUserPrompt()
+ * actually reads from trend data (glasgowValues, nedMeanValues, flScoreValues).
+ * Eliminates oximetry, settings, and per-breath data from nights that are only
+ * used for trend context — prevents 413 payload-size errors for users with
+ * many nights of oximetry data.
+ */
+export function stripTrendNightForAIPayload(night: NightResult): Record<string, unknown> {
+  return {
+    dateStr: night.dateStr,
+    glasgow: { overall: night.glasgow.overall },
+    ned: { nedMean: night.ned.nedMean },
+    wat: { flScore: night.wat.flScore },
   };
 }
 
@@ -87,12 +104,16 @@ async function extractApiError(res: Response): Promise<string> {
 /**
  * Trim the nights array to only what the server needs:
  * selected night, previous night, and up to 7 recent nights for trends.
- * Returns { trimmedNights, adjustedIndex }.
+ * Returns { trimmedNights, adjustedIndex, keyIndices }.
+ *
+ * keyIndices contains the positions within trimmedNights that require full
+ * stripping (selected + previous). All other positions are trend-only and
+ * can be stripped down to scalar summary fields to keep the payload small.
  */
 function trimNightsForPayload(
   nights: NightResult[],
   selectedNightIndex: number
-): { trimmedNights: NightResult[]; adjustedIndex: number } {
+): { trimmedNights: NightResult[]; adjustedIndex: number; keyIndices: Set<number> } {
   const needed = new Set<number>();
 
   // Selected night
@@ -112,7 +133,17 @@ function trimNightsForPayload(
   const trimmedNights = sortedIndices.map((i) => nights[i]!);
   const adjustedIndex = sortedIndices.indexOf(selectedNightIndex);
 
-  return { trimmedNights, adjustedIndex };
+  // Track which positions in trimmedNights need full detail (selected + previous)
+  const keyOriginalIndices = new Set([selectedNightIndex]);
+  if (selectedNightIndex + 1 < nights.length) keyOriginalIndices.add(selectedNightIndex + 1);
+  const keyIndices = new Set(
+    sortedIndices.reduce<number[]>((acc, orig, pos) => {
+      if (keyOriginalIndices.has(orig)) acc.push(pos);
+      return acc;
+    }, [])
+  );
+
+  return { trimmedNights, adjustedIndex, keyIndices };
 }
 
 export async function fetchAIInsights(
@@ -128,8 +159,12 @@ export async function fetchAIInsights(
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
 
-  const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
-  const strippedNights = trimmedNights.map(stripNightForAIPayload);
+  const { trimmedNights, adjustedIndex, keyIndices } = trimNightsForPayload(nights, selectedNightIndex);
+  // Key nights (selected + previous) get full stripping; trend-only nights get scalar-only
+  // stripping to prevent 413 payload size errors (AIR-691)
+  const strippedNights = trimmedNights.map((night, i) =>
+    keyIndices.has(i) ? stripNightForAIPayload(night) : stripTrendNightForAIPayload(night)
+  );
 
   try {
     const res = await fetch('/api/ai-insights', {
@@ -206,8 +241,12 @@ export async function fetchDeepAIInsights(
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
 
-  const { trimmedNights, adjustedIndex } = trimNightsForPayload(nights, selectedNightIndex);
-  const strippedNights = trimmedNights.map(stripNightForAIPayload);
+  const { trimmedNights, adjustedIndex, keyIndices } = trimNightsForPayload(nights, selectedNightIndex);
+  // Key nights (selected + previous) get full stripping; trend-only nights get scalar-only
+  // stripping to prevent 413 payload size errors (AIR-691)
+  const strippedNights = trimmedNights.map((night, i) =>
+    keyIndices.has(i) ? stripNightForAIPayload(night) : stripTrendNightForAIPayload(night)
+  );
 
   // Client-side truncation: cap per-breath data to prevent 413 errors (FB-27)
   const trimmedBreaths = perBreathSummary && perBreathSummary.breaths.length > 1000

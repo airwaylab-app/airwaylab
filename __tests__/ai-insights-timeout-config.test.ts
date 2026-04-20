@@ -113,11 +113,11 @@ describe('AI Insights Timeout Configuration', () => {
     expect(routeModule.maxDuration).toBe(60);
   });
 
-  it('creates Anthropic client with maxRetries: 1', async () => {
+  it('creates Anthropic client with maxRetries: 0 to prevent silent double-timeout', async () => {
     const { POST } = await import('@/app/api/ai-insights/route');
     await POST(makeRequest(validBody()) as never);
     expect(capturedConstructorArgs).toBeDefined();
-    expect(capturedConstructorArgs!.maxRetries).toBe(1);
+    expect(capturedConstructorArgs!.maxRetries).toBe(0);
   });
 
   it('creates Anthropic client with timeout: 50000', async () => {
