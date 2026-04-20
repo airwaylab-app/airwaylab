@@ -316,8 +316,8 @@ export default function LowAHIStillTiredFlowLimitationRERAsPost() {
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" />
               <span>
                 <strong className="text-foreground">Track trends over time.</strong> A Glasgow
-                Index or FL Score that has been gradually increasing gives your clinician
-                additional context when interpreting your overall breathing patterns.
+                Index or FL Score that has been gradually increasing is a pattern worth
+                tracking — your clinician can help interpret these findings in context.
               </span>
             </li>
             <li className="flex gap-2">
