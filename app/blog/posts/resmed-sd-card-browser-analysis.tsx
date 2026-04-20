@@ -273,6 +273,24 @@ export default function ResMedSDCardBrowserAnalysisPost() {
             </Link>{' '}
             &mdash; no download, no cloud, no account.
           </p>
+          <p>
+            <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+              detailed setup guide
+            </Link>{' '}
+            &mdash; step-by-step AirSense 10 SD card guide.
+          </p>
+          <p>
+            <Link href="/blog/resmed-airsense-11-sd-card" className="text-primary hover:text-primary/80">
+              data access guide
+            </Link>{' '}
+            &mdash; step-by-step AirSense 11 SD card guide.
+          </p>
+          <p>
+            <Link href="/blog/resmed-aircurve-bipap-sd-card" className="text-primary hover:text-primary/80">
+              troubleshooting guide
+            </Link>{' '}
+            &mdash; AirCurve BiPAP SD card guide.
+          </p>
         </div>
         <p className="mb-2 mt-4 text-xs font-semibold text-foreground">Glossary</p>
         <div className="space-y-1 text-sm text-muted-foreground">

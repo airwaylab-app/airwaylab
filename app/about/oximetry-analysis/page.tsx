@@ -292,6 +292,17 @@ export default function OximetryAnalysisPage() {
         </div>
       </section>
 
+      {/* Related reading */}
+      <section className="mb-10">
+        <p className="text-xs text-muted-foreground">
+          Learn more:{' '}
+          <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+            four metrics AirwayLab measures
+          </Link>{' '}
+          — how oximetry fits alongside the flow-based analysis engines.
+        </p>
+      </section>
+
       {/* Privacy callout */}
       <div className="mb-10 flex items-center gap-1.5 text-xs text-emerald-500">
         <Shield className="h-3.5 w-3.5 shrink-0" />

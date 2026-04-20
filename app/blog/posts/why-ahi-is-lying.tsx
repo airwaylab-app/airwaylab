@@ -380,6 +380,12 @@ export default function WhyAHIIsLyingPost() {
               -- what flow limitation is, why it matters, and how to detect it.
             </p>
             <p className="mt-1">
+              <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+                four metrics AirwayLab uses to see what AHI misses
+              </Link>{' '}
+              -- the specific measurements AirwayLab runs on your flow data.
+            </p>
+            <p className="mt-1">
               <Link href="/glossary" className="text-primary hover:text-primary/80">
                 AirwayLab Glossary
               </Link>{' '}

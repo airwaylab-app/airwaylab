@@ -56,6 +56,16 @@ const steps = [
             Check the FAQ
           </Link>
         </p>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Step-by-step guides:{' '}
+          <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:underline">
+            AirSense 10 SD card guide
+          </Link>
+          {' '}·{' '}
+          <Link href="/blog/resmed-airsense-11-sd-card" className="text-primary hover:underline">
+            AirSense 11 SD card guide
+          </Link>
+        </p>
       </div>
     ),
   },
