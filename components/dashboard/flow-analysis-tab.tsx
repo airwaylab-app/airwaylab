@@ -91,8 +91,8 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
               tidal volume ratio — higher values indicate greater flow limitation.{' '}
               <strong className="text-foreground">Regularity</strong> uses Sample Entropy
               to quantify breathing pattern predictability — higher scores mean more
-              repetitive breathing, which is <em>worse</em> on PAP therapy (it suggests persistent
-              airway narrowing causing uniform restricted breaths). Lower scores reflect healthy
+              repetitive breathing, which is <em>worse</em> on PAP therapy (elevated scores are
+              associated with higher flow limitation). Lower scores reflect healthy
               natural breath-to-breath variability.{' '}
               <strong className="text-foreground">Periodicity</strong> uses FFT on minute
               ventilation to detect cyclic breathing patterns.

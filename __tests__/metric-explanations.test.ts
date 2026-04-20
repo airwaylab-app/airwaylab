@@ -109,7 +109,7 @@ describe('getODIExplanation', () => {
   it('returns frequent explanation for bad values', () => {
     const text = getODIExplanation(20, threshold);
     expect(text).toContain('frequent');
-    expect(text).toContain('Discuss with your clinician');
+    expect(text).toContain('Your clinician can help interpret these findings in context');
   });
 });
 
