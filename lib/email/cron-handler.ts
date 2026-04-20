@@ -20,6 +20,8 @@ import {
   scheduleDormancySequences,
   scheduleActivationSequences,
   scheduleCpapTipsSequences,
+  scheduleReEngagementSequences,
+  suppressReEngagement,
   applySunsetPolicy,
 } from './sequences';
 import { SEQUENCES } from './templates';
@@ -34,6 +36,7 @@ interface CronResult {
   dormancyScheduled: number;
   activationScheduled: number;
   cpapTipsScheduled: number;
+  reEngagementScheduled: number;
   sunsetted: number;
 }
 
@@ -44,6 +47,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     dormancyScheduled: 0,
     activationScheduled: 0,
     cpapTipsScheduled: 0,
+    reEngagementScheduled: 0,
     sunsetted: 0,
   };
 
@@ -52,6 +56,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   result.dormancyScheduled = await scheduleDormancySequences(supabase);
   result.activationScheduled = await scheduleActivationSequences(supabase);
   result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
+  result.reEngagementScheduled = await scheduleReEngagementSequences(supabase);
 
   // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);
@@ -88,7 +93,17 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     }
 
     const unsubscribeUrl = getUnsubscribeUrl(email.user_id);
-    const template = config.getTemplate(email.step, unsubscribeUrl);
+
+    const data = email.sequence_name === 're_engagement'
+      ? {
+          first_name: email.display_name?.split(' ')[0] ?? '',
+          last_upload_date: email.last_analysis_at
+            ? new Date(email.last_analysis_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+            : '',
+        }
+      : undefined;
+
+    const template = config.getTemplate(email.step, unsubscribeUrl, data);
     if (!template) {
       console.error(`[email-drips] No template for ${email.sequence_name} step ${email.step}`);
       result.failed++;
@@ -104,6 +119,9 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
 
     if (resendId) {
       await markSent(supabase, email.id, resendId);
+      if (email.sequence_name === 're_engagement' && email.step === 3) {
+        await suppressReEngagement(supabase, email.user_id);
+      }
       result.sent++;
     } else {
       result.failed++;
