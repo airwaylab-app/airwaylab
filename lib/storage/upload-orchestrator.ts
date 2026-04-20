@@ -622,14 +622,25 @@ class UploadOrchestrator {
       throw new Error(`Upload failed: ${uploadRes.status}`);
     }
 
-    // Step 3: Confirm upload
-    await fetch('/api/files/confirm', {
+    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB
+    const confirmRes = await fetch('/api/files/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ fileId: presignData.fileId }),
       signal,
     });
+
+    if (!confirmRes.ok) {
+      if (confirmRes.status === 404) {
+        // File is not in storage despite the PUT appearing to succeed.
+        // Treat as a failed upload — the metadata row was already cleaned up by the confirm route.
+        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes.status})`);
+      }
+      // Other errors (5xx, network): file may be in storage but unconfirmed.
+      // The stale orphan detection in presign will clean it up on the next attempt.
+      console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
+    }
 
     return true;
   }
