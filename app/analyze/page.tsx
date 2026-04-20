@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { FileUpload } from '@/components/upload/file-upload';
 import { ProgressDisplay } from '@/components/upload/progress-display';
 import { ContributionNudgeDialog } from '@/components/upload/contribution-nudge-dialog';
@@ -9,7 +10,10 @@ import { ErrorDataSubmission } from '@/components/upload/error-data-submission';
 import { StorageProgressBanner } from '@/components/upload/storage-progress-banner';
 import { CloudSyncNudge, hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 import { MobileEmailCapture } from '@/components/upload/mobile-email-capture';
+import { FirstRunWelcome } from '@/components/upload/first-run-welcome';
+import { DemoCTA } from '@/components/upload/demo-cta';
 import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge';
+import { CommunityJoinPrompt } from '@/components/dashboard/community-join-prompt';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
@@ -42,6 +46,7 @@ import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
+import { isIOSDevice } from '@/lib/directory-traversal';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
@@ -56,7 +61,6 @@ import {
   Waves,
   HeartPulse,
   TrendingUp,
-  Play,
   Upload,
   ArrowLeftRight,
   Star,
@@ -90,6 +94,8 @@ export default function AnalyzePage() {
 
 function AnalyzePageInner() {
   const searchParams = useSearchParams();
+  const checkoutParam = searchParams.get('checkout');
+  const [showCheckoutBanner, setShowCheckoutBanner] = useState(checkoutParam === 'success');
   const [state, setState] = useState<AnalysisState>(orchestrator.getState());
   const [selectedNight, setSelectedNight] = useState<number>(0);
   const [isDemo, setIsDemo] = useState(false);
@@ -115,8 +121,13 @@ function AnalyzePageInner() {
   const [lifetimeNights, setLifetimeNights] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isFirstSession, setIsFirstSession] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [isIOS, setIsIOS] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const [engineUpgraded, setEngineUpgraded] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const tabScrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
@@ -141,9 +152,15 @@ function AnalyzePageInner() {
       const next = count + 1;
       localStorage.setItem('airwaylab_session_count', String(next));
       setIsNewUser(next <= 5);
+      setIsFirstSession(next === 1);
+      setSessionCount(next);
     } catch {
       setIsNewUser(true); // Default to beginner if localStorage unavailable
     }
+  }, []);
+
+  useEffect(() => {
+    setIsIOS(isIOSDevice());
   }, []);
 
   // Handle auth error from callback redirect
@@ -448,6 +465,14 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
+  // Scroll active tab into view on change and initial mount
+  useEffect(() => {
+    const container = tabScrollRef.current;
+    if (!container) return;
+    const activeEl = container.querySelector('[data-active]') as HTMLElement | null;
+    activeEl?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
+
   const { status, progress, error, warning, persistenceWarning, warnings } = state;
 
   // Memoize derived data to stabilize references across renders
@@ -507,11 +532,6 @@ function AnalyzePageInner() {
           </button>
         </div>
       )}
-
-      {/* Medical disclaimer — persistent on clinical pages (MDR compliance) */}
-      <div className="-mx-4 mb-4">
-        <Disclaimer persistent />
-      </div>
 
       {/* Header */}
       <div className="mb-4 sm:mb-6">
@@ -598,34 +618,27 @@ function AnalyzePageInner() {
 
       {/* Upload State — hidden when persisted results are loaded */}
       {status === 'idle' && !isDemo && !persistedData && (
-        <div className="mx-auto max-w-lg">
-          {/* Mobile upload prompt */}
-          <MobileEmailCapture className="mb-4 sm:hidden" />
-
-          <FileUpload onFilesSelected={handleFiles} />
-
-          {/* Demo CTA — shown immediately after upload for discoverability */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-              <div className="h-px flex-1 bg-border/50" />
-              <span>or</span>
-              <div className="h-px flex-1 bg-border/50" />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={loadDemo}
-              className="gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <Play className="h-3.5 w-3.5" />
-              See sample data
-            </Button>
-            <p className="text-[11px] text-muted-foreground/50">
-              See what AirwayLab looks like with 7 nights of example data
-            </p>
+        isFirstSession ? (
+          <FirstRunWelcome onLoadDemo={loadDemo} onFilesSelected={handleFiles} />
+        ) : isIOS ? (
+          <div className="mx-auto max-w-lg">
+            <MobileEmailCapture className="mb-4" />
+            <DemoCTA onLoadDemo={loadDemo} />
           </div>
-        </div>
+        ) : (
+          <div className="mx-auto max-w-lg">
+            {/* Mobile upload prompt */}
+            <MobileEmailCapture className="mb-4 sm:hidden" />
+            <FileUpload onFilesSelected={handleFiles} />
+            <DemoCTA onLoadDemo={loadDemo} />
+          </div>
+        )
       )}
+
+      {/* Medical disclaimer — below upload/welcome zone (MDR compliance) */}
+      <div className="-mx-4 mt-4 mb-4">
+        <Disclaimer persistent />
+      </div>
 
       {/* Processing State with Skeleton Preview */}
       {(status === 'uploading' || status === 'processing') && !isDemo && (
@@ -697,6 +710,9 @@ function AnalyzePageInner() {
               </p>
             </div>
           )}
+
+          {/* Community Join Prompt — shown to new users after first analysis */}
+          <CommunityJoinPrompt sessionCount={sessionCount} isDemo={isDemo} />
 
           {/* Restored Session Banner */}
           {!isDemo && persistedData && (
@@ -822,59 +838,96 @@ function AnalyzePageInner() {
             </div>
           </div>
 
+          {/* Post-purchase activation banner — shown once per checkout redirect */}
+          {showCheckoutBanner && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Your subscription is activating
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      AI insights will appear automatically on your next upload.
+                      Manage your subscription in{' '}
+                      <Link href="/account" className="underline hover:text-foreground">account settings</Link>.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCheckoutBanner(false)}
+                  className="shrink-0 rounded p-0.5 text-muted-foreground/50 hover:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Tabbed Views — right after controls, above nudge banners */}
-          <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
-            <TabsList
-              variant="line"
-              data-walkthrough="tab-bar"
-              className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card px-4 sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1"
-            >
-              {/* Primary tabs — full words on mobile */}
-              <TabsTrigger value="overview" className="gap-1.5">
-                <BarChart3 className="h-3.5 w-3.5" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="graphs" className="gap-1.5">
-                <BarChart className="h-3.5 w-3.5" />
-                Graphs
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="gap-1.5">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Trends
-              </TabsTrigger>
+          <Tabs defaultValue="overview" onValueChange={(tab) => { events.tabViewed(tab); setActiveTab(tab); }}>
+            {/* Tab bar: sticky wrapper with scroll container + mobile fade gradients */}
+            <div className="relative sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] bg-card border-b border-border/50 sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30">
+              {/* Left fade — signals scroll on mobile */}
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-card to-transparent z-10 sm:hidden" aria-hidden="true" />
+              {/* Scrollable container */}
+              <div ref={tabScrollRef} className="overflow-x-auto scrollbar-hide px-4 sm:px-1">
+                <TabsList
+                  variant="line"
+                  data-walkthrough="tab-bar"
+                  className="inline-flex w-max justify-start rounded-none sm:rounded-lg"
+                >
+                  {/* Primary tabs */}
+                  <TabsTrigger value="overview" className="gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="graphs" className="gap-1.5">
+                    <BarChart className="h-3.5 w-3.5" />
+                    Graphs
+                  </TabsTrigger>
+                  <TabsTrigger value="trends" className="gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Trends
+                  </TabsTrigger>
 
-              {/* Separator between primary and secondary tabs */}
-              <div className="mx-1 h-4 w-px shrink-0 bg-border/50 sm:mx-2" aria-hidden="true" />
+                  {/* Separator between primary and secondary tabs */}
+                  <div className="mx-1 h-4 w-px shrink-0 bg-border/50 sm:mx-2" aria-hidden="true" />
 
-              {/* Secondary tabs — abbreviated on mobile */}
-              <TabsTrigger value="glasgow" className="gap-1.5">
-                <Activity className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Gla</span>
-                <span className="hidden sm:inline">Glasgow</span>
-              </TabsTrigger>
-              <TabsTrigger value="flow" className="gap-1.5">
-                <Waves className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Flow</span>
-                <span className="hidden sm:inline">Flow Analysis</span>
-              </TabsTrigger>
-              {currentNight?.settingsMetrics && (
-                <TabsTrigger value="settings" className="gap-1.5">
-                  <Settings2 className="h-3.5 w-3.5" />
-                  <span className="sm:hidden text-[11px]">Set</span>
-                  <span className="hidden sm:inline">Settings</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="oximetry" className="gap-1.5">
-                <HeartPulse className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">O₂</span>
-                <span className="hidden sm:inline">Oximetry</span>
-              </TabsTrigger>
-              <TabsTrigger value="compare" className="gap-1.5">
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Cmp</span>
-                <span className="hidden sm:inline">Compare</span>
-              </TabsTrigger>
-            </TabsList>
+                  {/* Secondary tabs — abbreviated on mobile */}
+                  <TabsTrigger value="glasgow" className="gap-1.5">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Glasgow</span>
+                    <span className="hidden sm:inline">Glasgow</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="flow" className="gap-1.5">
+                    <Waves className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Flow</span>
+                    <span className="hidden sm:inline">Flow Analysis</span>
+                  </TabsTrigger>
+                  {currentNight?.settingsMetrics && (
+                    <TabsTrigger value="settings" className="gap-1.5">
+                      <Settings2 className="h-3.5 w-3.5" />
+                      Settings
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="oximetry" className="gap-1.5">
+                    <HeartPulse className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Oxy</span>
+                    <span className="hidden sm:inline">Oximetry</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="compare" className="gap-1.5">
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Compare</span>
+                    <span className="hidden sm:inline">Comparison</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              {/* Right fade — signals scroll on mobile */}
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-card to-transparent z-10 sm:hidden" aria-hidden="true" />
+            </div>
 
             <TabsContent value="overview" className="mt-4">
               <ErrorBoundary context="Overview">

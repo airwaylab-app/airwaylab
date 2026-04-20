@@ -164,18 +164,22 @@ export function getUserRateLimitKey(userId: string): string {
 
 // ─── Pre-configured limiters ─────────────────────────────────
 
-/** AI insights — community tier: 20 requests per hour per user */
+/** AI insights — community tier: 20 requests per hour per user.
+ *  Uses in-memory rate limiting to stay within Upstash free-tier
+ *  request budget (500k/month). Cross-instance drift is acceptable
+ *  at current scale — revisit if abuse is observed. */
 export const aiRateLimiter = new RateLimiter({
   windowMs: 3_600_000,
   max: 20,
-  persistent: true,
+  persistent: false,
 });
 
-/** AI insights — paid tiers: 60 requests per hour per user */
+/** AI insights — paid tiers: 60 requests per hour per user.
+ *  In-memory for same budget reason as community tier. */
 export const aiPremiumRateLimiter = new RateLimiter({
   windowMs: 3_600_000,
   max: 60,
-  persistent: true,
+  persistent: false,
 });
 
 /** Checkout/portal: 10 requests per 15 minutes per IP */
