@@ -220,8 +220,8 @@ export default function HowToAnalyzeCPAPDataAtHome() {
         <div className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             If your leak rate is consistently elevated, it&apos;s worth doing a mask fit check
-            before assuming a pressure or therapy issue. Try adjusting your headgear, check for
-            cushion wear, and make sure you&apos;re fitting the mask on your face correctly. Our{' '}
+            before assuming a pressure or therapy issue. High leak rates can be associated with
+            headgear fit, cushion wear, or mask positioning. Our{' '}
             <Link
               href="/blog/cpap-leak-rate-guide"
               className="text-primary hover:text-primary/80"
