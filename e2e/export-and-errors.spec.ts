@@ -78,8 +78,8 @@ test.describe('Mobile Viewport', () => {
   test('upload form is usable at mobile width', async ({ page }) => {
     await page.goto('/analyze');
 
-    await expect(page.getByText('Upload SD Card')).toBeVisible();
-    await expect(page.getByText('See sample data')).toBeVisible();
+    await expect(page.getByText('Choose your SD card folder')).toBeVisible();
+    await expect(page.getByText('Try sample data')).toBeVisible();
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached();
   });
 });

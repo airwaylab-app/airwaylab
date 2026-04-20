@@ -147,6 +147,53 @@ describe('processEmailDrips health check', () => {
     expect(lteCallIdx).toBeGreaterThan(-1);
   });
 });
+// ── Activation sequence configuration ───────────────────────
+
+describe('activation sequence (SEQUENCES.activation)', () => {
+  it('has 5 steps with correct day delays from sequence start', async () => {
+    const { SEQUENCES } = await import('@/lib/email/templates');
+    const activation = SEQUENCES.activation;
+
+    expect(activation.totalSteps).toBe(5);
+    // delays are days from sequence start (~48h after signup):
+    // Email 1: day 2, Email 2: day 5, Email 3: day 8, Email 4: day 12, Email 5: day 16
+    expect(activation.delays).toEqual([0, 3, 6, 10, 14]);
+  });
+
+  it('returns a template for every step', async () => {
+    const { SEQUENCES } = await import('@/lib/email/templates');
+    const { getTemplate } = SEQUENCES.activation;
+    const dummyUrl = 'https://airwaylab.app/api/email/unsubscribe?token=test';
+
+    for (let step = 1; step <= 5; step++) {
+      const tpl = getTemplate(step, dummyUrl);
+      expect(tpl).not.toBeNull();
+      expect(tpl!.subject.length).toBeGreaterThan(0);
+      expect(tpl!.html).toContain('/analyze');
+      expect(tpl!.html).toContain(dummyUrl);
+    }
+  });
+
+  it('returns null for out-of-range step', async () => {
+    const { SEQUENCES } = await import('@/lib/email/templates');
+    const { getTemplate } = SEQUENCES.activation;
+    const dummyUrl = 'https://airwaylab.app/api/email/unsubscribe?token=test';
+
+    expect(getTemplate(0, dummyUrl)).toBeNull();
+    expect(getTemplate(6, dummyUrl)).toBeNull();
+  });
+
+  it('Email 5 is the final step and does not promise further emails', async () => {
+    const { SEQUENCES } = await import('@/lib/email/templates');
+    const { getTemplate } = SEQUENCES.activation;
+    const dummyUrl = 'https://airwaylab.app/api/email/unsubscribe?token=test';
+    const email5 = getTemplate(5, dummyUrl);
+
+    // Final email should signal it is the last outreach
+    expect(email5!.html.toLowerCase()).toContain('last time');
+  });
+});
+
 // ── Cron handler ordering ────────────────────────────────────
 
 describe('processEmailDrips execution order', () => {

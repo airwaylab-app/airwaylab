@@ -19,6 +19,7 @@ import {
   markSent,
   scheduleDormancySequences,
   scheduleActivationSequences,
+  scheduleCpapTipsSequences,
   applySunsetPolicy,
 } from './sequences';
 import { SEQUENCES } from './templates';
@@ -32,6 +33,7 @@ interface CronResult {
   failed: number;
   dormancyScheduled: number;
   activationScheduled: number;
+  cpapTipsScheduled: number;
   sunsetted: number;
 }
 
@@ -41,6 +43,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     failed: 0,
     dormancyScheduled: 0,
     activationScheduled: 0,
+    cpapTipsScheduled: 0,
     sunsetted: 0,
   };
 
@@ -48,6 +51,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   //    newly discovered users get their first email in this run, not 24h later.
   result.dormancyScheduled = await scheduleDormancySequences(supabase);
   result.activationScheduled = await scheduleActivationSequences(supabase);
+  result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
 
   // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);

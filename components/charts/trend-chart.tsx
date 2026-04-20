@@ -84,7 +84,7 @@ export const TrendChart = memo(function TrendChart({ nights, therapyChangeDate }
                 onClick={() => toggleMetric(m.key)}
                 aria-pressed={visible[m.key]}
                 aria-label={`${m.label}: ${visible[m.key] ? 'visible' : 'hidden'}`}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors ${
                   visible[m.key]
                     ? 'border-border bg-card text-foreground'
                     : 'border-transparent bg-transparent text-muted-foreground/70 line-through'

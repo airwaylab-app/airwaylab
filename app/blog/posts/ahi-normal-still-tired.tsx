@@ -319,7 +319,7 @@ export default function AHINormalStillTiredPost() {
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">See What Your AHI Is Missing</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload your ResMed SD card to AirwayLab. Four research-grade engines analyse your flow
+          Load your ResMed SD card into AirwayLab. Four research-grade engines analyse your flow
           data for the patterns AHI ignores. Free, open-source, and 100% private — your data
           never leaves your browser.
         </p>
