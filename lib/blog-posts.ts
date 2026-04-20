@@ -139,6 +139,50 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'how-to-export-and-understand-your-cpap-data',
+    title: 'How to Export and Understand Your CPAP Data',
+    seoTitle: 'How to Export and Understand Your CPAP Data',
+    description:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    date: '2026-04-15',
+    readTime: '8 min read',
+    tags: ['CPAP', 'Getting Started', 'ResMed', 'SD Card', 'Flow Limitation', 'AHI'],
+    ogDescription:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    faqItems: [
+      {
+        question: 'How do I get data off my CPAP machine?',
+        answer:
+          'Most machines use a standard SD card. Power off, remove the card, and insert it into your computer. Tools like OSCAR and AirwayLab can then read the data files directly.',
+      },
+      {
+        question: 'How do I export data from my ResMed CPAP machine?',
+        answer:
+          'Power off your ResMed machine, remove the SD card from the side panel (AirSense 10/11) or under the humidifier chamber (S9), insert it into a card reader, and open the EDF files in an analysis tool like OSCAR or AirwayLab. No account or cloud service is required.',
+      },
+      {
+        question: 'What is the difference between AHI and flow limitation?',
+        answer:
+          'AHI counts discrete breathing events (apnoeas and hypopnoeas) per hour. Flow limitation measures partial airway narrowing that may not meet the threshold for a scored event. Both are visible in full flow data from your SD card.',
+      },
+      {
+        question: 'Can I analyse my CPAP data without installing software?',
+        answer:
+          'Yes. AirwayLab runs entirely in your browser — no download or install needed. Open the upload page, drag in your SD card files, and your data loads immediately.',
+      },
+      {
+        question: 'Does my CPAP data leave my device when using AirwayLab?',
+        answer:
+          'No. AirwayLab processes all data locally in your browser. Nothing is uploaded to a server. Optional features like AI insights require explicit consent before any data is sent.',
+      },
+      {
+        question: 'Which CPAP machines does AirwayLab support?',
+        answer:
+          'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. Support for additional manufacturers is planned.',
+      },
+    ],
+  },
+  {
     slug: 'understanding-cpap-pressure-settings',
     title: 'Understanding Your CPAP Pressure Settings: What the Numbers Actually Mean',
     seoTitle: 'Understanding Your CPAP Pressure Settings',
