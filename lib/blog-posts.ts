@@ -17,6 +17,89 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-analyze-cpap-data-at-home',
+    title: 'How to Analyze Your CPAP Data at Home',
+    seoTitle: 'How to Analyze Your CPAP Data at Home | AirwayLab',
+    description:
+      'Learn how to analyze your CPAP data at home — explore AHI trends, leaks, and flow limitations with free, private, browser-based tools. No uploads, no accounts.',
+    date: '2026-04-23',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Flow Limitation', 'Privacy'],
+    ogDescription:
+      'Learn how to analyze your CPAP data at home — explore AHI trends, leaks, and flow limitations with free, private, browser-based tools. No uploads, no accounts.',
+    faqItems: [
+      {
+        question: 'Is exploring my own CPAP data safe?',
+        answer:
+          'Exploring your therapy data is informational — it is not a substitute for clinical review. Use what you find to prepare better questions for your care team, not to make independent therapy decisions.',
+      },
+      {
+        question: 'Do I need a specific CPAP device to use AirwayLab?',
+        answer:
+          'AirwayLab supports data from most common CPAP and BiPAP devices that record detailed data to SD card, including ResMed and some Philips models. Check the supported devices page for the current list.',
+      },
+      {
+        question: 'Does my data get uploaded anywhere?',
+        answer:
+          'No. AirwayLab processes your data entirely in your browser. Nothing is transmitted, stored, or shared. Your data stays on your device.',
+      },
+      {
+        question: "What's the difference between AHI and RERA index?",
+        answer:
+          'AHI counts apneas and hypopneas per hour. The RERA index counts respiratory effort-related arousals separately. Some devices score these differently, and your clinician may consider both when evaluating therapy patterns.',
+      },
+      {
+        question: "I'm already using OSCAR — why would I also use AirwayLab?",
+        answer:
+          "OSCAR is excellent and AirwayLab is not trying to replace it. Some users find AirwayLab's interface easier to start with, or use it alongside OSCAR for a different view of the same data. Both are free, both are open-source.",
+      },
+      {
+        question: 'Should I change my settings based on what I find?',
+        answer:
+          'Pressure settings are managed by your healthcare provider based on your clinical needs. Your clinician can interpret these patterns in clinical context.',
+      },
+    ],
+  },
+  {
+    slug: 'how-to-export-understand-cpap-data',
+    title: 'How to Export and Understand Your CPAP Data',
+    seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
+    description:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    date: '2026-04-15',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Getting Started', 'Data Export', 'AHI', 'ResMed'],
+    ogDescription:
+      'Learn how to export CPAP data from ResMed, Philips, and Fisher & Paykel machines, what the numbers mean, and how tools like AirwayLab help you see the full picture.',
+    faqItems: [
+      {
+        question: 'How do I get data off my CPAP machine?',
+        answer:
+          'Most machines use a standard SD card. Power off, remove the card, and insert it into your computer. Tools like OSCAR and AirwayLab can then read the data files directly.',
+      },
+      {
+        question: 'What is the difference between AHI and flow limitation?',
+        answer:
+          'AHI counts discrete breathing events (apnoeas and hypopnoeas) per hour. Flow limitation measures partial airway narrowing that may not meet the threshold for a scored event. Both are visible in full flow data from your SD card.',
+      },
+      {
+        question: 'Can I analyse my CPAP data without installing software?',
+        answer:
+          'Yes. AirwayLab runs entirely in your browser — no download or install needed. Open the upload page, drag in your SD card files, and your data loads immediately.',
+      },
+      {
+        question: 'Does my CPAP data leave my device when using AirwayLab?',
+        answer:
+          'No. AirwayLab processes all data locally in your browser. Nothing is uploaded to a server. Optional features like AI insights require explicit consent before any data is sent.',
+      },
+      {
+        question: 'Which CPAP machines does AirwayLab support?',
+        answer:
+          'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. Support for additional manufacturers is planned.',
+      },
+    ],
+  },
+  {
     slug: 'resmed-sd-card-browser-analysis',
     title: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
     seoTitle: 'How to Read Your ResMed SD Card Data in Your Browser — No Download Needed',
@@ -42,6 +125,35 @@ export const blogPosts: BlogPost[] = [
         question: 'Is my data uploaded when I use AirwayLab?',
         answer:
           'No. AirwayLab processes all EDF files locally in your browser using Web Workers. Your breathing data never leaves your device.',
+      },
+    ],
+  },
+  {
+    slug: 'low-ahi-still-tired-flow-limitation-reras',
+    title: 'Low AHI But Still Tired? What Flow Limitation and RERAs Reveal',
+    seoTitle: 'Low AHI But Still Tired? What Flow Limitation and RERAs Reveal',
+    description:
+      'Your AHI looks great but you still feel exhausted. Learn why flow limitation and RERAs matter — and how to find them in your PAP data.',
+    date: '2026-04-02',
+    readTime: '10 min read',
+    tags: ['AHI', 'Flow Limitation', 'RERAs', 'UARS', 'Getting Started'],
+    ogDescription:
+      'Your AHI looks great but you still feel exhausted. Learn why flow limitation and RERAs matter — and how to find them in your PAP data.',
+    faqItems: [
+      {
+        question: 'Why am I still tired even though my AHI is low?',
+        answer:
+          'AHI only counts complete airway closures (apneas) and significant partial reductions (hypopneas). Flow limitation — partial airway narrowing that restricts airflow without meeting event thresholds — and RERAs (Respiratory Effort-Related Arousals) can fragment your sleep and cause fatigue without ever appearing in your AHI score.',
+      },
+      {
+        question: 'What is the difference between flow limitation and a RERA?',
+        answer:
+          'Flow limitation is the underlying event: partial narrowing of your upper airway that flattens the inspiratory flow waveform. A RERA occurs when a sequence of flow-limited breaths triggers a brief arousal that restores normal airflow. Flow limitation is continuous airway narrowing; a RERA is the arousal that ends a bout of flow limitation.',
+      },
+      {
+        question: 'How can I detect flow limitation and RERAs in my PAP data?',
+        answer:
+          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with estimated RERA detection to surface the patterns AHI cannot see.',
       },
     ],
   },
@@ -112,6 +224,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'how-to-read-cpap-data',
     title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
+    seoTitle: 'How to Read Your CPAP Data — AirwayLab',
     description:
       'Your PAP machine records thousands of data points every night. AHI only shows part of the picture. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics that matter.',
     date: '2026-04-03',
@@ -152,6 +265,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'why-ahi-is-lying',
     title: 'Why Your AHI Is Lying to You',
+    seoTitle: 'Why Your CPAP AHI Score Can Be Misleading — AirwayLab',
     description:
       'AHI was never designed to measure sleep quality. It misses flow limitation, RERAs, breathing irregularity, and the autonomic stress response. Here is the evidence -- and what you can track instead.',
     date: '2026-03-20',
@@ -283,6 +397,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['Flow Limitation', 'Research', 'UARS', 'Sleepiness'],
     ogDescription:
       'Research shows inspiratory flow limitation predicts sleepiness independent of arousals and AHI. Learn what this means for tracking your PAP therapy.',
+    faqItems: [
+      {
+        question: 'Does flow limitation on CPAP cause daytime sleepiness?',
+        answer: 'Research shows inspiratory flow limitation is associated with daytime sleepiness and fatigue independently of AHI and arousal index. Studies have found that patients with high flow limitation scores report worse subjective sleepiness even when arousals and AHI are controlled for, suggesting the respiratory effort response itself may contribute to symptoms.',
+      },
+      {
+        question: 'What is the relationship between flow limitation and UARS?',
+        answer: 'Upper Airway Resistance Syndrome (UARS) is characterised by high respiratory effort and symptoms despite normal AHI. Flow limitation is one of the primary physiological markers of UARS. Many UARS patients show high FL scores and elevated RERA counts in their PAP data even with AHI under 5.',
+      },
+    ],
   },
   {
     slug: 'arousals-vs-flow-limitation',
@@ -294,6 +418,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['Arousals', 'Flow Limitation', 'UARS', 'Research'],
     ogDescription:
       'Arousals may not be the primary driver of sleep-disordered breathing symptoms. Dr. Gold\'s limbic stress response model offers a compelling alternative.',
+    faqItems: [
+      {
+        question: 'What is a RERA in CPAP data?',
+        answer: 'A RERA (Respiratory Effort-Related Arousal) is a sequence of flow-limited breaths that ends in a brief cortical arousal. Unlike apneas, RERAs do not meet AHI threshold criteria but can fragment sleep architecture. They are detected through flow waveform analysis of PAP SD card data.',
+      },
+      {
+        question: 'Do arousals cause sleep apnea symptoms or does flow limitation?',
+        answer: 'Research from Dr. Avram Gold and others suggests the autonomic stress response to flow limitation itself — not the cortical arousal — may be the primary driver of symptoms in upper airway resistance. This means patients with high flow limitation but few measurable arousals can still experience significant fatigue.',
+      },
+    ],
   },
   {
     slug: 'epworth-sleepiness-scale',
@@ -428,6 +562,35 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'resmed-airsense-10-sd-card',
+    title: 'How to Get Your ResMed AirSense 10 Data Into AirwayLab (Step by Step)',
+    description:
+      'Learn how to find, remove, and read the SD card from your ResMed AirSense 10. Step-by-step guide to getting your CPAP data into AirwayLab for detailed analysis.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'CPAP', 'ResMed', 'AirSense 10', 'SD Card'],
+    ogDescription:
+      'Learn how to find, remove, and read the SD card from your ResMed AirSense 10. Step-by-step guide to getting your CPAP data into AirwayLab for detailed analysis.',
+    faqItems: [
+      {
+        question: 'How often should I check my AirSense 10 data?',
+        answer: 'That is entirely up to you. Some people check weekly, others monthly. The SD card stores months of data, so there is no rush. Many users find a monthly review gives them a useful picture of trends without being overwhelming.',
+      },
+      {
+        question: 'Will removing the SD card from my AirSense 10 affect my therapy?',
+        answer: 'No. Your AirSense 10 continues to provide therapy without the SD card. It just will not record detailed session data until the card is back. Your therapy settings are stored in the machine\'s internal memory, not on the card.',
+      },
+      {
+        question: 'What is in the DATALOG folder on a ResMed AirSense 10 SD card?',
+        answer: 'The DATALOG folder contains your nightly session data in EDF (European Data Format) files. Each subfolder is named by date and contains flow waveforms, pressure data, leak rates, and respiratory event annotations for that night. AirwayLab reads these files automatically -- you do not need to understand EDF format.',
+      },
+      {
+        question: 'Can I use a different SD card in my AirSense 10?',
+        answer: 'Yes. Any standard SD card (2GB or larger, formatted as FAT32) works with the AirSense 10. If your original card fills up, copy the DATALOG folder to your computer before replacing it to preserve historical data.',
+      },
+    ],
+  },
+  {
     slug: 'what-is-wat-score-cpap',
     title: 'What Is the WAT Score in CPAP Data?',
     description:
@@ -452,6 +615,35 @@ export const blogPosts: BlogPost[] = [
         question: 'What is the Periodicity Index in CPAP data?',
         answer:
           'The Periodicity Index uses Fourier analysis to detect cyclical breathing patterns repeating on a 30-100 second cycle. A higher value suggests oscillating breathing patterns rather than stable ventilation throughout the night.',
+      },
+    ],
+  },
+  {
+    slug: 'resmed-airsense-11-sd-card',
+    title: 'How to Get Your ResMed AirSense 11 Data Into AirwayLab',
+    description:
+      'Step-by-step guide to accessing your ResMed AirSense 11 SD card data. Learn how to find the card, read the DATALOG folder, and analyze your CPAP data in AirwayLab.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'CPAP', 'ResMed', 'AirSense 11', 'SD Card'],
+    ogDescription:
+      'Step-by-step guide to accessing your ResMed AirSense 11 SD card data. Learn how to find the card, read the DATALOG folder, and analyze your CPAP data in AirwayLab.',
+    faqItems: [
+      {
+        question: 'Does the AirSense 11 always come with an SD card?',
+        answer: 'Most AirSense 11 units ship with a micro SD card pre-installed. If yours did not come with one, you can insert any micro SD card formatted as FAT32 (2GB or larger). The micro SD card usually sits inside a full-size SD adapter.',
+      },
+      {
+        question: 'My AirSense 11 connects to myAir. Do I still need the SD card for AirwayLab?',
+        answer: 'Yes, if you want detailed flow waveform data. myAir receives summary data over cellular, not the full waveform data that the SD card stores. The SD card contains the breath-by-breath flow signal that AirwayLab uses to detect flow limitation and breathing pattern instability.',
+      },
+      {
+        question: 'Is AirSense 11 data different from AirSense 10 data?',
+        answer: 'The core data is the same -- flow waveforms, pressure, leaks, and events. The file format has minor differences between models, but AirwayLab handles both automatically. Some early AirSense 11 firmware versions had slightly different DATALOG structures, which AirwayLab\'s parser detects and adapts to.',
+      },
+      {
+        question: 'Can I use AirwayLab and myAir at the same time?',
+        answer: 'Absolutely. They do not interfere with each other. myAir is useful for quick daily check-ins. AirwayLab gives you the deeper breath-by-breath analysis that myAir does not provide.',
       },
     ],
   },
@@ -508,6 +700,35 @@ export const blogPosts: BlogPost[] = [
         question: "What is the difference between OSCAR's FL channel and AirwayLab's FL Score?",
         answer:
           "OSCAR plots ResMed's FL channel: a categorical 0/0.5/1.0 snapshot updated every ~2 seconds by device firmware. AirwayLab's FL Score is a continuous 0-100 percentage calculated per breath from the raw inspiratory waveform, independent of ResMed's firmware. Both describe the same underlying flow signal from different perspectives.",
+      },
+    ],
+  },
+  {
+    slug: 'resmed-aircurve-bipap-sd-card',
+    title: 'How to Get Your ResMed AirCurve 10 or AirCurve 11 BiPAP Data Into AirwayLab',
+    description:
+      'How to access SD card data from your ResMed AirCurve 10 or AirCurve 11 BiPAP machine. Step-by-step guide to reading your bilevel therapy data in AirwayLab.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'BiPAP', 'ResMed', 'AirCurve', 'SD Card'],
+    ogDescription:
+      'How to access SD card data from your ResMed AirCurve 10 or AirCurve 11 BiPAP machine. Step-by-step guide to reading your bilevel therapy data in AirwayLab.',
+    faqItems: [
+      {
+        question: 'I am on BiPAP. Is AirwayLab still useful for me?',
+        answer: 'Yes. AirwayLab\'s flow limitation and breathing pattern analysis works with bilevel data. The core analysis -- detecting partial airway narrowing and breathing instability -- applies regardless of whether you are on CPAP or BiPAP. Bilevel sessions also display both IPAP and EPAP pressure channels.',
+      },
+      {
+        question: 'Does AirwayLab show IPAP and EPAP separately for AirCurve users?',
+        answer: 'Yes. Bilevel sessions display both pressure channels so you can see how your machine adjusted IPAP and EPAP throughout the night. This is particularly useful for VAuto users whose machine adjusts EPAP automatically.',
+      },
+      {
+        question: 'Where is the SD card slot on the AirCurve 10?',
+        answer: 'The AirCurve 10\'s SD card slot is on the back of the machine, near the bottom, behind a small cover or rubber flap near the power connection. It uses a standard full-size SD card.',
+      },
+      {
+        question: 'My AirCurve has an older firmware. Will my data work with AirwayLab?',
+        answer: 'AirwayLab supports EDF files from all AirCurve 10 and AirCurve 11 firmware versions. The parser handles format variations across firmware releases automatically.',
       },
     ],
   },

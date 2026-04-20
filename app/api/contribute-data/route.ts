@@ -6,7 +6,6 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
-import { sendAlert, formatGrowthEmbed } from '@/lib/discord-webhook';
 import { isValidDeviceMode } from '@/lib/device-capabilities';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
@@ -342,14 +341,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Discord #growth alert (fire-and-forget)
-    const hasOximetry = anonymised.some((n) => n.oximetry !== null)
-    void sendAlert('growth', '', [formatGrowthEmbed({
-      event: 'data_contribution',
+    const hasOximetry = anonymised.some((n) => n.oximetry !== null);
+    console.error('[contribute-data] Data contribution received', {
       nightCount: anonymised.length,
       hasOximetry,
-      deviceModel: anonymised[0]?.settings.deviceModel || undefined,
-    })]);
+      deviceModel: anonymised[0]?.settings.deviceModel || 'Unknown',
+    });
 
     return NextResponse.json({
       ok: true,

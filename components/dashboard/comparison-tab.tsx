@@ -146,6 +146,10 @@ export function ComparisonTab({ nights, nightA, nightAIndex }: Props) {
           {/* Settings Summary */}
           <SettingsSummary nightA={nightA} nightB={nightB} />
 
+          {/* Scrollable table area — prevents horizontal overflow on narrow viewports */}
+          <div className="overflow-x-auto">
+          <div className="min-w-[340px]">
+
           {/* Column Headers */}
           <div className="flex items-center gap-2 border-b border-border/50 pb-2 text-[10px] font-medium text-muted-foreground">
             <span className="min-w-[110px]">Metric</span>
@@ -221,6 +225,9 @@ export function ComparisonTab({ nights, nightA, nightAIndex }: Props) {
               </CardContent>
             </Card>
           )}
+
+          </div>
+          </div>
         </>
       )}
     </div>

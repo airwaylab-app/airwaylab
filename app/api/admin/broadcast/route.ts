@@ -26,7 +26,7 @@ import { getSupabaseServiceRole } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/send'
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
 import { BROADCAST_TEMPLATES, type BroadcastSubjectVariant } from '@/lib/email/broadcast'
-import { sendAlert, formatBroadcastEmbed } from '@/lib/discord-webhook'
+
 
 const BroadcastSchema = z.object({
   templateId: z.string().min(1, 'Template ID is required.'),
@@ -168,14 +168,13 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Discord #ops-alerts (fire-and-forget)
-    void sendAlert('ops', '', [formatBroadcastEmbed({
-      templateId: templateId,
+    console.error('[broadcast] Broadcast completed', {
+      templateId,
       sent,
       skipped,
       errors: errors.length,
       totalOptedIn: users.length,
-    })])
+    })
 
     return NextResponse.json({
       dryRun: false,
