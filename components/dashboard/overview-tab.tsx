@@ -24,7 +24,7 @@ import type { NightNotes } from '@/lib/types';
 import { EMPTY_NOTES } from '@/lib/night-notes';
 import { CommunityComparison } from '@/components/dashboard/community-comparison';
 import { CommunityBenchmarks } from '@/components/dashboard/community-benchmarks';
-import { ClinicianQuestionsPanel } from '@/components/dashboard/clinician-questions-panel';
+import { DataHighlightsPanel } from '@/components/dashboard/data-highlights-panel';
 import { getConsentState } from '@/components/upload/contribution-consent-utils';
 import { getGlasgowExplanation, getEAIExplanation, getNEDExplanation, getIFLRiskExplanation, METRIC_METHODOLOGIES, METRIC_PLAIN_LANGUAGE } from '@/lib/metric-explanations';
 import { computeIFLRisk, getIFLContextNote } from '@/lib/ifl-risk';
@@ -462,8 +462,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         isContributeConsented={isContributeConsented}
       />
 
-      {/* Clinician Questions — appointment prep */}
-      <ClinicianQuestionsPanel
+      {/* Data Highlights — appointment prep */}
+      <DataHighlightsPanel
         nights={nights}
         selectedNight={n}
         previousNight={p}
