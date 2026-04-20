@@ -21,6 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
+          Last updated: 12 April 2026
           Last updated: 16 April 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
@@ -333,6 +334,16 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2">Discord user ID and username only. No health data is sent to Discord.</td>
                 </tr>
                 <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">Upstash</td>
+                  <td className="py-2 pr-4">Rate limiting (Redis)</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">IP-derived request counters only. No personal data or health data.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">GitHub API</td>
+                  <td className="py-2 pr-4">Repository metadata (star count)</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">Server-side only. No user data is sent to GitHub.</td>
                   <td className="py-2 pr-4 font-medium text-foreground">GitHub API</td>
                   <td className="py-2 pr-4">Repository star count display</td>
                   <td className="py-2 pr-4">US</td>
@@ -440,6 +451,9 @@ export default function PrivacyPolicyPage() {
           <h2>11. International Data Transfers</h2>
           <p>
             Our primary database is hosted in the EU (Supabase EU-West region). Some services
+            (Anthropic, Sentry, Resend, Upstash) process data in the US. For EU users, these transfers are
+            governed by Standard Contractual Clauses (SCCs) or the EU-US Data Privacy Framework
+            where applicable.
             (Anthropic, Sentry, Resend, Upstash) process data in the US. For EU users, these
             transfers are governed by Standard Contractual Clauses (SCCs) or the EU-US Data
             Privacy Framework where applicable.
