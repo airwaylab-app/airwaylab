@@ -209,7 +209,7 @@ export function Header() {
                 </Link>
                 <button
                   onClick={() => setAuthModalOpen(true)}
-                  className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:px-3 sm:py-2 sm:text-sm"
+                  className="h-9 rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
                 >
                   Sign in
                 </button>

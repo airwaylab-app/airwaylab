@@ -158,7 +158,7 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Your IFL composite score is in the lower range.';
   }
   if (light === 'warn') {
-    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss these findings with your clinician.';
+    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity to this level of flow limitation varies. Your clinician can help interpret these findings in context.';
   }
   return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Discuss with your clinician if you have concerns.';
 }

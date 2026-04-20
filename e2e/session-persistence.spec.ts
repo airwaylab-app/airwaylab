@@ -81,7 +81,7 @@ test.describe('Session Persistence', () => {
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
-    await expect(page.getByText('See sample data')).toBeVisible();
+    await expect(page.getByText('Try sample data')).toBeVisible();
   });
 
   // ── Lifetime night counter persists ─────────────────────────
