@@ -201,7 +201,7 @@ export default function GlossaryPage() {
             className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
           >
             <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">Flow Limitation</h3>
-            <p className="mt-1 text-xs text-muted-foreground">How AirwayLab detects and scores airway restriction.</p>
+            <p className="mt-1 text-xs text-muted-foreground">How AirwayLab quantifies and scores airway restriction patterns.</p>
           </Link>
           <Link
             href="/about/glasgow-index"

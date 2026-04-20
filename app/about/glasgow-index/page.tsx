@@ -77,7 +77,7 @@ const components = [
   {
     name: 'Spike',
     description:
-      'Detects sharp transient peaks at the beginning of inspiration. A brief spike followed by reduced flow suggests the airway briefly opens then narrows, a hallmark of partial obstruction.',
+      'Detects sharp transient peaks at the beginning of inspiration. A brief spike followed by reduced flow shows a pattern where the waveform briefly opens then narrows.',
   },
   {
     name: 'Flat Top',
@@ -92,22 +92,22 @@ const components = [
   {
     name: 'Multi-Peak',
     description:
-      'Detects oscillatory flow patterns with multiple peaks during a single inspiration. Multi-peak patterns suggest upper airway instability and flutter, often seen with moderate flow limitation.',
+      'Detects oscillatory flow patterns with multiple peaks during a single inspiration. Multi-peak patterns show oscillation in the flow waveform, often seen with moderate flow limitation.',
   },
   {
     name: 'No Pause',
     description:
-      'Assesses whether there is an adequate pause between expiration and the next inspiration. Absent pauses can indicate increased respiratory drive, often a compensatory response to flow limitation.',
+      'Assesses whether there is an adequate pause between expiration and the next inspiration. Absent pauses are associated with higher respiratory rate, often a compensatory response to flow limitation.',
   },
   {
     name: 'Inspiratory Rate',
     description:
-      'Evaluates the peak inspiratory flow rate relative to the breath population. Abnormally high rates suggest increased respiratory effort to overcome airway resistance.',
+      'Evaluates the peak inspiratory flow rate relative to the breath population. Abnormally high rates may reflect higher respiratory rate.',
   },
   {
     name: 'Multi-Breath',
     description:
-      'Detects sequences of breaths with progressively worsening flow limitation characteristics, suggesting a crescendo pattern that may precede an arousal or obstructive event.',
+      'Detects sequences of breaths with progressively worsening flow limitation characteristics, showing a crescendo pattern in the waveform.',
   },
   {
     name: 'Variable Amplitude',
@@ -248,8 +248,8 @@ export default function GlasgowIndexPage() {
               <span className="text-sm font-semibold text-emerald-400">Below 1.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Low flow limitation scores observed. Your current pressure settings
-              appear to be managing your airway well.
+              Low flow limitation scores observed. Your Glasgow Index is in the
+              typical range for this metric.
             </p>
           </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -268,8 +268,8 @@ export default function GlasgowIndexPage() {
               <span className="text-sm font-semibold text-red-400">Above 2.0</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Significant flow limitation. Your airway may be partially obstructed
-              despite therapy. The original Glasgow Index author describes a score
+              Significant flow limitation. Your Glasgow Index is elevated. Your
+              clinician can help interpret this in context. The original Glasgow Index author describes a score
               of 3 as &ldquo;significant problems.&rdquo; Your sleep physician can help interpret these findings in context.
             </p>
           </div>

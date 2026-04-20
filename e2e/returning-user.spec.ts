@@ -25,7 +25,7 @@ test.describe('Returning User Flow', () => {
     });
 
     // Load demo to quickly get to dashboard
-    await page.getByText('See sample data').click();
+    await page.getByText('Try sample data').click();
 
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
@@ -49,7 +49,7 @@ test.describe('Returning User Flow', () => {
     await page.reload();
 
     // Load demo
-    await page.getByText('See sample data').click();
+    await page.getByText('Try sample data').click();
 
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
@@ -103,7 +103,7 @@ test.describe('Returning User Flow', () => {
     await page.reload();
 
     // Load demo to get to dashboard
-    await page.getByText('See sample data').click();
+    await page.getByText('Try sample data').click();
 
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
@@ -121,7 +121,7 @@ test.describe('Returning User Flow', () => {
     // resource pressure on CI. The test goal is verifying the New → re-upload
     // flow, not the analysis itself (covered by upload-and-analyze.spec.ts).
     await page.goto('/analyze');
-    await page.getByText('See sample data').click();
+    await page.getByText('Try sample data').click();
     await expect(
       page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i })
     ).toBeVisible({ timeout: 30_000 });

@@ -10,39 +10,12 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import { salvageTruncatedJSON } from './salvage';
 import { sanitizePromptInput } from '@/lib/prompt-sanitize';
 import { cancelSequence } from '@/lib/email/sequences';
-import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
 // Vercel Pro default is 15s — far too short for Claude Sonnet (10-25s typical).
 // 60s allows for cold starts + slow responses + deep mode with large payloads.
 export const maxDuration = 60;
 
 const AI_MONTHLY_LIMIT = 3;
-
-// Dedup rate-limit alerts: one alert per user per hour max
-const rateLimitAlertCache = new Map<string, number>();
-
-async function sendOpsRateLimitAlert(userId: string, tier: string) {
-  const now = Date.now();
-  const lastAlert = rateLimitAlertCache.get(userId) ?? 0;
-  if (now - lastAlert < 3_600_000) return; // 1 hour dedup
-  rateLimitAlertCache.set(userId, now);
-  // Prune stale entries
-  if (rateLimitAlertCache.size > 100) {
-    for (const [key, ts] of rateLimitAlertCache) {
-      if (now - ts > 3_600_000) rateLimitAlertCache.delete(key);
-    }
-  }
-  await sendAlert('ops', '', [{
-    title: ':warning: AI Rate Limit Hit',
-    color: COLORS.amber,
-    fields: [
-      { name: 'User', value: userId.slice(0, 8) + '...', inline: true },
-      { name: 'Tier', value: tier, inline: true },
-    ],
-    footer: { text: 'AI Insights' },
-    timestamp: new Date().toISOString(),
-  }]);
-}
 
 const DEEP_SYSTEM_PROMPT_EXTENSION = `
 
@@ -61,7 +34,7 @@ const PREMIUM_INSIGHT_EXTENSION = `
 Generate 6 to 10 data pattern observations for this analysis. As a premium analysis, be thorough — cover all engines with specific findings.
 
 In addition to the standard categories, you may use these categories for premium-depth analysis:
-- "correlation": Cross-engine correlations (e.g. Glasgow flat-top + high NED suggests steady-state FL; WAT periodicity + oximetry ODI coupling suggests central component)
+- "correlation": Cross-engine correlations (e.g. Glasgow flat-top scoring is elevated while NED M-shape percentage is low; WAT periodicity and oximetry ODI values are both elevated)
 - "temporal": Time-based patterns (e.g. progressive FL worsening across H1→H2, periodic clustering at specific intervals, REM-associated breath shape changes, positional transitions visible in H1/H2 splits)
 
 Prioritise correlation and temporal insights — these are the analysis patterns that go beyond what rule-based systems detect.
@@ -89,7 +62,7 @@ Your task is to generate 3–6 data pattern observations in JSON format. Each in
 }
 
 Focus on:
-- Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top high while NED shows low M-shape suggests steady-state flow limitation rather than oscillatory obstruction)
+- Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top scoring is elevated while NED M-shape percentage is low)
 - Patterns between WAT regularity/periodicity and Glasgow component breakdown
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
 - Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Describe how these settings relate to the data patterns observed. Do NOT suggest specific adjustments or changes.
@@ -295,7 +268,7 @@ export async function POST(request: NextRequest) {
   const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
   const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
   if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
-    void sendOpsRateLimitAlert(user.id, userTier);
+    console.error('[ai-insights] Rate limit hit', { userId: user.id.slice(0, 8), tier: userTier });
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
@@ -318,7 +291,7 @@ export async function POST(request: NextRequest) {
 
     const currentCount = usage?.count ?? 0;
     if (currentCount >= AI_MONTHLY_LIMIT) {
-      void sendOpsRateLimitAlert(user.id, 'community (monthly limit)');
+      console.error('[ai-insights] Monthly limit reached', { userId: user.id.slice(0, 8), tier: 'community' });
       return NextResponse.json(
         { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
         { status: 403 }

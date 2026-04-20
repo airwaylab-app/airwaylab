@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, Monitor, ArrowRight } from 'lucide-react';
+import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
@@ -202,12 +202,12 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                     ? `BMC / Luna device detected (${sdValidation.edfCount} data files)`
                     : `${sdValidation.edfCount} EDF files found`
                   : `${sdFiles.length} files selected`
-                : 'Upload SD Card'}
+                : 'Choose your SD card folder'}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {sdFiles.length > 0
                 ? 'Click to change selection'
-                : 'Choose your PAP machine\'s SD card or drag & drop'}
+                : 'Analysed locally - results appear in seconds'}
             </p>
           </div>
           {/* Validation feedback */}
@@ -225,14 +225,6 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
                   <span className="text-xs text-amber-400">{warn}</span>
                 </div>
               ))}
-            </div>
-          )}
-          {sdFiles.length === 0 && isIOS && (
-            <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
-              <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-              <p className="text-xs leading-snug text-amber-400">
-                Folder selection isn&apos;t supported on iOS. Please use a desktop browser to upload your SD card data.
-              </p>
             </div>
           )}
           {sdFiles.length === 0 && (

@@ -31,7 +31,7 @@ Not a health tech startup. Not a medical device company. Not a generic open-sour
 
 1. Lead with the benefit, follow with the mechanism.
    YES: "See your flow limitation trends (using Glasgow Index breath scoring)"
-   NO: "The Glasgow Index scores each breath on a 0-8 scale which we use to..."
+   NO: "The Glasgow Index scores each breath on a 0-9 scale which we use to..."
 2. Use "your" generously. "Your data", "your therapy", "your breathing patterns."
 3. Say "PAP" not "CPAP" (inclusive of BiPAP, ASV users).
 4. Avoid: "revolutionary", "cutting-edge", "AI-powered", "game-changing".

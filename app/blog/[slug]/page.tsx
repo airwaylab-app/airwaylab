@@ -19,6 +19,8 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
+import HowToAnalyzeCPAPDataAtHome from '../posts/how-to-analyze-cpap-data-at-home';
+import HowToExportUnderstandCPAPData from '../posts/how-to-export-understand-cpap-data';
 import V121ClearerLanguage from '../posts/v121-clearer-language';
 import V122YourDataExplained from '../posts/v122-your-data-explained-not-judged';
 import WhatIsGlasgowIndexCPAP from '../posts/what-is-glasgow-index-cpap';
@@ -29,14 +31,18 @@ import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysi
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
 import FourMetricsAirwayLabMeasures from '../posts/four-metrics-airwaylab-measures';
+import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-flow-limitation-reras';
 
 const postComponents: Record<string, React.ComponentType> = {
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
+  'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
   'four-metrics-airwaylab-measures': FourMetricsAirwayLabMeasures,
   'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
+  'how-to-analyze-cpap-data-at-home': HowToAnalyzeCPAPDataAtHome,
+  'how-to-export-understand-cpap-data': HowToExportUnderstandCPAPData,
   'v121-clearer-language': V121ClearerLanguage,
   'what-is-glasgow-index-cpap': WhatIsGlasgowIndexCPAP,
   'what-is-wat-score-cpap': WhatIsWATScoreCPAP,

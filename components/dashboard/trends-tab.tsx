@@ -28,7 +28,7 @@ export function TrendsTab({ nights, therapyChangeDate }: Props) {
       <SettingsMetricsTable nights={nights} />
       <SettingsTimeline nights={nights} therapyChangeDate={therapyChangeDate} />
       <ProTease
-        feature="Weekly email digest with trend alerts and therapy change recommendations."
+        feature="Weekly email digest with trend summaries and data pattern highlights."
         source="trends-tab"
       />
     </div>
