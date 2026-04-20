@@ -126,6 +126,8 @@ function AnalyzePageInner() {
   const [isIOS, setIsIOS] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const [engineUpgraded, setEngineUpgraded] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const tabScrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
@@ -461,6 +463,14 @@ function AnalyzePageInner() {
       setPersistedData(null);
     }
   }, [isDemo]);
+
+  // Scroll active tab into view on change and initial mount
+  useEffect(() => {
+    const container = tabScrollRef.current;
+    if (!container) return;
+    const activeEl = container.querySelector('[data-active]') as HTMLElement | null;
+    activeEl?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
 
   const { status, progress, error, warning, persistenceWarning, warnings } = state;
 
@@ -856,58 +866,67 @@ function AnalyzePageInner() {
           )}
 
           {/* Tabbed Views — right after controls, above nudge banners */}
-          <Tabs defaultValue="overview" onValueChange={(tab) => events.tabViewed(tab)}>
-            <TabsList
-              variant="line"
-              data-walkthrough="tab-bar"
-              className="sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] justify-start overflow-x-auto rounded-none border-b border-border/50 bg-card px-4 sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30 sm:px-1"
-            >
-              {/* Primary tabs — full words on mobile */}
-              <TabsTrigger value="overview" className="gap-1.5">
-                <BarChart3 className="h-3.5 w-3.5" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="graphs" className="gap-1.5">
-                <BarChart className="h-3.5 w-3.5" />
-                Graphs
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="gap-1.5">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Trends
-              </TabsTrigger>
+          <Tabs defaultValue="overview" onValueChange={(tab) => { events.tabViewed(tab); setActiveTab(tab); }}>
+            {/* Tab bar: sticky wrapper with scroll container + mobile fade gradients */}
+            <div className="relative sticky top-14 z-40 -mx-4 w-[calc(100%+2rem)] bg-card border-b border-border/50 sm:top-16 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:bg-card/30">
+              {/* Left fade — signals scroll on mobile */}
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-card to-transparent z-10 sm:hidden" aria-hidden="true" />
+              {/* Scrollable container */}
+              <div ref={tabScrollRef} className="overflow-x-auto scrollbar-hide px-4 sm:px-1">
+                <TabsList
+                  variant="line"
+                  data-walkthrough="tab-bar"
+                  className="inline-flex w-max justify-start rounded-none sm:rounded-lg"
+                >
+                  {/* Primary tabs */}
+                  <TabsTrigger value="overview" className="gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="graphs" className="gap-1.5">
+                    <BarChart className="h-3.5 w-3.5" />
+                    Graphs
+                  </TabsTrigger>
+                  <TabsTrigger value="trends" className="gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Trends
+                  </TabsTrigger>
 
-              {/* Separator between primary and secondary tabs */}
-              <div className="mx-1 h-4 w-px shrink-0 bg-border/50 sm:mx-2" aria-hidden="true" />
+                  {/* Separator between primary and secondary tabs */}
+                  <div className="mx-1 h-4 w-px shrink-0 bg-border/50 sm:mx-2" aria-hidden="true" />
 
-              {/* Secondary tabs — abbreviated on mobile */}
-              <TabsTrigger value="glasgow" className="gap-1.5">
-                <Activity className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Gla</span>
-                <span className="hidden sm:inline">Glasgow</span>
-              </TabsTrigger>
-              <TabsTrigger value="flow" className="gap-1.5">
-                <Waves className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Flow</span>
-                <span className="hidden sm:inline">Flow Analysis</span>
-              </TabsTrigger>
-              {currentNight?.settingsMetrics && (
-                <TabsTrigger value="settings" className="gap-1.5">
-                  <Settings2 className="h-3.5 w-3.5" />
-                  <span className="sm:hidden text-[11px]">Set</span>
-                  <span className="hidden sm:inline">Settings</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="oximetry" className="gap-1.5">
-                <HeartPulse className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">O₂</span>
-                <span className="hidden sm:inline">Oximetry</span>
-              </TabsTrigger>
-              <TabsTrigger value="compare" className="gap-1.5">
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-                <span className="sm:hidden text-[11px]">Cmp</span>
-                <span className="hidden sm:inline">Compare</span>
-              </TabsTrigger>
-            </TabsList>
+                  {/* Secondary tabs — abbreviated on mobile */}
+                  <TabsTrigger value="glasgow" className="gap-1.5">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Glasgow</span>
+                    <span className="hidden sm:inline">Glasgow</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="flow" className="gap-1.5">
+                    <Waves className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Flow</span>
+                    <span className="hidden sm:inline">Flow Analysis</span>
+                  </TabsTrigger>
+                  {currentNight?.settingsMetrics && (
+                    <TabsTrigger value="settings" className="gap-1.5">
+                      <Settings2 className="h-3.5 w-3.5" />
+                      Settings
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="oximetry" className="gap-1.5">
+                    <HeartPulse className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Oxy</span>
+                    <span className="hidden sm:inline">Oximetry</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="compare" className="gap-1.5">
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                    <span className="sm:hidden text-[11px]">Compare</span>
+                    <span className="hidden sm:inline">Comparison</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              {/* Right fade — signals scroll on mobile */}
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-card to-transparent z-10 sm:hidden" aria-hidden="true" />
+            </div>
 
             <TabsContent value="overview" className="mt-4">
               <ErrorBoundary context="Overview">

@@ -180,6 +180,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'how-to-read-cpap-data',
     title: 'How to Read Your CPAP Data (And Why AHI Isn\'t the Whole Story)',
+    seoTitle: 'How to Read Your CPAP Data — AirwayLab',
     description:
       'Your PAP machine records thousands of data points every night. AHI only shows part of the picture. Learn how to read your CPAP data properly -- flow limitation, breathing patterns, and the metrics that matter.',
     date: '2026-04-03',
@@ -220,6 +221,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'why-ahi-is-lying',
     title: 'Why Your AHI Is Lying to You',
+    seoTitle: 'Why Your CPAP AHI Score Can Be Misleading — AirwayLab',
     description:
       'AHI was never designed to measure sleep quality. It misses flow limitation, RERAs, breathing irregularity, and the autonomic stress response. Here is the evidence -- and what you can track instead.',
     date: '2026-03-20',
@@ -351,6 +353,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['Flow Limitation', 'Research', 'UARS', 'Sleepiness'],
     ogDescription:
       'Research shows inspiratory flow limitation predicts sleepiness independent of arousals and AHI. Learn what this means for tracking your PAP therapy.',
+    faqItems: [
+      {
+        question: 'Does flow limitation on CPAP cause daytime sleepiness?',
+        answer: 'Research shows inspiratory flow limitation is associated with daytime sleepiness and fatigue independently of AHI and arousal index. Studies have found that patients with high flow limitation scores report worse subjective sleepiness even when arousals and AHI are controlled for, suggesting the respiratory effort response itself may contribute to symptoms.',
+      },
+      {
+        question: 'What is the relationship between flow limitation and UARS?',
+        answer: 'Upper Airway Resistance Syndrome (UARS) is characterised by high respiratory effort and symptoms despite normal AHI. Flow limitation is one of the primary physiological markers of UARS. Many UARS patients show high FL scores and elevated RERA counts in their PAP data even with AHI under 5.',
+      },
+    ],
   },
   {
     slug: 'arousals-vs-flow-limitation',
@@ -362,6 +374,16 @@ export const blogPosts: BlogPost[] = [
     tags: ['Arousals', 'Flow Limitation', 'UARS', 'Research'],
     ogDescription:
       'Arousals may not be the primary driver of sleep-disordered breathing symptoms. Dr. Gold\'s limbic stress response model offers a compelling alternative.',
+    faqItems: [
+      {
+        question: 'What is a RERA in CPAP data?',
+        answer: 'A RERA (Respiratory Effort-Related Arousal) is a sequence of flow-limited breaths that ends in a brief cortical arousal. Unlike apneas, RERAs do not meet AHI threshold criteria but can fragment sleep architecture. They are detected through flow waveform analysis of PAP SD card data.',
+      },
+      {
+        question: 'Do arousals cause sleep apnea symptoms or does flow limitation?',
+        answer: 'Research from Dr. Avram Gold and others suggests the autonomic stress response to flow limitation itself — not the cortical arousal — may be the primary driver of symptoms in upper airway resistance. This means patients with high flow limitation but few measurable arousals can still experience significant fatigue.',
+      },
+    ],
   },
   {
     slug: 'epworth-sleepiness-scale',
