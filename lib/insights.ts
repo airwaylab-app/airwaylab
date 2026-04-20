@@ -81,7 +81,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research shows this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Discuss these findings with your clinician at your next review.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -350,7 +350,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'symptom-fl-correlation',
         type: 'warning',
         title: 'Elevated flow limitation correlates with symptom rating',
-        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. This pattern shows elevated flow limitation correlating with your reported experience. Discuss these findings with your clinician.`,
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. Your flow limitation scores are elevated alongside your subjective rating of this night. Your clinician can help interpret these findings in context.`,
         category: 'ned',
       });
     } else if (iflRisk > 45 && symptomRating >= 4) {
@@ -684,7 +684,7 @@ function trendInsights(
       id: 'trend-glasgow-improving',
       type: 'positive',
       title: 'Glasgow Index trending down over time',
-      body: `Flow limitation scores are improving across ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}).`,
+      body: `Flow limitation scores are trending lower across ${nights.length} nights (${fmt(glasgowVals[0]!)} → ${fmt(glasgowVals[glasgowVals.length - 1]!)}).`,
       category: 'trend',
     });
   } else if (gTrend === 'worsening') {
