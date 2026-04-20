@@ -47,7 +47,7 @@ export default function CPAPLeakRateExplainedPost() {
             Intentional Leak vs. Unintentional Leak
           </h3>
           <p>
-            Not all leak is a problem. This is the distinction that most CPAP apps and apps don&apos;t
+            Not all leak is a problem. This is the distinction that most CPAP apps and reports don&apos;t
             explain clearly enough.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
