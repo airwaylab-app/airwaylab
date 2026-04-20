@@ -100,6 +100,50 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'cpap-leak-rate-explained',
+    title: 'Understanding CPAP Mask Leak Rate: What the Numbers Mean',
+    seoTitle: 'Understanding CPAP Mask Leak Rate | AirwayLab',
+    description:
+      'Learn what CPAP mask leak rate means, how it\'s measured, and what the data shows. Explore your leak data free in your browser with AirwayLab.',
+    date: '2026-04-19',
+    readTime: '8 min read',
+    tags: ['CPAP', 'Leak Rate', 'ResMed', 'Getting Started'],
+    ogDescription:
+      'Learn what CPAP mask leak rate means, how it\'s measured, and what the data shows. Explore your leak data free in your browser with AirwayLab.',
+    faqItems: [
+      {
+        question: 'What is a good CPAP mask leak rate?',
+        answer:
+          "ResMed's published documentation references 24 L/min as a threshold for unintentional leak, but what's appropriate varies by machine model, mask type, and therapy mode. Your clinician can help you interpret what your specific numbers mean.",
+      },
+      {
+        question: 'What is the difference between large leak and unintentional leak on CPAP?',
+        answer:
+          'These terms are used differently by different manufacturers. ResMed reports a continuous unintentional leak figure (in L/min) that subtracts the expected intentional vent flow. Philips DreamStation devices report "large leak" as a binary flag when leak is high enough to affect therapy delivery for a sustained period.',
+      },
+      {
+        question: 'Does a high leak rate affect my AHI reading?',
+        answer:
+          'Yes. Significant unintentional leak distorts the flow signal your machine uses to detect breathing events. On high-leak nights, AHI figures may be less reliable — either underreporting events missed in the noise, or over-counting artefacts flagged as events.',
+      },
+      {
+        question: 'How do I check my CPAP leak rate without software?',
+        answer:
+          'ResMed myAir displays a mask seal rating derived from leak data. For the raw L/min figures, you need SD card analysis software: OSCAR (free, local) or AirwayLab (free, browser-based). Both read the same underlying data.',
+      },
+      {
+        question: 'What does it mean when my CPAP reports a leak rate of 0?',
+        answer:
+          'A reported unintentional leak of 0 L/min means the device detected no leak above the expected vent flow. This is normal for a well-fitting mask on a given night. If you see 0 L/min consistently across all nights, double-check that your device is reporting unintentional leak rather than a different column.',
+      },
+      {
+        question: 'Can I see my CPAP leak rate data for free?',
+        answer:
+          'Yes. AirwayLab reads your ResMed SD card data in your browser — no account required, no upload to any server. Your data never leaves your device. The analysis is free and always will be.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
@@ -179,6 +223,50 @@ export const blogPosts: BlogPost[] = [
         question: 'Which CPAP machines does AirwayLab support?',
         answer:
           'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. Support for additional manufacturers is planned.',
+      },
+    ],
+  },
+  {
+    slug: 'understanding-cpap-data',
+    title: 'Understanding Your CPAP Data: A Plain-Language Guide to AHI, Leaks, and Flow Limitations',
+    seoTitle: 'Understanding Your CPAP Data: AHI, Leaks, and Flow Limitations Explained',
+    description:
+      "New to CPAP data analysis? Learn what AHI, leak rates, flow limitations, and RERAs actually mean — and how AirwayLab helps you see your therapy clearly.",
+    date: '2026-04-18',
+    readTime: '6 min read',
+    tags: ['CPAP', 'AHI', 'Flow Limitation', 'Getting Started', 'Leak Rate'],
+    ogDescription:
+      "New to CPAP data analysis? Learn what AHI, leak rates, flow limitations, and RERAs actually mean — and how AirwayLab helps you see your therapy clearly.",
+    faqItems: [
+      {
+        question: 'What is AHI on a CPAP report?',
+        answer:
+          'AHI (Apnea-Hypopnea Index) is the average number of breathing pauses per hour during sleep. Your clinician can help you understand what your AHI means in context. This tool is informational only.',
+      },
+      {
+        question: 'What do flow limitations mean on my CPAP data?',
+        answer:
+          'Flow limitations indicate partial airway restriction that may not appear in your AHI count. Your clinician can help you understand what frequent flow limitation patterns mean for your situation. This tool is informational only.',
+      },
+      {
+        question: 'What is a RERA in CPAP data?',
+        answer:
+          "A Respiratory Effort Related Arousal is a brief sleep disruption from increased breathing effort that doesn't meet the full criteria for a hypopnea.",
+      },
+      {
+        question: 'How do I read my CPAP data?',
+        answer:
+          'Tools like OSCAR and AirwayLab can help you visualise your SD card data. AirwayLab runs in your browser with no upload required.',
+      },
+      {
+        question: 'What causes high leak rate on CPAP?',
+        answer:
+          'Common causes include mask fit issues, mouth breathing, or positional factors. Your care team can help you understand what your leak rate data means. This tool is informational only.',
+      },
+      {
+        question: 'Is AirwayLab free?',
+        answer:
+          'Yes. AirwayLab is free and always will be. Premium features support ongoing development but the core analysis is always available at no cost.',
       },
     ],
   },
