@@ -17,6 +17,50 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-analyze-cpap-data-at-home',
+    title: 'How to Analyze Your CPAP Data at Home',
+    seoTitle: 'How to Analyze Your CPAP Data at Home | AirwayLab',
+    description:
+      'Learn how to analyze your CPAP data at home — explore AHI trends, leaks, and flow limitations with free, private, browser-based tools. No uploads, no accounts.',
+    date: '2026-04-23',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Flow Limitation', 'Privacy'],
+    ogDescription:
+      'Learn how to analyze your CPAP data at home — explore AHI trends, leaks, and flow limitations with free, private, browser-based tools. No uploads, no accounts.',
+    faqItems: [
+      {
+        question: 'Is exploring my own CPAP data safe?',
+        answer:
+          'Exploring your therapy data is informational — it is not a substitute for clinical review. Use what you find to prepare better questions for your care team, not to make independent therapy decisions.',
+      },
+      {
+        question: 'Do I need a specific CPAP device to use AirwayLab?',
+        answer:
+          'AirwayLab supports data from most common CPAP and BiPAP devices that record detailed data to SD card, including ResMed and some Philips models. Check the supported devices page for the current list.',
+      },
+      {
+        question: 'Does my data get uploaded anywhere?',
+        answer:
+          'No. AirwayLab processes your data entirely in your browser. Nothing is transmitted, stored, or shared. Your data stays on your device.',
+      },
+      {
+        question: "What's the difference between AHI and RERA index?",
+        answer:
+          'AHI counts apneas and hypopneas per hour. The RERA index counts respiratory effort-related arousals separately. Some devices score these differently, and your clinician may consider both when evaluating therapy patterns.',
+      },
+      {
+        question: "I'm already using OSCAR — why would I also use AirwayLab?",
+        answer:
+          "OSCAR is excellent and AirwayLab is not trying to replace it. Some users find AirwayLab's interface easier to start with, or use it alongside OSCAR for a different view of the same data. Both are free, both are open-source.",
+      },
+      {
+        question: 'Should I change my settings based on what I find?',
+        answer:
+          'Pressure settings are managed by your healthcare provider based on your clinical needs. Your clinician can interpret these patterns in clinical context.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
