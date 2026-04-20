@@ -61,6 +61,45 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'how-to-read-oscar-cpap-charts',
+    title: 'How to Read OSCAR CPAP Charts (A Plain-English Guide)',
+    seoTitle: 'How to Read OSCAR CPAP Charts (A Plain-English Guide) | AirwayLab',
+    description:
+      'Learn how to read OSCAR CPAP charts — AHI events, flow rate, pressure, and leaks — explained in plain English for PAP therapy users.',
+    date: '2026-04-27',
+    readTime: '8 min read',
+    tags: ['OSCAR', 'CPAP', 'Getting Started', 'Flow Limitation', 'AHI'],
+    ogDescription:
+      'Learn how to read OSCAR CPAP charts — AHI events, flow rate, pressure, and leaks — explained in plain English for PAP therapy users.',
+    faqItems: [
+      {
+        question: 'What does AHI mean in OSCAR?',
+        answer:
+          'AHI stands for Apnea-Hypopnea Index — the number of apneas and hypopneas per hour of recorded therapy time. OSCAR calculates it from the event log your machine stores on its SD card.',
+      },
+      {
+        question: 'What is a normal AHI in OSCAR?',
+        answer:
+          'AHI thresholds are defined clinically and should be interpreted by a qualified clinician in the context of your specific prescription and symptoms. Discussing your nightly numbers with your sleep team gives you the most meaningful guidance.',
+      },
+      {
+        question: 'What do flow limitations mean in OSCAR?',
+        answer:
+          "Flow limitations appear as a flattening of the inhalation curve in OSCAR's flow rate panel. They reflect a flattened inhalation waveform that the machine records as flow limitation. High flow limitation counts can be worth discussing with your clinician, particularly if you're on APAP therapy.",
+      },
+      {
+        question: 'Is OSCAR better than the ResMed or Philips app?',
+        answer:
+          'OSCAR accesses the detailed data log stored on your SD card, while manufacturer apps typically show a simplified nightly summary. They serve different purposes — the manufacturer app is convenient for a quick overview; OSCAR (and AirwayLab) are for deeper exploration of your therapy data.',
+      },
+      {
+        question: 'Can I use AirwayLab instead of OSCAR?',
+        answer:
+          'AirwayLab reads the same SD card files as OSCAR and shows your data in a browser without requiring a desktop app. The two tools are complementary — many users use both depending on the task.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',
@@ -836,6 +875,45 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'My AirCurve has an older firmware. Will my data work with AirwayLab?',
         answer: 'AirwayLab supports EDF files from all AirCurve 10 and AirCurve 11 firmware versions. The parser handles format variations across firmware releases automatically.',
+      },
+    ],
+  },
+  {
+    slug: 'what-is-flow-limitation-cpap',
+    title: 'What Is Flow Limitation on CPAP?',
+    seoTitle: 'What Is Flow Limitation on CPAP? | AirwayLab',
+    description:
+      'Flow limitation on CPAP means your airway is partially narrowing during sleep. Learn what the waveform shows, why it matters when AHI looks fine, and what to note for your clinician.',
+    date: '2026-04-19',
+    readTime: '6 min read',
+    tags: ['Flow Limitation', 'CPAP', 'AHI', 'UARS', 'RERA'],
+    ogDescription:
+      'Flow limitation on CPAP means your airway is partially narrowing during sleep. Learn what the waveform shows, why it matters when AHI looks fine, and what to note for your clinician.',
+    faqItems: [
+      {
+        question: 'What does flow limitation mean on CPAP?',
+        answer:
+          'Flow limitation on CPAP refers to a partial narrowing of the upper airway during inspiration that causes the flow rate curve to flatten, meaning airflow is capped despite continued breathing effort. It is not a complete obstruction and is not scored in AHI, but can appear in your waveform data.',
+      },
+      {
+        question: 'Is flow limitation the same as an apnea?',
+        answer:
+          'No. An apnea is a complete cessation of airflow. Flow limitation is a partial narrowing that constrains airflow without stopping it. It sits below the threshold for a scored apnea or qualifying hypopnea.',
+      },
+      {
+        question: 'Can you have flow limitation with a low AHI?',
+        answer:
+          'Yes. AHI counts apneas and qualifying hypopneas; flow limitation events are not included in that count. Some users see frequent flow limitation in their waveform data while their AHI remains in a normal range.',
+      },
+      {
+        question: 'How do I see flow limitation in OSCAR or AirwayLab?',
+        answer:
+          'Look at the Flow Rate waveform. Breaths affected by flow limitation show a flattened or plateaued top on the inspiratory curve rather than a smooth rounded arch. AirwayLab lets you zoom into individual breaths to inspect the curve shape.',
+      },
+      {
+        question: 'Should I be worried about flow limitation on CPAP?',
+        answer:
+          'This is a question for your clinician. Flow limitation is one data point among many. Whether it is clinically significant in your situation depends on your full history, how you are sleeping, and what your care team observes. Bring your data to your next appointment and discuss what you are seeing.',
       },
     ],
   },
