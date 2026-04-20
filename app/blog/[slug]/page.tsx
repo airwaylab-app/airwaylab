@@ -28,6 +28,7 @@ import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-scor
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
+import WhatAreRERAs from '../posts/what-are-reras-sleep-apnea';
 
 const postComponents: Record<string, React.ComponentType> = {
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
@@ -53,6 +54,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
   'pap-data-privacy': PAPDataPrivacy,
+  'what-are-reras-sleep-apnea': WhatAreRERAs,
 };
 
 export function generateStaticParams() {

@@ -511,6 +511,50 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'what-are-reras-sleep-apnea',
+    title: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
+    seoTitle: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI — AirwayLab',
+    description:
+      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
+    date: '2026-04-23',
+    readTime: '7 min read',
+    tags: ['RERAs', 'AHI', 'UARS', 'Flow Limitation', 'Sleep Apnea'],
+    ogDescription:
+      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
+    faqItems: [
+      {
+        question: 'What is a RERA in sleep apnea?',
+        answer:
+          'A RERA (Respiratory Effort-Related Arousal) is a sequence of breaths where your upper airway progressively narrows, increasing respiratory effort, until a brief cortical arousal re-opens the airway. Unlike apneas and hypopneas, RERAs do not cause a sustained oxygen drop — they disrupt sleep through arousal alone.',
+      },
+      {
+        question: 'Are RERAs counted in AHI?',
+        answer:
+          'No. AHI (Apnea-Hypopnea Index) only counts complete breathing stops (apneas) and sustained airflow reductions with oxygen desaturation (hypopneas). RERAs are excluded from AHI by definition. They are reported separately as RERA Index (events per hour) and are included in the broader RDI (Respiratory Disturbance Index).',
+      },
+      {
+        question: 'What is a normal RERA index?',
+        answer:
+          'There is no universally agreed threshold, but a RERA Index below 5 per hour is generally considered minimal. Values between 5 and 15 per hour represent moderate burden that may explain residual symptoms when AHI is controlled. Values above 15 per hour represent significant sleep fragmentation. Always discuss your RERA Index with your sleep physician — these are reference ranges, not diagnostic criteria.',
+      },
+      {
+        question: 'What is the difference between RERAs and UARS?',
+        answer:
+          'UARS (Upper Airway Resistance Syndrome) is the diagnosis given when a patient has a high RERA Index alongside normal or near-normal AHI, and symptoms of sleep-disordered breathing. RERAs are the individual events; UARS is the clinical syndrome caused by high RERA burden. Many patients with UARS are told their AHI is fine and sent home without answers.',
+      },
+      {
+        question: 'Can I see my RERA Index in AirwayLab?',
+        answer:
+          'Yes. AirwayLab analyses your PAP flow waveform breath by breath and detects RERA sequences using Negative Effort Dependence (NED) scoring. Your RERA Index is shown in the Flow Analysis tab alongside AHI and the Glasgow Index flow limitation score. All analysis runs locally in your browser — no data is uploaded.',
+      },
+      {
+        question: 'How do RERAs appear in CPAP flow data?',
+        answer:
+          'RERAs appear as a crescendo-then-reset pattern in the flow waveform. You see 3–15 consecutive breaths with progressively flattening waveform tops (increasing flow limitation), followed by one or two large, round recovery breaths. The recovery breath is the arousal signature — the moment your brain briefly surfaces from sleep to restore airway patency.',
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
