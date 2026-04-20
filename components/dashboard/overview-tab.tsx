@@ -52,11 +52,21 @@ interface Props {
   onUploadOximetry?: () => void;
   onReUpload?: () => void;
   onOpenAuth?: () => void;
+  onAdjustThreshold?: (metricKey: string) => void;
   isDemo?: boolean;
   isNewUser?: boolean;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, isDemo = false, isNewUser = false }: Props) {
+/** Compute simple mean of the last 7 nights for a given accessor. Returns undefined if <2 nights. */
+function avg7(nights: NightResult[], accessor: (n: NightResult) => number | null | undefined): number | undefined {
+  const recent = nights.slice(-7);
+  if (recent.length < 2) return undefined;
+  const vals = recent.map(accessor).filter((v): v is number => v != null && !isNaN(v));
+  if (vals.length < 2) return undefined;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, onAdjustThreshold, isDemo = false, isNewUser = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -249,6 +259,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="pct"
           threshold={THRESHOLDS.iflRisk}
           previousValue={p ? computeIFLRisk(p) : undefined}
+          sevenNightAvg={avg7(nights, (x) => computeIFLRisk(x))}
+          onAdjustThreshold={onAdjustThreshold ? () => onAdjustThreshold('iflRisk') : undefined}
+          communityKey="iflRisk_elevated"
           tooltip="Combines FL Score, NED, Flatness Index, and Glasgow Index to estimate how much flow limitation may be driving symptoms. Higher values suggest greater symptom risk from flow limitation."
           plainLanguage={METRIC_PLAIN_LANGUAGE.iflRisk}
           contextHint={getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'bad' ? 'Elevated -- this is an independent dimension from your respiratory event count' : getTrafficLight(computeIFLRisk(n), THRESHOLDS.iflRisk!) === 'warn' ? 'Above the typical range' : undefined}
@@ -259,6 +272,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           value={n.glasgow.overall}
           threshold={THRESHOLDS.glasgowOverall}
           previousValue={p?.glasgow.overall}
+          sevenNightAvg={avg7(nights, (x) => x.glasgow.overall)}
+          onAdjustThreshold={onAdjustThreshold ? () => onAdjustThreshold('glasgowOverall') : undefined}
+          communityKey="glasgow_elevated"
           tooltip="A composite score measuring how abnormal your breathing waveform looks. Lower is better. Based on 9 breath shape components."
           methodology={METRIC_METHODOLOGIES.glasgowIndex}
           plainLanguage={METRIC_PLAIN_LANGUAGE.glasgowIndex}
@@ -272,6 +288,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="pct"
           threshold={THRESHOLDS.watFL}
           previousValue={p?.wat.flScore}
+          sevenNightAvg={avg7(nights, (x) => x.wat.flScore)}
+          onAdjustThreshold={onAdjustThreshold ? () => onAdjustThreshold('watFL') : undefined}
+          communityKey="iflRisk_elevated"
           tooltip="Percentage of breaths showing flow limitation — when your airway partially collapses during inhalation. Lower is better."
           methodology={METRIC_METHODOLOGIES.flScore}
           plainLanguage={METRIC_PLAIN_LANGUAGE.flScore}
@@ -285,6 +304,9 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           format="pct"
           threshold={THRESHOLDS.nedMean}
           previousValue={p?.ned.nedMean}
+          sevenNightAvg={avg7(nights, (x) => x.ned.nedMean)}
+          onAdjustThreshold={onAdjustThreshold ? () => onAdjustThreshold('nedMean') : undefined}
+          communityKey="ned_elevated"
           tooltip="Negative Effort Dependence — measures how much your breathing effort is wasted due to airway obstruction. Lower is better."
           methodology={METRIC_METHODOLOGIES.nedMean}
           plainLanguage={METRIC_PLAIN_LANGUAGE.nedMean}
@@ -297,6 +319,8 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           unit="/hr"
           threshold={THRESHOLDS.reraIndex}
           previousValue={p?.ned.reraIndex}
+          sevenNightAvg={avg7(nights, (x) => x.ned.reraIndex)}
+          onAdjustThreshold={onAdjustThreshold ? () => onAdjustThreshold('reraIndex') : undefined}
           tooltip="Respiratory Effort-Related Arousals per hour. These are brief awakenings caused by breathing effort. Lower is better."
           methodology={METRIC_METHODOLOGIES.reraIndex}
           plainLanguage={METRIC_PLAIN_LANGUAGE.reraIndex}

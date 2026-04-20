@@ -27,7 +27,7 @@ import { EmailOptIn } from '@/components/common/email-opt-in';
 import { EmailOptInToggle, EmailOptInNudge } from '@/components/common/email-opt-in-toggle';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { ThresholdsProvider } from '@/components/common/thresholds-provider';
-import { ThresholdSettingsModal } from '@/components/dashboard/threshold-settings-modal';
+import { ThresholdSettingsModal, type ThresholdSettingsModalHandle } from '@/components/dashboard/threshold-settings-modal';
 import { OverviewTab } from '@/components/dashboard/overview-tab';
 import { GlasgowTab } from '@/components/dashboard/glasgow-tab';
 import { FlowAnalysisTab } from '@/components/dashboard/flow-analysis-tab';
@@ -133,6 +133,7 @@ function AnalyzePageInner() {
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
   const hasTriggeredAutoUpload = useRef(false);
+  const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
 
   // Warn before closing/refreshing while analysis is in progress
   useEffect(() => {
@@ -858,7 +859,7 @@ function AnalyzePageInner() {
               )}
               {!isDemo && <ShareButton nights={nights} selectedNight={nights[selectedNight]!} sdFiles={sdFilesRef.current} />}
               {!isNewUser && !isDemo && <ExportButtons nights={nights} selectedNight={nights[selectedNight]!} />}
-              {!isNewUser && <ThresholdSettingsModal />}
+              <ThresholdSettingsModal ref={thresholdModalRef} />
               <Button variant="ghost" size="sm" onClick={handleReset}>
                 <RotateCcw className="mr-2 h-3 w-3" /> {isDemo ? 'Exit Demo' : 'New'}
               </Button>
@@ -968,6 +969,7 @@ function AnalyzePageInner() {
                   isDemo={isDemo}
                   isNewUser={isNewUser}
                   onOpenAuth={() => setAnalyzeAuthModalOpen(true)}
+                  onAdjustThreshold={(key) => thresholdModalRef.current?.openTo(key)}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
