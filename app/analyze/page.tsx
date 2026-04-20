@@ -864,8 +864,7 @@ function AnalyzePageInner() {
                   {/* Secondary tabs — abbreviated on mobile */}
                   <TabsTrigger value="glasgow" className="gap-1.5">
                     <Activity className="h-3.5 w-3.5" />
-                    <span className="sm:hidden text-[11px]">Glasgow</span>
-                    <span className="hidden sm:inline">Glasgow</span>
+                    Glasgow
                   </TabsTrigger>
                   <TabsTrigger value="flow" className="gap-1.5">
                     <Waves className="h-3.5 w-3.5" />
@@ -885,8 +884,7 @@ function AnalyzePageInner() {
                   </TabsTrigger>
                   <TabsTrigger value="compare" className="gap-1.5">
                     <ArrowLeftRight className="h-3.5 w-3.5" />
-                    <span className="sm:hidden text-[11px]">Compare</span>
-                    <span className="hidden sm:inline">Comparison</span>
+                    Compare
                   </TabsTrigger>
                 </TabsList>
               </div>
