@@ -224,7 +224,6 @@ export async function fetchAIInsights(
 
 /**
  * Fetches deep AI insights for paid users — includes per-breath summary data.
- * Longer timeout (30s) since the prompt is larger.
  * Throws on failure with a user-facing error message.
  */
 export async function fetchDeepAIInsights(
@@ -236,7 +235,10 @@ export async function fetchDeepAIInsights(
   perBreathSummary?: PerBreathSummary
 ): Promise<AIInsightsResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 65000);
+  // 55s — must be shorter than route maxDuration (60s) so the client timer fires
+  // before Vercel kills the connection. A killed connection shows as "Failed to fetch"
+  // instead of the correct "timed out" message (AIR-691).
+  const timeout = setTimeout(() => controller.abort(), 55000);
 
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
@@ -297,7 +299,7 @@ export async function fetchDeepAIInsights(
       if (signal?.aborted) {
         throw err; // External abort (unmount / re-generate)
       }
-      console.error('[ai-insights] Request timed out after 65s');
+      console.error('[ai-insights] Request timed out after 55s');
       throw new Error('AI analysis timed out. Please try again.');
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {

@@ -155,7 +155,10 @@ const BreathSummarySchema = z.object({
 });
 
 const PerBreathSummarySchema = z.object({
-  breaths: z.array(BreathSummarySchema).max(10000),
+  // Cap at 1000 — matches the client-side truncation in ai-insights-client.ts.
+  // Higher values would not be processed (buildUserPrompt caps at 1000) and would
+  // bloat the request payload toward the 512 KB guard (AIR-691).
+  breaths: z.array(BreathSummarySchema).max(1000),
   breathCount: z.number().int(),
   sampleRate: z.number(),
 }).optional();
@@ -255,8 +258,8 @@ function buildUserPrompt(body: RequestBody): string {
     context.perBreathSummary = {
       breathCount: pbs.breathCount,
       sampleRate: pbs.sampleRate,
-      // Include up to 3000 breaths (truncate to stay within token limits)
-      breaths: pbs.breaths.slice(0, 3000),
+      // Cap at 1000 — aligns with client truncation and Zod schema max (AIR-691)
+      breaths: pbs.breaths.slice(0, 1000),
     };
   }
 
