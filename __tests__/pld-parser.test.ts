@@ -317,6 +317,33 @@ describe('PLD Parser', () => {
       writeField(252, 4, '0'); // 0 signals
       expect(parsePLD(emptyBuffer, 'test.edf')).toBeNull();
     });
+    it('does not throw on negative numSamples in signal header (corrupt PLD)', () => {
+      // Regression test for Sentry errors:
+      //   "Invalid typed array length: -30" (Variant A)
+      //   "Requested length is negative"    (Variant B)
+      // Root cause: corrupted PLD.edf files can encode a negative integer in the
+      // numSamples field, which flowed unguarded into new Float32Array(negative).
+      const numRecords = 10;
+      const channels: TestChannel[] = [
+        { label: 'Leak', data: Array.from({ length: numRecords }, () => 0.2), physicalMin: 0, physicalMax: 2, unit: 'L/s' },
+      ];
+      const buffer = makePLDBuffer(channels);
+
+      // Overwrite the numSamples field for signal 0 with a negative value ("-30")
+      const encoder2 = new TextEncoder();
+      const numSignals = 1;
+      // numSamples section starts at: 256 + numSignals*(16+80+8+8+8+8+8+80) = 256 + numSignals*216
+      const numSamplesOffset = 256 + numSignals * (16 + 80 + 8 + 8 + 8 + 8 + 8 + 80);
+      const negativeValue = encoder2.encode('-30     ');
+      new Uint8Array(buffer, numSamplesOffset, 8).set(negativeValue);
+
+      // Must not throw — returns null (no usable data) rather than crashing
+      expect(() => parsePLD(buffer, 'corrupt_PLD.edf')).not.toThrow();
+      const result = parsePLD(buffer, 'corrupt_PLD.edf');
+      expect(result).toBeNull();
+    });
+
+
 
     it('returns null when no recognizable channel labels found', () => {
       const numRecords = 10;
