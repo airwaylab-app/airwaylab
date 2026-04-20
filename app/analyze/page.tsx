@@ -898,6 +898,7 @@ function AnalyzePageInner() {
                   {/* Secondary tabs — abbreviated on mobile */}
                   <TabsTrigger value="glasgow" className="gap-1.5">
                     <Activity className="h-3.5 w-3.5" />
+                    Glasgow
                     <span className="sm:hidden text-[11px]">Glasgow</span>
                     <span className="hidden sm:inline">Glasgow</span>
                   </TabsTrigger>
@@ -919,6 +920,7 @@ function AnalyzePageInner() {
                   </TabsTrigger>
                   <TabsTrigger value="compare" className="gap-1.5">
                     <ArrowLeftRight className="h-3.5 w-3.5" />
+                    Compare
                     <span className="sm:hidden text-[11px]">Compare</span>
                     <span className="hidden sm:inline">Comparison</span>
                   </TabsTrigger>
