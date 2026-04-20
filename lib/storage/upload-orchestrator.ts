@@ -37,6 +37,16 @@ export function isTransientServerError(errorMessage: string): boolean {
   return /\b(502|503|504|520)\b/.test(errorMessage);
 }
 
+/**
+ * Determine Sentry severity level for partial upload failures.
+ * Escalates to 'error' when all files failed OR more than 5 files failed,
+ * so that Sentry alerts trigger before floods accumulate unnoticed.
+ */
+export function getPartialFailureLevel(uploaded: number, failed: number): 'error' | 'warning' {
+  if (uploaded === 0 || failed > 5) return 'error';
+  return 'warning';
+}
+
 function getFilePath(file: File): string {
   return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
 }
@@ -252,8 +262,11 @@ class UploadOrchestrator {
       (err) => /\b(500|502|503|504|520)\b/.test(err)
     );
 
+    const userId = String(Sentry.getCurrentScope().getUser()?.id ?? 'anonymous');
+
     Sentry.captureMessage('cloud_upload_partial_failure', {
-      level: result.uploaded === 0 ? 'error' : 'warning',
+      level: getPartialFailureLevel(result.uploaded, result.failed),
+      fingerprint: ['cloud_upload_partial_failure', userId],
       tags: {
         allFailed: String(result.uploaded === 0),
         failedCount: String(result.failed),
