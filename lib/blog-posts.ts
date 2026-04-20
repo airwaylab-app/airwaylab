@@ -562,6 +562,35 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'resmed-airsense-10-sd-card',
+    title: 'How to Get Your ResMed AirSense 10 Data Into AirwayLab (Step by Step)',
+    description:
+      'Learn how to find, remove, and read the SD card from your ResMed AirSense 10. Step-by-step guide to getting your CPAP data into AirwayLab for detailed analysis.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'CPAP', 'ResMed', 'AirSense 10', 'SD Card'],
+    ogDescription:
+      'Learn how to find, remove, and read the SD card from your ResMed AirSense 10. Step-by-step guide to getting your CPAP data into AirwayLab for detailed analysis.',
+    faqItems: [
+      {
+        question: 'How often should I check my AirSense 10 data?',
+        answer: 'That is entirely up to you. Some people check weekly, others monthly. The SD card stores months of data, so there is no rush. Many users find a monthly review gives them a useful picture of trends without being overwhelming.',
+      },
+      {
+        question: 'Will removing the SD card from my AirSense 10 affect my therapy?',
+        answer: 'No. Your AirSense 10 continues to provide therapy without the SD card. It just will not record detailed session data until the card is back. Your therapy settings are stored in the machine\'s internal memory, not on the card.',
+      },
+      {
+        question: 'What is in the DATALOG folder on a ResMed AirSense 10 SD card?',
+        answer: 'The DATALOG folder contains your nightly session data in EDF (European Data Format) files. Each subfolder is named by date and contains flow waveforms, pressure data, leak rates, and respiratory event annotations for that night. AirwayLab reads these files automatically -- you do not need to understand EDF format.',
+      },
+      {
+        question: 'Can I use a different SD card in my AirSense 10?',
+        answer: 'Yes. Any standard SD card (2GB or larger, formatted as FAT32) works with the AirSense 10. If your original card fills up, copy the DATALOG folder to your computer before replacing it to preserve historical data.',
+      },
+    ],
+  },
+  {
     slug: 'what-is-wat-score-cpap',
     title: 'What Is the WAT Score in CPAP Data?',
     description:
@@ -586,6 +615,35 @@ export const blogPosts: BlogPost[] = [
         question: 'What is the Periodicity Index in CPAP data?',
         answer:
           'The Periodicity Index uses Fourier analysis to detect cyclical breathing patterns repeating on a 30-100 second cycle. A higher value suggests oscillating breathing patterns rather than stable ventilation throughout the night.',
+      },
+    ],
+  },
+  {
+    slug: 'resmed-airsense-11-sd-card',
+    title: 'How to Get Your ResMed AirSense 11 Data Into AirwayLab',
+    description:
+      'Step-by-step guide to accessing your ResMed AirSense 11 SD card data. Learn how to find the card, read the DATALOG folder, and analyze your CPAP data in AirwayLab.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'CPAP', 'ResMed', 'AirSense 11', 'SD Card'],
+    ogDescription:
+      'Step-by-step guide to accessing your ResMed AirSense 11 SD card data. Learn how to find the card, read the DATALOG folder, and analyze your CPAP data in AirwayLab.',
+    faqItems: [
+      {
+        question: 'Does the AirSense 11 always come with an SD card?',
+        answer: 'Most AirSense 11 units ship with a micro SD card pre-installed. If yours did not come with one, you can insert any micro SD card formatted as FAT32 (2GB or larger). The micro SD card usually sits inside a full-size SD adapter.',
+      },
+      {
+        question: 'My AirSense 11 connects to myAir. Do I still need the SD card for AirwayLab?',
+        answer: 'Yes, if you want detailed flow waveform data. myAir receives summary data over cellular, not the full waveform data that the SD card stores. The SD card contains the breath-by-breath flow signal that AirwayLab uses to detect flow limitation and breathing pattern instability.',
+      },
+      {
+        question: 'Is AirSense 11 data different from AirSense 10 data?',
+        answer: 'The core data is the same -- flow waveforms, pressure, leaks, and events. The file format has minor differences between models, but AirwayLab handles both automatically. Some early AirSense 11 firmware versions had slightly different DATALOG structures, which AirwayLab\'s parser detects and adapts to.',
+      },
+      {
+        question: 'Can I use AirwayLab and myAir at the same time?',
+        answer: 'Absolutely. They do not interfere with each other. myAir is useful for quick daily check-ins. AirwayLab gives you the deeper breath-by-breath analysis that myAir does not provide.',
       },
     ],
   },
@@ -642,6 +700,35 @@ export const blogPosts: BlogPost[] = [
         question: "What is the difference between OSCAR's FL channel and AirwayLab's FL Score?",
         answer:
           "OSCAR plots ResMed's FL channel: a categorical 0/0.5/1.0 snapshot updated every ~2 seconds by device firmware. AirwayLab's FL Score is a continuous 0-100 percentage calculated per breath from the raw inspiratory waveform, independent of ResMed's firmware. Both describe the same underlying flow signal from different perspectives.",
+      },
+    ],
+  },
+  {
+    slug: 'resmed-aircurve-bipap-sd-card',
+    title: 'How to Get Your ResMed AirCurve 10 or AirCurve 11 BiPAP Data Into AirwayLab',
+    description:
+      'How to access SD card data from your ResMed AirCurve 10 or AirCurve 11 BiPAP machine. Step-by-step guide to reading your bilevel therapy data in AirwayLab.',
+    date: '2026-04-04',
+    readTime: '7 min read',
+    tags: ['Getting Started', 'BiPAP', 'ResMed', 'AirCurve', 'SD Card'],
+    ogDescription:
+      'How to access SD card data from your ResMed AirCurve 10 or AirCurve 11 BiPAP machine. Step-by-step guide to reading your bilevel therapy data in AirwayLab.',
+    faqItems: [
+      {
+        question: 'I am on BiPAP. Is AirwayLab still useful for me?',
+        answer: 'Yes. AirwayLab\'s flow limitation and breathing pattern analysis works with bilevel data. The core analysis -- detecting partial airway narrowing and breathing instability -- applies regardless of whether you are on CPAP or BiPAP. Bilevel sessions also display both IPAP and EPAP pressure channels.',
+      },
+      {
+        question: 'Does AirwayLab show IPAP and EPAP separately for AirCurve users?',
+        answer: 'Yes. Bilevel sessions display both pressure channels so you can see how your machine adjusted IPAP and EPAP throughout the night. This is particularly useful for VAuto users whose machine adjusts EPAP automatically.',
+      },
+      {
+        question: 'Where is the SD card slot on the AirCurve 10?',
+        answer: 'The AirCurve 10\'s SD card slot is on the back of the machine, near the bottom, behind a small cover or rubber flap near the power connection. It uses a standard full-size SD card.',
+      },
+      {
+        question: 'My AirCurve has an older firmware. Will my data work with AirwayLab?',
+        answer: 'AirwayLab supports EDF files from all AirCurve 10 and AirCurve 11 firmware versions. The parser handles format variations across firmware releases automatically.',
       },
     ],
   },
