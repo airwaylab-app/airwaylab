@@ -196,7 +196,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'What does a NED Mean of 20% indicate?',
         answer:
-          'A NED Mean of 20% means that on average across all breaths, mid-inspiratory flow was 20% lower than peak flow. This indicates moderate airway narrowing during inhalation. It falls in the borderline range and suggests some residual flow limitation that may benefit from therapy adjustments.',
+          'A NED Mean of 20% means that on average across all breaths, mid-inspiratory flow was 20% lower than peak flow. This falls in the borderline range, indicating moderate airway narrowing during inhalation. Your clinician can help interpret this in the context of your overall therapy data.',
       },
       {
         question: 'How is NED different from the Flatness Index?',
@@ -478,7 +478,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     shortDescription:
       'A characteristic inspiratory flow pattern with two peaks and a mid-inspiratory dip, suggesting upper airway oscillation or dynamic obstruction.',
     fullDescription:
-      'An M-shaped breath is a characteristic inspiratory flow pattern where the waveform shows two distinct peaks with a dip in between, resembling the letter M. The mid-inspiratory dip (valley below 80% of peak flow in the middle 50% of inspiration) indicates that the upper airway is oscillating or briefly collapsing and reopening during a single breath.\n\nM-shaped breaths are a specific marker of dynamic upper airway obstruction. Unlike the flat-topped pattern detected by NED and Flatness Index (which indicates steady airway narrowing), M-shapes suggest the airway is unstable, alternating between more and less restricted states within each inspiration.\n\nAirwayLab tracks M-shaped breaths as a percentage of total breaths, reported separately from general flow limitation metrics. A high M-shape percentage, especially combined with elevated NED or Glasgow scores, suggests the airway is not just narrowed but actively oscillating, which may respond differently to therapy adjustments than simple steady-state flow limitation.',
+      'An M-shaped breath is a characteristic inspiratory flow pattern where the waveform shows two distinct peaks with a dip in between, resembling the letter M. The mid-inspiratory dip (valley below 80% of peak flow in the middle 50% of inspiration) indicates that the upper airway is oscillating or briefly collapsing and reopening during a single breath.\n\nM-shaped breaths are a specific marker of dynamic upper airway obstruction. Unlike the flat-topped pattern detected by NED and Flatness Index (which indicates steady airway narrowing), M-shapes suggest the airway is unstable, alternating between more and less restricted states within each inspiration.\n\nAirwayLab tracks M-shaped breaths as a percentage of total breaths, reported separately from general flow limitation metrics. A high M-shape percentage, especially combined with elevated NED or Glasgow scores, suggests the airway is not just narrowed but actively oscillating, which represents a different airway behaviour pattern than simple steady-state flow limitation.',
     normalRanges: null,
     howAirwayLabMeasures:
       'The NED engine identifies M-shaped breaths by checking whether any flow valley in the middle 50% of inspiration drops below 80% of peak inspiratory flow. The percentage of M-shaped breaths is reported on the NED Analysis tab.',

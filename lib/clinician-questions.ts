@@ -64,7 +64,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       return {
         id: 'fl-score',
         stem: 'My AirwayLab report shows elevated FL metrics. Can you help me understand what this means?',
-        rationale: `Your FL Score of ${Math.round(n.wat.flScore)}% suggests significant flow limitation during sleep.`,
+        rationale: `Your FL Score of ${Math.round(n.wat.flScore)}% is above the typical range for this metric.`,
         category: 'flow-limitation',
         urgency: light,
       };
@@ -115,11 +115,10 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
     evaluate: (n, th) => {
       const light = getTrafficLight(n.ned.reraIndex, th.reraIndex!);
       if (light === 'good') return null;
-      const severity = n.ned.reraIndex > 10 ? 'frequent' : 'moderate';
       return {
         id: 'rera-index',
         stem: 'My data shows frequent respiratory effort-related arousals. Can you help me understand what might be causing this?',
-        rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr indicates ${severity} sleep disruptions beyond what AHI captures.`,
+        rationale: `Your estimated RERA Index of ${fmt(n.ned.reraIndex)}/hr is above the typical range.`,
         category: 'arousals',
         urgency: light,
       };
@@ -135,7 +134,7 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       return {
         id: 'eai',
         stem: 'My estimated arousal index is elevated. What might be contributing to this?',
-        rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr suggests sleep fragmentation that may affect how rested you feel.`,
+        rationale: `Your Estimated Arousal Index of ${fmt(eai)}/hr is elevated compared to the typical range.`,
         category: 'arousals',
         urgency: light,
       };
@@ -151,8 +150,8 @@ const SINGLE_NIGHT_RULES: QuestionRule[] = [
       if (light === 'good') return null;
       return {
         id: 'periodicity',
-        stem: 'My breathing shows cyclical patterns. Could this indicate periodic breathing or a central component?',
-        rationale: `Your Periodicity Index of ${fmt(n.wat.periodicityIndex)}% suggests recurring breathing cycles at 30–100 second intervals.`,
+        stem: 'My breathing shows cyclical patterns. Could you help me understand what this periodicity pattern means?',
+        rationale: `Your Periodicity Index of ${fmt(n.wat.periodicityIndex)}% shows a recurring pattern at 30–100 second intervals.`,
         category: 'breathing-stability',
         urgency: light,
       };

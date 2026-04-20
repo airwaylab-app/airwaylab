@@ -1,5 +1,5 @@
 // ============================================================
-// AirwayLab — Privacy-First Analytics (Plausible)
+// AirwayLab — Privacy-First Analytics (Plausible + PostHog)
 // No cookies, no fingerprinting, GDPR/CCPA compliant.
 // ============================================================
 
@@ -17,14 +17,36 @@ export function trackEvent(
   }
 }
 
+/**
+ * Fire a PostHog capture event. No-ops when PostHog isn't initialised
+ * (e.g. missing NEXT_PUBLIC_POSTHOG_KEY or SSR context).
+ */
+export function capturePostHog(
+  event: string,
+  props?: Record<string, string | number | boolean>
+) {
+  if (typeof window === 'undefined') return;
+  // Dynamic import avoids posthog-js running during SSR/edge contexts.
+  import('posthog-js').then(({ default: posthog }) => {
+    if (posthog.__loaded) {
+      posthog.capture(event, props);
+    }
+  }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
+}
+
 // ── Existing events ──────────────────────────────────────────
 export const events = {
   /** User uploaded SD card files */
-  uploadStart: () => trackEvent('Upload Start'),
+  uploadStart: () => {
+    trackEvent('Upload Start');
+    capturePostHog('Upload Start');
+  },
 
   /** Analysis completed successfully */
-  analysisComplete: (nightCount: number) =>
-    trackEvent('Analysis Complete', { nights: nightCount }),
+  analysisComplete: (nightCount: number) => {
+    trackEvent('Analysis Complete', { nights: nightCount });
+    capturePostHog('Analysis Complete', { nights: nightCount });
+  },
 
   /** User loaded demo mode */
   demoLoaded: () => trackEvent('Demo Loaded'),
@@ -42,8 +64,10 @@ export const events = {
   pricingViewed: () => trackEvent('Pricing Viewed'),
 
   /** User clicked checkout (before Stripe redirect) */
-  checkoutStarted: (tier: string, interval: string) =>
-    trackEvent('Checkout Started', { tier, interval }),
+  checkoutStarted: (tier: string, interval: string) => {
+    trackEvent('Checkout Started', { tier, interval });
+    capturePostHog('Checkout Started', { tier, interval });
+  },
 
   /** Auth modal opened */
   authStarted: (source: string) =>
@@ -181,8 +205,10 @@ export const events = {
     trackEvent('AI Insights Button Clicked', { tier, credits_remaining: creditsRemaining }),
 
   /** AI insights successfully returned and displayed */
-  aiInsightsGenerated: (tier: string, insightCount: number, isDeep: boolean) =>
-    trackEvent('AI Insights Generated', { tier, insight_count: insightCount, is_deep: isDeep }),
+  aiInsightsGenerated: (tier: string, insightCount: number, isDeep: boolean) => {
+    trackEvent('AI Insights Generated', { tier, insight_count: insightCount, is_deep: isDeep });
+    capturePostHog('AI Insights Generated', { tier, insight_count: insightCount, is_deep: isDeep });
+  },
 
   /** AI insight request failed */
   aiInsightsFailed: (tier: string, errorType: string) =>
@@ -210,12 +236,16 @@ export const events = {
 
   // ── Conversion & revenue ─────────────────────────────────────
   /** User completed signup (auth callback verified) */
-  signupCompleted: (source: string) =>
-    trackEvent('Signup Completed', { source }),
+  signupCompleted: (source: string) => {
+    trackEvent('Signup Completed', { source });
+    capturePostHog('Signup Completed', { source });
+  },
 
   /** Subscription created via Stripe */
-  subscriptionStarted: (tier: string, interval: string, source: string) =>
-    trackEvent('Subscription Started', { tier, interval, source }),
+  subscriptionStarted: (tier: string, interval: string, source: string) => {
+    trackEvent('Subscription Started', { tier, interval, source });
+    capturePostHog('Subscription Started', { tier, interval, source });
+  },
 
   /** Subscription cancelled */
   subscriptionCancelled: (tier: string, monthsActive: number) =>
@@ -270,4 +300,17 @@ export const events = {
 
   /** Mobile reminder email submission failed */
   mobileReminderError: () => trackEvent('mobile_reminder_error'),
+
+  // ── Community join prompt ─────────────────────────────────────
+  /** Community join prompt shown after analysis */
+  communityPromptShown: () => trackEvent('community_prompt_shown'),
+
+  /** Community join prompt dismissed */
+  communityPromptDismissed: () => trackEvent('community_prompt_dismissed'),
+
+  /** GitHub Discussions link clicked from community prompt */
+  communityPromptGitHubClicked: () => trackEvent('community_prompt_github_clicked'),
+
+  /** Discord link clicked from community prompt */
+  communityPromptDiscordClicked: () => trackEvent('community_prompt_discord_clicked'),
 } as const;

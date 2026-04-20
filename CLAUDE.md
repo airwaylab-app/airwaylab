@@ -65,7 +65,7 @@ airwaylab/
 │   └── upload/             → File upload, validation, consent dialogs
 ├── lib/
 │   ├── analyzers/          → ⚠️ PROTECTED — Analysis engines (do not modify logic)
-│   │   ├── glasgow-index.ts → 9-component breath shape scoring (0–8 scale)
+│   │   ├── glasgow-index.ts → 9-component breath shape scoring (0–9 scale)
 │   │   ├── wat-engine.ts    → FL Score, Regularity (SampEn), Periodicity (FFT)
 │   │   ├── ned-engine.ts    → NED, FI, M-shape, RERA detection, EAI
 │   │   └── oximetry-engine.ts → 17-metric SpO2/HR framework
@@ -254,7 +254,7 @@ After merge, "verified" means ALL of these:
 - **Never send health data without consent.** No analytics on waveform data, no silent uploads, no background syncing. If data leaves the browser, the user must have opted in.
 - **Never exceed the 4MB localStorage cap.** Strip bulk data (per-breath arrays, raw waveforms) before persisting. Pre-flight size check in `persistence.ts`.
 - **Never modify engine logic without clinical understanding.** The engines implement published respiratory analysis methodologies. A "refactoring" that changes threshold values or algorithm steps can produce clinically incorrect results.
-- **Never modify, rescale, or transform Glasgow scores.** The Glasgow component scores (0–1 per component, 0–8 overall) are clinically validated metrics from the Glasgow Index methodology. Visualisation code must adapt the chart scale to fit the data — never change the data to fit the chart. This applies to all presentation layers (charts, tooltips, exports, reports).
+- **Never modify, rescale, or transform Glasgow scores.** The Glasgow component scores (0–1 per component, 0–9 overall) are clinically validated metrics from the Glasgow Index methodology. Visualisation code must adapt the chart scale to fit the data — never change the data to fit the chart. This applies to all presentation layers (charts, tooltips, exports, reports).
 - **Never create API routes without auth middleware.** Every `app/api/` route must validate authentication.
 - **Never use `console.log` in production.** Use `console.error` with structured context for debugging; these flow to Vercel logs + Sentry.
 - **Never hardcode secrets.** Use `process.env` with Zod validation. Add new vars to `.env.example`.

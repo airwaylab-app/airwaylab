@@ -136,7 +136,7 @@ export function Footer() {
             <Shield className="h-3.5 w-3.5 text-emerald-500" />
             <span>Private by default — you control your data.</span>
           </div>
-          <p className="text-[11px] text-muted-foreground/80">
+          <p className="text-xs text-muted-foreground/80">
             GPL-3.0 · Not a medical device · Not FDA/CE cleared · For educational and informational purposes only ·{' '}
             <Link href="/privacy" className="hover:text-muted-foreground transition-colors">Privacy</Link>{' · '}
             <Link href="/terms" className="hover:text-muted-foreground transition-colors">Terms</Link>

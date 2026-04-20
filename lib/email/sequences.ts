@@ -254,9 +254,17 @@ export async function scheduleActivationSequences(
 const CPAP_TIPS_LAUNCH_DATE = '2026-04-14';
 
 /**
- * Schedule CPAP tips drip (Days 3/7/12/18/25 from signup) for newly opted-in users.
- * Delays are calculated relative to the user's created_at date.
- * Only schedules users created on or after CPAP_TIPS_LAUNCH_DATE.
+ * Number of days the welcome sequence (post_upload) runs before cpap_tips starts.
+ * CPAP tips baseDate is offset by this value so the two sequences don't overlap.
+ */
+export const WELCOME_SEQUENCE_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Schedule CPAP tips drip (Days 3/7/12/18/25 after welcome sequence ends) for
+ * newly opted-in users. The baseDate is offset by WELCOME_SEQUENCE_DAYS from
+ * created_at so the first CPAP tips email (~day 10) starts after the last
+ * welcome email (day 7). Only schedules users created on or after CPAP_TIPS_LAUNCH_DATE.
  */
 export async function scheduleCpapTipsSequences(
   supabase: SupabaseClient
@@ -289,7 +297,9 @@ export async function scheduleCpapTipsSequences(
 
   let scheduled = 0;
   for (const user of candidates) {
-    await scheduleSequence(supabase, user.id, 'cpap_tips', new Date(user.created_at));
+    // Offset baseDate so cpap_tips starts after the welcome sequence completes
+    const welcomeEnd = new Date(new Date(user.created_at).getTime() + WELCOME_SEQUENCE_DAYS * MS_PER_DAY);
+    await scheduleSequence(supabase, user.id, 'cpap_tips', welcomeEnd);
     scheduled++;
   }
 

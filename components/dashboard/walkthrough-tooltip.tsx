@@ -85,8 +85,8 @@ export function WalkthroughTooltip({
     ? pos.top + pos.height + 16
     : pos.top - 16;
 
-  // Clamp tooltip left so it doesn't overflow viewport
-  const tooltipWidth = 340;
+  // Clamp tooltip left so it doesn't overflow viewport (respect 320px screens)
+  const tooltipWidth = Math.min(340, window.innerWidth - 24);
   const rawLeft = pos.left + pos.width / 2 - tooltipWidth / 2;
   const clampedLeft = Math.max(12, Math.min(rawLeft, window.innerWidth - tooltipWidth - 12));
 
@@ -118,7 +118,7 @@ export function WalkthroughTooltip({
         role="dialog"
         aria-label={`Tour step ${step} of ${totalSteps}`}
         style={tooltipStyle}
-        className="animate-fade-in-up rounded-xl border border-border/50 bg-card p-4 shadow-lg"
+        className="animate-fade-in-up max-w-[340px] w-[calc(100vw-24px)] rounded-xl border border-border/50 bg-card p-4 shadow-lg"
       >
         <p className="text-sm leading-relaxed text-muted-foreground">{text}</p>
         <div className="mt-3 flex items-center justify-between">

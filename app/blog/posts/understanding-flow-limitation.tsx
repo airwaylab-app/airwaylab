@@ -409,8 +409,7 @@ export default function UnderstandingFlowLimitationPost() {
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-semibold text-foreground">Glasgow Index trend</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Stable, improving, or elevated over time? Consistently elevated values suggest
-                your airway may be partially narrowing during sleep.
+                Stable, improving, or elevated over time? Consistently elevated values are above the typical range for this metric.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
@@ -422,8 +421,7 @@ export default function UnderstandingFlowLimitationPost() {
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-semibold text-foreground">Estimated RERA count</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                A high count suggests frequent brief arousals that may be fragmenting sleep
-                architecture without affecting AHI.
+                A high count is above the typical range. This metric is independent of AHI.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">

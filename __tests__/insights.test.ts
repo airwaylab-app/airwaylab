@@ -211,6 +211,143 @@ describe('generateInsights', () => {
       expect(therapyInsight).toBeDefined();
       expect(therapyInsight!.type).toBe('positive');
     });
+
+    it('IFL worsening insight uses type info, not actionable', () => {
+      // newest-first: high flScore first (worsening IFL trend when reversed to chrono)
+      // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
+      const makeNight = (flScore: number, dateStr: string): NightResult => ({
+        ...SAMPLE_NIGHTS[0]!,
+        dateStr,
+        machineSummary: null,
+        settingsMetrics: null,
+        wat: { ...SAMPLE_NIGHTS[0]!.wat, flScore },
+        ned: { ...SAMPLE_NIGHTS[0]!.ned, nedMean: 15 },
+        oximetry: { ...SAMPLE_NIGHTS[0]!.oximetry!, odi3: 3 },
+      });
+      const nights = [
+        makeNight(80, '2025-02-05'),
+        makeNight(70, '2025-02-04'),
+        makeNight(60, '2025-02-03'),
+        makeNight(50, '2025-02-02'),
+        makeNight(40, '2025-02-01'),
+      ];
+      const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+      const iflWorsen = result.find((i) => i.id === 'trend-ifl-worsening');
+      expect(iflWorsen).toBeDefined();
+      expect(iflWorsen!.type).toBe('info');
+      expect(iflWorsen!.body).toContain('proxy composite');
+      expect(iflWorsen!.body).toContain('ODI');
+    });
+
+    it('Glasgow worsening insight uses type info, not actionable', () => {
+      // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
+      const makeNight = (glasgow: number, dateStr: string): NightResult => ({
+        ...SAMPLE_NIGHTS[0]!,
+        dateStr,
+        machineSummary: null,
+        settingsMetrics: null,
+        glasgow: { ...SAMPLE_NIGHTS[0]!.glasgow, overall: glasgow },
+        oximetry: null,
+        oximetryTrace: null,
+      });
+      // newest-first: high glasgow first (worsening trend when reversed to chrono)
+      const nights = [
+        makeNight(3.5, '2025-02-05'),
+        makeNight(3.0, '2025-02-04'),
+        makeNight(2.5, '2025-02-03'),
+        makeNight(2.0, '2025-02-02'),
+        makeNight(1.5, '2025-02-01'),
+      ];
+      const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+      const gWorsen = result.find((i) => i.id === 'trend-glasgow-worsening');
+      expect(gWorsen).toBeDefined();
+      expect(gWorsen!.type).toBe('info');
+      expect(gWorsen!.body).toContain('context-tier metric');
+      expect(gWorsen!.body).toContain('flow shape patterns');
+    });
+
+    describe('proxy-outcome divergence', () => {
+      function makeOxNight(
+        flScore: number,
+        nedMean: number,
+        odi3: number,
+        dateStr: string,
+      ): NightResult {
+        return {
+          ...SAMPLE_NIGHTS[0]!,
+          dateStr,
+          wat: { ...SAMPLE_NIGHTS[0]!.wat, flScore },
+          ned: { ...SAMPLE_NIGHTS[0]!.ned, nedMean },
+          oximetry: { ...SAMPLE_NIGHTS[0]!.oximetry!, odi3 },
+        };
+      }
+
+      it('fires when IFL worsening and ODI-3 stable with ≥3 oximetry nights', () => {
+        // newest-first: high IFL recently (worsening proxy), flat ODI-3 (stable outcome)
+        // Strip machineSummary + settingsMetrics so single-night info insights don't fill the 6-cap
+        const nights = [
+          makeOxNight(80, 15, 3.0, '2025-02-05'),
+          makeOxNight(70, 14, 3.2, '2025-02-04'),
+          makeOxNight(60, 14, 3.1, '2025-02-03'),
+          makeOxNight(50, 13, 2.9, '2025-02-02'),
+          makeOxNight(40, 13, 3.0, '2025-02-01'),
+        ].map((n) => ({ ...n, machineSummary: null, settingsMetrics: null }));
+        const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+        const divergence = result.find((i) => i.id === 'proxy-outcome-divergence');
+        expect(divergence).toBeDefined();
+        expect(divergence!.type).toBe('info');
+        expect(divergence!.category).toBe('trend');
+        expect(divergence!.body).toContain('clinician');
+      });
+
+      it('does not fire when ODI-3 is also worsening', () => {
+        const nights = [
+          makeOxNight(80, 15, 8.0, '2025-02-05'),
+          makeOxNight(70, 14, 7.0, '2025-02-04'),
+          makeOxNight(60, 14, 6.0, '2025-02-03'),
+          makeOxNight(50, 13, 5.0, '2025-02-02'),
+          makeOxNight(40, 13, 4.0, '2025-02-01'),
+        ];
+        const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+        const divergence = result.find((i) => i.id === 'proxy-outcome-divergence');
+        expect(divergence).toBeUndefined();
+      });
+
+      it('does not fire when fewer than 3 nights have oximetry', () => {
+        const makeNoOxNight = (flScore: number, dateStr: string): NightResult => ({
+          ...SAMPLE_NIGHTS[0]!,
+          dateStr,
+          wat: { ...SAMPLE_NIGHTS[0]!.wat, flScore },
+          ned: { ...SAMPLE_NIGHTS[0]!.ned, nedMean: 15 },
+          oximetry: null,
+          oximetryTrace: null,
+        });
+        const nights = [
+          makeOxNight(80, 15, 3.0, '2025-02-05'), // has oximetry
+          makeOxNight(70, 14, 3.1, '2025-02-04'), // has oximetry
+          makeNoOxNight(60, '2025-02-03'), // no oximetry
+          makeNoOxNight(50, '2025-02-02'), // no oximetry
+          makeNoOxNight(40, '2025-02-01'), // no oximetry
+        ];
+        const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+        const divergence = result.find((i) => i.id === 'proxy-outcome-divergence');
+        expect(divergence).toBeUndefined();
+      });
+
+      it('does not fire when proxy metrics are not worsening', () => {
+        // IFL improving, ODI-3 stable — no divergence
+        const nights = [
+          makeOxNight(40, 13, 3.0, '2025-02-05'),
+          makeOxNight(50, 14, 3.1, '2025-02-04'),
+          makeOxNight(60, 15, 3.2, '2025-02-03'),
+          makeOxNight(70, 16, 3.0, '2025-02-02'),
+          makeOxNight(80, 17, 3.1, '2025-02-01'),
+        ];
+        const result = generateInsights(nights, nights[0]!, nights[1]!, null);
+        const divergence = result.find((i) => i.id === 'proxy-outcome-divergence');
+        expect(divergence).toBeUndefined();
+      });
+    });
   });
 
   describe('symptom rating cross-reference', () => {
