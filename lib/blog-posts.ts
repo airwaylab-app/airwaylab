@@ -211,6 +211,35 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'four-metrics-airwaylab-measures',
+    title: 'The Four Metrics AirwayLab Tracks — and What Each One Tells You',
+    seoTitle: 'Four Metrics AirwayLab Tracks — and What Each One Tells You',
+    description:
+      'AHI only tells part of the story. Learn what the Flow Limitation Score, Glasgow Index, WAT score, and NED analysis show about your PAP therapy data — and why they matter.',
+    date: '2026-04-09',
+    readTime: '7 min read',
+    tags: ['Flow Limitation', 'Glasgow Index', 'WAT Score', 'NED', 'Metrics', 'CPAP'],
+    ogDescription:
+      "AHI alone doesn't tell the whole story. Learn what Flow Limitation Score, Glasgow Index, WAT score, and NED analysis show about your PAP therapy data.",
+    faqItems: [
+      {
+        question: 'What metrics does AirwayLab calculate beyond AHI?',
+        answer:
+          'AirwayLab calculates four main metrics beyond AHI: the Flow Limitation Score (breath shape on a 0–1 scale), the Glasgow Index (cumulative flow limitation burden across nine waveform components), the WAT Score (Wobble Analysis Tool — three breathing stability metrics: FL Score, regularity, and periodicity), and NED — Negative Effort Dependence (effort-to-flow relationship per breath). All are derived from your PAP machine SD card data entirely in your browser.',
+      },
+      {
+        question: 'What is the Flow Limitation Score in AirwayLab?',
+        answer:
+          'The Flow Limitation Score describes the shape of each breath: 0 for a normal rounded breath, 0.5 for a moderately flattened inspiratory waveform, and 1.0 for a severely flattened one. AirwayLab calculates this per breath from your raw EDF data and shows how it distributes across your session.',
+      },
+      {
+        question: 'What does the WAT score measure in CPAP data?',
+        answer:
+          'WAT stands for Wobble Analysis Tool. It bundles three breathing stability metrics: FL Score (inspiratory flatness, 0–100), Regularity (sample entropy of minute ventilation — higher means more variable), and Periodicity Index (spectral analysis detecting cyclical breathing in the 30–100 second range). All three are calculated from your flow data entirely in your browser.',
+      },
+    ],
+  },
+  {
     slug: 'v1-2-2-your-data-explained-not-judged',
     title: 'v1.2.2: Your Data, Explained -- Not Judged',
     description:

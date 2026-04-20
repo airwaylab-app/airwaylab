@@ -30,6 +30,7 @@ import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-scor
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
+import FourMetricsAirwayLabMeasures from '../posts/four-metrics-airwaylab-measures';
 import ResmedAirsense10SdCard from '../posts/resmed-airsense-10-sd-card';
 import ResmedAirsense11SdCard from '../posts/resmed-airsense-11-sd-card';
 import ResmedAircurveBipapSdCard from '../posts/resmed-aircurve-bipap-sd-card';
@@ -40,6 +41,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
+  'four-metrics-airwaylab-measures': FourMetricsAirwayLabMeasures,
   'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
   'how-to-analyze-cpap-data-at-home': HowToAnalyzeCPAPDataAtHome,
