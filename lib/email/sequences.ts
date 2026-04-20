@@ -107,6 +107,8 @@ export async function getPendingEmails(
     `)
     .eq('status', 'pending')
     .lte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .order('step', { ascending: true })
     .limit(50); // batch size per cron run
 
   if (error) {

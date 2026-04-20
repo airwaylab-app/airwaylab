@@ -144,6 +144,57 @@ describe('activation sequence (SEQUENCES.activation)', () => {
   });
 });
 
+// ── getPendingEmails ordering ────────────────────────────────
+
+describe('getPendingEmails query ordering', () => {
+  it('orders by scheduled_at and step ascending so lowest-step email is deduped first', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/email/sequences.ts'),
+      'utf8',
+    );
+
+    // Both .order() calls must appear before .limit()
+    const firstOrder = source.indexOf(".order('scheduled_at'");
+    const secondOrder = source.indexOf(".order('step'");
+    const limitCall = source.indexOf('.limit(50)');
+
+    expect(firstOrder).toBeGreaterThan(-1);
+    expect(secondOrder).toBeGreaterThan(-1);
+    expect(limitCall).toBeGreaterThan(-1);
+
+    expect(firstOrder).toBeLessThan(limitCall);
+    expect(secondOrder).toBeLessThan(limitCall);
+    // step order follows scheduled_at order
+    expect(firstOrder).toBeLessThan(secondOrder);
+  });
+});
+
+// ── Health check grace window ────────────────────────────────
+
+describe('processEmailDrips health check', () => {
+  it('uses a 25h grace window so rate-limited emails do not trigger false alerts', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/email/cron-handler.ts'),
+      'utf8',
+    );
+
+    // graceCutoff variable must be present and use 25h offset
+    expect(source).toContain('graceCutoff');
+    expect(source).toContain('25 * 60 * 60 * 1000');
+    // Health check must filter using graceCutoff, not new Date()
+    const graceCutoffIdx = source.indexOf('graceCutoff');
+    const lteCallIdx = source.indexOf('.lte(\'scheduled_at\', graceCutoff)');
+    expect(graceCutoffIdx).toBeGreaterThan(-1);
+    expect(lteCallIdx).toBeGreaterThan(-1);
+  });
+});
+
 // ── Cron handler ordering ────────────────────────────────────
 
 describe('processEmailDrips execution order', () => {
