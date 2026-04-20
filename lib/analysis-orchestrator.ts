@@ -323,9 +323,22 @@ class AnalysisOrchestrator {
         clearTimeout(idleTimer);
       };
 
-      this.worker = new Worker(
-        new URL('../workers/analysis-worker.ts', import.meta.url)
-      );
+      try {
+        this.worker = new Worker(
+          new URL('../workers/analysis-worker.ts', import.meta.url)
+        );
+      } catch (err) {
+        settle();
+        Sentry.captureException(err, {
+          extra: {
+            context: 'analysis-worker-init',
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+            hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+          },
+        });
+        reject(new Error('Analysis worker failed to load. Try refreshing the page.'));
+        return;
+      }
 
       this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const msg = e.data;
@@ -399,9 +412,18 @@ class AnalysisOrchestrator {
           err.message,
           err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
         ].filter(Boolean).join(' ');
-        reject(new Error(
-          detail || 'Analysis worker failed to load. Try refreshing the page.'
-        ));
+        const workerError = new Error(detail || 'Analysis worker failed to load. Try refreshing the page.');
+        Sentry.captureException(workerError, {
+          extra: {
+            context: 'analysis-worker-onerror',
+            filename: err.filename,
+            lineno: err.lineno,
+            colno: err.colno,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+            hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+          },
+        });
+        reject(workerError);
       };
 
       // Transfer ArrayBuffers for zero-copy
@@ -511,9 +533,22 @@ class AnalysisOrchestrator {
         clearTimeout(timeout);
       };
 
-      this.worker = new Worker(
-        new URL('../workers/analysis-worker.ts', import.meta.url)
-      );
+      try {
+        this.worker = new Worker(
+          new URL('../workers/analysis-worker.ts', import.meta.url)
+        );
+      } catch (err) {
+        settle();
+        Sentry.captureException(err, {
+          extra: {
+            context: 'oximetry-worker-init',
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+            hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+          },
+        });
+        reject(new Error('Oximetry worker failed to load. Try refreshing the page.'));
+        return;
+      }
 
       this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const msg = e.data;
@@ -538,9 +573,18 @@ class AnalysisOrchestrator {
           err.message,
           err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
         ].filter(Boolean).join(' ');
-        reject(new Error(
-          detail || 'Oximetry worker failed to load. Try refreshing the page.'
-        ));
+        const workerError = new Error(detail || 'Oximetry worker failed to load. Try refreshing the page.');
+        Sentry.captureException(workerError, {
+          extra: {
+            context: 'oximetry-worker-onerror',
+            filename: err.filename,
+            lineno: err.lineno,
+            colno: err.colno,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+            hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+          },
+        });
+        reject(workerError);
       };
 
       this.worker.postMessage({ type: 'ANALYZE_OXIMETRY', oximetryCSVs });
