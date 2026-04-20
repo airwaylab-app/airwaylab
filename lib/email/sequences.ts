@@ -94,6 +94,8 @@ export async function getPendingEmails(
   step: number;
   email: string;
   ab_variant: string | null;
+  display_name: string | null;
+  last_analysis_at: string | null;
 }>> {
   const { data, error } = await supabase
     .from('email_sequences')
@@ -103,7 +105,7 @@ export async function getPendingEmails(
       sequence_name,
       step,
       ab_variant,
-      profiles!email_sequences_user_id_profiles_fkey(email, email_opt_in)
+      profiles!email_sequences_user_id_profiles_fkey(email, email_opt_in, display_name, last_analysis_at)
     `)
     .eq('status', 'pending')
     .lte('scheduled_at', new Date().toISOString())
@@ -123,7 +125,12 @@ export async function getPendingEmails(
       return profile?.email_opt_in && profile?.email;
     })
     .map((row) => {
-      const profile = row.profiles as unknown as { email: string; email_opt_in: boolean };
+      const profile = row.profiles as unknown as {
+        email: string;
+        email_opt_in: boolean;
+        display_name: string | null;
+        last_analysis_at: string | null;
+      };
       return {
         id: row.id,
         user_id: row.user_id,
@@ -131,6 +138,8 @@ export async function getPendingEmails(
         step: row.step,
         email: profile.email,
         ab_variant: (row as Record<string, unknown>).ab_variant as string | null,
+        display_name: profile.display_name ?? null,
+        last_analysis_at: profile.last_analysis_at ?? null,
       };
     });
 }
@@ -313,4 +322,88 @@ export async function applySunsetPolicy(
   }
 
   return sunsetted;
+}
+
+/**
+ * Schedule re-engagement sequences for users who uploaded once 14+ days ago
+ * and have not returned. Skips suppressed users and users with an existing
+ * re_engagement sequence.
+ */
+export async function scheduleReEngagementSequences(
+  supabase: SupabaseClient
+): Promise<number> {
+  const TRIGGER_DAYS = 14;
+  const cutoff = new Date(Date.now() - TRIGGER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  // Find users who already have a re_engagement sequence (to exclude them)
+  const { data: existingSeqs } = await supabase
+    .from('email_sequences')
+    .select('user_id')
+    .eq('sequence_name', 're_engagement');
+
+  const excludeIds = existingSeqs?.map((r: { user_id: string }) => r.user_id) ?? [];
+
+  // Find opted-in users who uploaded 14+ days ago and aren't suppressed
+  let query = supabase
+    .from('profiles')
+    .select('id')
+    .eq('email_opt_in', true)
+    .not('last_analysis_at', 'is', null)
+    .lt('last_analysis_at', cutoff)
+    .is('re_engagement_suppressed_at', null);
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  }
+
+  const { data: candidates, error } = await query;
+
+  if (error || !candidates) {
+    console.error('[email-sequences] Failed to find re-engagement candidates:', error?.message);
+    return 0;
+  }
+
+  let scheduled = 0;
+  for (const user of candidates) {
+    await scheduleSequence(supabase, user.id, 're_engagement');
+    scheduled++;
+  }
+
+  return scheduled;
+}
+
+/**
+ * Mark a user as suppressed from re-engagement emails.
+ * Called after the final (step 3) re-engagement email sends.
+ */
+export async function suppressReEngagement(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ re_engagement_suppressed_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (error) {
+    console.error(`[email-sequences] Failed to suppress re-engagement for ${userId}:`, error.message);
+  }
+}
+
+/**
+ * Clear re-engagement suppression for a user who has re-uploaded.
+ * Called from the upload trigger to reset sequence eligibility.
+ */
+export async function clearReEngagementSuppression(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ re_engagement_suppressed_at: null })
+    .eq('id', userId);
+
+  if (error) {
+    console.error(`[email-sequences] Failed to clear re-engagement suppression for ${userId}:`, error.message);
+  }
 }

@@ -279,15 +279,129 @@ function premiumOnboardingStep3(unsubscribeUrl: string): { subject: string; html
   };
 }
 
+// ── Sequence 6: Re-engagement (uploaded once, no return) ─────
+
+/**
+ * Extended layout for re-engagement emails that includes a physical address
+ * footer to satisfy CAN-SPAM Act requirements (16 CFR Part 316).
+ */
+function reEngagementLayout(content: string, unsubscribeUrl: string): string {
+  const physicalAddress = process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>AirwayLab</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <!-- Header -->
+    <div style="margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:700;color:#ffffff;">
+        <span style="color:#ffffff;">Airway</span><span style="color:#5eead4;font-weight:400;">Lab</span>
+      </span>
+    </div>
+
+    <!-- Content -->
+    ${content}
+
+    <!-- Footer -->
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid #1e1e21;">
+      <p style="font-size:11px;color:#52525b;line-height:1.6;margin:0;">
+        You're receiving this because you opted in to email updates on
+        <a href="${BASE_URL}" style="color:#5eead4;text-decoration:none;">airwaylab.app</a>.
+      </p>
+      <p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">
+        <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
+        from these emails.
+      </p>
+      <p style="font-size:10px;color:#52525b;line-height:1.5;margin:12px 0 0 0;">
+        AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
+      </p>
+      <p style="font-size:10px;color:#52525b;line-height:1.5;margin:8px 0 0 0;">
+        AirwayLab &middot; ${physicalAddress}
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export function reEngagementStep1(
+  unsubscribeUrl: string,
+  firstName?: string | null,
+  lastUploadDate?: string | null,
+): { subject: string; html: string } {
+  const greeting = firstName ? `${paragraph(`Hey ${firstName},`)}` : '';
+  const uploadDate = lastUploadDate ?? '';
+  return {
+    subject: `Your CPAP data from ${uploadDate} is still here`,
+    html: reEngagementLayout(`
+      ${greeting}
+      ${paragraph('Pick up where you left off -- one more upload starts to show how your numbers change over time.')}
+      ${paragraph(`Your CPAP data from ${uploadDate} is still in your dashboard, ready to be part of something more useful.`)}
+      ${paragraph('One upload gives you a snapshot. Two uploads start to show how your numbers change over time.')}
+      ${paragraph('If your therapy settings have changed, or you have had a week that felt different, your data can help you describe exactly what happened -- in numbers you can actually bring up with your clinician.')}
+      ${paragraph('Your browser does the analysis. Your data never leaves your device. And it is free and always will be.')}
+      ${paragraph('Ready to see how things have moved?')}
+      ${ctaButton('Upload your latest data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=re_engagement_1`)}
+    `, unsubscribeUrl),
+  };
+}
+
+export function reEngagementStep2(
+  unsubscribeUrl: string,
+  firstName?: string | null,
+  lastUploadDate?: string | null,
+): { subject: string; html: string } {
+  const greeting = firstName ? `${paragraph(`Hey ${firstName},`)}` : '';
+  const uploadDate = lastUploadDate ?? '';
+  return {
+    subject: 'What consistent CPAP tracking looks like (from people doing it)',
+    html: reEngagementLayout(`
+      ${greeting}
+      ${paragraph('A lot of AirwayLab users start with one upload -- just to see what their data looks like. The ones who keep coming back tend to say the same thing: the second and third uploads are where it gets interesting.')}
+      ${paragraph('Not because anything dramatic happens, but because you start to see your own baseline. You notice how one week compares to another. You have something concrete to bring to your next appointment.')}
+      ${paragraph('None of that requires a premium account. Just your data, your browser, and a few minutes every couple of weeks.')}
+      ${paragraph(`Your analysis from ${uploadDate} is already there. It is waiting for something to compare against.`)}
+      ${ctaButton('Upload your latest data', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=re_engagement_2`)}
+    `, unsubscribeUrl),
+  };
+}
+
+export function reEngagementStep3(
+  unsubscribeUrl: string,
+  firstName?: string | null,
+  lastUploadDate?: string | null,
+): { subject: string; html: string } {
+  const greeting = firstName ? `${paragraph(`Hey ${firstName},`)}` : '';
+  // lastUploadDate unused in step 3 body but kept for signature consistency
+  void lastUploadDate;
+  return {
+    subject: `One last note${firstName ? ', ' + firstName : ''}`,
+    html: reEngagementLayout(`
+      ${greeting}
+      ${paragraph('This is the last time we will reach out about your sleep data.')}
+      ${paragraph('You uploaded once, so you already know what AirwayLab does. If it did not click for you, that is completely fine.')}
+      ${paragraph('If life just got in the way, we will be here. Your previous analysis is still saved. Uploading a new file takes about 30 seconds, your data stays in your browser, and it is free and always will be.')}
+      ${paragraph('If you want to pick it up again:')}
+      ${ctaButton('Head to your dashboard', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=re_engagement_3`)}
+      ${paragraph('After this, we will stop nudging you about uploads. You can always come back on your own terms -- AirwayLab is not going anywhere.')}
+    `, unsubscribeUrl),
+  };
+}
+
 // ── Template registry ────────────────────────────────────────
 
-export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding';
+export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding' | 're_engagement';
 
 interface SequenceConfig {
   totalSteps: number;
   /** Delay in days from sequence start for each step */
   delays: number[];
-  getTemplate: (step: number, unsubscribeUrl: string) => { subject: string; html: string } | null;
+  getTemplate: (step: number, unsubscribeUrl: string, data?: Record<string, string>) => { subject: string; html: string } | null;
 }
 
 export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
@@ -336,6 +450,18 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
       if (step === 1) return premiumOnboardingStep1(url);
       if (step === 2) return premiumOnboardingStep2(url);
       if (step === 3) return premiumOnboardingStep3(url);
+      return null;
+    },
+  },
+  re_engagement: {
+    totalSteps: 3,
+    delays: [0, 7, 16], // from sequence schedule point (which is at day 14 post-upload)
+    getTemplate: (step, url, data) => {
+      const firstName = data?.first_name ?? null;
+      const lastUploadDate = data?.last_upload_date ?? null;
+      if (step === 1) return reEngagementStep1(url, firstName, lastUploadDate);
+      if (step === 2) return reEngagementStep2(url, firstName, lastUploadDate);
+      if (step === 3) return reEngagementStep3(url, firstName, lastUploadDate);
       return null;
     },
   },
