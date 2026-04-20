@@ -19,7 +19,6 @@ import {
   searchGuildMember,
   syncRole,
 } from '@/lib/discord';
-import { sendAlert, COLORS } from '@/lib/discord-webhook';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,21 +128,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Alert ops if Discord API errors are blocking resolution
     if (errors > 0) {
-      await sendAlert('ops', '', [{
-        title: ':warning: Discord Sync — API Errors',
-        description: `${errors} of ${unlinked.length} users could not be resolved due to Discord API errors. Paying users may be stuck without roles.`,
-        color: COLORS.amber,
-        fields: [
-          { name: 'Checked', value: String(unlinked.length), inline: true },
-          { name: 'Resolved', value: String(resolved), inline: true },
-          { name: 'Errors', value: String(errors), inline: true },
-          { name: 'Not found', value: String(notFound), inline: true },
-        ],
-        footer: { text: 'discord-sync cron' },
-        timestamp: new Date().toISOString(),
-      }]);
+      console.error('[discord-sync] API errors blocking resolution', {
+        checked: unlinked.length,
+        resolved,
+        errors,
+        notFound,
+      });
     }
 
     return NextResponse.json({ resolved, checked: unlinked.length, errors, not_found: notFound });

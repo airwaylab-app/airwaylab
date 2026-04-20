@@ -81,6 +81,7 @@ import {
   trackContributedWaveformDate,
   setContributedWaveformEngine,
 } from '@/components/upload/contribution-consent-utils';
+import { _sessionFailedDates } from '@/lib/contribute-waveforms';
 import type { NightResult } from '@/lib/types';
 
 // ── Test helpers ─────────────────────────────────────────────
@@ -145,6 +146,7 @@ describe('contributeWaveformsBackground — integration', () => {
   beforeEach(() => {
     storage.clear();
     vi.clearAllMocks();
+    _sessionFailedDates.clear();
     fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
   });
@@ -367,6 +369,30 @@ describe('contributeWaveformsBackground — integration', () => {
     const files = [makeBRPFile('2025-01-15')];
 
     await contributeWaveformsBackground([], files, 'test-id');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('skips failed dates within the same session even when localStorage is unavailable', async () => {
+    const { contributeWaveformsBackground } = await import('@/lib/contribute-waveforms');
+
+    // Make localStorage writes throw (simulates quota exceeded or private browsing)
+    const setItemSpy = vi.spyOn(localStorageMock, 'setItem').mockImplementation(() => {
+      throw new DOMException('QuotaExceededError');
+    });
+
+    // First call: upload fails, localStorage write fails silently
+    fetchSpy.mockResolvedValue({ ok: false, status: 500 });
+    await contributeWaveformsBackground([makeNight('2025-12-01')], [makeBRPFile('2025-12-01')], 'test-id');
+
+    // Restore localStorage writes
+    setItemSpy.mockRestore();
+
+    // Second call in the same session: should NOT retry '2025-12-01' (session guard)
+    fetchSpy.mockReset();
+    fetchSpy.mockResolvedValue({ ok: true });
+    await contributeWaveformsBackground([makeNight('2025-12-01')], [makeBRPFile('2025-12-01')], 'test-id');
+
+    // Fetch should NOT have been called because session guard blocked the retry
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

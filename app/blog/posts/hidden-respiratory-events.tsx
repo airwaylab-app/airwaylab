@@ -14,7 +14,7 @@ export default function HiddenRespiratoryEventsPost() {
     <article>
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
         Your AHI is 2. Your RERA index is under 5. Your NED analysis shows normal breath shapes.
-        By every standard metric, your PAP therapy is working. But your oximetry tells a different
+        By every standard metric, your numbers look typical. But your oximetry tells a different
         story: ODI of 10, heart rate surges all night, coupled desaturation events every few minutes.{' '}
         <strong className="text-foreground">
           Something is disrupting your sleep that none of the standard metrics can see.

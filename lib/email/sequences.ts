@@ -20,17 +20,17 @@ export async function scheduleSequence(
   supabase: SupabaseClient,
   userId: string,
   sequenceName: SequenceName,
+  baseDate: Date = new Date(),
 ): Promise<void> {
   const config = SEQUENCES[sequenceName];
   if (!config) return;
 
-  const now = new Date();
   const rows = config.delays.map((delayDays, index) => ({
     user_id: userId,
     sequence_name: sequenceName,
     step: index + 1,
     status: 'pending' as const,
-    scheduled_at: new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000).toISOString(),
+    scheduled_at: new Date(baseDate.getTime() + delayDays * 24 * 60 * 60 * 1000).toISOString(),
   }));
 
   // upsert to make this idempotent — if sequence already exists, skip
@@ -164,7 +164,7 @@ export async function markSent(
 export async function scheduleDormancySequences(
   supabase: SupabaseClient
 ): Promise<number> {
-  const DORMANCY_DAYS = 7;
+  const DORMANCY_DAYS = 14;
   const cutoff = new Date(Date.now() - DORMANCY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // Find users who already have a dormancy sequence (to exclude them)
@@ -175,7 +175,7 @@ export async function scheduleDormancySequences(
 
   const excludeIds = existingDormancy?.map((r) => r.user_id) ?? [];
 
-  // Find users who are dormant (no upload in 7 days), opted in, no existing dormancy sequence
+  // Find users who are dormant (no upload in 14 days), opted in, no existing dormancy sequence
   let query = supabase
     .from('profiles')
     .select('id')
@@ -243,6 +243,63 @@ export async function scheduleActivationSequences(
   let scheduled = 0;
   for (const user of inactiveUsers) {
     await scheduleSequence(supabase, user.id, 'activation');
+    scheduled++;
+  }
+
+  return scheduled;
+}
+
+// Only schedule cpap_tips for users created on or after this date to avoid
+// retroactively flooding existing users whose send windows have already passed.
+const CPAP_TIPS_LAUNCH_DATE = '2026-04-14';
+
+/**
+ * Number of days the welcome sequence (post_upload) runs before cpap_tips starts.
+ * CPAP tips baseDate is offset by this value so the two sequences don't overlap.
+ */
+export const WELCOME_SEQUENCE_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Schedule CPAP tips drip (Days 3/7/12/18/25 after welcome sequence ends) for
+ * newly opted-in users. The baseDate is offset by WELCOME_SEQUENCE_DAYS from
+ * created_at so the first CPAP tips email (~day 10) starts after the last
+ * welcome email (day 7). Only schedules users created on or after CPAP_TIPS_LAUNCH_DATE.
+ */
+export async function scheduleCpapTipsSequences(
+  supabase: SupabaseClient
+): Promise<number> {
+  // Find users who already have a cpap_tips sequence (any step)
+  const { data: existingCpapTips } = await supabase
+    .from('email_sequences')
+    .select('user_id')
+    .eq('sequence_name', 'cpap_tips');
+
+  const excludeIds = existingCpapTips?.map((r) => r.user_id) ?? [];
+
+  // Find opted-in users created on/after launch date, not yet scheduled
+  let query = supabase
+    .from('profiles')
+    .select('id, created_at')
+    .eq('email_opt_in', true)
+    .gte('created_at', CPAP_TIPS_LAUNCH_DATE);
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  }
+
+  const { data: candidates, error } = await query;
+
+  if (error || !candidates) {
+    console.error('[email-sequences] Failed to find cpap_tips candidates:', error?.message);
+    return 0;
+  }
+
+  let scheduled = 0;
+  for (const user of candidates) {
+    // Offset baseDate so cpap_tips starts after the welcome sequence completes
+    const welcomeEnd = new Date(new Date(user.created_at).getTime() + WELCOME_SEQUENCE_DAYS * MS_PER_DAY);
+    await scheduleSequence(supabase, user.id, 'cpap_tips', welcomeEnd);
     scheduled++;
   }
 
