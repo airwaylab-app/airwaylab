@@ -140,6 +140,46 @@ export const blogPosts: BlogPost[] = [
         question: 'Can I see my CPAP leak rate data for free?',
         answer:
           'Yes. AirwayLab reads your ResMed SD card data in your browser — no account required, no upload to any server. Your data never leaves your device. The analysis is free and always will be.',
+    slug: 'what-are-reras-sleep-apnea',
+    title: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
+    seoTitle: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
+    description:
+      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
+    date: '2026-05-04',
+    readTime: '8 min read',
+    tags: ['RERA', 'Flow Limitation', 'AHI', 'CPAP', 'UARS'],
+    ogDescription:
+      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
+    faqItems: [
+      {
+        question: 'What does RERA stand for in sleep apnea?',
+        answer:
+          'RERA stands for Respiratory Effort-Related Arousal — a breathing disruption that causes an arousal from sleep without meeting the criteria for an apnea or hypopnea.',
+      },
+      {
+        question: "Why doesn't my CPAP machine report RERAs?",
+        answer:
+          'Most CPAP machines report AHI, which counts apneas and hypopneas only. RERAs require detailed flow waveform analysis and are not scored by standard consumer PAP devices.',
+      },
+      {
+        question: 'What is the difference between AHI and RDI?',
+        answer:
+          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour. RDI (Respiratory Disturbance Index) includes RERAs as well, giving a broader picture of sleep-disordered breathing events.',
+      },
+      {
+        question: 'Can I see RERAs in CPAP data?',
+        answer:
+          'You cannot see labelled RERAs in your CPAP summary data, but you can see the flow limitation patterns associated with them in the raw SD card data. Tools like AirwayLab and OSCAR give you access to this waveform data.',
+      },
+      {
+        question: 'Can AirwayLab detect RERAs automatically?',
+        answer:
+          'AirwayLab shows you the flow limitation channel and raw waveform where RERA-type patterns appear. It does not automatically label events as RERAs, as that scoring requires clinical interpretation.',
+      },
+      {
+        question: 'Should I worry if I see flow limitation in AirwayLab?',
+        answer:
+          'Flow limitation is informational data — what it means for your specific situation is a clinical question. If you notice patterns that concern you, bring the timestamps to your clinician for context.',
       },
     ],
   },
