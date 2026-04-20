@@ -85,6 +85,35 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'low-ahi-still-tired-flow-limitation-reras',
+    title: 'Low AHI But Still Tired? What Flow Limitation and RERAs Reveal',
+    seoTitle: 'Low AHI But Still Tired? What Flow Limitation and RERAs Reveal',
+    description:
+      'Your AHI looks great but you still feel exhausted. Learn why flow limitation and RERAs matter — and how to find them in your PAP data.',
+    date: '2026-04-02',
+    readTime: '10 min read',
+    tags: ['AHI', 'Flow Limitation', 'RERAs', 'UARS', 'Getting Started'],
+    ogDescription:
+      'Your AHI looks great but you still feel exhausted. Learn why flow limitation and RERAs matter — and how to find them in your PAP data.',
+    faqItems: [
+      {
+        question: 'Why am I still tired even though my AHI is low?',
+        answer:
+          'AHI only counts complete airway closures (apneas) and significant partial reductions (hypopneas). Flow limitation — partial airway narrowing that restricts airflow without meeting event thresholds — and RERAs (Respiratory Effort-Related Arousals) can fragment your sleep and cause fatigue without ever appearing in your AHI score.',
+      },
+      {
+        question: 'What is the difference between flow limitation and a RERA?',
+        answer:
+          'Flow limitation is the underlying event: partial narrowing of your upper airway that flattens the inspiratory flow waveform. A RERA occurs when a sequence of flow-limited breaths triggers a brief arousal that restores normal airflow. Flow limitation is continuous airway narrowing; a RERA is the arousal that ends a bout of flow limitation.',
+      },
+      {
+        question: 'How can I detect flow limitation and RERAs in my PAP data?',
+        answer:
+          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with estimated RERA detection to surface the patterns AHI cannot see.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-data-analysis-browser-no-download',
     title: 'Analyse CPAP Data in Your Browser — No Download, No Cloud, No Account',
     seoTitle: 'Analyse CPAP Data in Your Browser — No Download, No Cloud, No Account',
