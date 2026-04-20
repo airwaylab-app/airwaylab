@@ -15,7 +15,7 @@ AirwayLab reads the raw flow waveform from your ResMed SD card and runs four ind
 
 | Engine | What it measures |
 |--------|-----------------|
-| **Glasgow Index** | 9-component breath shape scoring (skew, flat top, spike, etc.) on a 0–8 scale |
+| **Glasgow Index** | 9-component breath shape scoring (skew, flat top, spike, etc.) on a 0–9 scale |
 | **WAT (Wobble Analysis Tool)** | FL Score, Regularity (Sample Entropy), Periodicity (FFT spectral analysis) |
 | **NED Analysis** | Peak-to-mid inspiratory flow ratio with automated RERA detection |
 | **Oximetry Pipeline** | 17-metric SpO2 and heart rate framework from Viatom/Checkme O2 Max CSV |
