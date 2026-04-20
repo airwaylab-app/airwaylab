@@ -29,8 +29,10 @@ import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-scor
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
+import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'cpap-compliance-tracking': CPAPComplianceTracking,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
