@@ -113,12 +113,16 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   // 3. Apply sunset policy for persistently unengaged users
   result.sunsetted = await applySunsetPolicy(supabase);
 
-  // 4. Health check: alert if drip system looks broken
+  // 4. Health check: alert if drip system looks broken.
+  //    Use a 25h grace window so rate-limited emails (held for the next daily run)
+  //    don't count as "overdue". Only emails that have survived ≥1 full cron cycle
+  //    without being sent indicate a real problem.
+  const graceCutoff = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
   const { count: overdueCount } = await supabase
     .from('email_sequences')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending')
-    .lte('scheduled_at', new Date().toISOString());
+    .lte('scheduled_at', graceCutoff);
 
   if (overdueCount && overdueCount > OVERDUE_ALERT_THRESHOLD) {
     const msg = `Email drip health check: ${overdueCount} overdue emails after processing (sent=${result.sent}, failed=${result.failed}). Threshold: ${OVERDUE_ALERT_THRESHOLD}.`;
