@@ -42,7 +42,7 @@ const engines = [
   {
     icon: Waves,
     title: 'Flow Limitation Detection',
-    desc: 'WAT tidal volume ratios and breathing regularity analysis. Detects the restriction patterns that AHI completely misses.',
+    desc: 'WAT tidal volume ratios and breathing regularity analysis. Quantifies the restriction patterns that AHI completely misses.',
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',

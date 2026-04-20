@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError } from '@/lib/storage/upload-orchestrator';
+import { isTransientServerError, getPartialFailureLevel } from '@/lib/storage/upload-orchestrator';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -62,5 +62,35 @@ describe('isTransientServerError', () => {
     expect(isTransientServerError('error code 5020')).toBe(false);
     // 1503 should not match 503
     expect(isTransientServerError('request id 1503')).toBe(false);
+  });
+});
+
+describe('getPartialFailureLevel', () => {
+  it('returns error when all files failed (uploaded === 0)', () => {
+    expect(getPartialFailureLevel(0, 3)).toBe('error');
+  });
+
+  it('returns error when failed > 5 even if some uploaded', () => {
+    expect(getPartialFailureLevel(10, 6)).toBe('error');
+    expect(getPartialFailureLevel(100, 20)).toBe('error');
+  });
+
+  it('returns warning when failed <= 5 and some uploaded', () => {
+    expect(getPartialFailureLevel(10, 5)).toBe('warning');
+    expect(getPartialFailureLevel(50, 1)).toBe('warning');
+    expect(getPartialFailureLevel(10, 3)).toBe('warning');
+  });
+
+  it('returns error at the boundary (failed === 6)', () => {
+    expect(getPartialFailureLevel(10, 6)).toBe('error');
+  });
+
+  it('returns warning at the boundary (failed === 5)', () => {
+    expect(getPartialFailureLevel(10, 5)).toBe('warning');
+  });
+
+  it('returns error when uploaded === 0 and failed === 0', () => {
+    // Edge case: no files processed at all
+    expect(getPartialFailureLevel(0, 0)).toBe('error');
   });
 });

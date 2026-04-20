@@ -373,8 +373,9 @@ test.describe('Conversion Funnel — Pricing Page', () => {
     // Click first "Sign in to get started" button (Supporter)
     await page.getByText('Sign in to get started').first().click();
 
-    const modal = page.getByRole('dialog').filter({ hasText: /sign in to airwaylab/i });
-    await expect(modal).toBeVisible({ timeout: 3_000 });
+    // Pricing context shows "Sign in to complete your upgrade" (auth-modal.tsx:128)
+    const modal = page.getByRole('dialog').filter({ hasText: /sign in to complete your upgrade/i });
+    await expect(modal).toBeVisible({ timeout: 5_000 });
   });
 });
 
