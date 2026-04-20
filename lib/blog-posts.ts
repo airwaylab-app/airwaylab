@@ -140,6 +140,10 @@ export const blogPosts: BlogPost[] = [
         question: 'Can I see my CPAP leak rate data for free?',
         answer:
           'Yes. AirwayLab reads your ResMed SD card data in your browser — no account required, no upload to any server. Your data never leaves your device. The analysis is free and always will be.',
+      },
+    ],
+  },
+  {
     slug: 'what-are-reras-sleep-apnea',
     title: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
     seoTitle: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
@@ -180,6 +184,50 @@ export const blogPosts: BlogPost[] = [
         question: 'Should I worry if I see flow limitation in AirwayLab?',
         answer:
           'Flow limitation is informational data — what it means for your specific situation is a clinical question. If you notice patterns that concern you, bring the timestamps to your clinician for context.',
+      },
+    ],
+  },
+  {
+    slug: 'cpap-compliance-tracking',
+    title: 'CPAP Compliance Tracking: Your Questions Answered',
+    seoTitle: 'CPAP Compliance Tracking: Your Questions Answered | AirwayLab',
+    description:
+      'What is CPAP compliance, how is it tracked, and what does a compliance score mean? Clear answers for PAP users navigating insurance and therapy requirements.',
+    date: '2026-04-20',
+    readTime: '6 min read',
+    tags: ['CPAP', 'Compliance', 'Insurance', 'Getting Started'],
+    ogDescription:
+      'What is CPAP compliance, how is it tracked, and what does a compliance score mean? Clear answers for PAP users navigating insurance and therapy requirements.',
+    faqItems: [
+      {
+        question: 'What is CPAP compliance?',
+        answer:
+          'CPAP compliance is a measure of how consistently you use your therapy device. It records how many hours you run your machine each night, and is used by insurers and clinicians to confirm the device is being used enough for therapy to be meaningful.',
+      },
+      {
+        question: 'What are the standard CPAP compliance requirements?',
+        answer:
+          'The most commonly cited US benchmark is 4 hours per night for at least 70% of nights over a 30-day period, based on CMS guidelines. Requirements vary by insurer and country — check your specific policy for the thresholds that apply to you.',
+      },
+      {
+        question: 'How is CPAP compliance tracked?',
+        answer:
+          'Your machine logs usage data automatically. It can be read via the machine display, SD card software like AirwayLab or OSCAR, or transmitted wirelessly to manufacturer cloud portals (e.g. myAir, DreamMapper) used by your provider or DME supplier.',
+      },
+      {
+        question: 'Can I see my own CPAP compliance data?',
+        answer:
+          'Yes. Your usage data belongs to you. You can view it on your machine display, via OSCAR (free desktop software), or via AirwayLab — a browser-based tool that reads your SD card locally with no uploads. Note: AirwayLab does not report to insurers or providers.',
+      },
+      {
+        question: 'What is a sleep apnea compliance score?',
+        answer:
+          'A compliance score is the percentage of nights in a reporting window that met the minimum usage threshold, commonly 4 or more hours. For example, using the device 4+ hours on 22 of 30 nights equals a 73% compliance score. The exact calculation varies by platform.',
+      },
+      {
+        question: 'What if I am not meeting my CPAP compliance target?',
+        answer:
+          'Discuss this with your prescribing clinician. Common factors the PAP community discusses include mask fit and comfort, pressure settings, aerophagia, and anxiety with the mask. Tools like AirwayLab can show your session data alongside mask leak and other metrics, which may be useful context for your clinician.',
       },
     ],
   },
