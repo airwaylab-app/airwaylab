@@ -37,6 +37,16 @@ export function isTransientServerError(errorMessage: string): boolean {
   return /\b(502|503|504|520)\b/.test(errorMessage);
 }
 
+/**
+ * Determine Sentry severity level for partial upload failures.
+ * Escalates to 'error' when all files failed OR more than 5 files failed,
+ * so that Sentry alerts trigger before floods accumulate unnoticed.
+ */
+export function getPartialFailureLevel(uploaded: number, failed: number): 'error' | 'warning' {
+  if (uploaded === 0 || failed > 5) return 'error';
+  return 'warning';
+}
+
 function getFilePath(file: File): string {
   return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
 }
@@ -252,8 +262,11 @@ class UploadOrchestrator {
       (err) => /\b(500|502|503|504|520)\b/.test(err)
     );
 
+    const userId = String(Sentry.getCurrentScope().getUser()?.id ?? 'anonymous');
+
     Sentry.captureMessage('cloud_upload_partial_failure', {
-      level: result.uploaded === 0 ? 'error' : 'warning',
+      level: getPartialFailureLevel(result.uploaded, result.failed),
+      fingerprint: ['cloud_upload_partial_failure', userId],
       tags: {
         allFailed: String(result.uploaded === 0),
         failedCount: String(result.failed),
@@ -622,14 +635,25 @@ class UploadOrchestrator {
       throw new Error(`Upload failed: ${uploadRes.status}`);
     }
 
-    // Step 3: Confirm upload
-    await fetch('/api/files/confirm', {
+    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB
+    const confirmRes = await fetch('/api/files/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ fileId: presignData.fileId }),
       signal,
     });
+
+    if (!confirmRes.ok) {
+      if (confirmRes.status === 404) {
+        // File is not in storage despite the PUT appearing to succeed.
+        // Treat as a failed upload — the metadata row was already cleaned up by the confirm route.
+        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes.status})`);
+      }
+      // Other errors (5xx, network): file may be in storage but unconfirmed.
+      // The stale orphan detection in presign will clean it up on the next attempt.
+      console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
+    }
 
     return true;
   }

@@ -39,7 +39,7 @@ test.describe('Free User Flow', () => {
     // File input should be present
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached();
     // Demo button should be available
-    await expect(page.getByText('See sample data')).toBeVisible();
+    await expect(page.getByText('Try sample data')).toBeVisible();
   });
 
   // ── Analysis complete banner ─────────────────────────────────
@@ -158,7 +158,7 @@ test.describe('Free User Flow', () => {
 
     // Upload form should reappear
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached({ timeout: 5_000 });
-    await expect(page.getByText('See sample data')).toBeVisible();
+    await expect(page.getByText('Try sample data')).toBeVisible();
   });
 
   // ── No sign-in required for core analysis ───────────────────
