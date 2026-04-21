@@ -723,7 +723,7 @@ export default function HowPAPTherapyWorksPost() {
               EPAP holds the door open. Pressure Support pushes you through it. EPAP prevents
               collapse, PS ensures adequate ventilation. On CPAP, one pressure tries to do both
               jobs. On BiPAP, each job gets its own optimised pressure. That&apos;s why BiPAP
-              can be more effective for complex cases.
+              may be better suited for cases where independent pressure control is needed.
             </p>
           </div>
         </div>
