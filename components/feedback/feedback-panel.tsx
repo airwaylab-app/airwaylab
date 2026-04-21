@@ -34,6 +34,10 @@ export function FeedbackPanel({ open, onClose }: Props) {
   const [email, setEmail] = useState('')
   const [contactOk, setContactOk] = useState(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error' | 'rate_limited'>('idle')
+  const [isMac, setIsMac] = useState(false)
+  useEffect(() => {
+    setIsMac(navigator.platform?.includes('Mac') ?? false)
+  }, [])
 
   // Callbacks first (referenced by effects below)
   const handleClose = useCallback(() => {
@@ -216,7 +220,7 @@ export function FeedbackPanel({ open, onClose }: Props) {
                 />
                 <div className="mt-1 flex justify-between">
                   <span className="text-[10px] text-muted-foreground/40">
-                    {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to send
+                    {isMac ? '⌘' : 'Ctrl'}+Enter to send
                   </span>
                   <span
                     className={cn(
