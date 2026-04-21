@@ -114,7 +114,7 @@ export function postUploadStep3(unsubscribeUrl: string): { subject: string; html
     html: layout(`
       ${heading('Numbers tell half the story')}
       ${paragraph('Two people with identical flow limitation scores can feel completely different. Your sensitivity to airway resistance, your arousal threshold, your REM patterns -- all of these factor in.')}
-      ${paragraph('AirwayLab measures your airway. Symptom logging measures you. Together, they give your clinician something no AHI printout can: the full picture.')}
+      ${paragraph('AirwayLab analyses your flow data. Symptom logging measures you. Together, they give your clinician something no AHI printout can: the full picture.')}
       ${paragraph('After each analysis, you can log how you slept on a simple scale. It takes 5 seconds, and it builds a picture of your personal sensitivity over time.')}
       ${ctaButton('Log How You Slept', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3`)}
       ${paragraph('P.S. AI insights can connect your symptoms to your metrics -- highlighting correlations between your symptoms and metrics. Available with a <a href="' + BASE_URL + '/pricing?utm_source=email&utm_medium=drip&utm_campaign=post_upload_3_upgrade" style="color:#5eead4;text-decoration:underline;">Supporter subscription</a>.')}
@@ -318,8 +318,8 @@ function premiumOnboardingStep2(unsubscribeUrl: string): { subject: string; html
     subject: 'The report your clinician wants to see',
     html: layout(`
       ${heading('Objective data for your next appointment')}
-      ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered interpretation.')}
-      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If you\'ve been struggling to explain why you still feel tired despite "normal" AHI, this report does it for you.')}
+      ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered analysis.')}
+      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. The PDF report gives your clinician flow limitation scores, RERA estimates, and trend data alongside your AHI -- additional detail for your next conversation.')}
       ${ctaButton('Generate Your PDF Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_2`)}
     `, unsubscribeUrl),
   };
