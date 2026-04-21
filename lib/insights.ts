@@ -349,8 +349,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       insights.push({
         id: 'symptom-fl-correlation',
         type: 'warning',
-        title: 'Elevated flow limitation alongside symptom rating',
-        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. Your clinician can help interpret these findings in context.`,
+        title: 'Elevated flow limitation alongside low symptom rating',
+        body: `Your flow limitation metrics are elevated and you rated this night as ${ratingLabel}. Your clinician can help interpret these findings in context.`,
         category: 'ned',
       });
     } else if (iflRisk > 45 && symptomRating >= 4) {
