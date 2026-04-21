@@ -232,6 +232,40 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'bipap-vs-cpap-data',
+    title: 'BiPAP vs CPAP: Understanding Your Therapy Data',
+    seoTitle: 'BiPAP vs CPAP Data: What IPAP, EPAP, and Pressure Support Show | AirwayLab',
+    description:
+      'BiPAP data looks different from CPAP — here\'s what IPAP, EPAP, pressure support, and tidal volume actually show when you open your therapy files.',
+    date: '2026-04-19',
+    readTime: '8 min read',
+    tags: ['BiPAP', 'CPAP', 'Pressure Support', 'Getting Started', 'Flow Limitation'],
+    ogDescription:
+      'BiPAP data looks different from CPAP — here\'s what IPAP, EPAP, pressure support, and tidal volume actually show when you open your therapy files.',
+    faqItems: [
+      {
+        question: 'Can AirwayLab read BiPAP data the same as CPAP data?',
+        answer:
+          'Yes. AirwayLab reads the same SD card format OSCAR uses and supports ResMed AirCurve and compatible BiPAP devices.',
+      },
+      {
+        question: 'What is pressure support in BiPAP data?',
+        answer:
+          'Pressure support is the difference between IPAP and EPAP — the extra pressure applied to assist each inhale.',
+      },
+      {
+        question: 'Does tidal volume appear in all BiPAP data?',
+        answer:
+          'It depends on the device. ResMed AirCurve devices log tidal volume in SD card data; some other BiPAP machines do not export it.',
+      },
+      {
+        question: 'What does a shifting IPAP trace mean in auto BiPAP mode?',
+        answer:
+          "It means the machine adjusted the inspiratory pressure during the night — typically in response to detected breathing changes. This is information to discuss with your clinician, not a cause for alarm on its own.",
+      },
+    ],
+  },
+  {
     slug: 'how-to-export-understand-cpap-data',
     title: 'How to Export and Understand Your CPAP Data',
     seoTitle: 'How to Export and Understand Your CPAP Data | AirwayLab',

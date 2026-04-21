@@ -45,6 +45,7 @@ import UnderstandingCPAPData from '../posts/understanding-cpap-data';
 import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
 import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
+import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
@@ -60,6 +61,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
   'four-metrics-airwaylab-measures': FourMetricsAirwayLabMeasures,
+  'bipap-vs-cpap-data': BiPAPVsCPAPData,
   'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
   'how-to-analyze-cpap-data-at-home': HowToAnalyzeCPAPDataAtHome,
