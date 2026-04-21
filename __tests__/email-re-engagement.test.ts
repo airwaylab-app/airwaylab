@@ -270,6 +270,13 @@ describe('re-engagement template personalisation', () => {
     expect(html).toContain('<!DOCTYPE html>');
   });
 
+  it('step 1 subject has no double-space when lastUploadDate is null', async () => {
+    const { reEngagementStep1 } = await import('@/lib/email/templates');
+    const { subject } = reEngagementStep1(UNSUB_URL, 'Sam', null);
+    expect(subject).toBe('Your CPAP data is still here');
+    expect(subject).not.toContain('  ');
+  });
+
   it('step 2 handles missing lastUploadDate gracefully', async () => {
     const { reEngagementStep2 } = await import('@/lib/email/templates');
     const { subject, html } = reEngagementStep2(UNSUB_URL, null, null);
