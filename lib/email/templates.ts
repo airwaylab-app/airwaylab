@@ -490,8 +490,11 @@ export function reEngagementStep1(
 ): { subject: string; html: string } {
   const greeting = firstName ? `${paragraph(`Hey ${firstName},`)}` : '';
   const uploadDate = lastUploadDate ?? '';
+  const subject = uploadDate
+    ? `Your CPAP data from ${uploadDate} is still here`
+    : 'Your CPAP data is still here';
   return {
-    subject: `Your CPAP data from ${uploadDate} is still here`,
+    subject,
     html: reEngagementLayout(`
       ${greeting}
       ${paragraph('Pick up where you left off -- one more upload starts to show how your numbers change over time.')}

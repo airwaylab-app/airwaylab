@@ -2,7 +2,7 @@
  * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Discovers new candidates (dormancy, activation) -- schedule first so they
+ * 1. Discovers new candidates (activation, re_engagement) -- schedule first so they
  *    can be sent in the same run, avoiding a 24h delay until the next cron.
  * 2. Queries for all due emails (scheduled_at <= now, status = pending)
  * 3. Sends each via Resend (with AB variant subjects where applicable)
@@ -17,7 +17,6 @@ import * as Sentry from '@sentry/nextjs';
 import {
   getPendingEmails,
   markSent,
-  scheduleDormancySequences,
   scheduleActivationSequences,
   scheduleCpapTipsSequences,
   scheduleReEngagementSequences,
@@ -53,7 +52,9 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
 
   // 1. Discover new candidates first -- scheduling before sending ensures
   //    newly discovered users get their first email in this run, not 24h later.
-  result.dormancyScheduled = await scheduleDormancySequences(supabase);
+  //    Note: scheduleDormancySequences() is intentionally not called here.
+  //    The re_engagement sequence fully replaces dormancy for new enrollments.
+  //    Existing in-flight dormancy rows continue to send until completion.
   result.activationScheduled = await scheduleActivationSequences(supabase);
   result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
   result.reEngagementScheduled = await scheduleReEngagementSequences(supabase);
