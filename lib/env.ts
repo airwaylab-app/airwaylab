@@ -91,6 +91,15 @@ export const serverEnv = {
 
   /** Sentry webhook secret for authenticating alert forwards to Discord */
   SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET ?? undefined,
+
+  /** Gmail OAuth2 client ID for feedback processor drafts */
+  GMAIL_CLIENT_ID: process.env.GMAIL_CLIENT_ID ?? undefined,
+
+  /** Gmail OAuth2 client secret for feedback processor drafts */
+  GMAIL_CLIENT_SECRET: process.env.GMAIL_CLIENT_SECRET ?? undefined,
+
+  /** Gmail OAuth2 refresh token for feedback processor drafts */
+  GMAIL_REFRESH_TOKEN: process.env.GMAIL_REFRESH_TOKEN ?? undefined,
 } as const;
 
 /**
