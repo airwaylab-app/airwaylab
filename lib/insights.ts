@@ -81,9 +81,9 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research shows this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Your clinician can help interpret these findings in context.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. This composite reflects multiple flow limitation measurements. Your clinician can help interpret these findings in context.`,
       category: 'ned',
-      link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
+      link: { text: 'Read: Understanding Flow Limitation Metrics', href: '/blog/flow-limitation-and-sleepiness' },
     });
   } else if (iflL === 'good') {
     insights.push({
@@ -105,7 +105,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       title: 'High flow limitation with low disruption index',
       body: contextNote,
       category: 'ned',
-      link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
+      link: { text: 'Read: Understanding Flow Limitation Metrics', href: '/blog/flow-limitation-and-sleepiness' },
     });
   } else if (contextNote && iflRisk <= 15 && eaiForContext > 10) {
     insights.push({
@@ -310,7 +310,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-high',
       type: 'warning',
       title: 'High brief obstruction rate',
-      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but may fragment sleep. Possible contributing factors include swallowing, positional shifts, or epiglottic flutter. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but are visible in breath-shape analysis. Possible contributing factors include swallowing, positional shifts, or epiglottic flutter. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
     });
   }
@@ -349,8 +349,8 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       insights.push({
         id: 'symptom-fl-correlation',
         type: 'warning',
-        title: 'Elevated flow limitation correlates with symptom rating',
-        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. This pattern shows elevated flow limitation correlating with your reported experience. Your clinician can help interpret these findings in context.`,
+        title: 'Elevated flow limitation alongside symptom rating',
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated and you rated this night as ${ratingLabel}. Your clinician can help interpret these findings in context.`,
         category: 'ned',
       });
     } else if (iflRisk > 45 && symptomRating >= 4) {
@@ -358,7 +358,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'symptom-fl-asymptomatic',
         type: 'info',
         title: 'Elevated flow limitation but feeling well',
-        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated but you rated this night as ${ratingLabel}. Not everyone with elevated FL is symptomatic \u2014 continue monitoring and flag any changes in how you feel.`,
+        body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% is elevated but you rated this night as ${ratingLabel}. Flow limitation metrics can vary independently of how you feel \u2014 continue monitoring and flag any changes with your clinician.`,
         category: 'ned',
       });
     } else if (iflRisk < 20 && symptomRating <= 2) {
@@ -405,7 +405,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'settings-low-ipap-dwell',
         type: 'actionable',
         title: 'Low time at full pressure support',
-        body: `Your machine reaches IPAP but cycles off quickly -- only ${fmt(sm.ipapDwellMedianPct, 0)}% of each breath is spent at full pressure. Low IPAP dwell time means less time at your prescribed pressure support level.`,
+        body: `Your machine reaches IPAP but cycles off quickly -- only ${fmt(sm.ipapDwellMedianPct, 0)}% of each breath is spent at full pressure. Low IPAP dwell time means less time at your prescribed pressure support level. Your clinician can help interpret these findings in context.`,
         category: 'settings',
       });
     }
@@ -754,7 +754,7 @@ function trendInsights(
       id: 'consistent-bad',
       type: 'actionable',
       title: 'Persistent flow limitation across all nights',
-      body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern.`,
+      body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern. Your clinician can help interpret these findings in context.`,
       category: 'trend',
     });
   }
