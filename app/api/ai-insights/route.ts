@@ -145,7 +145,7 @@ const PerBreathSummarySchema = z.object({
 const RequestBodySchema = z.object({
   nights: z.array(z.object({
     dateStr: z.string(),
-    durationHours: z.number(),
+    durationHours: z.number().optional(),
     sessionCount: z.number(),
     settings: z.object({}).passthrough(),
     glasgow: z.object({ overall: z.number() }).passthrough(),

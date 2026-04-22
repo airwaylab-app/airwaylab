@@ -36,6 +36,7 @@ const mockSupabaseFrom = vi.fn().mockReturnValue({
   eq: vi.fn().mockReturnThis(),
   single: vi.fn().mockResolvedValue({ data: { tier: 'supporter' } }),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+  insert: vi.fn().mockResolvedValue({ error: null }),
 });
 const mockRpc = vi.fn().mockResolvedValue({ data: null });
 
@@ -233,5 +234,20 @@ describe('AI Insights Error Handling', () => {
       expect.any(Error),
       expect.objectContaining({ tags: expect.objectContaining({ route: 'ai-insights' }) })
     );
+  });
+
+  it('accepts nights with missing durationHours (regression: AIR-758)', async () => {
+    mockMessagesCreate.mockResolvedValueOnce({
+      content: [{ type: 'text', text: '[{"id":"ai-1","type":"info","title":"Test","body":"Test body","category":"glasgow"}]' }],
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 100, output_tokens: 50 },
+    });
+    const body = validBody();
+    // Remove durationHours from all nights
+    (body.nights as Array<Record<string, unknown>>).forEach((n) => { delete n.durationHours; });
+    const res = await callRoute(body);
+    expect(res.status).toBe(200);
+    const resBody = await res.json();
+    expect(resBody.insights).toHaveLength(1);
   });
 });
