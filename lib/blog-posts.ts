@@ -17,6 +17,40 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'sleephq-alternative',
+    title: 'SleepHQ Alternative: Comparing Cloud vs. Browser-Based CPAP Analysis',
+    seoTitle: 'SleepHQ Alternative: Browser-Based CPAP Analysis Without Cloud Upload',
+    description:
+      'SleepHQ is cloud-first. AirwayLab analyses your CPAP data entirely in your browser — no upload, no account, open source. An honest comparison of both tools.',
+    date: '2026-05-22',
+    readTime: '7 min read',
+    tags: ['SleepHQ', 'CPAP Software', 'Privacy', 'Comparison', 'Flow Limitation'],
+    ogDescription:
+      'Comparing SleepHQ and AirwayLab for CPAP data analysis. SleepHQ stores data in the cloud; AirwayLab processes everything in your browser. Honest comparison of features, privacy, and analysis depth.',
+    faqItems: [
+      {
+        question: 'Is there a SleepHQ alternative that does not upload my data?',
+        answer:
+          'Yes. AirwayLab analyses your ResMed EDF data entirely in your browser using Web Workers. Your breathing data never leaves your device. Optional features like AI insights require explicit consent before any data is sent.',
+      },
+      {
+        question: 'What does SleepHQ do that AirwayLab does not?',
+        answer:
+          'SleepHQ offers a dedicated mobile app, long-term cloud storage, multi-device support beyond ResMed, and a shareable clinician link. AirwayLab is browser-based with a 30-day local cache and currently supports ResMed machines only.',
+      },
+      {
+        question: 'What does AirwayLab do that SleepHQ does not?',
+        answer:
+          'AirwayLab runs four additional analysis engines on your raw EDF waveform: the Glasgow Index (9-component breath shape score), WAT (FL Score, breathing regularity, periodicity), NED (per-breath negative effort dependence), and RERA detection. These go beyond device-reported metrics to score flow limitation at breath-by-breath resolution.',
+      },
+      {
+        question: 'Is AirwayLab open source?',
+        answer:
+          'Yes. AirwayLab is GPL-3.0 licensed. The analysis code is public and auditable — you can verify what the engines compute. SleepHQ is a closed-source platform.',
+      },
+    ],
+  },
+  {
     slug: 'oscar-alternatives-web-cpap-2026',
     title: 'OSCAR Alternatives: Web-Based CPAP Analysis Tools for 2026',
     seoTitle: 'OSCAR Alternatives: Best Free CPAP Analysis Tools for 2026',
