@@ -32,10 +32,12 @@ import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-1
 import SleepHQAlternative from '../posts/sleephq-alternative';
 import AHIvsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
+import HypopneaVsApneaCPAPData from '../posts/hypopnea-vs-apnea-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
   'ahi-vs-rdi-sleep-apnea': AHIvsRDISleepApnea,
   'oscar-alternatives-web-cpap-2026': OSCARAlternativesWebCPAP2026,
+  'hypopnea-vs-apnea-cpap-data': HypopneaVsApneaCPAPData,
   'sleephq-alternative': SleepHQAlternative,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
