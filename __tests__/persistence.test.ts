@@ -135,16 +135,13 @@ describe('persistence', () => {
       const totalFailureCall = calls.find(
         (c) => c[0] === 'Persistence: total failure — cannot save any nights'
       );
-      if (totalFailureCall) {
-        const extra = (totalFailureCall[1] as { extra?: Record<string, unknown> })?.extra;
-        expect(extra).toBeDefined();
-        expect(typeof extra!.singleNightApproxBytes).toBe('number');
-        expect(extra!.singleNightApproxBytes).toBeGreaterThan(0);
-        expect(extra!.singleNightSections).toBeDefined();
-        expect(typeof extra!.totalNights).toBe('number');
-      }
-      // If saved successfully (the huge extendedSettings still fits — that's fine),
-      // just verify we didn't break anything.
+      expect(totalFailureCall).toBeDefined();
+      const extra = (totalFailureCall![1] as { extra?: Record<string, unknown> })?.extra;
+      expect(extra).toBeDefined();
+      expect(typeof extra!.singleNightApproxBytes).toBe('number');
+      expect(extra!.singleNightApproxBytes).toBeGreaterThan(0);
+      expect(extra!.singleNightSections).toBeDefined();
+      expect(typeof extra!.totalNights).toBe('number');
     });
   });
 
