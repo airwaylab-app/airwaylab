@@ -21,6 +21,8 @@ import { computeOximetry } from '../lib/analyzers/oximetry-engine';
 import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
 import { computeCrossDevice } from '../lib/analyzers/cross-device-engine';
 import { buildOximetryTrace } from '../lib/oximetry-trace';
+import { storeBreathData } from '../lib/breath-data-idb';
+import { storeOximetryTrace } from '../lib/oximetry-trace-idb';
 import type {
   WorkerMessage,
   WorkerProgress,
@@ -54,6 +56,45 @@ self.addEventListener('error', (e: ErrorEvent) => {
   self.postMessage(response);
 });
 
+// Sampling rate assumed for breath data IDB storage (matches orchestrator default).
+// Device-specific rates vary but 25 Hz is correct for AirSense 10/11.
+const DEFAULT_BREATH_SAMPLING_RATE = 25;
+
+/**
+ * Offload bulk arrays to IndexedDB before postMessage so the structured
+ * clone step doesn't OOM on large (1+ year) SD card datasets.
+ * The orchestrator's restoreBreathData / restoreOximetryTraces will
+ * reload them from IDB when building the final analysis state.
+ */
+async function offloadBulkDataToIDB(nights: NightResult[]): Promise<void> {
+  const writes: Promise<void>[] = [];
+  for (const night of nights) {
+    if (night.ned.breaths && night.ned.breaths.length > 0) {
+      writes.push(storeBreathData(night.dateStr, night.ned.breaths, DEFAULT_BREATH_SAMPLING_RATE));
+    }
+    if (night.oximetryTrace !== null) {
+      writes.push(storeOximetryTrace(night.dateStr, night.oximetryTrace));
+    }
+  }
+  await Promise.all(writes);
+}
+
+/**
+ * Strip bulk arrays from nights before postMessage.
+ * Bulk data has already been written to IDB by offloadBulkDataToIDB.
+ */
+function stripBulkData(nights: NightResult[]): NightResult[] {
+  return nights.map((n) => ({
+    ...n,
+    ned: {
+      ...n.ned,
+      breaths: [],
+      reras: undefined,
+    },
+    oximetryTrace: null,
+  }));
+}
+
 // Worker message handler
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
@@ -65,7 +106,8 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       const { files, oximetryCSVs, deviceType } = e.data;
       const bmcSerial = (e.data as unknown as { bmcSerial?: string }).bmcSerial;
       const results = await processFiles(files, oximetryCSVs, deviceType, bmcSerial);
-      const response: WorkerResult = { type: 'RESULTS', nights: results };
+      await offloadBulkDataToIDB(results);
+      const response: WorkerResult = { type: 'RESULTS', nights: stripBulkData(results) };
       self.postMessage(response);
     }
   } catch (err) {
