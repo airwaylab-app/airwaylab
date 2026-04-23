@@ -29,10 +29,12 @@ import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-scor
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
-import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
+import SleepHQAlternative from '../posts/sleephq-alternative';
+import AHIvsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 
 const postComponents: Record<string, React.ComponentType> = {
-  'what-are-reras-sleep-apnea': WhatAreRerasSleepApnea,
+  'ahi-vs-rdi-sleep-apnea': AHIvsRDISleepApnea,
+  'sleephq-alternative': SleepHQAlternative,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,

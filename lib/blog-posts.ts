@@ -17,46 +17,70 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
-    slug: 'what-are-reras-sleep-apnea',
-    title: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
-    seoTitle: 'What Are RERAs? Understanding Sleep Apnea Data Beyond AHI',
+    slug: 'ahi-vs-rdi-sleep-apnea',
+    title: 'AHI vs RDI: What Sleep Apnea Metrics Actually Tell You',
+    seoTitle: 'AHI vs RDI Sleep Apnea: Understanding the Difference | AirwayLab',
     description:
-      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
-    date: '2026-05-04',
-    readTime: '8 min read',
-    tags: ['RERA', 'Flow Limitation', 'AHI', 'CPAP', 'UARS'],
+      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
+    date: '2026-05-29',
+    readTime: '7 min read',
+    tags: ['AHI', 'RDI', 'RERA', 'Sleep Apnea', 'CPAP Metrics'],
     ogDescription:
-      'RERAs (Respiratory Effort-Related Arousals) are events your AHI score doesn\'t count. Learn what they are, how they appear in CPAP flow data, and how to spot them in AirwayLab.',
+      'AHI counts apneas and hypopneas. RDI adds RERAs on top. Your CPAP reports AHI; your sleep study reports RDI. Understanding the difference explains why the numbers rarely match.',
     faqItems: [
       {
-        question: 'What does RERA stand for in sleep apnea?',
+        question: 'What is the difference between AHI and RDI in sleep apnea?',
         answer:
-          'RERA stands for Respiratory Effort-Related Arousal — a breathing disruption that causes an arousal from sleep without meeting the criteria for an apnea or hypopnea.',
+          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour of sleep. RDI (Respiratory Disturbance Index) includes RERAs (Respiratory Effort-Related Arousals) as well, making it always equal to or higher than AHI.',
       },
       {
-        question: "Why doesn't my CPAP machine report RERAs?",
+        question: 'Why does my CPAP show a lower number than my sleep study?',
         answer:
-          'Most CPAP machines report AHI, which counts apneas and hypopneas only. RERAs require detailed flow waveform analysis and are not scored by standard consumer PAP devices.',
+          'Sleep studies report RDI, which includes RERAs. CPAP machines report AHI, which does not. If your CPAP AHI looks much better than your sleep study RDI, the gap often represents RERAs your device is not counting.',
       },
       {
-        question: 'What is the difference between AHI and RDI?',
+        question: 'Can AirwayLab show RDI?',
         answer:
-          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour. RDI (Respiratory Disturbance Index) includes RERAs as well, giving a broader picture of sleep-disordered breathing events.',
+          'AirwayLab cannot produce a clinically certified RDI — that requires EEG to confirm arousals. It can estimate RERA-related patterns from your flow waveform data, including flow limitation percentage, estimated RERA count, and Estimated Arousal Index.',
       },
       {
-        question: 'Can I see RERAs in CPAP data?',
+        question: 'Is RDI or AHI more accurate?',
         answer:
-          'You cannot see labelled RERAs in your CPAP summary data, but you can see the flow limitation patterns associated with them in the raw SD card data. Tools like AirwayLab and OSCAR give you access to this waveform data.',
+          'Neither is more accurate — they measure different things. AHI is standardised and universal across devices. RDI gives a fuller picture of respiratory disturbance but requires different measurement techniques. Your clinician can help interpret which is most relevant for your situation.',
+      },
+    ],
+  },
+  {
+    slug: 'sleephq-alternative',
+    title: 'SleepHQ Alternative: Comparing Cloud vs. Browser-Based CPAP Analysis',
+    seoTitle: 'SleepHQ Alternative: Browser-Based CPAP Analysis Without Cloud Upload',
+    description:
+      'SleepHQ is cloud-first. AirwayLab analyses your CPAP data entirely in your browser — no upload, no account, open source. An honest comparison of both tools.',
+    date: '2026-05-22',
+    readTime: '7 min read',
+    tags: ['SleepHQ', 'CPAP Software', 'Privacy', 'Comparison', 'Flow Limitation'],
+    ogDescription:
+      'Comparing SleepHQ and AirwayLab for CPAP data analysis. SleepHQ stores data in the cloud; AirwayLab processes everything in your browser. Honest comparison of features, privacy, and analysis depth.',
+    faqItems: [
+      {
+        question: 'Is there a SleepHQ alternative that does not upload my data?',
+        answer:
+          'Yes. AirwayLab analyses your ResMed EDF data entirely in your browser using Web Workers. Your breathing data never leaves your device. Optional features like AI insights require explicit consent before any data is sent.',
       },
       {
-        question: 'Can AirwayLab detect RERAs automatically?',
+        question: 'What does SleepHQ do that AirwayLab does not?',
         answer:
-          'AirwayLab shows you the flow limitation channel and raw waveform where RERA-type patterns appear. It does not automatically label events as RERAs, as that scoring requires clinical interpretation.',
+          'SleepHQ offers a dedicated mobile app, long-term cloud storage, multi-device support beyond ResMed, and a shareable clinician link. AirwayLab is browser-based with a 30-day local cache and currently supports ResMed machines only.',
       },
       {
-        question: 'Should I worry if I see flow limitation in AirwayLab?',
+        question: 'What does AirwayLab do that SleepHQ does not?',
         answer:
-          'Flow limitation is informational data — what it means for your specific situation is a clinical question. If you notice patterns that concern you, bring the timestamps to your clinician for context.',
+          'AirwayLab runs four additional analysis engines on your raw EDF waveform: the Glasgow Index (9-component breath shape score), WAT (FL Score, breathing regularity, periodicity), NED (per-breath negative effort dependence), and RERA detection. These go beyond device-reported metrics to score flow limitation at breath-by-breath resolution.',
+      },
+      {
+        question: 'Is AirwayLab open source?',
+        answer:
+          'Yes. AirwayLab is GPL-3.0 licensed. The analysis code is public and auditable — you can verify what the engines compute. SleepHQ is a closed-source platform.',
       },
     ],
   },
