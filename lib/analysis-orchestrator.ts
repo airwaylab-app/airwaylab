@@ -304,6 +304,8 @@ class AnalysisOrchestrator {
       const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
       let settled = false;
       let idleTimer: ReturnType<typeof setTimeout>;
+      const DEFAULT_SAMPLING_RATE = 25;
+      const pendingIdbWrites: Promise<void>[] = [];
 
       const startIdleTimer = () => {
         clearTimeout(idleTimer);
@@ -354,13 +356,25 @@ class AnalysisOrchestrator {
               },
             });
             break;
-          case 'NIGHT_RESULT':
-            onNightComplete?.(msg.night);
+          case 'NIGHT_RESULT': {
+            const night = msg.night;
+            if (night.ned.breaths && night.ned.breaths.length > 0) {
+              pendingIdbWrites.push(
+                storeBreathData(night.dateStr, night.ned.breaths, DEFAULT_SAMPLING_RATE)
+              );
+            }
+            if (night.oximetryTrace) {
+              pendingIdbWrites.push(
+                storeOximetryTrace(night.dateStr, night.oximetryTrace)
+              );
+            }
+            onNightComplete?.(night);
             break;
+          }
           case 'RESULTS':
             settle();
             this.terminate();
-            resolve(msg.nights);
+            Promise.allSettled(pendingIdbWrites).then(() => resolve(msg.nights));
             break;
           case 'WARNING': {
             const isTruncated = msg.detail.includes('Truncated');
