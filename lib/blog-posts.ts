@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'hypopnea-vs-apnea-cpap-data',
+    title: 'Hypopnea vs Apnea: Understanding the Difference in Your CPAP Data',
+    seoTitle: 'Hypopnea vs Apnea: What Each Breathing Event Means in CPAP Data | AirwayLab',
+    description:
+      'Apneas and hypopneas both count toward AHI, but they are different events with distinct waveform signatures. Learn what each means and why the split matters.',
+    date: '2026-06-02',
+    readTime: '7 min read',
+    tags: ['Hypopnea', 'Apnea', 'AHI', 'Sleep Apnea', 'CPAP Metrics'],
+    ogDescription:
+      'Apnea vs hypopnea: learn what each breathing event means in your CPAP data, how they both count toward AHI, and what the split reveals about your night.',
+    faqItems: [
+      {
+        question: 'What is the difference between an apnea and a hypopnea?',
+        answer:
+          'An apnea is a near-complete stop in airflow lasting at least 10 seconds. A hypopnea is a partial reduction in airflow (typically 30% or more) for at least 10 seconds, accompanied by an oxygen desaturation or arousal. Both are counted in your AHI.',
+      },
+      {
+        question: 'What does a high hypopnea count mean on my CPAP?',
+        answer:
+          'A high proportion of hypopneas vs apneas in your CPAP data is a pattern your clinician can evaluate in the context of your full history. AirwayLab can show you the detailed flow waveforms where these events occur.',
+      },
+      {
+        question: 'What is a central apnea vs obstructive apnea on CPAP?',
+        answer:
+          'Obstructive apneas occur when the airway physically closes. Central apneas occur when the brain temporarily stops sending the breathing signal. Both count toward AHI, but the patterns in flow data look different.',
+      },
+      {
+        question: 'Are hypopneas as serious as apneas?',
+        answer:
+          'Hypopneas and apneas are both scored respiratory events that can fragment sleep and affect oxygen levels. The clinical significance of each depends on their frequency, depth, and your individual situation — your sleep physician can help interpret what your data shows.',
+      },
+      {
+        question: 'Why does my CPAP show mostly hypopneas and few apneas?',
+        answer:
+          'The proportion of hypopneas vs apneas in CPAP data varies based on many factors. Your sleep physician can review your event breakdown alongside your full clinical history to interpret what the pattern shows.',
+      },
+    ],
+  },
+  {
     slug: 'oscar-alternatives-web-cpap-2026',
     title: 'OSCAR Alternatives: Web-Based CPAP Analysis Tools for 2026',
     seoTitle: 'OSCAR Alternatives: Best Free CPAP Analysis Tools for 2026',
