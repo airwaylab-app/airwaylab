@@ -226,7 +226,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'metric-divergence-wat-low',
       type: 'info',
       title: 'Low WAT FL despite elevated Glasgow/NED',
-      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The obstruction pattern may not involve classic waveform flattening — Glasgow measures skew, spikes, and multi-peak patterns that WAT does not capture.`,
+      body: `WAT FL Score of ${Math.round(n.wat.flScore)}% is normal, but Glasgow (${fmt(n.glasgow.overall)}) or NED (${fmt(n.ned.nedMean)}%) are elevated. The elevated breath-shape scores may not follow classic waveform flattening patterns — Glasgow measures skew, spikes, and multi-peak patterns that WAT does not capture.`,
       category: 'wat',
     });
   }
@@ -310,7 +310,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-high',
       type: 'warning',
       title: 'High brief obstruction rate',
-      body: `Brief obstruction rate of ${fmt(boiVal)}/hr means your airway is briefly narrowing roughly every ${interval} minutes. These events are too short for standard detection but are visible in breath-shape analysis. Possible contributing factors include swallowing, positional shifts, or epiglottic flutter. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr — brief obstruction events appear roughly every ${interval} minutes in your data. These events are too short for standard detection but are visible in breath-shape analysis. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
     });
   }
