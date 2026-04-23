@@ -33,13 +33,14 @@ interface PersistedData {
 function stripBulkData(nights: NightResult[]): NightResult[] {
   return nights.map((n) => ({
     ...n,
-    // Remove raw flow/breath arrays that take most of the space
     ned: {
       ...n.ned,
       breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
+      reras: [], // RERA candidates only needed at analysis time; aggregate metrics (reraCount/reraIndex) are kept
     },
     oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
-    // settingsMetrics is a small summary object — keep it for persistence
+    // CSL episodes can grow large for severe Cheyne-Stokes patients; aggregate fields are kept
+    csl: n.csl ? { ...n.csl, episodes: [] } : null,
   }));
 }
 
@@ -122,10 +123,16 @@ export function persistResults(
     }
 
     // Even a single night doesn't fit — total failure
+    const singleStripped = nights[0] ? JSON.stringify(stripBulkData([nights[0]])[0]) : '';
+    const singleEstimatedBytes = singleStripped.length * 2;
     console.error('[persistence] Cannot save even 1 night — data too large.');
     Sentry.captureMessage('Persistence: total failure — cannot save any nights', {
       level: 'error',
-      extra: { totalNights: nights.length },
+      extra: {
+        totalNights: nights.length,
+        singleNightEstimatedBytes: singleEstimatedBytes,
+        singleNightEstimatedKB: Math.round(singleEstimatedBytes / 1024),
+      },
     });
 
     return {

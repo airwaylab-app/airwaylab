@@ -30,14 +30,28 @@ describe('persistence', () => {
       expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
     });
 
-    it('strips bulk data (breath arrays) before saving', () => {
-      persistResults(SAMPLE_NIGHTS, null);
+    it('strips bulk data (breath arrays, reras, csl episodes) before saving', () => {
+      const nights = SAMPLE_NIGHTS.map((n) => ({
+        ...n,
+        ned: {
+          ...n.ned,
+          breaths: [{ inspStart: 0, inspEnd: 10, expStart: 10, expEnd: 20, qPeak: 1, qMid: 0.5, ti: 1, tPeakTi: 0.3, ned: 5, fi: 0.8, isMShape: false, isEarlyPeakFL: false }],
+          reras: [{ startBreathIdx: 0, endBreathIdx: 5, breathCount: 5, nedSlope: 0.1, hasRecovery: true, hasSigh: false, maxNED: 30, startSec: 0, durationSec: 30 }],
+        },
+        csl: { episodes: [{ startSec: 0, endSec: 60, durationSec: 60 }], totalCSRSeconds: 60, csrPercentage: 2, episodeCount: 1 },
+      }));
+      persistResults(nights as unknown as typeof SAMPLE_NIGHTS, null);
       const saved = storage.get('airwaylab_results');
       expect(saved).toBeDefined();
       const parsed = JSON.parse(saved!);
-      // Breath arrays should be empty after stripping
       for (const night of parsed.nights) {
         expect(night.ned.breaths).toEqual([]);
+        expect(night.ned.reras).toEqual([]);
+        expect(night.csl.episodes).toEqual([]);
+        // Aggregate fields are preserved
+        expect(night.csl.totalCSRSeconds).toBe(60);
+        expect(night.csl.csrPercentage).toBe(2);
+        expect(night.csl.episodeCount).toBe(1);
       }
     });
 
@@ -59,14 +73,16 @@ describe('persistence', () => {
     });
 
     it('saves all nights when stripped data fits within limit', () => {
-      // Create a large nights array — breaths are stripped so should still fit
+      // Create a large nights array — breaths and reras are stripped so should still fit
       const manyNights = Array.from({ length: 500 }, (_, i) => ({
         ...SAMPLE_NIGHTS[0],
         dateStr: `2025-01-${String(i + 1).padStart(2, '0')}`,
         ned: {
           ...SAMPLE_NIGHTS[0]!.ned,
           breaths: new Array(5000).fill({ nedPct: 10, fi: 0.5, tpeak: 0.3 }),
+          reras: new Array(500).fill({ startBreathIdx: 0, endBreathIdx: 5, breathCount: 5, nedSlope: 0.1, hasRecovery: true, hasSigh: false, maxNED: 30, startSec: 0, durationSec: 30 }),
         },
+        csl: { episodes: new Array(200).fill({ startSec: 0, endSec: 60, durationSec: 60 }), totalCSRSeconds: 3600, csrPercentage: 25, episodeCount: 200 },
       }));
       const result = persistResults(manyNights as unknown as typeof SAMPLE_NIGHTS, null);
       // With stripped data, 500 nights should still be within 4MB
