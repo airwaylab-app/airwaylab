@@ -46,6 +46,7 @@ import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
 import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
 import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
+import WhatIsCentralApneaCPAP from '../posts/what-is-central-apnea-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
@@ -89,6 +90,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'beyond-ahi': BeyondAHI,
   'pap-data-privacy': PAPDataPrivacy,
   'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
+  'what-is-central-apnea-cpap': WhatIsCentralApneaCPAP,
 };
 
 export function generateStaticParams() {

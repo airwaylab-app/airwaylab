@@ -1214,6 +1214,46 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'what-is-central-apnea-cpap',
+    title: 'What Is Central Apnea? Reading Central Events in Your CPAP Data',
+    seoTitle:
+      'What Is Central Apnea on CPAP? Understanding CA Events in Your Data | AirwayLab',
+    description:
+      'Learn what central apneas are, how they differ from obstructive events, and how to read CA counts in your CPAP data — including treatment-emergent patterns.',
+    date: '2026-06-05',
+    readTime: '7 min read',
+    tags: ['Central Apnea', 'CPAP', 'AHI', 'Sleep Apnea', 'Events'],
+    ogDescription:
+      'Central apneas appear in your CPAP data alongside obstructive events. Learn what they are, what they look like in ResMed EDF data, and how AirwayLab shows your CA trends.',
+    faqItems: [
+      {
+        question: 'What is a central apnea on CPAP?',
+        answer:
+          'A central apnea is a pause in breathing of 10 seconds or more where airflow stops without physical airway obstruction. The breathing drive from the brain briefly pauses rather than the airway collapsing. ResMed machines record these as "clear airway apneas" in your EDF data, separate from obstructive apneas.',
+      },
+      {
+        question: 'What is the difference between central apnea and obstructive apnea?',
+        answer:
+          "In an obstructive apnea, the airway physically closes while the brain continues sending breathing signals. In a central apnea, the airway is open but the brain's breathing drive pauses. CPAP pressure is effective at preventing airway collapse (obstructive events) but does not directly address the breathing-drive pauses involved in central events.",
+      },
+      {
+        question: 'What are treatment-emergent central apneas on CPAP?',
+        answer:
+          'Treatment-emergent central events are a data pattern where CA counts are elevated after CPAP therapy begins, having been low or absent before treatment. This pattern is common enough to have a name. Whether it is clinically significant — and what, if anything, to do about it — is a question for your sleep physician.',
+      },
+      {
+        question: 'How many central apneas per night is normal on CPAP?',
+        answer:
+          "A few scattered central events per night is a common finding in CPAP data. Whether a given count is clinically significant depends on individual context that your sleep physician can assess. AirwayLab's trend view lets you track how your central event count changes across multiple nights.",
+      },
+      {
+        question: 'How does AirwayLab show central apnea data?',
+        answer:
+          'AirwayLab reads CA event data directly from your ResMed EDF files, the same source as OSCAR. The overview dashboard shows your CA count alongside your obstructive and hypopnea breakdown. The trend tab shows CA counts across loaded sessions. All analysis runs in your browser — your data never leaves your device.',
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
