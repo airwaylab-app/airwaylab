@@ -50,6 +50,7 @@ import { safeGetItem } from '@/lib/safe-local-storage';
 import { isIOSDevice } from '@/lib/directory-traversal';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
+import { UploadAgainCta } from '@/components/dashboard/upload-again-cta';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
 import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
@@ -1093,6 +1094,13 @@ function AnalyzePageInner() {
             }} />
             <GuidedWalkthrough isComplete={isComplete} />
             {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
+            {!isDemo && (
+              <UploadAgainCta
+                isComplete={isComplete}
+                sessionCount={sessionCount}
+                onUploadAnother={handleReset}
+              />
+            )}
             {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
             {!isDemo && <EmailOptInNudge />}
             <DataContribution
