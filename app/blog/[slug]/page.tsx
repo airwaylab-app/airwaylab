@@ -46,6 +46,7 @@ import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
 import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
 import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
+import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
@@ -78,6 +79,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
+  'oscar-alternatives-web-cpap-2026': OSCARAlternativesWebCPAP2026,
   'how-pap-therapy-works': HowPAPTherapyWorks,
   'ifl-symptom-sensitivity': IFLSymptomSensitivity,
   'hidden-respiratory-events': HiddenRespiratoryEvents,
