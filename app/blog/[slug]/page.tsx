@@ -46,6 +46,7 @@ import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
 import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
 import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
+import AHIVsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 
 const postComponents: Record<string, React.ComponentType> = {
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
@@ -55,6 +56,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'cpap-leak-rate-explained': CPAPLeakRateExplained,
   'understanding-cpap-data': UnderstandingCPAPData,
   'what-are-reras-sleep-apnea': WhatAreRerasSleepApnea,
+  'ahi-vs-rdi-sleep-apnea': AHIVsRDISleepApnea,
   'cpap-compliance-tracking': CPAPComplianceTracking,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
