@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'oscar-alternatives-web-cpap-2026',
+    title: 'OSCAR Alternatives: Web-Based CPAP Analysis Tools for 2026',
+    seoTitle: 'OSCAR Alternatives: Best Free CPAP Analysis Tools for 2026',
+    description:
+      'Comparing OSCAR, SleepHQ, and AirwayLab — three free CPAP analysis tools in 2026. Plus: what to do after the DreamMapper shutdown in January 2026.',
+    date: '2026-05-19',
+    readTime: '8 min read',
+    tags: ['OSCAR', 'CPAP Software', 'SleepHQ', 'Comparison', 'DreamMapper'],
+    ogDescription:
+      'Looking for an OSCAR alternative or DreamMapper replacement? Compare OSCAR, SleepHQ, and AirwayLab — three free CPAP tools for 2026.',
+    faqItems: [
+      {
+        question: 'Is AirwayLab an OSCAR alternative?',
+        answer:
+          'AirwayLab and OSCAR complement each other rather than compete. OSCAR is a desktop app that gives you interactive waveform browsing at breath-level detail. AirwayLab is a browser-based tool that adds automated composite scoring — the Glasgow Index, FL Score, NED, and oximetry analysis — without requiring installation. Many users run both.',
+      },
+      {
+        question: 'What happened to DreamMapper?',
+        answer:
+          'Philips shut down the DreamMapper CPAP data platform in January 2026. Users with Philips CPAP machines can access their SD card data using OSCAR, which supports DreamStation and System One devices and provides more detailed analysis than DreamMapper offered.',
+      },
+      {
+        question: 'What is the difference between SleepHQ and AirwayLab?',
+        answer:
+          'SleepHQ syncs your ResMed data automatically via myAir and stores it in the cloud, making it accessible on any device. AirwayLab processes your ResMed SD card data locally in your browser — your data never leaves your device. SleepHQ focuses on easy access and sharing; AirwayLab focuses on automated scoring and privacy.',
+      },
+      {
+        question: 'Can I use OSCAR and AirwayLab together?',
+        answer:
+          'Yes, and many users do. The typical workflow is to run AirwayLab for automated overnight scores (Glasgow Index, FL Score, NED), then open a specific night in OSCAR when you want to review the waveform in detail.',
+      },
+      {
+        question: 'Does AirwayLab support Philips CPAP machines?',
+        answer:
+          'Not currently. AirwayLab supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. For Philips devices, OSCAR is the recommended free tool.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-analyze-cpap-data-at-home',
     title: 'How to Analyze Your CPAP Data at Home',
     seoTitle: 'How to Analyze Your CPAP Data at Home | AirwayLab',
