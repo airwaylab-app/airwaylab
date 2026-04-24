@@ -17,6 +17,40 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'ahi-vs-rdi-sleep-apnea',
+    title: 'AHI vs RDI: What Sleep Apnea Metrics Actually Tell You',
+    seoTitle: 'AHI vs RDI Sleep Apnea: Understanding the Difference | AirwayLab',
+    description:
+      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
+    date: '2026-05-29',
+    readTime: '7 min read',
+    tags: ['AHI', 'RDI', 'Sleep Apnea', 'RERA', 'Metrics'],
+    ogDescription:
+      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
+    faqItems: [
+      {
+        question: 'What is the difference between AHI and RDI in sleep apnea?',
+        answer:
+          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour. RDI (Respiratory Disturbance Index) includes those plus additional RERA-type events. RDI is always equal to or higher than AHI. The difference reflects the count of RERA-type events included in RDI but not in AHI.',
+      },
+      {
+        question: 'Why does my CPAP show a lower number than my sleep study?',
+        answer:
+          'Your sleep study reports RDI, which includes RERA-type events. Your CPAP only reports AHI — it has no EEG data to detect arousals, so it cannot count RERAs. The two numbers are measuring different things, so a lower CPAP AHI is expected when compared to a sleep study RDI.',
+      },
+      {
+        question: 'Can AirwayLab show RDI?',
+        answer:
+          'AirwayLab does not compute a clinical RDI — that requires EEG data that home CPAP devices do not record. AirwayLab\'s NED engine estimates RERA-type patterns per hour, which reflects similar airway behaviour. These estimates are not equivalent to a clinical RERA count and should be discussed with your clinician.',
+      },
+      {
+        question: 'Is RDI or AHI more accurate?',
+        answer:
+          'Neither is more accurate — they measure different things. AHI measures events your CPAP can detect from its flow sensor. RDI from a sleep study includes additional events scored by a technician with EEG data. Your clinician can help interpret both in the context of your symptoms and therapy.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-analyze-cpap-data-at-home',
     title: 'How to Analyze Your CPAP Data at Home',
     seoTitle: 'How to Analyze Your CPAP Data at Home | AirwayLab',
