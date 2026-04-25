@@ -50,8 +50,10 @@ import WhatIsCentralApneaCPAP from '../posts/what-is-central-apnea-cpap';
 import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
 import AHIVsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 import SleepHQAlternative from '../posts/sleephq-alternative';
+import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
   'sleephq-alternative': SleepHQAlternative,
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
