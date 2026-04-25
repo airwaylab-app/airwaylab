@@ -49,8 +49,10 @@ import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
 import SleepHQAlternative from '../posts/sleephq-alternative';
 import AHIvsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
+import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
   'ahi-vs-rdi-sleep-apnea': AHIvsRDISleepApnea,
   'oscar-alternatives-web-cpap-2026': OSCARAlternativesWebCPAP2026,
   'sleephq-alternative': SleepHQAlternative,
