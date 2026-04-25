@@ -18,6 +18,15 @@ vi.mock('@sentry/nextjs', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
+// Mock next/server — stub after() to execute synchronously so analytics assertions pass
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>();
+  return {
+    ...actual,
+    after: (fn: () => unknown) => { fn(); },
+  };
+});
+
 // Mock email modules (fire-and-forget in the route, but must be mockable)
 vi.mock('@/lib/email/sequences', () => ({
   cancelSequence: vi.fn().mockResolvedValue(undefined),
