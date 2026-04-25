@@ -160,7 +160,7 @@ describe('Stripe webhook transaction atomicity', () => {
       'utf-8'
     );
 
-    // After upsertErr check, should throw
-    expect(content).toMatch(/upsertErr[\s\S]*?throw new Error/);
+    // After upsert error check, should throw
+    expect(content).toMatch(/upsertResult\.error[\s\S]*?throw new Error/);
   });
 });
