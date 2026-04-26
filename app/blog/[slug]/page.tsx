@@ -49,10 +49,12 @@ import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
 import WhatIsCentralApneaCPAP from '../posts/what-is-central-apnea-cpap';
 import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2026';
 import AHIVsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
+import HowToDownloadResMedCPAPData from '../posts/how-to-download-resmed-cpap-data';
 import SleepHQAlternative from '../posts/sleephq-alternative';
 import HypopneaVsApneaCPAPData from '../posts/hypopnea-vs-apnea-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'how-to-download-resmed-cpap-data': HowToDownloadResMedCPAPData,
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
   'cpap-leak-rate-meaning': CPAPLeakRateMeaning,

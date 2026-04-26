@@ -17,6 +17,51 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-download-resmed-cpap-data',
+    title: 'How to Download Your ResMed CPAP Data (AirSense 10 & 11)',
+    seoTitle:
+      'How to Download ResMed CPAP Data: AirSense 10 & 11 Step-by-Step Guide | AirwayLab',
+    description:
+      'Step-by-step guide to getting your full CPAP data off a ResMed AirSense 10 or AirSense 11. What myAir shows vs. what the SD card contains — and how to open your files for analysis.',
+    date: '2026-06-09',
+    readTime: '6 min read',
+    tags: ['ResMed', 'CPAP Data', 'AirSense 10', 'AirSense 11', 'myAir', 'How-To'],
+    ogDescription:
+      'Your ResMed device records detailed breathing data every night. myAir shows you a summary score. This guide shows you how to access the full data — including waveforms — from your SD card.',
+    faqItems: [
+      {
+        question: 'How do I download data from my ResMed AirSense 10?',
+        answer:
+          'Power off the machine, remove the SD card from the right side panel, insert it into your computer, and open the DATALOG folder. The .edf files inside contain your full therapy data. Analysis tools like OSCAR and AirwayLab can read these files directly.',
+      },
+      {
+        question: 'Does ResMed AirSense 11 have an SD card?',
+        answer:
+          'Yes. The AirSense 11 uses a microSD card rather than a standard SD card. Some units shipped without a card pre-installed — you can insert a Class 10 microSD (8 GB or larger) and the device will begin recording detailed data from the next session.',
+      },
+      {
+        question: 'What does myAir not show you?',
+        answer:
+          'myAir shows usage hours, headline AHI, and leak rate. It does not provide raw flow waveforms, flow limitation data, RERA patterns, or access to your EDF files. Detailed analysis of breathing patterns requires tools that read the SD card data directly.',
+      },
+      {
+        question: 'How do I read EDF files from my ResMed CPAP?',
+        answer:
+          'EDF (European Data Format) files from a ResMed SD card can be read by OSCAR (desktop) or AirwayLab (browser-based, no install). You do not need to convert or open the files manually — just point the tool at your DATALOG folder.',
+      },
+      {
+        question: 'What is the DATALOG folder on my ResMed SD card?',
+        answer:
+          'DATALOG is the main folder on your ResMed SD card containing your therapy session files. Inside it are subfolders organised by date, each containing .edf files — including BRP.edf (the continuous flow waveform) and, if applicable, SAD.edf (SpO₂ data).',
+      },
+      {
+        question: 'Can I read my ResMed CPAP data without installing software?',
+        answer:
+          'Yes. AirwayLab runs entirely in your browser — drag your DATALOG folder in and your data loads immediately. No installation, no account, and no upload required.',
+      },
+    ],
+  },
+  {
     slug: 'hypopnea-vs-apnea-cpap-data',
     title: 'Hypopnea vs Apnea: Understanding the Difference in Your CPAP Data',
     seoTitle: 'Hypopnea vs Apnea: What Each Breathing Event Means in CPAP Data | AirwayLab',
@@ -91,40 +136,6 @@ export const blogPosts: BlogPost[] = [
         question: 'Does AirwayLab support Philips CPAP machines?',
         answer:
           'Not currently. AirwayLab supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. For Philips devices, OSCAR is the recommended free tool.',
-      },
-    ],
-  },
-  {
-    slug: 'ahi-vs-rdi-sleep-apnea',
-    title: 'AHI vs RDI: What Sleep Apnea Metrics Actually Tell You',
-    seoTitle: 'AHI vs RDI Sleep Apnea: Understanding the Difference | AirwayLab',
-    description:
-      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
-    date: '2026-05-29',
-    readTime: '7 min read',
-    tags: ['AHI', 'RDI', 'Sleep Apnea', 'RERA', 'Metrics'],
-    ogDescription:
-      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
-    faqItems: [
-      {
-        question: 'What is the difference between AHI and RDI in sleep apnea?',
-        answer:
-          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour. RDI (Respiratory Disturbance Index) includes those plus additional RERA-type events. RDI is always equal to or higher than AHI. The difference reflects the count of RERA-type events included in RDI but not in AHI.',
-      },
-      {
-        question: 'Why does my CPAP show a lower number than my sleep study?',
-        answer:
-          'Your sleep study reports RDI, which includes RERA-type events. Your CPAP only reports AHI — it has no EEG data to detect arousals, so it cannot count RERAs. The two numbers are measuring different things, so a lower CPAP AHI is expected when compared to a sleep study RDI.',
-      },
-      {
-        question: 'Can AirwayLab show RDI?',
-        answer:
-          'AirwayLab does not compute a clinical RDI — that requires EEG data that home CPAP devices do not record. AirwayLab\'s NED engine estimates RERA-type patterns per hour, which reflects similar airway behaviour. These estimates are not equivalent to a clinical RERA count and should be discussed with your clinician.',
-      },
-      {
-        question: 'Is RDI or AHI more accurate?',
-        answer:
-          'Neither is more accurate — they measure different things. AHI measures events your CPAP can detect from its flow sensor. RDI from a sleep study includes additional events scored by a technician with EEG data. Your clinician can help interpret both in the context of your symptoms and therapy.',
       },
     ],
   },
