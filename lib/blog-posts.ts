@@ -17,6 +17,162 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'ahi-vs-rdi-sleep-apnea',
+    title: 'AHI vs RDI: What Sleep Apnea Metrics Actually Tell You',
+    seoTitle: 'AHI vs RDI Sleep Apnea: Understanding the Difference | AirwayLab',
+    description:
+      'Your sleep study shows RDI. Your CPAP shows AHI. They measure different things. Learn what each metric counts, why the numbers differ, and how to read both.',
+    date: '2026-05-29',
+    readTime: '7 min read',
+    tags: ['AHI', 'RDI', 'RERA', 'Sleep Apnea', 'CPAP Metrics'],
+    ogDescription:
+      'AHI counts apneas and hypopneas. RDI adds RERAs on top. Your CPAP reports AHI; your sleep study reports RDI. Understanding the difference explains why the numbers rarely match.',
+    faqItems: [
+      {
+        question: 'What is the difference between AHI and RDI in sleep apnea?',
+        answer:
+          'AHI (Apnea-Hypopnea Index) counts apneas and hypopneas per hour of sleep. RDI (Respiratory Disturbance Index) includes RERAs (Respiratory Effort-Related Arousals) as well, making it always equal to or higher than AHI.',
+      },
+      {
+        question: 'Why does my CPAP show a lower number than my sleep study?',
+        answer:
+          'Sleep studies report RDI, which includes RERAs. CPAP machines report AHI, which does not. If your CPAP AHI looks much better than your sleep study RDI, the gap often represents RERAs your device is not counting.',
+      },
+      {
+        question: 'Can AirwayLab show RDI?',
+        answer:
+          'AirwayLab cannot produce a clinically certified RDI — that requires EEG to confirm arousals. It can estimate RERA-related patterns from your flow waveform data, including flow limitation percentage, estimated RERA count, and Estimated Arousal Index.',
+      },
+      {
+        question: 'Is RDI or AHI more accurate?',
+        answer:
+          'Neither is more accurate — they measure different things. AHI is standardised and universal across devices. RDI gives a fuller picture of respiratory disturbance but requires different measurement techniques. Your clinician can help interpret which is most relevant for your situation.',
+      },
+    ],
+  },
+  {
+    slug: 'what-does-cpap-ahi-mean',
+    title: 'What Does My CPAP AHI Number Mean? A Plain-Language Guide',
+    seoTitle: 'What Does My CPAP AHI Number Mean? Plain-Language Guide | AirwayLab',
+    description:
+      'Your CPAP AHI counts apneas and hypopneas per hour — but what do the numbers mean, and what does AHI miss? A plain-language guide for PAP users.',
+    date: '2026-05-26',
+    readTime: '9 min read',
+    tags: ['AHI', 'CPAP Data', 'Sleep Apnea', 'Flow Limitation', 'RERAs'],
+    ogDescription:
+      'What does your CPAP AHI number actually mean? This guide covers how AHI is calculated, what the severity ranges represent, and what it misses: flow limitation, RERAs, and scoring variability.',
+    faqItems: [
+      {
+        question: 'What is a good AHI number for CPAP therapy?',
+        answer:
+          'Most clinical guidelines use an AHI below 5 as the target range on PAP therapy. Your clinician sets the specific goal for your situation — some individuals need different targets based on their clinical history. A persistent AHI above 5 on therapy is worth discussing at your next appointment.',
+      },
+      {
+        question: 'What does a high AHI on CPAP mean?',
+        answer:
+          'A high residual AHI on therapy means your machine is recording more scored breathing events than the typical target range. This can happen for several reasons — pressure settings, mask fit, body position, or changes in your upper airway. Your clinician can review your data and advise on next steps.',
+      },
+      {
+        question: 'Why does my AHI vary so much night to night?',
+        answer:
+          'Night-to-night AHI variability is normal. Factors like sleep position, alcohol, sedatives, nasal congestion, and sleep stage distribution can all affect how your airway behaves. A single high night is not necessarily cause for concern; a consistent upward trend is worth discussing with your clinician.',
+      },
+      {
+        question: 'Can I have a low AHI and still feel tired?',
+        answer:
+          'Yes. AHI only counts events that meet specific scoring thresholds. Flow-limited breaths and RERAs can disrupt sleep without appearing in your AHI. Other factors — sleep stage distribution, periodic limb movements, circadian issues — also affect how rested you feel. Your clinician can help evaluate what is contributing.',
+      },
+      {
+        question: 'What is the difference between AHI on a sleep study and AHI on CPAP?',
+        answer:
+          'Your diagnostic AHI from a sleep study reflects your untreated breathing during a supervised study. Your CPAP residual AHI reflects events recorded while the machine is running. They use related but not always identical scoring algorithms and represent different clinical contexts. Your sleep physician can explain what each means for your treatment plan.',
+      },
+      {
+        question: 'Does AirwayLab show my AHI?',
+        answer:
+          "Yes. AirwayLab reads the AHI and event data from your ResMed SD card and displays it alongside additional metrics — flow limitation scores, RERA-related breathing patterns, and breath-by-breath waveform analysis — that do not appear in your device's nightly summary. Everything runs in your browser; no data is uploaded.",
+      },
+      {
+        question: 'What does RDI mean and how is it different from AHI?',
+        answer:
+          'RDI (Respiratory Disturbance Index) typically adds RERAs to the apnea and hypopnea count used in AHI, so RDI is always equal to or higher than AHI for the same night. Most CPAP machines report AHI only. A full comparison of AHI vs RDI is coming in the next article in this series.',
+      },
+    ],
+  },
+  {
+    slug: 'sleephq-alternative',
+    title: 'SleepHQ Alternative: Comparing Cloud vs. Browser-Based CPAP Analysis',
+    seoTitle: 'SleepHQ Alternative: Browser-Based CPAP Analysis Without Cloud Upload',
+    description:
+      'SleepHQ is cloud-first. AirwayLab analyses your CPAP data entirely in your browser — no upload, no account, open source. An honest comparison of both tools.',
+    date: '2026-05-22',
+    readTime: '7 min read',
+    tags: ['SleepHQ', 'CPAP Software', 'Privacy', 'Comparison', 'Flow Limitation'],
+    ogDescription:
+      'Comparing SleepHQ and AirwayLab for CPAP data analysis. SleepHQ stores data in the cloud; AirwayLab processes everything in your browser. Honest comparison of features, privacy, and analysis depth.',
+    faqItems: [
+      {
+        question: 'Is there a SleepHQ alternative that does not upload my data?',
+        answer:
+          'Yes. AirwayLab analyses your ResMed EDF data entirely in your browser using Web Workers. Your breathing data never leaves your device. Optional features like AI insights require explicit consent before any data is sent.',
+      },
+      {
+        question: 'What does SleepHQ do that AirwayLab does not?',
+        answer:
+          'SleepHQ offers a dedicated mobile app, long-term cloud storage, multi-device support beyond ResMed, and a shareable clinician link. AirwayLab is browser-based with a 30-day local cache and currently supports ResMed machines only.',
+      },
+      {
+        question: 'What does AirwayLab do that SleepHQ does not?',
+        answer:
+          'AirwayLab runs four additional analysis engines on your raw EDF waveform: the Glasgow Index (9-component breath shape score), WAT (FL Score, breathing regularity, periodicity), NED (per-breath negative effort dependence), and RERA detection. These go beyond device-reported metrics to score flow limitation at breath-by-breath resolution.',
+      },
+      {
+        question: 'Is AirwayLab open source?',
+        answer:
+          'Yes. AirwayLab is GPL-3.0 licensed. The analysis code is public and auditable — you can verify what the engines compute. SleepHQ is a closed-source platform.',
+      },
+    ],
+  },
+  {
+    slug: 'oscar-alternatives-web-cpap-2026',
+    title: 'OSCAR Alternatives: Web-Based CPAP Analysis Tools for 2026',
+    seoTitle: 'OSCAR Alternatives: Best Free CPAP Analysis Tools for 2026',
+    description:
+      'Comparing OSCAR, SleepHQ, and AirwayLab — three free CPAP analysis tools in 2026. Plus: what to do after the DreamMapper shutdown in January 2026.',
+    date: '2026-05-19',
+    readTime: '8 min read',
+    tags: ['OSCAR', 'CPAP Software', 'SleepHQ', 'Comparison', 'DreamMapper'],
+    ogDescription:
+      'Looking for an OSCAR alternative or DreamMapper replacement? Compare OSCAR, SleepHQ, and AirwayLab — three free CPAP tools for 2026.',
+    faqItems: [
+      {
+        question: 'Is AirwayLab an OSCAR alternative?',
+        answer:
+          'AirwayLab and OSCAR complement each other rather than compete. OSCAR is a desktop app that gives you interactive waveform browsing at breath-level detail. AirwayLab is a browser-based tool that adds automated composite scoring — the Glasgow Index, FL Score, NED, and oximetry analysis — without requiring installation. Many users run both.',
+      },
+      {
+        question: 'What happened to DreamMapper?',
+        answer:
+          'Philips shut down the DreamMapper CPAP data platform in January 2026. Users with Philips CPAP machines can access their SD card data using OSCAR, which supports DreamStation and System One devices and provides more detailed analysis than DreamMapper offered.',
+      },
+      {
+        question: 'What is the difference between SleepHQ and AirwayLab?',
+        answer:
+          'SleepHQ syncs your ResMed data automatically via myAir and stores it in the cloud, making it accessible on any device. AirwayLab processes your ResMed SD card data locally in your browser — your data never leaves your device. SleepHQ focuses on easy access and sharing; AirwayLab focuses on automated scoring and privacy.',
+      },
+      {
+        question: 'Can I use OSCAR and AirwayLab together?',
+        answer:
+          'Yes, and many users do. The typical workflow is to run AirwayLab for automated overnight scores (Glasgow Index, FL Score, NED), then open a specific night in OSCAR when you want to review the waveform in detail.',
+      },
+      {
+        question: 'Does AirwayLab support Philips CPAP machines?',
+        answer:
+          'Not currently. AirwayLab supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. For Philips devices, OSCAR is the recommended free tool.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-analyze-cpap-data-at-home',
     title: 'How to Analyze Your CPAP Data at Home',
     seoTitle: 'How to Analyze Your CPAP Data at Home | AirwayLab',
