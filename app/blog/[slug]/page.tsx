@@ -46,8 +46,10 @@ import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
 import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
 import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
+import HowToDownloadResMedCPAPData from '../posts/how-to-download-resmed-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'how-to-download-resmed-cpap-data': HowToDownloadResMedCPAPData,
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
   'cpap-leak-rate-meaning': CPAPLeakRateMeaning,
