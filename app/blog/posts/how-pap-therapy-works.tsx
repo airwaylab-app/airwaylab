@@ -330,8 +330,8 @@ export default function HowPAPTherapyWorksPost() {
               making it easier to breathe out. EPR 3 on a CPAP set to 12 means you get 12 cmH2O
               on inhalation but only 9 cmH2O on exhalation. This makes CPAP more comfortable, but
               the lower expiratory pressure can sometimes allow airway narrowing. If you see
-              significant flow limitation in your data, reducing EPR is often the first thing a
-              sleep physician will suggest.
+              significant flow limitation alongside high EPR in your data, that pattern is worth
+              discussing with your sleep physician.
             </p>
           </div>
         </div>
@@ -923,12 +923,10 @@ export default function HowPAPTherapyWorksPost() {
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
               <span>
                 <strong className="text-foreground">High flow limitation despite good EPAP?</strong>{' '}
-                Your airway is splinted, but air isn&apos;t getting through efficiently. You may
-                benefit from BiPAP with pressure support to push through the restriction. This is
-                especially relevant for{' '}
+                Your airway is splinted, but air isn&apos;t getting through efficiently. This
+                pattern — especially when flow limitation persists without frank apnoeas, as in{' '}
                 <Link href="/glossary#uars" className="text-primary hover:text-primary/80">UARS</Link>{' '}
-                patients who have persistent flow limitation without
-                frank apnoeas.
+                — may provide useful context for conversations with your sleep physician.
               </span>
             </li>
             <li className="flex gap-2">
@@ -954,8 +952,8 @@ export default function HowPAPTherapyWorksPost() {
               <span>
                 <strong className="text-foreground">High EPR causing flow limitation?</strong>{' '}
                 EPR reduces expiratory pressure for comfort, but too much EPR can let the airway
-                narrow between breaths. If you see significant flow limitation with EPR 3, try
-                reducing to EPR 1 or 2 (with your doctor&apos;s guidance).
+                narrow between breaths. If you see significant flow limitation alongside EPR 3 in
+                your data, that correlation is worth discussing with your sleep physician.
               </span>
             </li>
             <li className="flex gap-2">
@@ -964,8 +962,9 @@ export default function HowPAPTherapyWorksPost() {
                 <strong className="text-foreground">Understanding NED scores?</strong>{' '}
                 Negative Effort Dependence directly reflects the physics we discussed. A high NED
                 score means breathing harder is producing less airflow (the paper straw collapsing).
-                This is a direct signal that EPAP may be too low or that PS could help overcome the
-                restriction.
+                This is a direct reflection of the physics: the airway is behaving like a
+                collapsible tube rather than a rigid one. Your clinician can help interpret what
+                this pattern means in your specific context.
               </span>
             </li>
           </ul>
