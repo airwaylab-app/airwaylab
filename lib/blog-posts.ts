@@ -579,35 +579,50 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: 'how-to-read-cpap-data',
-    title: 'How to Read Your CPAP Data \u2014 A Beginner\u2019s Guide',
-    seoTitle: 'How to Read Your CPAP Data \u2014 A Beginner\u2019s Guide | AirwayLab',
+    title: 'What Your CPAP Data Actually Shows You',
+    seoTitle: 'How to Read Your CPAP Data | AirwayLab',
     description:
-      'Learn what your CPAP data actually shows you \u2014 AHI, leak rate, pressure, flow limitation \u2014 and how to start reading therapy patterns worth discussing with your clinician.',
-    date: '2026-04-16',
-    readTime: '10 min read',
-    tags: ['CPAP', 'Getting Started', 'AHI', 'Leak Rate', 'OSCAR', 'Beginner Guide'],
+      'Learn what AHI, leak rate, usage hours, and pressure data represent in your CPAP reports \u2014 and how to visualise them for free in AirwayLab.',
+    date: '2026-04-27',
+    readTime: '7 min read',
+    tags: ['CPAP', 'Getting Started', 'AHI', 'Leak Rate', 'Flow Limitation', 'OSCAR'],
     ogDescription:
-      'New to CPAP data? We explain what AHI, leak rate, pressure, and flow limitation mean \u2014 and how to start spotting patterns in your therapy report.',
+      'Learn what AHI, leak rate, usage hours, and pressure data represent in your CPAP reports \u2014 and how to visualise them for free in AirwayLab.',
     faqItems: [
       {
-        question: 'What does my CPAP machine record every night?',
-        answer: 'Your machine records usage hours, AHI (apnoeas and hypopnoeas per hour), leak rate, pressure, flow limitation, and a breakdown of event types. Not every machine records all of these \u2014 older or basic models may only report AHI and usage.',
+        question: 'What is AHI in CPAP data?',
+        answer:
+          'AHI (Apnoea-Hypopnoea Index) is the number of apnoeas (complete breathing pauses) and hypopnoeas (partial airflow reductions) recorded per hour of therapy. Your machine calculates this from its internal sensor data during the session. Therapy AHI reflects what the machine detected while running \u2014 it is not directly comparable to a diagnostic AHI from a sleep study, which measures untreated events.',
       },
       {
-        question: 'What is the difference between therapy AHI and diagnostic AHI?',
-        answer: 'Your therapy AHI is what your machine counts during treated sleep. A diagnostic AHI from a sleep study measures untreated events. They are not directly comparable.',
+        question: 'What AHI do clinicians reference for CPAP therapy?',
+        answer:
+          'AHI thresholds are clinically defined and interpreted in the context of your specific diagnosis, symptoms, and prescription. There is no universal number that applies to all patients \u2014 your clinician will interpret your therapy AHI alongside your clinical history and how you are feeling. AirwayLab shows your nightly AHI and trends over time; your care team interprets what those numbers mean for your therapy.',
       },
       {
-        question: 'How do I access my CPAP data beyond the app?',
-        answer: 'Remove the SD card from your machine, insert it into a card reader, and open the data with OSCAR (free desktop software for full waveform detail) or AirwayLab (browser-based for multi-night pattern review). No account required for either.',
+        question: 'What does CPAP leak rate mean?',
+        answer:
+          'Leak rate measures the air escaping from your mask system, in litres per minute (L/min). Every mask has some intentional vent flow to flush exhaled CO\u2082 \u2014 unintentional (mask) leak is what escapes around the seal. High unintentional leak can affect how accurately your machine detects breathing events, making AHI less reliable for that session. AirwayLab shows nightly leak trends with traffic-light colouring.',
       },
       {
-        question: 'What should I bring to my provider appointment?',
-        answer: 'Screenshots of patterns rather than just averages, leak data if elevated, pressure graphs if you are on APAP and frequently hitting the ceiling, and event type breakdowns if you have an unusual distribution. Your provider can adjust settings; your clinician can interpret the full picture.',
+        question: 'What does pressure data show on my CPAP?',
+        answer:
+          'Pressure data records the pressure your machine delivered throughout the night, measured in cmH\u2082O. For fixed-pressure CPAP machines, this is a flat line. For APAP machines, pressure adjusts in response to detected breathing events. The 95th-percentile pressure (P95) describes the level your machine was at or below for 95% of the session. Pressure settings are managed by your clinician.',
       },
       {
-        question: 'Does AirwayLab upload my data?',
-        answer: 'No. All analysis runs in your browser. Your breathing data never leaves your device \u2014 there is no cloud upload and no account required to get started.',
+        question: 'Does AirwayLab show all CPAP data formats?',
+        answer:
+          'AirwayLab reads detailed EDF files from ResMed SD cards and shows AHI, leak rate, usage hours, and pressure data alongside four advanced metrics: the Glasgow Index (9-component breath shape score), FL Score (flow limitation percentage), NED (Negative Effort Dependence), and estimated RERA detection. It does not currently support Philips Respironics or Fisher & Paykel data formats.',
+      },
+      {
+        question: 'Is AirwayLab free?',
+        answer:
+          'Yes. All core analysis \u2014 AHI, leak, pressure, flow limitation, Glasgow Index, WAT score, NED, and RERA detection \u2014 is free and always will be. A premium tier adds AI-powered insights via Claude. All analysis runs in your browser; nothing is uploaded to any server and no account is required to start.',
+      },
+      {
+        question: 'How is AirwayLab different from OSCAR or SleepHQ?',
+        answer:
+          'OSCAR is a desktop app that provides detailed waveform browsing and event-by-event review of PAP data. SleepHQ is a cloud-based platform with a shareable dashboard. AirwayLab is browser-based (no install, no account), privacy-first (all analysis runs locally), and adds four automated analysis engines for flow limitation and breathing pattern scoring that OSCAR and SleepHQ do not compute.',
       },
     ],
   },
