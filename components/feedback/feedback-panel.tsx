@@ -87,11 +87,6 @@ export function FeedbackPanel({ open, onClose }: Props) {
     }
   }, [message, email, type, user, profile, contactOk])
 
-  // Pre-fill contact checkbox when signed in
-  useEffect(() => {
-    if (user) setContactOk(true)
-  }, [user])
-
   // ESC to close, Cmd/Ctrl+Enter to submit
   useEffect(() => {
     if (!open) return

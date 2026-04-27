@@ -86,11 +86,11 @@ export function buildDraftBody(email: string, rows: FeedbackRow[]): string {
 // ── Main processor ───────────────────────────────────────────
 
 /**
- * Processes all unprocessed feedback rows.
+ * Processes all unprocessed feedback rows where the user consented to follow-up.
  *
  * Steps:
- * 1. Query feedback rows where processed = false
- * 2. Group by email (rows without email are marked processed without a draft)
+ * 1. Query rows where contact_ok=true, email IS NOT NULL, processed_at IS NULL
+ * 2. Group by normalised email
  * 3. Refresh Gmail access token once
  * 4. For each email group: create a consolidated Gmail draft
  * 5. Mark all successfully processed rows as done
@@ -109,11 +109,13 @@ export async function processFeedback(gmailConfig: GmailConfig): Promise<Process
     throw new Error('Supabase not configured')
   }
 
-  // Step 1: Fetch all unprocessed feedback
+  // Step 1: Fetch feedback rows where user consented and provided an email
   const { data: rows, error: fetchError } = await supabase
     .from('feedback')
     .select('id, message, email, type, page, created_at, metadata')
-    .eq('processed', false)
+    .eq('contact_ok', true)
+    .not('email', 'is', null)
+    .is('processed_at', null)
     .order('created_at', { ascending: true })
 
   if (fetchError) {
@@ -127,12 +129,8 @@ export async function processFeedback(gmailConfig: GmailConfig): Promise<Process
     return result
   }
 
-  // Rows with no email: mark processed immediately (no draft needed)
-  const noEmailIds = feedbackRows.filter((r) => !r.email).map((r) => r.id)
-  const emailRows = feedbackRows.filter((r) => !!r.email)
-
   // Step 2: Group by email
-  const groups = groupByEmail(emailRows)
+  const groups = groupByEmail(feedbackRows)
   result.emailsWithFeedback = groups.size
 
   // Step 3: Refresh Gmail access token once for the batch
@@ -146,7 +144,7 @@ export async function processFeedback(gmailConfig: GmailConfig): Promise<Process
   }
 
   // Step 4: Create drafts per email group (per-user error resilience)
-  const successfulIds: string[] = [...noEmailIds]
+  const successfulIds: string[] = []
 
   for (const [email, groupRows] of groups) {
     try {

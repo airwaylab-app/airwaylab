@@ -128,7 +128,7 @@ describe('FeedbackPanel', () => {
     expect(checkbox).not.toBeChecked()
   })
 
-  it('shows read-only email and pre-checked checkbox when signed in', () => {
+  it('shows read-only email and unchecked checkbox when signed in', () => {
     mockUser = { id: 'user-123' }
     mockProfile = { email: 'user@test.com', tier: 'supporter', display_name: 'Test' }
 
@@ -137,7 +137,7 @@ describe('FeedbackPanel', () => {
     expect(emailInput).toBeDisabled()
 
     const checkbox = screen.getByRole('checkbox')
-    expect(checkbox).toBeChecked()
+    expect(checkbox).not.toBeChecked()
   })
 
   // ── Type selector ──────────────────────────────────────────
