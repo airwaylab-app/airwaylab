@@ -318,8 +318,8 @@ function premiumOnboardingStep2(unsubscribeUrl: string): { subject: string; html
     subject: 'The report your clinician wants to see',
     html: layout(`
       ${heading('Objective data for your next appointment')}
-      ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered analysis.')}
-      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. The PDF report gives your clinician flow limitation scores, RERA estimates, and trend data alongside your AHI -- additional detail for your next conversation.')}
+      ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered interpretation.')}
+      ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If your clinician needs more than AHI numbers, this report puts the full picture in front of them — flow limitation scores, RERA estimates, and AI-interpreted patterns to review.')}
       ${ctaButton('Generate Your PDF Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_2`)}
     `, unsubscribeUrl),
   };
