@@ -109,11 +109,12 @@ export async function processFeedback(gmailConfig: GmailConfig): Promise<Process
     throw new Error('Supabase not configured')
   }
 
-  // Step 1: Fetch all unprocessed feedback
+  // Step 1: Fetch all unprocessed feedback where the user consented to contact
   const { data: rows, error: fetchError } = await supabase
     .from('feedback')
     .select('id, message, email, type, page, created_at, metadata')
     .eq('processed', false)
+    .eq('contact_ok', true)
     .order('created_at', { ascending: true })
 
   if (fetchError) {
