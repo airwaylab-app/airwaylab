@@ -3,9 +3,21 @@ import {
   normaliseEmail,
   groupByEmail,
   buildDraftBody,
+  processFeedback,
   type FeedbackRow,
 } from '@/lib/services/feedback-processor'
 import { getGmailConfig, refreshAccessToken, createGmailDraft } from '@/lib/gmail/client'
+
+// ── Module mocks (hoisted) ────────────────────────────────────
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+}))
+
+const mockFrom = vi.fn()
+vi.mock('@/lib/supabase/server', () => ({
+  getSupabaseAdmin: vi.fn(() => ({ from: (...args: unknown[]) => mockFrom(...args) })),
+}))
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -212,5 +224,28 @@ describe('createGmailDraft', () => {
         body: 'Test',
       }),
     ).rejects.toThrow('Gmail draft creation failed')
+  })
+})
+
+// ── Test 7: processFeedback consent filter ────────────────────
+
+describe('processFeedback consent filter', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('queries only rows where contact_ok is true', async () => {
+    // Chainable builder — order() is the terminal call (resolves the promise)
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    }
+    mockFrom.mockReturnValue(builder)
+
+    const config = { clientId: 'cid', clientSecret: 'csec', refreshToken: 'rtoken' }
+    await processFeedback(config)
+
+    expect(builder.eq).toHaveBeenCalledWith('contact_ok', true)
   })
 })
