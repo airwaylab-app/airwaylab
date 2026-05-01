@@ -39,7 +39,6 @@ import type {
   OximetryTraceData,
   CrossDeviceResults,
   CSLData,
-  PLDData,
   PLDSummary,
 } from '../lib/types';
 
@@ -287,10 +286,13 @@ async function processFiles(
     }
   }
 
-  // Step 3.7: Parse PLD.edf files and group by night date
+  // Step 3.7: Parse PLD.edf files and compute summaries immediately per file.
+  // Raw PLDData (Float32Arrays) is discarded right after computePLDSummary to
+  // avoid holding ~0.8MB per file × 499 files in the worker heap simultaneously.
   const pldFiles = filterPLDFiles(fileList);
-  const pldByDate = new Map<string, PLDData[]>();
-  for (const pldInfo of pldFiles) {
+  const pldSummaryByDate = new Map<string, PLDSummary>();
+  for (let i = 0; i < pldFiles.length; i++) {
+    const pldInfo = pldFiles[i]!;
     const fileData = files.find((f) => f.path === pldInfo.path);
     if (!fileData) continue;
     try {
@@ -299,9 +301,13 @@ async function processFiles(
       // Determine night date from folder path or filename
       const nightDate = extractFolderDate(pldInfo.path) ?? extractPLDFilenameDate(pldInfo.path);
       if (!nightDate) continue;
-      const existing = pldByDate.get(nightDate) ?? [];
-      existing.push(pld);
-      pldByDate.set(nightDate, existing);
+      // Compute summary immediately — raw Float32Arrays are released after this call
+      const summary = computePLDSummary(pld);
+      // Keep the longest-duration summary per night date
+      const existing = pldSummaryByDate.get(nightDate);
+      if (!existing || summary.durationSeconds > existing.durationSeconds) {
+        pldSummaryByDate.set(nightDate, summary);
+      }
     } catch (err) {
       const filename = pldInfo.path.split('/').pop() || pldInfo.path;
       const detail = err instanceof Error ? err.message : String(err);
@@ -312,6 +318,11 @@ async function processFiles(
         tags: { file: filename, error: detail },
       };
       self.postMessage(warning);
+    }
+
+    // Yield every PARSE_BATCH_SIZE PLD files to allow GC to reclaim memory
+    if ((i + 1) % PARSE_BATCH_SIZE === 0) {
+      await yieldControl();
     }
   }
 
@@ -504,17 +515,8 @@ async function processFiles(
         : 0,
     } : null;
 
-    // PLD summary: match by night date, merge multiple PLD files per night
-    let pldSummary: PLDSummary | null = null;
-    const nightPldFiles = pldByDate.get(group.nightDate);
-    if (nightPldFiles && nightPldFiles.length > 0) {
-      // Use first PLD file for the night (typically one PLD per session)
-      // If multiple, pick the longest one
-      const bestPld = nightPldFiles.reduce((best, current) =>
-        current.durationSeconds > best.durationSeconds ? current : best
-      );
-      pldSummary = computePLDSummary(bestPld);
-    }
+    // PLD summary: already computed and keyed by night date during parsing
+    const pldSummary: PLDSummary | null = pldSummaryByDate.get(group.nightDate) ?? null;
 
     nights.push({
       date: recordingDate,
