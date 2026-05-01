@@ -4,6 +4,7 @@ import tsConfig from 'eslint-config-next/typescript';
 import noSilentCatch from './scripts/eslint-rules/no-silent-catch.mjs';
 
 const config = [
+  { ignores: ['.claude/', '.next/', '**/.next/'] },
   ...nextConfig,
   ...coreWebVitals,
   ...tsConfig,
