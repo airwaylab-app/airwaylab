@@ -104,9 +104,15 @@ class AnalysisOrchestrator {
         // Only trust "unchanged" if we actually have cached results for them
         unchangedDates = diff.unchanged.filter((d) => cachedDateSet.has(d));
         const changedNights = diff.changedNights;
+        // Nights the manifest considers unchanged but missing from cache must be re-processed.
+        // This happens when localStorage is cleared (e.g. engine version bump wipes STORAGE_KEY
+        // but leaves MANIFEST_KEY intact), so the manifest still exists but the cached results
+        // are gone. Without this fix only the truly-changed nights would be sent to the worker
+        // and merged against an empty cache, hiding all historical nights.
+        const uncachedUnchanged = new Set(diff.unchanged.filter((d) => !cachedDateSet.has(d)));
 
-        if (unchangedDates.length > 0 && changedNights.size === 0) {
-          // Everything unchanged — instant restore or oximetry-only
+        if (unchangedDates.length > 0 && changedNights.size === 0 && uncachedUnchanged.size === 0) {
+          // Everything unchanged AND fully cached — instant restore or oximetry-only
           if (hasNewOximetry) {
             return this.analyzeOximetryOnly(oximetryFiles!);
           }
@@ -123,7 +129,20 @@ class AnalysisOrchestrator {
           return cachedNights;
         }
 
-        filesToProcess = changedNights.size > 0 ? diff.changedFiles : sdArr;
+        if (changedNights.size > 0 || uncachedUnchanged.size > 0) {
+          // Re-process changed nights plus any unchanged nights that have no cache entry.
+          // Non-date files (STR.edf, Identification.tgt, etc.) are always included — the
+          // worker needs them for settings extraction whenever any night is processed.
+          const datesNeedingProcessing = new Set([...changedNights, ...uncachedUnchanged]);
+          filesToProcess = sdArr.filter((file) => {
+            const path =
+              (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+            const date = extractNightDate(path);
+            return date === null || datesNeedingProcessing.has(date);
+          });
+        } else {
+          filesToProcess = sdArr;
+        }
       } else {
         // No manifest — fall back to date-based dedup
         const uploadDates = new Set<string>();
