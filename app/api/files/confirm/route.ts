@@ -66,11 +66,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists in storage
-    const { data: storageFile } = await serviceRole.storage
+    const { data: storageFile, error: listError } = await serviceRole.storage
       .from(STORAGE_BUCKET)
       .list(fileRow.storage_path.split('/').slice(0, -1).join('/'), {
         search: fileRow.storage_path.split('/').pop(),
       });
+
+    if (listError) {
+      // Storage list failed — cannot determine file presence; do not delete metadata
+      console.error('[files/confirm] Storage list error:', listError);
+      captureApiError(listError, { route: 'files/confirm', context: 'storage_list' });
+      return NextResponse.json({ error: 'Storage unavailable. Please retry.' }, { status: 503 });
+    }
 
     if (!storageFile || storageFile.length === 0) {
       // Upload didn't complete — clean up metadata
