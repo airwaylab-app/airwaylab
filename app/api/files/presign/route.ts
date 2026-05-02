@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
         if (listError) {
           // Storage list failed — trust the DB confirmed status rather than deleting.
           // The file is almost certainly in storage; we just can't verify right now.
+          console.error('[files/presign] Storage list error on dedup check:', listError);
           captureApiError(listError, { route: 'files/presign', context: 'storage_list_dedup' });
           return NextResponse.json({ skipped: true, fileId: existing.id });
         }
