@@ -106,11 +106,18 @@ export async function POST(request: NextRequest) {
         await serviceRole.storage.from(STORAGE_BUCKET).remove([existing.storage_path]);
       } else if (existing.upload_confirmed) {
         // Confirmed row — verify file actually exists in storage
-        const { data: storageFile } = await serviceRole.storage
+        const { data: storageFile, error: listError } = await serviceRole.storage
           .from(STORAGE_BUCKET)
           .list(existing.storage_path.split('/').slice(0, -1).join('/'), {
             search: existing.storage_path.split('/').pop(),
           });
+
+        if (listError) {
+          // Storage list failed — cannot determine file presence; do not delete confirmed metadata
+          console.error('[files/presign] Storage list error on dedup check:', listError);
+          captureApiError(listError, { route: 'files/presign', context: 'storage_list_dedup' });
+          return NextResponse.json({ error: 'Storage unavailable. Please retry.' }, { status: 503 });
+        }
 
         if (storageFile && storageFile.length > 0) {
           return NextResponse.json({ skipped: true, fileId: existing.id });
