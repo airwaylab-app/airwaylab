@@ -303,7 +303,7 @@ describe('POST /api/files/presign', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 503 and does NOT delete confirmed metadata when storage list errors during dedup', async () => {
+  it('returns skipped and does NOT delete confirmed metadata when storage list errors during dedup', async () => {
     setupAuthenticatedUser();
     mockHasStorageConsent.mockResolvedValue(true);
 
@@ -318,15 +318,16 @@ describe('POST /api/files/presign', () => {
     chain.delete = deleteMock;
     mockFrom.mockReturnValue(chain);
 
-    // Storage list fails with an error
+    // Storage list fails with an error — must trust DB, not delete the row
     mockStorageFrom.mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: null, error: { message: 'Storage unavailable' } }),
     });
 
     const res = await callPresign(makePostRequest('/api/files/presign', validBody));
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.error).toContain('unavailable');
+    expect(body.skipped).toBe(true);
+    expect(body.fileId).toBe('existing-id');
     // Confirmed metadata must NOT be deleted
     expect(deleteMock).not.toHaveBeenCalled();
   });

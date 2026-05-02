@@ -113,10 +113,10 @@ export async function POST(request: NextRequest) {
           });
 
         if (listError) {
-          // Storage list failed — cannot determine file presence; do not delete confirmed metadata
-          console.error('[files/presign] Storage list error on dedup check:', listError);
+          // Storage list failed — trust the DB confirmed status rather than deleting.
+          // The file is almost certainly in storage; we just can't verify right now.
           captureApiError(listError, { route: 'files/presign', context: 'storage_list_dedup' });
-          return NextResponse.json({ error: 'Storage unavailable. Please retry.' }, { status: 503 });
+          return NextResponse.json({ skipped: true, fileId: existing.id });
         }
 
         if (storageFile && storageFile.length > 0) {
