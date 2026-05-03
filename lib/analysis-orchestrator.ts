@@ -294,7 +294,8 @@ class AnalysisOrchestrator {
     oximetryCSVs?: string[],
     onNightComplete?: (night: NightResult) => void,
     deviceType?: string,
-    bmcSerial?: string
+    bmcSerial?: string,
+    attempt = 1
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
       // Progress-aware timeout: resets on any worker message.
@@ -332,8 +333,11 @@ class AnalysisOrchestrator {
         Sentry.captureException(err, {
           extra: {
             context: 'analysis-worker-init',
+            attempt,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+            connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
+            deviceMemory: typeof navigator !== 'undefined' ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 'unknown' : 'unknown',
           },
         });
         reject(new Error('Analysis worker failed to load. Try refreshing the page.'));
@@ -408,19 +412,45 @@ class AnalysisOrchestrator {
       this.worker.onerror = (err) => {
         settle();
         this.terminate();
+
+        // Opaque load failures have no filename or message (browser cannot
+        // expose cross-origin script errors, or the script simply failed to fetch).
+        // Retry once silently — handles transient network blips and browser-extension
+        // interference on the first load attempt.
+        const isLoadFailure = !err.filename && !err.message;
+        if (attempt === 1 && isLoadFailure) {
+          Sentry.addBreadcrumb({
+            message: 'Worker load failed on first attempt, retrying',
+            category: 'analysis',
+            level: 'warning',
+          });
+          this.runWorker(files, oximetryCSVs, onNightComplete, deviceType, bmcSerial, 2)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
         const detail = [
           err.message,
           err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
         ].filter(Boolean).join(' ');
         const workerError = new Error(detail || 'Analysis worker failed to load. Try refreshing the page.');
         Sentry.captureException(workerError, {
+          tags: {
+            workerLoadAttempt: String(attempt),
+            workerErrorType: isLoadFailure ? 'load_failure' : 'runtime_error',
+          },
           extra: {
             context: 'analysis-worker-onerror',
             filename: err.filename,
             lineno: err.lineno,
             colno: err.colno,
+            attempt,
+            isLoadFailure,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+            connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
+            deviceMemory: typeof navigator !== 'undefined' ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 'unknown' : 'unknown',
           },
         });
         reject(workerError);
@@ -514,7 +544,8 @@ class AnalysisOrchestrator {
   }
 
   private runOximetryWorker(
-    oximetryCSVs: string[]
+    oximetryCSVs: string[],
+    attempt = 1
   ): Promise<{ oximetryByDate: Record<string, OximetryResults>; oximetryTraceByDate: Record<string, OximetryTraceData> }> {
     return new Promise((resolve, reject) => {
       const WORKER_TIMEOUT_MS = 60 * 1000; // 1 minute — oximetry is fast
@@ -542,8 +573,11 @@ class AnalysisOrchestrator {
         Sentry.captureException(err, {
           extra: {
             context: 'oximetry-worker-init',
+            attempt,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+            connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
+            deviceMemory: typeof navigator !== 'undefined' ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 'unknown' : 'unknown',
           },
         });
         reject(new Error('Oximetry worker failed to load. Try refreshing the page.'));
@@ -569,19 +603,41 @@ class AnalysisOrchestrator {
       this.worker.onerror = (err) => {
         settle();
         this.terminate();
+
+        const isLoadFailure = !err.filename && !err.message;
+        if (attempt === 1 && isLoadFailure) {
+          Sentry.addBreadcrumb({
+            message: 'Oximetry worker load failed on first attempt, retrying',
+            category: 'analysis',
+            level: 'warning',
+          });
+          this.runOximetryWorker(oximetryCSVs, 2)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
         const detail = [
           err.message,
           err.filename && `at ${err.filename}:${err.lineno}:${err.colno}`,
         ].filter(Boolean).join(' ');
         const workerError = new Error(detail || 'Oximetry worker failed to load. Try refreshing the page.');
         Sentry.captureException(workerError, {
+          tags: {
+            workerLoadAttempt: String(attempt),
+            workerErrorType: isLoadFailure ? 'load_failure' : 'runtime_error',
+          },
           extra: {
             context: 'oximetry-worker-onerror',
             filename: err.filename,
             lineno: err.lineno,
             colno: err.colno,
+            attempt,
+            isLoadFailure,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
+            connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
+            deviceMemory: typeof navigator !== 'undefined' ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 'unknown' : 'unknown',
           },
         });
         reject(workerError);
