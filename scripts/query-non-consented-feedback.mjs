@@ -27,9 +27,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
 
-// Window covering all thirteen cron runs (07:00 UTC on 2026-04-23 – 2026-05-05) with buffer.
+// Window covering all fourteen cron runs (07:00 UTC on 2026-04-23 – 2026-05-06) with buffer.
 const WINDOW_START = '2026-04-23T06:00:00Z'
-const WINDOW_END = '2026-05-05T08:00:00Z'
+const WINDOW_END = '2026-05-06T08:00:00Z'
 
 async function main() {
   // Query 1: non-consented rows processed in the window (drafts to DELETE).
