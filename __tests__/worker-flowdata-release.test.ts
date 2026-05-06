@@ -90,4 +90,26 @@ describe('worker flowData release invariant (AIR-1062)', () => {
     // nightGroups still holds the reference — data is not lost
     expect(nightGroups[0]!.sessions[0]!.flowData.length).toBe(10_000);
   });
+
+  it('capturing parsedCount before array clear preserves the zero-nights checkpoint signal', () => {
+    // The bug: zeroing parsedEdfs BEFORE reading its length silences the warning
+    const buggyOrder = (arr: EDFFile[]) => {
+      arr.length = 0;           // zeroed first
+      return arr.length > 0;   // always false — checkpoint never fires
+    };
+
+    // The fix: capture count first, then zero
+    const fixedOrder = (arr: EDFFile[]) => {
+      const count = arr.length; // captured before zeroing
+      arr.length = 0;
+      return count > 0;         // correct — fires when files were parsed
+    };
+
+    const edfs = [
+      makeEDFWithFlow('SD/DATALOG/20260315/BRP.edf', new Date(2026, 2, 15, 22, 0), 1000),
+    ];
+
+    expect(buggyOrder([...edfs])).toBe(false); // bug silences the warning
+    expect(fixedOrder([...edfs])).toBe(true);  // fix preserves the signal
+  });
 });

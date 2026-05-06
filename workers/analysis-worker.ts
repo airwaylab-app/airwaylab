@@ -336,18 +336,19 @@ async function processFiles(
   }
 
   // Step 4: Group by night
+  const parsedCount = parsedEdfs.length; // capture before releasing the array
   const nightGroups = groupByNight(parsedEdfs);
   // EDFFile objects are now owned by nightGroups; drop the flat array so its
   // slot references don't prevent GC while the analysis loop runs.
   parsedEdfs.length = 0;
 
   // Checkpoint: EDFs parsed but no nights formed
-  if (nightGroups.length === 0 && parsedEdfs.length > 0) {
+  if (nightGroups.length === 0 && parsedCount > 0) {
     const warning: WorkerWarning = {
       type: 'WARNING',
       checkpoint: 'analysis_zero_nights',
-      detail: `Parsed ${parsedEdfs.length} EDF files but formed 0 valid nights`,
-      tags: { file_count: brpFiles.length, parsed_count: parsedEdfs.length },
+      detail: `Parsed ${parsedCount} EDF files but formed 0 valid nights`,
+      tags: { file_count: brpFiles.length, parsed_count: parsedCount },
     };
     self.postMessage(warning);
   }
