@@ -337,14 +337,17 @@ async function processFiles(
 
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
+  const parsedEdfCount = parsedEdfs.length;
+  // nightGroups now owns all session references — release the parsedEdfs array
+  parsedEdfs.length = 0;
 
   // Checkpoint: EDFs parsed but no nights formed
-  if (nightGroups.length === 0 && parsedEdfs.length > 0) {
+  if (nightGroups.length === 0 && parsedEdfCount > 0) {
     const warning: WorkerWarning = {
       type: 'WARNING',
       checkpoint: 'analysis_zero_nights',
-      detail: `Parsed ${parsedEdfs.length} EDF files but formed 0 valid nights`,
-      tags: { file_count: brpFiles.length, parsed_count: parsedEdfs.length },
+      detail: `Parsed ${parsedEdfCount} EDF files but formed 0 valid nights`,
+      tags: { file_count: brpFiles.length, parsed_count: parsedEdfCount },
     };
     self.postMessage(warning);
   }
@@ -471,6 +474,14 @@ async function processFiles(
       avgSamplingRate += session.samplingRate;
     }
     avgSamplingRate /= group.sessions.length;
+
+    // Release per-session Float32Array buffers — data is now in combinedFlow/combinedPressure.
+    // This lets GC reclaim each night's raw EDF memory before moving to the next night.
+    for (const session of group.sessions) {
+      session.flowData = new Float32Array(0);
+      session.pressureData = null;
+      session.respEventData = null;
+    }
 
     const wat = computeWAT(combinedFlow, avgSamplingRate);
 
