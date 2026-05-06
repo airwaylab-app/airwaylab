@@ -161,12 +161,15 @@ const PerBreathSummarySchema = z.object({
 }).optional();
 
 // Zod schema for request validation (M4)
+// durationHours, sessionCount, and settings are optional because trend-only nights
+// are stripped to scalar fields only (dateStr, glasgow, ned, wat) to stay under
+// the 512KB payload limit. The server only reads these fields from the selected night.
 const RequestBodySchema = z.object({
   nights: z.array(z.object({
     dateStr: z.string(),
-    durationHours: z.number(),
-    sessionCount: z.number(),
-    settings: z.object({}).passthrough(),
+    durationHours: z.number().optional(),
+    sessionCount: z.number().optional(),
+    settings: z.object({}).passthrough().optional(),
     glasgow: z.object({ overall: z.number() }).passthrough(),
     wat: z.object({ flScore: z.number() }).passthrough(),
     ned: z.object({ nedMean: z.number() }).passthrough(),

@@ -303,6 +303,35 @@ describe('POST /api/files/presign', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns skipped and does NOT delete confirmed metadata when storage list errors during dedup', async () => {
+    setupAuthenticatedUser();
+    mockHasStorageConsent.mockResolvedValue(true);
+
+    const existingFile = {
+      id: 'existing-id',
+      storage_path: 'user-123/2026-01-01/BRP.edf',
+      upload_confirmed: true,
+      uploaded_at: new Date().toISOString(),
+    };
+    const deleteMock = vi.fn(() => chain);
+    const chain = createChain({ data: existingFile, error: null });
+    chain.delete = deleteMock;
+    mockFrom.mockReturnValue(chain);
+
+    // Storage list fails with an error — must trust DB, not delete the row
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: null, error: { message: 'Storage unavailable' } }),
+    });
+
+    const res = await callPresign(makePostRequest('/api/files/presign', validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.skipped).toBe(true);
+    expect(body.fileId).toBe('existing-id');
+    // Confirmed metadata must NOT be deleted
+    expect(deleteMock).not.toHaveBeenCalled();
+  });
+
   it('skips upload when file hash already exists and is confirmed', async () => {
     setupAuthenticatedUser();
     mockHasStorageConsent.mockResolvedValue(true);
@@ -404,6 +433,29 @@ describe('POST /api/files/confirm', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.confirmed).toBe(true);
+  });
+
+  it('returns 503 and does NOT delete metadata when storage list errors', async () => {
+    setupAuthenticatedUser();
+    const deleteMock = vi.fn(() => chain);
+    const chain = createChain({
+      data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
+      error: null,
+    });
+    chain.delete = deleteMock;
+    mockFrom.mockReturnValue(chain);
+
+    // Storage list fails with an error
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: null, error: { message: 'Storage unavailable' } }),
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toContain('unavailable');
+    // Metadata must NOT be deleted
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it('returns 403 when file belongs to another user', async () => {
