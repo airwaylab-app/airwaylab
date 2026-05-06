@@ -43,6 +43,15 @@ import type {
   PLDSummary,
 } from '../lib/types';
 
+/** Strip per-breath and trace arrays before postMessage to prevent OOM on large datasets. */
+function stripNightBulkData(night: NightResult): NightResult {
+  return {
+    ...night,
+    ned: { ...night.ned, breaths: [] },
+    oximetryTrace: null,
+  };
+}
+
 // Global error handler — catches uncaught errors and sends them as
 // WorkerError messages instead of silently triggering onerror on main thread
 self.addEventListener('error', (e: ErrorEvent) => {
@@ -65,7 +74,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       const { files, oximetryCSVs, deviceType } = e.data;
       const bmcSerial = (e.data as unknown as { bmcSerial?: string }).bmcSerial;
       const results = await processFiles(files, oximetryCSVs, deviceType, bmcSerial);
-      const response: WorkerResult = { type: 'RESULTS', nights: results };
+      const response: WorkerResult = { type: 'RESULTS', nights: results.map(stripNightBulkData) };
       self.postMessage(response);
     }
   } catch (err) {
