@@ -123,6 +123,42 @@ describe('scheduleReEngagementSequences', () => {
     expect(count).toBe(0);
   });
 
+  it('applies email_opt_in = true consent filter (skips opted-out users)', async () => {
+    // AIR-932 mandate: every query against user contact data must explicitly
+    // assert that the .eq('email_opt_in', true) filter is in the Supabase call.
+    const { scheduleReEngagementSequences } = await import('@/lib/email/sequences');
+
+    const profilesEqSpy = vi.fn();
+
+    const mockSupabase = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'email_sequences') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          };
+        }
+        // profiles table — spy on eq() to confirm the consent filter is applied
+        const isMock = vi.fn().mockResolvedValue({ data: [], error: null });
+        const ltMock = vi.fn().mockReturnValue({ is: isMock });
+        const notMock = vi.fn().mockReturnValue({ lt: ltMock });
+        profilesEqSpy.mockReturnValue({ not: notMock });
+        return {
+          select: vi.fn().mockReturnValue({ eq: profilesEqSpy }),
+        };
+      }),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const count = await scheduleReEngagementSequences(mockSupabase as any);
+
+    // The consent filter MUST be present in the profiles query
+    expect(profilesEqSpy).toHaveBeenCalledWith('email_opt_in', true);
+    // No opted-in users returned → nothing scheduled
+    expect(count).toBe(0);
+  });
+
   it('skips users with null last_analysis_at', async () => {
     // Users who never uploaded are excluded by the .not('last_analysis_at', 'is', null) filter.
     // We simulate the DB excluding them (returns zero candidates).
