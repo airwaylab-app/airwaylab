@@ -10,24 +10,43 @@ import type { NightResult } from '@/lib/types';
 
 const STORAGE_KEY = 'airwaylab_history_expiry_dismissed';
 const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const COMMUNITY_STORAGE_KEY = 'airwaylab_community_window_dismissed';
+const COMMUNITY_DISMISS_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+
 const WARNING_WINDOW_DAYS = 15;
 
 interface Props {
   nights: NightResult[];
+  hiddenNightCount?: number;
 }
 
 /**
  * Amber banner warning Supporter-tier users when their oldest analyses
  * approach the 90-day history window. Nudges toward Champion (lifetime).
  * Shows 15 days before first expiry. Dismissible with 7-day TTL.
+ *
+ * Also renders a slate/blue informational banner for Community-tier users
+ * when nights are hidden by the 14-day window.
  */
-export function HistoryExpiryWarning({ nights }: Props) {
+export function HistoryExpiryWarning({ nights, hiddenNightCount }: Props) {
   const { tier } = useAuth();
+
   const [dismissed, setDismissed] = useState(() => {
     try {
       const ts = localStorage.getItem(STORAGE_KEY);
       if (!ts) return false;
       return Date.now() - Number(ts) < DISMISS_TTL_MS;
+    } catch {
+      return false;
+    }
+  });
+
+  const [communityDismissed, setCommunityDismissed] = useState(() => {
+    try {
+      const ts = localStorage.getItem(COMMUNITY_STORAGE_KEY);
+      if (!ts) return false;
+      return Date.now() - Number(ts) < COMMUNITY_DISMISS_TTL_MS;
     } catch {
       return false;
     }
@@ -65,6 +84,50 @@ export function HistoryExpiryWarning({ nights }: Props) {
     }
     setDaysLeft(Math.max(0, remaining));
   }, [tier, nights]);
+
+  // Community banner
+  if (tier === 'community' && (hiddenNightCount ?? 0) > 0 && !communityDismissed) {
+    const dismissCommunity = () => {
+      setCommunityDismissed(true);
+      try {
+        localStorage.setItem(COMMUNITY_STORAGE_KEY, String(Date.now()));
+      } catch { /* noop */ }
+      events.upgradeNudgeDismissed('community_window');
+    };
+
+    return (
+      <div className="animate-fade-in-up rounded-xl border border-blue-500/20 bg-blue-500/[0.06] px-4 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+            <Clock className="h-4 w-4 text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-start justify-between">
+              <h3 className="text-sm font-semibold text-foreground">
+                You&apos;re viewing the last 14 days of history. Upgrade to Supporter to see 90 days.
+              </h3>
+              <button
+                onClick={dismissCommunity}
+                className="rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                aria-label="Dismiss for now"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="mt-3">
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-1.5 rounded-md bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
+                onClick={() => events.upgradeNudgeClicked('community_window')}
+              >
+                See full history
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (tier !== 'supporter' || daysLeft === null || dismissed) return null;
 

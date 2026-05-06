@@ -16,6 +16,7 @@ import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge'
 import { CommunityJoinPrompt } from '@/components/dashboard/community-join-prompt';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
+import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
@@ -129,7 +130,7 @@ function AnalyzePageInner() {
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, tier } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
   const hasTriggeredAutoUpload = useRef(false);
@@ -477,14 +478,29 @@ function AnalyzePageInner() {
   const { status, progress, error, warning, persistenceWarning, warnings } = state;
 
   // Memoize derived data to stabilize references across renders
-  const nights = useMemo<NightResult[]>(() =>
-    isDemo
+  const nights = useMemo<NightResult[]>(() => {
+    const raw = isDemo
       ? SAMPLE_NIGHTS
       : state.nights.length > 0
         ? state.nights
-        : persistedData?.nights ?? [],
-    [isDemo, state.nights, persistedData?.nights]
-  );
+        : persistedData?.nights ?? [];
+
+    const windowDays = getAnalysisWindowDays(tier);
+    if (isDemo || !isFinite(windowDays) || windowDays <= 0) return raw;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - windowDays);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return raw.filter((n) => n.dateStr >= cutoffStr);
+  }, [isDemo, state.nights, persistedData?.nights, tier]);
+
+  const hiddenNightCount = useMemo<number>(() => {
+    if (isDemo) return 0;
+    const windowDays = getAnalysisWindowDays(tier);
+    if (!isFinite(windowDays) || windowDays <= 0) return 0;
+    const raw = state.nights.length > 0 ? state.nights : persistedData?.nights ?? [];
+    return Math.max(0, raw.length - nights.length);
+  }, [isDemo, tier, state.nights, persistedData?.nights, nights]);
   const therapyChangeDate = useMemo<string | null>(() =>
     isDemo
       ? SAMPLE_THERAPY_CHANGE_DATE
@@ -1077,7 +1093,7 @@ function AnalyzePageInner() {
             }} />
             <GuidedWalkthrough isComplete={isComplete} />
             {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
-            {!isDemo && <HistoryExpiryWarning nights={nights} />}
+            {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
             {!isDemo && <EmailOptInNudge />}
             <DataContribution
               nights={nights}
