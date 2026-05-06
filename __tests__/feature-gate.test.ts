@@ -12,7 +12,7 @@ const localStorageMock: Storage = {
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
 
-import { canAccess, getAIRemaining, getAIUsageThisMonth, incrementAIUsage } from '@/lib/auth/feature-gate';
+import { canAccess, getAIRemaining, getAIUsageThisMonth, incrementAIUsage, getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 
 function getUsageKey(): string {
   const now = new Date();
@@ -179,5 +179,19 @@ describe('AI usage tracking helpers', () => {
 
     // Current month still shows 1
     expect(getAIUsageThisMonth()).toBe(1);
+  });
+});
+
+describe('getAnalysisWindowDays — analysis window per tier', () => {
+  it('returns 7 for community tier', () => {
+    expect(getAnalysisWindowDays('community')).toBe(7);
+  });
+
+  it('returns 90 for supporter tier', () => {
+    expect(getAnalysisWindowDays('supporter')).toBe(90);
+  });
+
+  it('returns Infinity for champion tier', () => {
+    expect(getAnalysisWindowDays('champion')).toBe(Infinity);
   });
 });

@@ -95,4 +95,8 @@ describe('History Expiry Warning — daysLeft calculation', () => {
   it('champion window is Infinity per feature gate', () => {
     expect(getAnalysisWindowDays('champion')).toBe(Infinity);
   });
+
+  it('community window is 7 days per feature gate', () => {
+    expect(getAnalysisWindowDays('community')).toBe(7);
+  });
 });
