@@ -337,6 +337,9 @@ async function processFiles(
 
   // Step 4: Group by night
   const nightGroups = groupByNight(parsedEdfs);
+  // EDFFile objects are now owned by nightGroups; drop the flat array so its
+  // slot references don't prevent GC while the analysis loop runs.
+  parsedEdfs.length = 0;
 
   // Checkpoint: EDFs parsed but no nights formed
   if (nightGroups.length === 0 && parsedEdfs.length > 0) {
@@ -471,6 +474,13 @@ async function processFiles(
       avgSamplingRate += session.samplingRate;
     }
     avgSamplingRate /= group.sessions.length;
+
+    // Release raw Float32Arrays from each session now that data is in combinedFlow/combinedPressure.
+    // This allows the GC to reclaim per-session heap memory while remaining nights are analysed.
+    for (const session of group.sessions) {
+      session.flowData = new Float32Array(0);
+      session.pressureData = null;
+    }
 
     const wat = computeWAT(combinedFlow, avgSamplingRate);
 
@@ -660,6 +670,12 @@ async function processBMCFiles(
       avgSamplingRate += s.samplingRate;
     }
     avgSamplingRate /= nightSessions.length;
+
+    // Release raw Float32Arrays from each session now that data is in combinedFlow/combinedPressure.
+    for (const s of nightSessions) {
+      s.flowData = new Float32Array(0);
+      s.pressureData = null;
+    }
 
     const wat = computeWAT(combinedFlow, avgSamplingRate);
 
