@@ -289,6 +289,19 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
     actualNumRecords = completeRecords;
   }
 
+  // Guard against corrupted headers producing excessive allocation.
+  // A valid 8-hour PLD night at 0.5 Hz produces ~14,400 samples/channel.
+  // 500,000 samples (>277 hours at 0.5 Hz) is far beyond any legitimate file.
+  const MAX_SAMPLES_PER_CHANNEL = 500_000;
+  for (const m of mappings) {
+    const samplesForChannel = actualNumRecords * m.signal.numSamples;
+    if (samplesForChannel > MAX_SAMPLES_PER_CHANNEL) {
+      throw new Error(
+        `PLD allocation limit: channel '${m.signal.label.trim()}' would need ${samplesForChannel} samples`
+      );
+    }
+  }
+
   // --- Precompute scaling factors for each mapped channel ---
   interface ChannelReader {
     key: keyof Omit<PLDData, 'samplingRate' | 'durationSeconds' | 'startTime'>;

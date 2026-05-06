@@ -317,6 +317,34 @@ describe('PLD Parser', () => {
       writeField(252, 4, '0'); // 0 signals
       expect(parsePLD(emptyBuffer, 'test.edf')).toBeNull();
     });
+    it('throws with a descriptive message (not OOM) when header implies excessive allocation', () => {
+      // Regression for Sentry NEXTJS-5H: corrupt 2023 PLD files with huge numSamples
+      // caused `Array buffer allocation failed` (unrecoverable OOM) in the worker.
+      // The allocation guard should throw a descriptive error before any Float32Array
+      // allocation, which the worker catches and logs as a WorkerWarning instead.
+      const channels: TestChannel[] = [
+        { label: 'Leak', data: [0.2], physicalMin: 0, physicalMax: 2, unit: 'L/s' },
+      ];
+      const originalBuffer = makePLDBuffer(channels);
+
+      // numSamples section offset for signal 0 (one signal in header)
+      const numSamplesOffset = 256 + 1 * (16 + 80 + 8 + 8 + 8 + 8 + 8 + 80);
+      const enc = new TextEncoder();
+
+      // Use 500_001 samples — just over MAX_SAMPLES_PER_CHANNEL (500_000)
+      const hugeNumSamples = 500_001;
+
+      // Extend the buffer to satisfy the truncation check (need ≥1 complete record):
+      // bytesPerRecord = hugeNumSamples × 2; headerBytes = 512 (256 fixed + 1×256 signal)
+      const requiredSize = 512 + hugeNumSamples * 2;
+      const extendedBuffer = new ArrayBuffer(requiredSize);
+      new Uint8Array(extendedBuffer).set(new Uint8Array(originalBuffer));
+      new Uint8Array(extendedBuffer, numSamplesOffset, 8).set(enc.encode('500001  '));
+
+      // Must throw with a descriptive message, NOT an unhandled `Array buffer allocation failed`
+      expect(() => parsePLD(extendedBuffer, 'corrupt_large_PLD.edf')).toThrow(/allocation limit/i);
+    });
+
     it('does not throw on negative numSamples in signal header (corrupt PLD)', () => {
       // Regression test for Sentry errors:
       //   "Invalid typed array length: -30" (Variant A)
