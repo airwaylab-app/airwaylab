@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Settings, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { THRESHOLDS, type ThresholdDef } from '@/lib/thresholds';
@@ -76,142 +76,159 @@ function ThresholdRow({
   };
 
   return (
-    <div className="flex items-center gap-2 py-1.5">
-      <span className="min-w-[100px] text-xs text-muted-foreground truncate" title={label}>
-        {label}
-      </span>
-      <div className="flex items-center gap-1">
-        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-        <input
-          type="number"
-          step="any"
-          value={current.green}
-          onChange={handleGreen}
-          className="h-7 w-16 rounded border border-border bg-background px-2 text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label={`${label} green threshold`}
-        />
+    <div data-metric-key={metricKey}>
+      <div className="flex items-center gap-2 py-1.5">
+        <span className="min-w-[100px] text-xs text-muted-foreground truncate" title={label}>
+          {label}
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+          <input
+            type="number"
+            step="any"
+            value={current.green}
+            onChange={handleGreen}
+            className="h-7 w-16 rounded border border-border bg-background px-2 text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            aria-label={`${label} green threshold`}
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+          <input
+            type="number"
+            step="any"
+            value={current.amber}
+            onChange={handleAmber}
+            className="h-7 w-16 rounded border border-border bg-background px-2 text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            aria-label={`${label} amber threshold`}
+          />
+        </div>
+        <span className="text-[10px] text-muted-foreground/70 w-6 text-center shrink-0">
+          {current.lowerIsBetter ? '\u2193' : '\u2191'}
+        </span>
+        {isCustom && (
+          <button
+            onClick={() => onReset(metricKey)}
+            className="text-muted-foreground/70 hover:text-foreground transition-colors"
+            title={`Reset to default (${defaultDef.green}/${defaultDef.amber})`}
+            aria-label={`Reset ${label} to default`}
+          >
+            <RotateCcw className="h-3 w-3" />
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-1">
-        <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-        <input
-          type="number"
-          step="any"
-          value={current.amber}
-          onChange={handleAmber}
-          className="h-7 w-16 rounded border border-border bg-background px-2 text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label={`${label} amber threshold`}
-        />
-      </div>
-      <span className="text-[10px] text-muted-foreground/70 w-6 text-center shrink-0">
-        {current.lowerIsBetter ? '\u2193' : '\u2191'}
-      </span>
-      {isCustom && (
-        <button
-          onClick={() => onReset(metricKey)}
-          className="text-muted-foreground/70 hover:text-foreground transition-colors"
-          title={`Reset to default (${defaultDef.green}/${defaultDef.amber})`}
-          aria-label={`Reset ${label} to default`}
-        >
-          <RotateCcw className="h-3 w-3" />
-        </button>
-      )}
     </div>
   );
 }
 
-export function ThresholdSettingsModal() {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const thresholds = useThresholds();
-  const { setOverride, resetOne, resetAll, isCustomised } = useThresholdActions();
+export interface ThresholdSettingsModalHandle {
+  openTo: (key?: string) => void;
+}
 
-  const open = useCallback(() => {
-    dialogRef.current?.showModal();
-  }, []);
+export const ThresholdSettingsModal = forwardRef<ThresholdSettingsModalHandle>(
+  function ThresholdSettingsModal(_, ref) {
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const thresholds = useThresholds();
+    const { setOverride, resetOne, resetAll, isCustomised } = useThresholdActions();
 
-  const close = useCallback(() => {
-    dialogRef.current?.close();
-  }, []);
+    const openTo = useCallback((key?: string) => {
+      dialogRef.current?.showModal();
+      if (key) {
+        requestAnimationFrame(() => {
+          const row = scrollContainerRef.current?.querySelector(`[data-metric-key="${key}"]`);
+          row?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+      }
+    }, []);
 
-  const hasAnyCustom = Object.keys(THRESHOLDS).some(isCustomised);
+    useImperativeHandle(ref, () => ({ openTo }), [openTo]);
 
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={open}
-        title="Threshold Settings"
-        aria-label="Threshold Settings"
-      >
-        <Settings className="h-3.5 w-3.5" />
-      </Button>
+    const close = useCallback(() => {
+      dialogRef.current?.close();
+    }, []);
 
-      <dialog
-        ref={dialogRef}
-        className="w-full max-w-md rounded-xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60"
-        onClick={(e) => {
-          if (e.target === dialogRef.current) close();
-        }}
-      >
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold">Threshold Settings</h2>
-          <button
-            onClick={close}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    const hasAnyCustom = Object.keys(THRESHOLDS).some(isCustomised);
 
-        <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <p className="text-[11px] text-muted-foreground/80">
-              Customise the green/amber thresholds for traffic light indicators.
-              Values beyond amber are shown as red.
-            </p>
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openTo()}
+          title="Threshold Settings"
+          aria-label="Threshold Settings"
+        >
+          <Settings className="h-3.5 w-3.5" />
+        </Button>
+
+        <dialog
+          ref={dialogRef}
+          className="w-full max-w-md rounded-xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60"
+          onClick={(e) => {
+            if (e.target === dialogRef.current) close();
+          }}
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold">Threshold Settings</h2>
             <button
-              onClick={hasAnyCustom ? resetAll : undefined}
-              disabled={!hasAnyCustom}
-              className={`shrink-0 text-[11px] whitespace-nowrap transition-colors ${
-                hasAnyCustom
-                  ? 'text-muted-foreground hover:text-foreground cursor-pointer'
-                  : 'text-muted-foreground/70 cursor-default'
-              }`}
-              title={hasAnyCustom ? 'Reset all thresholds to their default values' : undefined}
-              aria-label="Reset to defaults"
+              onClick={close}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
             >
-              Reset to defaults
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          {GROUPS.map((group) => (
-            <div key={group.title} className="mb-4">
-              <h3 className="text-xs font-medium text-muted-foreground mb-1.5 border-b border-border/30 pb-1">
-                {group.title}
-              </h3>
-              {group.keys.map(({ key, label }) => (
-                <ThresholdRow
-                  key={key}
-                  metricKey={key}
-                  label={label}
-                  current={thresholds[key]!}
-                  defaultDef={THRESHOLDS[key]!}
-                  isCustom={isCustomised(key)}
-                  onChange={setOverride}
-                  onReset={resetOne}
-                />
-              ))}
+          <div ref={scrollContainerRef} className="max-h-[60vh] overflow-y-auto px-4 py-3">
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <p className="text-[11px] text-muted-foreground/80">
+                Customise the green/amber thresholds for traffic light indicators.
+                Values beyond amber are shown as red.
+              </p>
+              <button
+                onClick={hasAnyCustom ? resetAll : undefined}
+                disabled={!hasAnyCustom}
+                className={`shrink-0 text-[11px] whitespace-nowrap transition-colors ${
+                  hasAnyCustom
+                    ? 'text-muted-foreground hover:text-foreground cursor-pointer'
+                    : 'text-muted-foreground/70 cursor-default'
+                }`}
+                title={hasAnyCustom ? 'Reset all thresholds to their default values' : undefined}
+                aria-label="Reset to defaults"
+              >
+                Reset to defaults
+              </button>
             </div>
-          ))}
-        </div>
 
-        <div className="flex justify-end border-t border-border px-4 py-3">
-          <Button size="sm" onClick={close}>
-            Done
-          </Button>
-        </div>
-      </dialog>
-    </>
-  );
-}
+            {GROUPS.map((group) => (
+              <div key={group.title} className="mb-4">
+                <h3 className="text-xs font-medium text-muted-foreground mb-1.5 border-b border-border/30 pb-1">
+                  {group.title}
+                </h3>
+                {group.keys.map(({ key, label }) => (
+                  <ThresholdRow
+                    key={key}
+                    metricKey={key}
+                    label={label}
+                    current={thresholds[key]!}
+                    defaultDef={THRESHOLDS[key]!}
+                    isCustom={isCustomised(key)}
+                    onChange={setOverride}
+                    onReset={resetOne}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end border-t border-border px-4 py-3">
+            <Button size="sm" onClick={close}>
+              Done
+            </Button>
+          </div>
+        </dialog>
+      </>
+    );
+  }
+);

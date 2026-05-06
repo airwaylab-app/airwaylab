@@ -68,8 +68,13 @@ export function MobileEmailCapture({ className }: MobileEmailCaptureProps) {
 
   return (
     <div className={cn('rounded-xl border border-border/60 bg-card/40 p-5 text-center', className)}>
-      <Monitor className="h-8 w-8 text-primary mx-auto mb-3" aria-hidden="true" />
-      <p className="text-base font-semibold text-foreground">
+      <div className="flex items-center gap-3 mb-4 text-muted-foreground/50">
+        <div className="h-px flex-1 bg-border/50" />
+        <span className="text-xs">or</span>
+        <div className="h-px flex-1 bg-border/50" />
+      </div>
+      <Monitor className="h-5 w-5 text-primary mx-auto mb-3" aria-hidden="true" />
+      <p className="text-sm font-medium text-muted-foreground">
         We&apos;ll remind you when you&apos;re at your desktop
       </p>
       <p className="text-sm text-muted-foreground mt-1">
@@ -89,22 +94,26 @@ export function MobileEmailCapture({ className }: MobileEmailCaptureProps) {
         disabled={status === 'sending'}
         className="mt-4 h-10 w-full rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
       />
-      <div className="flex items-start gap-2 mt-3 text-left">
+      <label
+        htmlFor="reminder-consent"
+        className="flex items-center gap-3 mt-3 text-left cursor-pointer min-h-[44px] py-1"
+      >
         <input
           type="checkbox"
           id="reminder-consent"
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
           disabled={status === 'sending'}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+          className="h-5 w-5 shrink-0 accent-primary"
         />
-        <label htmlFor="reminder-consent" className="text-xs text-muted-foreground cursor-pointer">
+        <span className="text-xs text-muted-foreground">
           I agree to receive a one-time reminder email. No marketing. Unsubscribe any time.
-        </label>
-      </div>
+        </span>
+      </label>
       <Button
         onClick={handleSubmit}
         disabled={!email.includes('@') || !consent || status !== 'idle'}
+        aria-disabled={!email.includes('@') || !consent || status !== 'idle'}
         aria-label={status === 'sending' ? 'Sending reminder...' : undefined}
         className="mt-4 w-full"
       >

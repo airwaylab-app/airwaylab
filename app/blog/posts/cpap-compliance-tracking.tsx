@@ -100,24 +100,30 @@ export default function CPAPComplianceTracking() {
               {
                 label: 'Machine display',
                 desc: 'Most modern CPAP/BiPAP devices show last-night and 7-day usage summaries directly on screen.',
-                color: 'blue',
+                borderClass: 'border-blue-500/20',
+                bgClass: 'bg-blue-500/5',
+                textClass: 'text-blue-400',
               },
               {
                 label: 'SD card / USB',
                 desc: 'Detailed session data is stored locally. You or your provider can read it with software like OSCAR or AirwayLab.',
-                color: 'emerald',
+                borderClass: 'border-emerald-500/20',
+                bgClass: 'bg-emerald-500/5',
+                textClass: 'text-emerald-400',
               },
               {
                 label: 'Built-in wireless modem',
                 desc: 'Many newer devices (e.g. AirSense, DreamStation) transmit nightly data automatically to manufacturer cloud portals. Your prescribing provider and/or DME supplier may have access.',
-                color: 'violet',
+                borderClass: 'border-violet-500/20',
+                bgClass: 'bg-violet-500/5',
+                textClass: 'text-violet-400',
               },
-            ].map(({ label, desc, color }) => (
+            ].map(({ label, desc, borderClass, bgClass, textClass }) => (
               <div
                 key={label}
-                className={`rounded-xl border border-${color}-500/20 bg-${color}-500/5 p-4`}
+                className={`rounded-xl border ${borderClass} ${bgClass} p-4`}
               >
-                <p className={`text-sm font-semibold text-${color}-400`}>{label}</p>
+                <p className={`text-sm font-semibold ${textClass}`}>{label}</p>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{desc}</p>
               </div>
             ))}

@@ -110,6 +110,7 @@ export default function RootLayout({
           plusJakarta.variable,
           jetbrainsMono.variable
         )}
+        suppressHydrationWarning
       >
         <script
           type="application/ld+json"

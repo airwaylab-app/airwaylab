@@ -54,7 +54,7 @@ export default function UnderstandingFlowLimitationPost() {
             The clinical literature calls this{' '}
             <strong className="text-foreground">inspiratory flow limitation (IFL)</strong>, and
             it&apos;s the underlying mechanism behind{' '}
-            <Link href="/glossary#rera" className="text-primary hover:text-primary/80">
+            <Link href="/glossary/rera" className="text-primary hover:text-primary/80">
               Respiratory Effort-Related Arousals (RERAs)
             </Link>{' '}
             and Upper Airway Resistance Syndrome (UARS).
@@ -211,7 +211,7 @@ export default function UnderstandingFlowLimitationPost() {
           <div className="space-y-4">
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
               <p className="text-sm font-semibold text-emerald-400">
-                <Link href="/glossary#glasgow-index" className="hover:text-emerald-300">
+                <Link href="/glossary/glasgow-index" className="hover:text-emerald-300">
                   Glasgow Index
                 </Link>
               </p>
@@ -263,7 +263,7 @@ export default function UnderstandingFlowLimitationPost() {
 
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
               <p className="text-sm font-semibold text-blue-400">
-                <Link href="/glossary#ned" className="hover:text-blue-300">
+                <Link href="/glossary/ned-mean" className="hover:text-blue-300">
                   NED (Negative Effort Dependence)
                 </Link>
               </p>
@@ -493,6 +493,12 @@ export default function UnderstandingFlowLimitationPost() {
                 Does Flow Limitation Drive Sleepiness?
               </Link>{' '}
               &mdash; evidence linking flow limitation directly to daytime symptoms.
+            </p>
+            <p className="mt-1">
+              <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+                four metrics AirwayLab measures beyond AHI
+              </Link>{' '}
+              &mdash; how flow limitation fits into AirwayLab&apos;s full measurement framework.
             </p>
           </div>
         </div>

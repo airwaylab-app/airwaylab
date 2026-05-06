@@ -298,6 +298,12 @@ export default function BeyondAHIPost() {
               </Link>{' '}
               -- why flow limitation may matter more than cortical arousals.
             </p>
+            <p className="mt-1">
+              <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+                four metrics AirwayLab tracks instead of AHI
+              </Link>{' '}
+              -- a deeper look at what AirwayLab measures beyond the AHI number.
+            </p>
           </div>
         </div>
       </section>

@@ -56,8 +56,8 @@ export function PostAnalysisUpgrade({ isComplete }: Props) {
             <h3 className="text-sm font-semibold text-foreground">Your analysis is ready</h3>
             <button
               onClick={dismiss}
-              className="rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
-              aria-label="Dismiss"
+              className="rounded p-2.5 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+              aria-label="Dismiss upgrade prompt"
             >
               <X className="h-3.5 w-3.5" />
             </button>

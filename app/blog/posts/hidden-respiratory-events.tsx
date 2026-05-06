@@ -221,8 +221,7 @@ export default function HiddenRespiratoryEventsPost() {
                 <p className="text-sm font-semibold text-foreground">Look at NED-invisible percentage</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   A high percentage of NED-invisible events suggests the airway is collapsing rather
-                  than progressively narrowing. This is a different mechanism that may respond to
-                  different pressure strategies.
+                  than progressively narrowing. This represents a distinct pattern in the data.
                 </p>
               </div>
             </div>
@@ -243,11 +242,11 @@ export default function HiddenRespiratoryEventsPost() {
         </div>
       </section>
 
-      {/* How AirwayLab Detects This */}
+      {/* How Brief Obstructions Appear */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <BookOpen className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">How AirwayLab Detects Brief Obstructions</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">How Brief Obstructions Appear in AirwayLab</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>

@@ -51,6 +51,9 @@ export const events = {
   /** User loaded demo mode */
   demoLoaded: () => trackEvent('Demo Loaded'),
 
+  /** User tapped the mobile file picker (iOS/Android) */
+  mobileFilePickerTapped: () => trackEvent('Mobile File Picker Tapped'),
+
   /** User exported data */
   export: (format: 'csv' | 'json' | 'forum' | 'pdf' | 'chart_image') =>
     trackEvent('Export', { format }),
@@ -300,4 +303,17 @@ export const events = {
 
   /** Mobile reminder email submission failed */
   mobileReminderError: () => trackEvent('mobile_reminder_error'),
+
+  // ── Community join prompt ─────────────────────────────────────
+  /** Community join prompt shown after analysis */
+  communityPromptShown: () => trackEvent('community_prompt_shown'),
+
+  /** Community join prompt dismissed */
+  communityPromptDismissed: () => trackEvent('community_prompt_dismissed'),
+
+  /** GitHub Discussions link clicked from community prompt */
+  communityPromptGitHubClicked: () => trackEvent('community_prompt_github_clicked'),
+
+  /** Discord link clicked from community prompt */
+  communityPromptDiscordClicked: () => trackEvent('community_prompt_discord_clicked'),
 } as const;

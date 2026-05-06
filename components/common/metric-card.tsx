@@ -3,7 +3,8 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { getTrafficLight, getTrafficDotColor, getTrafficBg } from '@/lib/thresholds';
-import { TrendingUp, TrendingDown, Minus, Info, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info, ChevronDown, ExternalLink } from 'lucide-react';
+import { COMMUNITY_LINKS_ENABLED, COMMUNITY_LINK_MAP } from '@/lib/community-links';
 
 interface MetricCardProps {
   label: string;
@@ -20,6 +21,12 @@ interface MetricCardProps {
   onClick?: () => void;
   /** Short context hint shown below value for amber/red metrics */
   contextHint?: string;
+  /** When provided, shows micro-trend vs 7-night average (only if value and avg are both valid) */
+  sevenNightAvg?: number;
+  /** When provided and metric is amber/red, shows "Adjust your range" link */
+  onAdjustThreshold?: () => void;
+  /** Key into COMMUNITY_LINK_MAP — shows accordion when metric is amber/red and flag is enabled */
+  communityKey?: string;
 }
 
 function formatValue(value: number, format?: string): string {
@@ -126,6 +133,9 @@ export const MetricCard = memo(function MetricCard({
   plainLanguage,
   onClick,
   contextHint,
+  sevenNightAvg,
+  onAdjustThreshold,
+  communityKey,
 }: MetricCardProps) {
   const light = threshold ? getTrafficLight(value, threshold) : null;
   const dotColor = light ? getTrafficDotColor(light) : '';
@@ -144,6 +154,22 @@ export const MetricCard = memo(function MetricCard({
   const trendIsPositive = threshold?.lowerIsBetter
     ? trend === 'down'
     : trend === 'up';
+
+  // Micro-trend: % change vs 7-night average
+  const avgDelta =
+    sevenNightAvg !== undefined &&
+    sevenNightAvg > 0 &&
+    !isNaN(value) &&
+    !isNaN(sevenNightAvg)
+      ? ((value - sevenNightAvg) / sevenNightAvg) * 100
+      : null;
+
+  const showAdjustRange = onAdjustThreshold && light && light !== 'good';
+
+  // Community links accordion — only for amber/red metrics when feature is enabled
+  const communityLinks = COMMUNITY_LINKS_ENABLED && communityKey && light && light !== 'good'
+    ? COMMUNITY_LINK_MAP[communityKey] ?? null
+    : null;
 
   return (
     <div
@@ -186,8 +212,67 @@ export const MetricCard = memo(function MetricCard({
           </span>
         )}
       </div>
+
+      {/* Micro-trend vs 7-night average */}
+      {avgDelta !== null && (
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <span aria-hidden="true">{avgDelta > 0 ? '↑' : '↓'}</span>
+          <span className="sr-only">{avgDelta > 0 ? 'increased' : 'decreased'} by</span>
+          {' '}{Math.abs(avgDelta).toFixed(0)}% vs 7-night avg
+        </p>
+      )}
+
       {contextHint && light && light !== 'good' && (
         <p className="mt-0.5 text-[10px] text-muted-foreground">{contextHint}</p>
+      )}
+
+      {/* Adjust your range — opens ThresholdSettings scrolled to this metric */}
+      {showAdjustRange && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onAdjustThreshold(); }}
+          className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-primary/60 transition-colors hover:text-primary"
+          aria-label={`Adjust ${label} threshold range`}
+        >
+          Adjust your range
+        </button>
+      )}
+
+      {/* "What people explore in this situation" community links accordion */}
+      {communityLinks && (
+        <details
+          className="mt-2 group/community"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <summary className="flex cursor-pointer items-center gap-1 text-[10px] font-medium text-muted-foreground/70 transition-colors hover:text-muted-foreground [&::-webkit-details-marker]:hidden">
+            <ChevronDown className="h-2.5 w-2.5 transition-transform duration-150 group-open/community:rotate-180" aria-hidden="true" />
+            What people explore in this situation
+          </summary>
+          <div className="mt-1.5 border-t border-border/20 pt-1.5">
+            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+              {communityLinks.summary}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {communityLinks.links.map((link) => (
+                <li key={link.url}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-[10px] text-primary/60 transition-colors hover:text-primary"
+                    aria-label={`${link.label} (opens in new tab)`}
+                  >
+                    {link.label}
+                    <ExternalLink className="h-2 w-2" aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-[9px] text-muted-foreground/50">
+              External links. AirwayLab does not endorse specific advice.
+            </p>
+          </div>
+        </details>
       )}
     </div>
   );

@@ -179,6 +179,12 @@ export default function CPAPFlowLimitationScore05Meaning() {
             </Link>{' '}
             -- definitions of all metrics used in AirwayLab.
           </p>
+          <p>
+            <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+              see all four metrics AirwayLab tracks
+            </Link>{' '}
+            -- how the FL Score fits into AirwayLab&apos;s broader measurement framework.
+          </p>
         </div>
       </section>
 

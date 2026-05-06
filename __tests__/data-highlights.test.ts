@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  generateClinicianQuestions,
-  formatQuestionsForClipboard,
-  type ClinicianQuestion,
-} from '@/lib/clinician-questions';
+  generateDataHighlights,
+  formatHighlightsForClipboard,
+  type DataHighlight,
+} from '@/lib/data-highlights';
 import type { NightResult, GlasgowComponents, WATResults, NEDResults, OximetryResults, SettingsMetrics, MachineSettings } from '@/lib/types';
 
 /* ------------------------------------------------------------------ */
@@ -161,19 +161,19 @@ function makeNight(overrides?: {
 /*  Tests                                                              */
 /* ------------------------------------------------------------------ */
 
-describe('generateClinicianQuestions', () => {
-  it('generates a flow limitation question when FL Score exceeds amber threshold', () => {
+describe('generateDataHighlights', () => {
+  it('generates a flow limitation highlight when FL Score exceeds amber threshold', () => {
     const night = makeNight({ wat: { flScore: 55 } });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    expect(questions.length).toBeGreaterThanOrEqual(1);
-    const flQ = questions.find((q) => q.category === 'flow-limitation');
-    expect(flQ).toBeDefined();
-    expect(flQ!.stem).toBeTruthy();
-    expect(flQ!.rationale).toContain('55');
+    expect(highlights.length).toBeGreaterThanOrEqual(1);
+    const flH = highlights.find((q) => q.category === 'flow-limitation');
+    expect(flH).toBeDefined();
+    expect(flH!.stem).toBeTruthy();
+    expect(flH!.rationale).toContain('55');
   });
 
-  it('returns healthy range message when all metrics are green', () => {
+  it('returns empty array when all metrics are green', () => {
     const night = makeNight({
       glasgow: 0.5,
       wat: { flScore: 15, regularityScore: 15, periodicityIndex: 10 },
@@ -181,26 +181,25 @@ describe('generateClinicianQuestions', () => {
       oximetry: { odi3: 2, coupled3_10: 1 },
       settingsMetrics: { prematureCyclePct: 1, lateCyclePct: 1 },
     });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    expect(questions).toHaveLength(0);
+    expect(highlights).toHaveLength(0);
   });
 
-  it('caps output at maximum 4 questions', () => {
+  it('caps output at maximum 4 highlights', () => {
     // Make everything red to trigger many rules
     const night = makeNight({
       glasgow: 4.0,
       wat: { flScore: 70, regularityScore: 60, periodicityIndex: 50 },
       ned: { nedMean: 35, reraIndex: 12, estimatedArousalIndex: 15, h1NedMean: 20, h2NedMean: 40 },
       oximetry: { odi3: 20, coupled3_10: 5 },
-      settingsMetrics: { prematureCyclePct: 15, lateCyclePct: 15 },
     });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    expect(questions.length).toBeLessThanOrEqual(4);
+    expect(highlights.length).toBeLessThanOrEqual(4);
   });
 
-  it('sorts questions by urgency: red first, then amber', () => {
+  it('sorts highlights by urgency: red first, then amber', () => {
     const night = makeNight({
       glasgow: 0.8, // green
       wat: { flScore: 55, periodicityIndex: 50 }, // FL amber, periodicity red
@@ -208,10 +207,10 @@ describe('generateClinicianQuestions', () => {
       oximetry: null,
       settingsMetrics: null,
     });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    if (questions.length >= 2) {
-      const urgencyOrder = questions.map((q) => q.urgency);
+    if (highlights.length >= 2) {
+      const urgencyOrder = highlights.map((q) => q.urgency);
       for (let i = 1; i < urgencyOrder.length; i++) {
         const prev = urgencyOrder[i - 1] === 'bad' ? 0 : urgencyOrder[i - 1] === 'warn' ? 1 : 2;
         const curr = urgencyOrder[i] === 'bad' ? 0 : urgencyOrder[i] === 'warn' ? 1 : 2;
@@ -220,28 +219,28 @@ describe('generateClinicianQuestions', () => {
     }
   });
 
-  it('does not generate oximetry questions when oximetry is null', () => {
+  it('does not generate oximetry highlights when oximetry is null', () => {
     const night = makeNight({ oximetry: null });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    const oxyQ = questions.filter((q) => q.category === 'oximetry');
-    expect(oxyQ).toHaveLength(0);
+    const oxyH = highlights.filter((q) => q.category === 'oximetry');
+    expect(oxyH).toHaveLength(0);
   });
 
-  it('does not generate trend questions with fewer than 5 nights', () => {
+  it('does not generate trend highlights with fewer than 5 nights', () => {
     const nights = Array.from({ length: 3 }, (_, i) =>
       makeNight({
         dateStr: `2026-03-${String(8 + i).padStart(2, '0')}`,
         glasgow: 3.0 + i * 0.5, // worsening
       })
     );
-    const questions = generateClinicianQuestions(nights, nights[2]!, nights[1]!, null);
+    const highlights = generateDataHighlights(nights, nights[2]!, nights[1]!, null);
 
-    const trendQ = questions.filter((q) => q.category === 'trend');
-    expect(trendQ).toHaveLength(0);
+    const trendH = highlights.filter((q) => q.category === 'trend');
+    expect(trendH).toHaveLength(0);
   });
 
-  it('deduplicates: FL Score + Glasgow + NED all red produces single FL question', () => {
+  it('deduplicates: FL Score + Glasgow + NED all red produces single FL highlight', () => {
     const night = makeNight({
       glasgow: 4.0,
       wat: { flScore: 70 },
@@ -249,34 +248,28 @@ describe('generateClinicianQuestions', () => {
       oximetry: null,
       settingsMetrics: null,
     });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    const flQuestions = questions.filter((q) => q.category === 'flow-limitation');
-    expect(flQuestions).toHaveLength(1);
-    // The consolidated question should reference multiple metrics
-    expect(flQuestions[0]!.rationale).toContain('FL Score');
-    expect(flQuestions[0]!.rationale).toContain('Glasgow');
-    expect(flQuestions[0]!.rationale).toContain('NED');
+    const flHighlights = highlights.filter((q) => q.category === 'flow-limitation');
+    expect(flHighlights).toHaveLength(1);
+    // The consolidated highlight should reference multiple metrics
+    expect(flHighlights[0]!.rationale).toContain('FL Score');
+    expect(flHighlights[0]!.rationale).toContain('Glasgow');
+    expect(flHighlights[0]!.rationale).toContain('NED');
   });
 
-  it('only generates BiPAP cycling question when settings metrics exist', () => {
+  it('does not generate settings category highlights (removed)', () => {
     const nightWithSettings = makeNight({
-      settingsMetrics: { prematureCyclePct: 15 },
+      settingsMetrics: { prematureCyclePct: 15, lateCyclePct: 15 },
     });
-    const nightWithout = makeNight({ settingsMetrics: null });
+    const highlights = generateDataHighlights([nightWithSettings], nightWithSettings, null, null);
 
-    const qWith = generateClinicianQuestions([nightWithSettings], nightWithSettings, null, null);
-    const qWithout = generateClinicianQuestions([nightWithout], nightWithout, null, null);
-
-    const settingsQWith = qWith.filter((q) => q.category === 'settings');
-    const settingsQWithout = qWithout.filter((q) => q.category === 'settings');
-
-    if (settingsQWith.length > 0) {
-      expect(settingsQWithout).toHaveLength(0);
-    }
+    // No 'settings' category should exist in the output
+    const settingsH = highlights.filter((q) => (q.category as string) === 'settings');
+    expect(settingsH).toHaveLength(0);
   });
 
-  it('generates H1/H2 question only when FL% difference exceeds 15pp', () => {
+  it('generates H1/H2 highlight only when FL% difference exceeds 15pp', () => {
     const nightSmallDiff = makeNight({
       ned: { h1NedMean: 20, h2NedMean: 30 }, // 10pp diff
       oximetry: null,
@@ -288,17 +281,17 @@ describe('generateClinicianQuestions', () => {
       settingsMetrics: null,
     });
 
-    const qSmall = generateClinicianQuestions([nightSmallDiff], nightSmallDiff, null, null);
-    const qLarge = generateClinicianQuestions([nightLargeDiff], nightLargeDiff, null, null);
+    const hSmall = generateDataHighlights([nightSmallDiff], nightSmallDiff, null, null);
+    const hLarge = generateDataHighlights([nightLargeDiff], nightLargeDiff, null, null);
 
-    const h1h2Small = qSmall.filter((q) => q.category === 'h1h2-shift');
-    const h1h2Large = qLarge.filter((q) => q.category === 'h1h2-shift');
+    const h1h2Small = hSmall.filter((q) => q.category === 'h1h2-shift');
+    const h1h2Large = hLarge.filter((q) => q.category === 'h1h2-shift');
 
     expect(h1h2Small).toHaveLength(0);
     expect(h1h2Large.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('generates trend question for worsening metrics across 5+ nights', () => {
+  it('generates trend highlight for worsening metrics across 5+ nights', () => {
     // App passes nights most-recent-first
     const nights = Array.from({ length: 7 }, (_, i) =>
       makeNight({
@@ -310,51 +303,117 @@ describe('generateClinicianQuestions', () => {
     );
     const selected = nights[0]; // most recent
     const previous = nights[1];
-    const questions = generateClinicianQuestions(nights, selected!, previous!, null);
+    const highlights = generateDataHighlights(nights, selected!, previous!, null);
 
-    const trendQ = questions.filter((q) => q.category === 'trend');
-    expect(trendQ.length).toBeGreaterThanOrEqual(1);
+    const trendH = highlights.filter((q) => q.category === 'trend');
+    expect(trendH.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('includes actual metric values in generated questions', () => {
+  it('includes actual metric values in generated highlights', () => {
     const night = makeNight({
       wat: { flScore: 62, periodicityIndex: 45 },
       oximetry: null,
       settingsMetrics: null,
     });
-    const questions = generateClinicianQuestions([night], night, null, null);
+    const highlights = generateDataHighlights([night], night, null, null);
 
-    // At least one question should contain a specific number from the data
-    const hasValues = questions.some(
+    // At least one highlight should contain a specific number from the data
+    const hasValues = highlights.some(
       (q) => q.rationale.includes('62') || q.rationale.includes('45')
     );
     expect(hasValues).toBe(true);
   });
 
-  it('formatQuestionsForClipboard includes all stems and disclaimer', () => {
-    const questions: ClinicianQuestion[] = [
+  it('formatHighlightsForClipboard includes all stems and disclaimer', () => {
+    const highlights: DataHighlight[] = [
       {
         id: 'test-1',
-        stem: 'Could pressure adjustments help?',
-        rationale: 'Your FL Score of 60 is elevated.',
+        stem: 'Your FL Score is above the typical range, indicating elevated flow limitation.',
+        rationale: 'Your FL Score of 60% is above the typical range for this metric.',
         category: 'flow-limitation',
         urgency: 'bad',
       },
       {
         id: 'test-2',
-        stem: 'My breathing shows cyclical patterns?',
-        rationale: 'Periodicity Index of 45%.',
+        stem: 'Your Periodicity Index shows cyclical breathing patterns at 30\u2013100 second intervals.',
+        rationale: 'Your Periodicity Index of 45% is above the typical range for this metric.',
         category: 'breathing-stability',
         urgency: 'warn',
       },
     ];
 
-    const text = formatQuestionsForClipboard(questions, '2026-03-10');
+    const text = formatHighlightsForClipboard(highlights, '2026-03-10');
 
-    expect(text).toContain('Could pressure adjustments help?');
-    expect(text).toContain('My breathing shows cyclical patterns?');
+    expect(text).toContain('Your FL Score is above the typical range');
+    expect(text).toContain('Your Periodicity Index shows cyclical breathing patterns');
     expect(text).toContain('Not medical advice');
     expect(text).toContain('airwaylab.app');
     expect(text).toContain('2026-03-10');
+    expect(text).toContain('Data highlights for your sleep clinic appointment');
+  });
+
+  // --- MDR Guard Tests ---
+
+  it('MDR guard: no stem contains question marks', () => {
+    // Trigger as many rules as possible
+    const night = makeNight({
+      glasgow: 4.0,
+      wat: { flScore: 70, regularityScore: 60, periodicityIndex: 50 },
+      ned: { nedMean: 35, reraIndex: 12, estimatedArousalIndex: 15, h1NedMean: 15, h2NedMean: 40 },
+      oximetry: { odi3: 20, coupled3_10: 8 },
+    });
+
+    // Also test trend stems
+    const nights = Array.from({ length: 7 }, (_, i) =>
+      makeNight({
+        dateStr: `2026-03-${String(10 - i).padStart(2, '0')}`,
+        glasgow: 4.0 - i * 0.4,
+        wat: { flScore: 70 - i * 5, regularityScore: 60, periodicityIndex: 50 },
+        ned: { nedMean: 35, reraIndex: 12, estimatedArousalIndex: 15, h1NedMean: 15, h2NedMean: 40 },
+        oximetry: { odi3: 20, coupled3_10: 8 },
+      })
+    );
+
+    const singleHighlights = generateDataHighlights([night], night, null, null);
+    const trendHighlights = generateDataHighlights(nights, nights[0]!, nights[1]!, null);
+    const allHighlights = [...singleHighlights, ...trendHighlights];
+
+    for (const h of allHighlights) {
+      expect(h.stem).not.toContain('?');
+    }
+  });
+
+  it('MDR guard: no stem contains therapy-suggestive keywords', () => {
+    const night = makeNight({
+      glasgow: 4.0,
+      wat: { flScore: 70, regularityScore: 60, periodicityIndex: 50 },
+      ned: { nedMean: 35, reraIndex: 12, estimatedArousalIndex: 15, h1NedMean: 15, h2NedMean: 40 },
+      oximetry: { odi3: 20, coupled3_10: 8 },
+    });
+
+    const nights = Array.from({ length: 7 }, (_, i) =>
+      makeNight({
+        dateStr: `2026-03-${String(10 - i).padStart(2, '0')}`,
+        glasgow: 4.0 - i * 0.4,
+        wat: { flScore: 70 - i * 5, regularityScore: 60, periodicityIndex: 50 },
+        ned: { nedMean: 35, reraIndex: 12, estimatedArousalIndex: 15, h1NedMean: 15, h2NedMean: 40 },
+        oximetry: { odi3: 20, coupled3_10: 8 },
+      })
+    );
+
+    const singleHighlights = generateDataHighlights([night], night, null, null);
+    const trendHighlights = generateDataHighlights(nights, nights[0]!, nights[1]!, null);
+    const allHighlights = [...singleHighlights, ...trendHighlights];
+
+    const forbiddenKeywords = ['adjust', 'settings', 'therapy', 'could', 'should', 'help me', 'review whether', 'suggesting', 'fragmentation'];
+
+    for (const h of allHighlights) {
+      const stemLower = h.stem.toLowerCase();
+      const rationaleLower = h.rationale.toLowerCase();
+      for (const keyword of forbiddenKeywords) {
+        expect(stemLower).not.toContain(keyword);
+        expect(rationaleLower).not.toContain(keyword);
+      }
+    }
   });
 });

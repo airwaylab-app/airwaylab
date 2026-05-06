@@ -21,6 +21,25 @@ const AI_MONTHLY_LIMIT = 3;
 // Dedup rate-limit alerts: one alert per user per hour max
 const rateLimitAlertCache = new Map<string, number>();
 
+// Dedup billing exhaustion alerts: one alert per hour (service-wide, not per-user)
+let lastBillingAlertAt = 0;
+
+async function sendOpsBillingAlert() {
+  const now = Date.now();
+  if (now - lastBillingAlertAt < 3_600_000) return; // 1 hour dedup
+  lastBillingAlertAt = now;
+  await sendAlert('ops', '', [{
+    title: ':rotating_light: P0: Anthropic Credit Balance Exhausted',
+    color: COLORS.red,
+    fields: [
+      { name: 'Impact', value: 'ALL AI insight requests are failing', inline: false },
+      { name: 'Action', value: 'Top up Anthropic credits immediately at console.anthropic.com', inline: false },
+    ],
+    footer: { text: 'AI Insights — credit exhaustion' },
+    timestamp: new Date().toISOString(),
+  }]);
+}
+
 async function sendOpsRateLimitAlert(userId: string, tier: string) {
   const now = Date.now();
   const lastAlert = rateLimitAlertCache.get(userId) ?? 0;
@@ -295,7 +314,8 @@ export async function POST(request: NextRequest) {
   const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
   const rateLimiter = isPaidTierForRateLimit ? aiPremiumRateLimiter : aiRateLimiter;
   if (await rateLimiter.isLimited(getUserRateLimitKey(user.id))) {
-    void sendOpsRateLimitAlert(user.id, userTier);
+    console.error('[ai-insights] Rate limit hit', { userId: user.id.slice(0, 8), tier: userTier });
+    void sendOpsRateLimitAlert(user.id, userTier); // Non-blocking ops alert
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
@@ -318,7 +338,7 @@ export async function POST(request: NextRequest) {
 
     const currentCount = usage?.count ?? 0;
     if (currentCount >= AI_MONTHLY_LIMIT) {
-      void sendOpsRateLimitAlert(user.id, 'community (monthly limit)');
+      console.error('[ai-insights] Monthly limit reached', { userId: user.id.slice(0, 8), tier: 'community' });
       return NextResponse.json(
         { error: 'Monthly AI analysis limit reached. Support AirwayLab for unlimited access.' },
         { status: 403 }
@@ -394,7 +414,8 @@ export async function POST(request: NextRequest) {
 
     const client = new Anthropic({
       apiKey: anthropicKey,
-      maxRetries: 1,    // Fail fast — silent retries burn 30s+ and look like a hang
+      maxRetries: 0,    // No retries — a timeout retry burns another 50s and is killed by
+                        // Vercel's 60s maxDuration before completing (AIR-691)
       timeout: 50_000,  // 50s SDK timeout — leaves 10s headroom under maxDuration
     });
 
@@ -628,6 +649,7 @@ export async function POST(request: NextRequest) {
       });
       if (isBillingError) {
         console.error('[ai-insights] Anthropic credit balance exhausted');
+        void sendOpsBillingAlert(); // Non-blocking P0 ops alert
         return NextResponse.json(
           { error: 'AI service is temporarily unavailable. Our team has been notified and is working on it.' },
           { status: 503 }

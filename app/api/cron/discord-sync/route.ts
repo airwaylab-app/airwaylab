@@ -177,7 +177,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Alert ops if Discord API errors are blocking resolution
     if (errors > 0) {
       await sendAlert('ops', '', [{
         title: ':warning: Discord Sync — API Errors',

@@ -106,7 +106,7 @@ export default function AHINormalStillTiredPost() {
           </div>
           <p>
             This cluster of symptoms has a clinical name:{' '}
-            <Link href="/glossary#uars" className="text-primary hover:text-primary/80">
+            <Link href="/glossary/uars" className="text-primary hover:text-primary/80">
               Upper Airway Resistance Syndrome (UARS)
             </Link>. It&apos;s characterised by significant flow limitation and symptoms despite
             a normal AHI.
@@ -179,7 +179,7 @@ export default function AHINormalStillTiredPost() {
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-emerald-400" />
                 <p className="text-sm font-semibold text-foreground">
-                  <Link href="/glossary#glasgow-index" className="hover:text-primary">Glasgow Index</Link>
+                  <Link href="/glossary/glasgow-index" className="hover:text-primary">Glasgow Index</Link>
                   {' '}(Breath Shape)
                 </p>
               </div>
@@ -194,7 +194,7 @@ export default function AHINormalStillTiredPost() {
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-blue-400" />
                 <p className="text-sm font-semibold text-foreground">
-                  <Link href="/glossary#fl-score" className="hover:text-primary">FL Score</Link>
+                  <Link href="/glossary/fl-score" className="hover:text-primary">FL Score</Link>
                   {' '}(Flow Limitation Percentage)
                 </p>
               </div>
@@ -208,7 +208,7 @@ export default function AHINormalStillTiredPost() {
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-rose-400" />
                 <p className="text-sm font-semibold text-foreground">
-                  <Link href="/glossary#ned" className="hover:text-primary">NED</Link>
+                  <Link href="/glossary/ned-mean" className="hover:text-primary">NED</Link>
                   {' '}+ RERA Estimate
                 </p>
               </div>
@@ -319,7 +319,7 @@ export default function AHINormalStillTiredPost() {
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">See What Your AHI Is Missing</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload your ResMed SD card to AirwayLab. Four research-grade engines analyse your flow
+          Load your ResMed SD card into AirwayLab. Four research-grade engines analyse your flow
           data for the patterns AHI ignores. Free, open-source, and 100% private — your data
           never leaves your browser.
         </p>

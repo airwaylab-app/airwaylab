@@ -19,6 +19,7 @@ import BeyondAHI from '../posts/beyond-ahi';
 import PAPDataPrivacy from '../posts/pap-data-privacy';
 import WhyAHIIsLying from '../posts/why-ahi-is-lying';
 import HowToReadCPAPData from '../posts/how-to-read-cpap-data';
+import HowToAnalyzeCPAPDataAtHome from '../posts/how-to-analyze-cpap-data-at-home';
 import HowToExportUnderstandCPAPData from '../posts/how-to-export-understand-cpap-data';
 import V121ClearerLanguage from '../posts/v121-clearer-language';
 import V122YourDataExplained from '../posts/v122-your-data-explained-not-judged';
@@ -26,24 +27,54 @@ import WhatIsGlasgowIndexCPAP from '../posts/what-is-glasgow-index-cpap';
 import WhatIsWATScoreCPAP from '../posts/what-is-wat-score-cpap';
 import WhatIsNEDSleepApnea from '../posts/what-is-ned-sleep-apnea';
 import CPAPFlowLimitationScore05Meaning from '../posts/cpap-flow-limitation-score-0-5-meaning';
+import WhatIsUARS from '../posts/what-is-uars';
 import ResMedSDCardBrowserAnalysis from '../posts/resmed-sd-card-browser-analysis';
 import CPAPDataAnalysisBrowserNoDownload from '../posts/cpap-data-analysis-browser-no-download';
 import BiPAPDataAnalysisAirCurve10 from '../posts/bipap-data-analysis-aircurve-10';
+import FourMetricsAirwayLabMeasures from '../posts/four-metrics-airwaylab-measures';
+import ResmedAirsense10SdCard from '../posts/resmed-airsense-10-sd-card';
+import ResmedAirsense11SdCard from '../posts/resmed-airsense-11-sd-card';
+import ResmedAircurveBipapSdCard from '../posts/resmed-aircurve-bipap-sd-card';
+import LowAHIStillTiredFlowLimitationRERAs from '../posts/low-ahi-still-tired-flow-limitation-reras';
+import UnderstandingCPAPPressureSettings from '../posts/understanding-cpap-pressure-settings';
+import WhatIsFlowLimitationCPAP from '../posts/what-is-flow-limitation-cpap';
+import HowToReadOSCARCPAPCharts from '../posts/how-to-read-oscar-cpap-charts';
+import CPAPLeakRateMeaning from '../posts/cpap-leak-rate-meaning';
+import HowToExportAndUnderstandYourCPAPData from '../posts/how-to-export-and-understand-your-cpap-data';
+import UnderstandingCPAPData from '../posts/understanding-cpap-data';
+import CPAPLeakRateExplained from '../posts/cpap-leak-rate-explained';
+import WhatAreRerasSleepApnea from '../posts/what-are-reras-sleep-apnea';
 import CPAPComplianceTracking from '../posts/cpap-compliance-tracking';
+import BiPAPVsCPAPData from '../posts/bipap-vs-cpap-data';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
+  'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
+  'cpap-leak-rate-meaning': CPAPLeakRateMeaning,
+  'how-to-export-and-understand-your-cpap-data': HowToExportAndUnderstandYourCPAPData,
+  'cpap-leak-rate-explained': CPAPLeakRateExplained,
+  'understanding-cpap-data': UnderstandingCPAPData,
+  'what-are-reras-sleep-apnea': WhatAreRerasSleepApnea,
   'cpap-compliance-tracking': CPAPComplianceTracking,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
+  'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,
   'bipap-data-analysis-aircurve-10': BiPAPDataAnalysisAirCurve10,
+  'four-metrics-airwaylab-measures': FourMetricsAirwayLabMeasures,
+  'bipap-vs-cpap-data': BiPAPVsCPAPData,
   'v1-2-2-your-data-explained-not-judged': V122YourDataExplained,
   'how-to-read-cpap-data': HowToReadCPAPData,
+  'how-to-analyze-cpap-data-at-home': HowToAnalyzeCPAPDataAtHome,
   'how-to-export-understand-cpap-data': HowToExportUnderstandCPAPData,
   'v121-clearer-language': V121ClearerLanguage,
   'what-is-glasgow-index-cpap': WhatIsGlasgowIndexCPAP,
   'what-is-wat-score-cpap': WhatIsWATScoreCPAP,
   'what-is-ned-sleep-apnea': WhatIsNEDSleepApnea,
   'cpap-flow-limitation-score-0-5-meaning': CPAPFlowLimitationScore05Meaning,
+  'resmed-airsense-10-sd-card': ResmedAirsense10SdCard,
+  'resmed-airsense-11-sd-card': ResmedAirsense11SdCard,
+  'resmed-aircurve-bipap-sd-card': ResmedAircurveBipapSdCard,
+  'what-is-uars': WhatIsUARS,
   'why-ahi-is-lying': WhyAHIIsLying,
   'ahi-normal-still-tired': AHINormalStillTired,
   'oscar-alternative': OSCARAlternative,
@@ -57,6 +88,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'understanding-flow-limitation': UnderstandingFlowLimitation,
   'beyond-ahi': BeyondAHI,
   'pap-data-privacy': PAPDataPrivacy,
+  'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
 };
 
 export function generateStaticParams() {

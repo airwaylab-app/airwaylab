@@ -265,9 +265,9 @@ export default function FlowLimitationPage() {
           <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
             <p>
               AirwayLab identifies flow limitation patterns in your data.
-              Your clinician can review these findings and determine whether
-              any therapy adjustments are appropriate. AirwayLab provides the
-              data to support that conversation.
+              Your clinician can help interpret these patterns in the context
+              of your overall therapy. AirwayLab provides the data to support
+              that conversation.
             </p>
             <p>
               Bring your AirwayLab report to your next appointment -- the
@@ -277,6 +277,16 @@ export default function FlowLimitationPage() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Related reading */}
+      <section className="mb-10">
+        <p className="text-xs text-muted-foreground">
+          Learn more:{' '}
+          <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
+            how flow limitation fits into the four metrics AirwayLab measures
+          </Link>
+        </p>
       </section>
 
       {/* Privacy callout */}

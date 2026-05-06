@@ -63,10 +63,10 @@ export const METRIC_METHODOLOGIES = {
     'Detected by finding sequences of 3\u201315 consecutive breaths where NED exceeds 20% or Flatness Index exceeds 0.85. A sequence counts as a RERA if it shows a rising NED slope, ends with a recovery breath (NED drops below 10%), or contains a breath with NED above 34%. The index is validated events per hour of recording.',
 
   eai:
-    'Estimated by detecting breaths where both respiratory rate (>35% above a 120-second rolling baseline) and tidal volume (>50% above baseline) spike simultaneously, and where at least 2 of the preceding 5 breaths showed flow limitation (NED >= 20% or FI >= 0.85). A 30-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG, and research suggests flow limitation itself drives symptoms independently of arousals. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
+    'Estimated by detecting breaths where both respiratory rate (>35% above a 120-second rolling baseline) and tidal volume (>50% above baseline) spike simultaneously, and where at least 2 of the preceding 5 breaths showed flow limitation (NED >= 20% or FI >= 0.85). A 30-second refractory period prevents double-counting. This is a secondary marker \u2014 true arousals require EEG. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture.',
 
   regularity:
-    'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing often indicates a persistently narrowed airway forcing uniform restricted breaths. Lower scores reflect healthy natural breath-to-breath variability.',
+    'Uses Sample Entropy (SampEn) on minute ventilation to quantify how predictable your breathing rhythm is. On PAP therapy, highly regular (repetitive) breathing is associated with elevated flow limitation scores. Lower scores reflect healthy natural breath-to-breath variability.',
 
   periodicity:
     'Applies FFT (frequency spectrum analysis) to minute ventilation, looking for power concentrated in the 0.01\u20130.03 Hz band. This band corresponds to 30\u2013100 second breathing cycles, characteristic of periodic breathing or Cheyne-Stokes respiration.',
@@ -121,9 +121,9 @@ export function getGlasgowExplanation(value: number, threshold: ThresholdDef): s
     return `Your Glasgow Index of ${fmt(value)} is in the lower range, consistent with minimal flow limitation across breath-shape characteristics.`;
   }
   if (light === 'warn') {
-    return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Consider discussing this with your clinician.`;
+    return `Your Glasgow Index of ${fmt(value)} is in the borderline range. Your breathing shows some signs of flow limitation — your airway may be partially narrowing during sleep, even though it's not fully closing. Your clinician can help interpret these findings in context.`;
   }
-  return `Your Glasgow Index of ${fmt(value)} shows elevated breath-shape scores across analysis characteristics. Discuss these patterns with your clinician.`;
+  return `Your Glasgow Index of ${fmt(value)} shows elevated breath-shape scores across analysis characteristics. Your clinician can help interpret these findings in context.`;
 }
 
 export function getEAIExplanation(value: number, threshold: ThresholdDef): string {
@@ -135,7 +135,7 @@ export function getEAIExplanation(value: number, threshold: ThresholdDef): strin
   if (light === 'warn') {
     return `Your Respiratory Disruption Index of ${fmt(value)}/hr is moderately elevated. This is a secondary marker \u2014 your breathing shows recovery breaths after flow-limited sequences, suggesting your nervous system is responding to breathing difficulty. Check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Note: this flow-based estimate typically reads higher than an in-lab arousal index.`;
   }
-  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Important: this flow-based estimate typically reads 2\u20133x higher than an in-lab arousal index measured with EEG, because it detects respiratory recovery patterns that don\u2019t always correspond to cortical arousals. This is a secondary marker \u2014 check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Discuss with your clinician if concerned.`;
+  return `Your Respiratory Disruption Index of ${fmt(value)}/hr is elevated. Important: this flow-based estimate typically reads 2\u20133x higher than an in-lab arousal index measured with EEG, because it detects respiratory recovery patterns that don\u2019t always correspond to cortical arousals. This is a secondary marker \u2014 check your flow limitation metrics (Glasgow, FL Score, NED) for the primary picture. Your clinician can help interpret these findings in context.`;
 }
 
 export function getNEDExplanation(nedMean: number, reraIndex: number, nedThreshold: ThresholdDef): string {
@@ -158,9 +158,9 @@ export function getIFLRiskExplanation(value: number, threshold: ThresholdDef): s
     return 'Your IFL composite score is in the lower range.';
   }
   if (light === 'warn') {
-    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Discuss these findings with your clinician.';
+    return 'Moderate flow limitation detected across multiple metrics. Individual sensitivity varies \u2014 this level of FL may be contributing to symptoms in some people. Your clinician can help interpret these findings in context.';
   }
-  return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Discuss with your clinician if you have concerns.';
+  return 'Multiple flow limitation metrics are elevated. Individual experiences vary. Your clinician can help interpret these findings in context.';
 }
 
 
@@ -172,5 +172,5 @@ export function getODIExplanation(odi3: number, threshold: ThresholdDef): string
   if (light === 'warn') {
     return `Your ODI-3 of ${fmt(odi3)}/hr shows moderate oxygen drops during sleep. Each desaturation event means your blood oxygen briefly dropped by 3% or more, from a recent baseline.`;
   }
-  return `Your ODI-3 of ${fmt(odi3)}/hr indicates frequent oxygen desaturations. Your blood oxygen is dropping frequently during sleep. Discuss with your clinician.`;
+  return `Your ODI-3 of ${fmt(odi3)}/hr shows frequent oxygen drops during sleep. Your blood oxygen is dropping frequently during sleep. Your clinician can help interpret these findings in context.`;
 }
