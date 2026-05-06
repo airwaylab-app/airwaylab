@@ -81,7 +81,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'ifl-risk-high',
       type: 'warning',
       title: 'Elevated flow limitation across multiple metrics',
-      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. Research shows this level of FL correlates with fatigue independently of arousals, though individual sensitivity varies. Your clinician can help interpret these findings in context.`,
+      body: `Your IFL Symptom Risk of ${fmt(iflRisk)}% shows elevated scores across multiple flow limitation metrics. This composite reflects multiple flow limitation measurements. Your clinician can help interpret these findings in context.`,
       category: 'ned',
       link: { text: 'Read: Does Flow Limitation Drive Sleepiness?', href: '/blog/flow-limitation-and-sleepiness' },
     });
@@ -310,7 +310,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       id: 'boi-high',
       type: 'warning',
       title: 'High brief obstruction rate',
-      body: `Brief obstruction rate of ${fmt(boiVal)}/hr — brief obstruction events appear roughly every ${interval} minutes in your data. These events are too short for standard detection but are visible in breath-shape analysis. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
+      body: `Brief obstruction rate of ${fmt(boiVal)}/hr — brief obstruction events appear roughly every ${interval} minutes in your data. These events are too short for standard detection and are visible in breath-shape analysis. Tracking your sleep position may help identify patterns. Your clinician can help interpret these findings in context.`,
       category: 'ned',
     });
   }
@@ -405,7 +405,7 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
         id: 'settings-low-ipap-dwell',
         type: 'actionable',
         title: 'Low time at full pressure support',
-        body: `Your machine reaches IPAP but cycles off quickly -- only ${fmt(sm.ipapDwellMedianPct, 0)}% of each breath is spent at full pressure. Low IPAP dwell time means less time at your prescribed pressure support level.`,
+        body: `Your machine reaches IPAP but cycles off quickly -- only ${fmt(sm.ipapDwellMedianPct, 0)}% of each breath is spent at full pressure. Low IPAP dwell time means less time at your prescribed pressure support level. Your clinician can help interpret these findings in context.`,
         category: 'settings',
       });
     }
@@ -754,7 +754,7 @@ function trendInsights(
       id: 'consistent-bad',
       type: 'actionable',
       title: 'Persistent flow limitation across all nights',
-      body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern.`,
+      body: `All ${nights.length} nights show elevated Glasgow Index. Visual review of flow waveforms and pressure data can help identify the underlying pattern. Your clinician can help interpret these findings in context.`,
       category: 'trend',
     });
   }
