@@ -29,6 +29,11 @@ function mockFile(
   return file;
 }
 
+function makeFile(relativePath: string, size = 1024, lastModified = 1710000000000): File {
+  const name = relativePath.split('/').pop() ?? relativePath;
+  return mockFile(name, relativePath, size, lastModified);
+}
+
 describe('extractNightDate', () => {
   it('returns YYYY-MM-DD from a standard DATALOG path', () => {
     expect(extractNightDate('SD/DATALOG/20250115/20250115_001234_BRP.edf')).toBe('2025-01-15');
@@ -241,5 +246,26 @@ describe('saveManifest / loadManifest', () => {
     storage.set('airwaylab_file_manifest', JSON.stringify({ savedAt: Date.now() }));
     expect(loadManifest()).toBeNull();
     expect(storage.has('airwaylab_file_manifest')).toBe(false);
+  });
+});
+
+describe('nightMatchesManifest (via diffAgainstManifest)', () => {
+  it('treats a night as unchanged only when all fingerprints match exactly', () => {
+    const files = [
+      makeFile('DATALOG/20250312/BRP.edf', 1024, 1710000000000),
+      makeFile('DATALOG/20250312/PLD.edf', 512, 1710000001000),
+    ];
+    const manifest = buildManifest(files);
+    const { unchanged } = diffAgainstManifest(files, manifest);
+    expect(unchanged).toContain('2025-03-12');
+  });
+
+  it('detects mismatch when path changes even if size and lastModified stay the same', () => {
+    const original = [makeFile('DATALOG/20250312/BRP.edf', 1024, 1710000000000)];
+    const manifest = buildManifest(original);
+    const renamed = [makeFile('DATALOG/20250312/BRP_COPY.edf', 1024, 1710000000000)];
+    const { changedNights, unchanged } = diffAgainstManifest(renamed, manifest);
+    expect(changedNights.has('2025-03-12')).toBe(true);
+    expect(unchanged).toHaveLength(0);
   });
 });
