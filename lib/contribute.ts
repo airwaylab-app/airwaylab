@@ -139,10 +139,23 @@ export async function contributeNights(
         continue;
       }
 
-      const body = await res.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(
-        `Contribution failed (batch ${batchNum}): ${body.error || res.status}`
-      );
+      const text = await res.text().catch(() => '');
+      let errorDetail: string;
+      try {
+        const body = JSON.parse(text) as Record<string, unknown>;
+        errorDetail = typeof body.error === 'string' ? body.error : String(res.status);
+      } catch {
+        // Server returned a non-JSON response (e.g. Next.js plain-text 500 from
+        // an unhandled exception outside the route try/catch). Log the snippet so
+        // Sentry captures the actual HTTP status and body for diagnosis.
+        console.error('[contribute] non-JSON server response', {
+          status: res.status,
+          contentType: res.headers.get('content-type'),
+          snippet: text.slice(0, 300),
+        });
+        errorDetail = `HTTP ${res.status} (non-JSON)`;
+      }
+      throw new Error(`Contribution failed (batch ${batchNum}): ${errorDetail}`);
     }
 
     if (!success) {

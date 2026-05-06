@@ -230,11 +230,11 @@ function anonymiseNight(n: NightResult, index: number, nightContext?: NightConte
 */
 
 export async function POST(request: NextRequest) {
-  if (!validateOrigin(request)) {
-    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
-  }
-
   try {
+    if (!validateOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     const ip = getRateLimitKey(request);
     if (await limiter.isLimited(ip)) {
       console.error('[contribute-data] 429 rate limited', { ip });

@@ -150,14 +150,42 @@ describe('contributeNights', () => {
 
   it('throws on chunk failure but previous chunks were sent', async () => {
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.resolve({ error: 'Server error' }) });
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: false, status: 500, text: () => Promise.resolve('{"error":"Server error"}'), headers: { get: () => 'application/json' } });
 
     const nights = makeNights(1500);
     await expect(contributeNights(nights)).rejects.toThrow('Contribution failed (batch 2): Server error');
 
     // First chunk was still sent
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws with HTTP status when server returns non-JSON response', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('<html>Internal Server Error</html>'),
+      headers: { get: () => 'text/html' },
+    });
+
+    const nights = makeNights(1);
+    await expect(contributeNights(nights)).rejects.toThrow(
+      'Contribution failed (batch 1): HTTP 500 (non-JSON)'
+    );
+  });
+
+  it('throws with HTTP status when server returns empty body', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: () => Promise.resolve(''),
+      headers: { get: () => null },
+    });
+
+    const nights = makeNights(1);
+    await expect(contributeNights(nights)).rejects.toThrow(
+      'Contribution failed (batch 1): HTTP 503 (non-JSON)'
+    );
   });
 });
 
