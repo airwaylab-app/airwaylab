@@ -865,7 +865,7 @@ function AnalyzePageInner() {
                 selectedIndex={selectedNight}
                 onChange={(idx) => {
                   setSelectedNight(idx);
-                  events.nightSwitched(nights.length);
+                  events.nightSwitched(visibleNights.length);
                 }}
               />
               </div>
