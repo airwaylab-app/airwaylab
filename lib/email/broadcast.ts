@@ -98,14 +98,14 @@ function analysisWindowAnnouncement(unsubscribeUrl: string, _subjectVariant: Bro
   return {
     subject: 'Heads up: history visibility change coming May 27',
     html: broadcastLayout(`
-      ${paragraph('Starting <strong>May 27</strong>, AirwayLab free accounts will display your <strong>7 most recent nights</strong> in the analysis view. Nights outside that window aren\'t deleted — they stay in your account — but they won\'t be visible on the free tier after that date.')}
+      ${paragraph('Starting <strong>May 27</strong>, AirwayLab free accounts will display the <strong>last 14 days</strong> of analysis history. Nights outside that window aren\'t deleted — they stay in your account — but they won\'t be visible on the free tier after that date.')}
 
       ${subheading('Why?')}
       ${paragraph('AirwayLab has always intended to limit free history visibility to keep the project sustainable. That limit was never enforced. This is us finally shipping it.')}
 
       ${subheading('What this means for you')}
       <ul style="margin:0 0 16px 0;padding-left:20px;">
-        <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Stay on the free tier</strong> — you\'ll see your 7 most recent nights. Older nights sit in your account, ready if you ever upgrade.</li>
+        <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Stay on the free tier</strong> — you\'ll see the last 14 days of history. Older nights sit in your account, ready if you ever upgrade.</li>
         <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Upgrade to Supporter ($9/month)</strong> — see the last 90 days.</li>
         <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Upgrade to Premium or Champion</strong> — see your full history.</li>
       </ul>
