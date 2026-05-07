@@ -217,7 +217,7 @@ function AnalyzePageInner() {
 
     return () => clearInterval(poll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]); // refreshProfile is stable (useCallback with no deps in auth context)
+  }, [searchParams]); // refreshProfile omitted: stable post-login (user doesn't change mid-flow)
 
   // Load lifetime night count from localStorage
   useEffect(() => {
