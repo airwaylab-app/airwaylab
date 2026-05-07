@@ -95,33 +95,31 @@ export default function WhatDoesCpapAhiMean() {
                 <tr className="border-b border-border/50 bg-muted/30">
                   <th className="px-4 py-3 text-left font-semibold text-foreground">AHI range</th>
                   <th className="px-4 py-3 text-left font-semibold text-foreground">AASM classification</th>
-                  <th className="px-4 py-3 text-left font-semibold text-foreground">On-therapy context</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 <tr>
                   <td className="px-4 py-3 font-medium text-emerald-400">Below 5</td>
                   <td className="px-4 py-3 text-muted-foreground">Below the diagnostic threshold</td>
-                  <td className="px-4 py-3 text-muted-foreground">Typical target range on PAP therapy</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-medium text-amber-400">5–15</td>
                   <td className="px-4 py-3 text-muted-foreground">Mild range</td>
-                  <td className="px-4 py-3 text-muted-foreground">Worth raising with your clinician</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-medium text-amber-500">15–30</td>
                   <td className="px-4 py-3 text-muted-foreground">Moderate range</td>
-                  <td className="px-4 py-3 text-muted-foreground">Clinician review recommended</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-medium text-red-400">Above 30</td>
                   <td className="px-4 py-3 text-muted-foreground">Severe range</td>
-                  <td className="px-4 py-3 text-muted-foreground">Clinician review important</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            * Your clinician sets therapy targets based on your clinical picture. These ranges describe diagnostic categories, not on-therapy goals.
+          </p>
           <p>
             These thresholds apply in diagnostic contexts. On PAP therapy, the goal is typically to
             bring residual AHI below 5 — but your clinician sets the specific target for your
