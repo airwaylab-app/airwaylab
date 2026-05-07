@@ -154,7 +154,7 @@ export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
 export type GuildSearchResult =
   | { status: 'found'; discordId: string }
   | { status: 'not_found' }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; httpStatus?: number };
 
 /**
  * Search the guild for a member by exact username match.
@@ -181,7 +181,7 @@ export async function searchGuildMember(username: string): Promise<GuildSearchRe
         tags: { action: 'discord-search-member', httpStatus: String(res.status) },
         extra: { username, responseBody: errText.slice(0, 500) },
       });
-      return { status: 'error', message: `Discord API error (${res.status})` };
+      return { status: 'error', message: `Discord API error (${res.status})`, httpStatus: res.status };
     }
 
     const members = await res.json() as Array<{

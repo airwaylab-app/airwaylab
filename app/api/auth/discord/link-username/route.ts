@@ -91,6 +91,21 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', user.id);
 
+      const httpStatus = searchResult.httpStatus;
+      if (httpStatus === 401 || httpStatus === 403) {
+        Sentry.captureMessage('Discord connect: auth/permission failure', {
+          level: 'error',
+          tags: { action: 'discord-link-username' },
+          extra: { httpStatus, botTokenPresent: !!process.env.DISCORD_BOT_TOKEN },
+        });
+      } else {
+        Sentry.captureMessage('Discord connect: transient failure', {
+          level: 'warning',
+          tags: { action: 'discord-link-username' },
+          extra: { httpStatus },
+        });
+      }
+
       return NextResponse.json({
         status: 'discord_error',
         message: 'Could not reach Discord right now. Your username has been saved. Please try again in a few minutes.',
