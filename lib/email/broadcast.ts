@@ -89,6 +89,42 @@ function march2026Update(unsubscribeUrl: string, subjectVariant: BroadcastSubjec
   }
 }
 
+// ── Analysis window announcement (May 2026) ──────────────────
+
+function analysisWindowAnnouncement(unsubscribeUrl: string, _subjectVariant: BroadcastSubjectVariant): { subject: string; html: string } {
+  const ANALYZE_URL = `${BASE_URL}/analyze?utm_source=email&utm_medium=broadcast&utm_campaign=history_window_may_2026`
+  const PRICING_URL = `${BASE_URL}/pricing?utm_source=email&utm_medium=broadcast&utm_campaign=history_window_may_2026`
+
+  return {
+    subject: 'Heads up: history visibility change coming May 27',
+    html: broadcastLayout(`
+      ${paragraph('Starting <strong>May 27</strong>, AirwayLab free accounts will display your <strong>7 most recent nights</strong> in the analysis view. Nights outside that window aren\'t deleted — they stay in your account — but they won\'t be visible on the free tier after that date.')}
+
+      ${subheading('Why?')}
+      ${paragraph('AirwayLab has always intended to limit free history visibility to keep the project sustainable. That limit was never enforced. This is us finally shipping it.')}
+
+      ${subheading('What this means for you')}
+      <ul style="margin:0 0 16px 0;padding-left:20px;">
+        <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Stay on the free tier</strong> — you\'ll see your 7 most recent nights. Older nights sit in your account, ready if you ever upgrade.</li>
+        <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Upgrade to Supporter ($9/month)</strong> — see the last 90 days.</li>
+        <li style="font-size:14px;color:#a1a1aa;line-height:1.7;margin-bottom:8px;"><strong style="color:#fff;">Upgrade to Premium or Champion</strong> — see your full history.</li>
+      </ul>
+
+      ${paragraph('There\'s no rush. Your data isn\'t going anywhere. If you upgrade later, everything will be there waiting.')}
+
+      ${ctaButton('Go to Analysis', ANALYZE_URL)}
+
+      ${paragraph('If you have questions, reply to this email.')}
+
+      ${paragraph('<span style="color:#a1a1aa;">— The AirwayLab team</span>')}
+
+      ${smallText('<a href="' + PRICING_URL + '" style="color:#5eead4;text-decoration:underline;">See pricing</a> for full history access.')}
+
+      ${smallText('AirwayLab is a data visualisation tool. It does not provide medical advice. Always discuss your therapy with your sleep physician.')}
+    `, unsubscribeUrl),
+  }
+}
+
 // ── Template registry ────────────────────────────────────────
 
 export interface BroadcastTemplate {
@@ -102,5 +138,10 @@ export const BROADCAST_TEMPLATES: Record<string, BroadcastTemplate> = {
     id: 'march_2026_update',
     description: 'March 2026 founder letter: IFL Risk, multi-device support, vision, Discord community',
     getTemplate: march2026Update,
+  },
+  analysis_window_announcement: {
+    id: 'analysis_window_announcement',
+    description: 'May 2026 history window cap: community tier 7-night limit shipping May 27',
+    getTemplate: analysisWindowAnnouncement,
   },
 }
