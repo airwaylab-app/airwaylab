@@ -131,7 +131,7 @@ function AnalyzePageInner() {
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
-  const { user, tier } = useAuth();
+  const { user, tier, refreshProfile } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
   const hasTriggeredAutoUpload = useRef(false);
@@ -199,7 +199,13 @@ function AnalyzePageInner() {
       ? `${window.location.pathname}?${params.toString()}`
       : window.location.pathname;
     window.history.replaceState({}, '', cleanUrl);
-  }, [searchParams]);
+
+    // Stripe webhook delivers checkout.session.completed within 1-3s of redirect.
+    // After 3.5s, refresh the auth context so the new tier unlocks premium features
+    // without requiring the user to log out and back in.
+    const timer = setTimeout(() => { refreshProfile?.(); }, 3500);
+    return () => clearTimeout(timer);
+  }, [searchParams, refreshProfile]);
 
   // Load lifetime night count from localStorage
   useEffect(() => {
