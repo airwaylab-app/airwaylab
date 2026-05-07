@@ -619,49 +619,49 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'how-to-read-cpap-data',
     title: 'What Your CPAP Data Actually Shows You',
-    seoTitle: 'How to Read Your CPAP Data | AirwayLab',
+    seoTitle: 'What Your CPAP Data Actually Shows You | AirwayLab',
     description:
       'Learn what AHI, leak rate, usage hours, and pressure data represent in your CPAP reports \u2014 and how to visualise them for free in AirwayLab.',
-    date: '2026-04-27',
-    readTime: '7 min read',
-    tags: ['CPAP', 'Getting Started', 'AHI', 'Leak Rate', 'Flow Limitation', 'OSCAR'],
+    date: '2026-05-07',
+    readTime: '9 min read',
+    tags: ['CPAP', 'AHI', 'Leak Rate', 'Pressure', 'Flow Limitation', 'Glasgow Index'],
     ogDescription:
       'Learn what AHI, leak rate, usage hours, and pressure data represent in your CPAP reports \u2014 and how to visualise them for free in AirwayLab.',
     faqItems: [
       {
-        question: 'What is AHI in CPAP data?',
+        question: 'What is AHI on a CPAP machine?',
         answer:
-          'AHI (Apnoea-Hypopnoea Index) is the number of apnoeas (complete breathing pauses) and hypopnoeas (partial airflow reductions) recorded per hour of therapy. Your machine calculates this from its internal sensor data during the session. Therapy AHI reflects what the machine detected while running \u2014 it is not directly comparable to a diagnostic AHI from a sleep study, which measures untreated events.',
+          'AHI stands for Apnoea-Hypopnoea Index. It is the number of apnoeas and hypopnoeas recorded by your machine per hour of therapy. It is one of the primary metrics clinicians use when reviewing CPAP data.',
       },
       {
-        question: 'What AHI do clinicians reference for CPAP therapy?',
+        question: 'What AHI number do clinicians typically reference?',
         answer:
-          'AHI thresholds are clinically defined and interpreted in the context of your specific diagnosis, symptoms, and prescription. There is no universal number that applies to all patients \u2014 your clinician will interpret your therapy AHI alongside your clinical history and how you are feeling. AirwayLab shows your nightly AHI and trends over time; your care team interprets what those numbers mean for your therapy.',
+          'Clinical literature often describes AHI below 5 events per hour as within a normal range for adults. However, what target AHI is appropriate for you is a clinical determination \u2014 your sleep physician sets this based on your symptoms, sleep study results, and individual circumstances.',
       },
       {
-        question: 'What does CPAP leak rate mean?',
+        question: 'What is leak rate on a CPAP machine?',
         answer:
-          'Leak rate measures the air escaping from your mask system, in litres per minute (L/min). Every mask has some intentional vent flow to flush exhaled CO\u2082 \u2014 unintentional (mask) leak is what escapes around the seal. High unintentional leak can affect how accurately your machine detects breathing events, making AHI less reliable for that session. AirwayLab shows nightly leak trends with traffic-light colouring.',
+          'Leak rate measures air escaping from the mask seal rather than being delivered through your airway. It is reported in litres per minute (L/min). Most CPAP machines report an unintentional leak figure; some distinguish between intentional exhalation port flow and unintentional mask leak.',
       },
       {
-        question: 'What does pressure data show on my CPAP?',
+        question: 'What does CPAP pressure data show me?',
         answer:
-          'Pressure data records the pressure your machine delivered throughout the night, measured in cmH\u2082O. For fixed-pressure CPAP machines, this is a flat line. For APAP machines, pressure adjusts in response to detected breathing events. The 95th-percentile pressure (P95) describes the level your machine was at or below for 95% of the session. Pressure settings are managed by your clinician.',
+          'Your machine records the pressure (in cmH\u2082O) it delivered throughout the night. For APAP devices, pressure varies in response to detected events \u2014 so the data shows a range. The 95th-percentile figure (P95) describes the level the machine was at or below for 95% of the session. Pressure settings are set by your clinician, not adjustable through AirwayLab.',
       },
       {
-        question: 'Does AirwayLab show all CPAP data formats?',
+        question: 'Does AirwayLab show all my CPAP data?',
         answer:
-          'AirwayLab reads detailed EDF files from ResMed SD cards and shows AHI, leak rate, usage hours, and pressure data alongside four advanced metrics: the Glasgow Index (9-component breath shape score), FL Score (flow limitation percentage), NED (Negative Effort Dependence), and estimated RERA detection. It does not currently support Philips Respironics or Fisher & Paykel data formats.',
+          'AirwayLab reads the EDF files on your ResMed SD card and displays AHI, leak rate, usage hours, pressure data, and \u2014 uniquely \u2014 breath waveform analysis including flow limitation scores, RERAs, and the Glasgow Index. It does not currently support Philips Respironics or Fisher & Paykel data formats.',
       },
       {
         question: 'Is AirwayLab free?',
         answer:
-          'Yes. All core analysis \u2014 AHI, leak, pressure, flow limitation, Glasgow Index, WAT score, NED, and RERA detection \u2014 is free and always will be. A premium tier adds AI-powered insights via Claude. All analysis runs in your browser; nothing is uploaded to any server and no account is required to start.',
+          'Yes. All core analysis \u2014 all four engines, trend charts, exports, and the PDF report \u2014 is free with no account required. Data stays in your browser. A premium tier adds AI-powered insights via Claude Haiku.',
       },
       {
         question: 'How is AirwayLab different from OSCAR or SleepHQ?',
         answer:
-          'OSCAR is a desktop app that provides detailed waveform browsing and event-by-event review of PAP data. SleepHQ is a cloud-based platform with a shareable dashboard. AirwayLab is browser-based (no install, no account), privacy-first (all analysis runs locally), and adds four automated analysis engines for flow limitation and breathing pattern scoring that OSCAR and SleepHQ do not compute.',
+          'AirwayLab runs entirely in your browser with no software installation and no data upload required. It also goes beyond standard CPAP metrics with breath waveform analysis (flow limitation, RERAs, Glasgow Index) that OSCAR and SleepHQ do not currently offer. See a full comparison at /blog/sleephq-alternative.',
       },
     ],
   },
