@@ -131,9 +131,12 @@ function AnalyzePageInner() {
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
-  const { user, tier } = useAuth();
+  const { user, tier, refreshProfile } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
+  const tierRef = useRef(tier);
+  useEffect(() => { tierRef.current = tier; }, [tier]);
+  const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
 
@@ -191,15 +194,30 @@ function AnalyzePageInner() {
     if (searchParams.get('checkout') !== 'success') return;
 
     setShowPurchaseBanner(true);
+    setBannerActivated(false);
     events.subscriptionStarted('unknown', 'unknown', 'checkout_redirect');
+
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      await refreshProfile();
+      if (tierRef.current !== 'community' || attempts >= 15) {
+        clearInterval(poll);
+        if (tierRef.current !== 'community') {
+          setBannerActivated(true);
+        }
+      }
+    }, 2000);
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete('checkout');
-    const cleanUrl = params.toString()
+    window.history.replaceState({}, '', params.toString()
       ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname;
-    window.history.replaceState({}, '', cleanUrl);
-  }, [searchParams]);
+      : window.location.pathname);
+
+    return () => clearInterval(poll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // refreshProfile omitted: stable post-login (user doesn't change mid-flow)
 
   // Load lifetime night count from localStorage
   useEffect(() => {
@@ -539,7 +557,9 @@ function AnalyzePageInner() {
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
           <span className="flex-1">
-            Your subscription is activating. AI insights will appear automatically — discuss any questions about your data with your clinician.
+            {bannerActivated
+              ? 'Subscription activated! Your premium access is now live — discuss any questions about your data with your clinician.'
+              : 'Your subscription is activating. AI insights will appear automatically — discuss any questions about your data with your clinician.'}
           </span>
           <button
             onClick={() => setShowPurchaseBanner(false)}
