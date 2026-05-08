@@ -20,6 +20,11 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 // ── Mock crypto.randomUUID ──────────────────────────────────
 vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 
+// ── Mock Sentry (added with payload-size guard, AIR-1160) ────
+vi.mock('@sentry/nextjs', () => ({
+  addBreadcrumb: vi.fn(),
+}));
+
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -477,5 +482,46 @@ describe('contribution strips bulk data before sending', () => {
     // The stripped payload should be dramatically smaller (raw with 6000 breaths
     // each containing Float32Array is tens of MB, stripped is ~2-3 KB)
     expect(sentSize).toBeLessThan(rawSize * 0.1);
+  });
+});
+
+// ── Payload size guard — bisection (AIR-1160) ────────────────
+
+describe('payload size guard — bisection', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.clearAllMocks();
+  });
+
+  it('splits a chunk that exceeds 2 MB into multiple fetch calls', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+
+    // Each night gets a ~800 KB padding string so 3 nights together exceed 2 MB.
+    // stripBulkForContribution spreads all fields, so _padding survives stripping.
+    const padding = 'x'.repeat(800_000);
+    const nights = makeNights(3).map((n) => ({
+      ...n,
+      _padding: padding,
+    })) as unknown as NightResult[];
+
+    await contributeNights(nights);
+
+    // Should have been split — more than one fetch call
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(1);
+
+    // No individual call should send a body larger than the 2 MB limit
+    for (const call of fetchMock.mock.calls) {
+      const body = (call[1] as RequestInit).body as string;
+      expect(body.length).toBeLessThanOrEqual(2_097_152);
+    }
+  });
+
+  it('succeeds without splitting when payload is under 2 MB', async () => {
+    fetchMock.mockResolvedValue({ ok: true });
+
+    const nights = makeNights(3); // ~1.5 KB total — well under limit
+    await contributeNights(nights);
+
+    expect(fetchMock.mock.calls.length).toBe(1);
   });
 });
