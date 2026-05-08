@@ -84,3 +84,24 @@ describe('Checkout success banner: analytics contract', () => {
     expect(analyticsSrc).toContain('subscriptionStarted: (tier: string, interval: string, source: string)');
   });
 });
+
+describe('Checkout success: profile refresh (AIR-1126)', () => {
+  const src = readSource('app/analyze/page.tsx');
+
+  it('destructures refreshProfile from useAuth()', () => {
+    expect(src).toContain('refreshProfile } = useAuth()');
+  });
+
+  it('schedules refreshProfile after 3500ms on checkout success', () => {
+    expect(src).toContain('setTimeout(() => { refreshProfile?.(); }, 3500)');
+  });
+
+  it('checkout effect returns clearTimeout cleanup to prevent double-fire', () => {
+    expect(src).toContain('return () => clearTimeout(timer)');
+  });
+
+  it('checkout effect includes refreshProfile in dependency array', () => {
+    const depsMatch = src.match(/searchParams,\s*refreshProfile\s*\]\)/);
+    expect(depsMatch).not.toBeNull();
+  });
+});
