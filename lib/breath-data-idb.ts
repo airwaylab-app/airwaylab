@@ -5,12 +5,17 @@
 // version invalidation, non-fatal on failure.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type { Breath } from './types';
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
 
 const STORE_NAME = 'breath-data';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+// Approx bytes per CompactBreath: 9 numbers (8 bytes each) + 1 boolean (1 byte) = ~73 bytes
+const BYTES_PER_COMPACT_BREATH = 73;
+// Reject writes above 50 MB to prevent OOM on browsers with limited IDB quotas
+const MAX_IDB_BYTES = 50 * 1024 * 1024;
 
 /**
  * Compact per-breath representation for IndexedDB.
@@ -65,6 +70,16 @@ export async function storeBreathData(
   breaths: Breath[],
   samplingRate: number
 ): Promise<void> {
+  const estimatedBytes = breaths.length * BYTES_PER_COMPACT_BREATH;
+  if (estimatedBytes > MAX_IDB_BYTES) {
+    console.warn(`[breath-data-idb] Skipping store — estimated ${estimatedBytes} bytes exceeds ${MAX_IDB_BYTES} byte limit`);
+    return;
+  }
+  Sentry.addBreadcrumb({
+    message: 'Storing breath data in IDB',
+    category: 'breath-data-idb',
+    data: { dateStr, breathCount: breaths.length, estimatedBytes },
+  });
   try {
     const db = await openDB();
     const stored: StoredBreathData = {
