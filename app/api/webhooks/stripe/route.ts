@@ -72,14 +72,16 @@ async function syncDiscordForUser(
       .maybeSingle();
 
     if (profile?.discord_id) {
-      await syncRole(profile.discord_id, tier);
+      const ok = await syncRole(profile.discord_id, tier);
 
-      // Log the role event
+      // Log the role event — action reflects actual outcome
       await supabase.from('discord_role_events').insert({
         user_id: userId,
         discord_id: profile.discord_id,
         role_id: tier,
-        action: tier === 'community' ? 'revoke' : 'assign',
+        action: ok
+          ? (tier === 'community' ? 'revoke' : 'assign')
+          : (tier === 'community' ? 'revoke_failed' : 'assign_failed'),
         reason: `stripe_tier_change_to_${tier}`,
         stripe_event_id: stripeEventId ?? null,
       });
@@ -101,13 +103,15 @@ async function syncDiscordForUser(
             discord_linked_at: new Date().toISOString(),
           }).eq('id', userId);
 
-          await syncRole(searchResult.discordId, tier);
+          const ok = await syncRole(searchResult.discordId, tier);
 
           await supabase.from('discord_role_events').insert({
             user_id: userId,
             discord_id: searchResult.discordId,
             role_id: tier,
-            action: tier === 'community' ? 'revoke' : 'assign',
+            action: ok
+              ? (tier === 'community' ? 'revoke' : 'assign')
+              : (tier === 'community' ? 'revoke_failed' : 'assign_failed'),
             reason: `stripe_auto_resolve_${tier}`,
             stripe_event_id: stripeEventId ?? null,
           });

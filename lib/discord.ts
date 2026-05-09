@@ -123,17 +123,27 @@ export async function syncRole(discordId: string, tier: string): Promise<boolean
     const allPaidRoles = getAllPaidRoleIds();
     const targetRoleId = getTierRoleId(tier);
 
-    // Remove all paid roles
+    // Remove all paid roles — track failures individually
+    let removeAllOk = true;
     for (const roleId of allPaidRoles) {
-      await removeMemberRole(discordId, roleId);
+      const ok = await removeMemberRole(discordId, roleId);
+      if (!ok) {
+        removeAllOk = false;
+        Sentry.captureMessage('Discord role removal failed', {
+          level: 'warning',
+          tags: { action: 'discord-remove-role-failed' },
+          extra: { discordId, roleId },
+        });
+      }
     }
 
     // Add the correct role (if any -- community tier gets no role)
     if (targetRoleId) {
-      return await addMemberRole(discordId, targetRoleId);
+      const addOk = await addMemberRole(discordId, targetRoleId);
+      return removeAllOk && addOk;
     }
 
-    return true;
+    return removeAllOk;
   } catch (err) {
     console.error('[discord] syncRole failed:', err);
     Sentry.captureException(err, {
