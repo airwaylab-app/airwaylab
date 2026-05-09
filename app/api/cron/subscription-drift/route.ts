@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { sendAlert, COLORS } from '@/lib/discord-webhook';
+import { syncRole, isDiscordConfigured } from '@/lib/discord';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
     // 1. Get all profiles with a paid tier
     const { data: paidProfiles, error: paidError } = await supabase
       .from('profiles')
-      .select('id, tier, email')
+      .select('id, tier, email, discord_id')
       .in('tier', ['supporter', 'champion']);
 
     if (paidError) {
@@ -137,6 +138,25 @@ export async function GET(request: NextRequest) {
         } else {
           mismatch.fixed = true;
           fixed++;
+
+          // Revoke Discord role if user has one linked
+          if (profile.discord_id && isDiscordConfigured()) {
+            const discordResult = await syncRole(profile.discord_id, 'community');
+            await supabase.from('discord_role_events').insert({
+              user_id: profile.id,
+              discord_id: profile.discord_id,
+              role_id: 'community',
+              action: discordResult.ok ? 'revoke' : 'revoke_failed',
+              reason: 'drift_cron_cleanup',
+            });
+            if (!discordResult.ok) {
+              Sentry.captureMessage('Discord role revocation failed in drift cron', {
+                level: 'warning',
+                tags: { route: 'cron-subscription-drift', action: 'discord-remove-role-failed' },
+                extra: { user_id: profile.id, discord_id: profile.discord_id },
+              });
+            }
+          }
         }
 
         Sentry.captureMessage('Subscription tier drift detected', {
