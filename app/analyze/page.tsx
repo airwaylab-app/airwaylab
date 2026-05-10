@@ -16,6 +16,7 @@ import { ReturningUserNudge } from '@/components/dashboard/returning-user-nudge'
 import { CommunityJoinPrompt } from '@/components/dashboard/community-join-prompt';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/lib/auth/auth-context';
+import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
@@ -49,6 +50,7 @@ import { safeGetItem } from '@/lib/safe-local-storage';
 import { isIOSDevice } from '@/lib/directory-traversal';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
+import { UploadAgainCta } from '@/components/dashboard/upload-again-cta';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
 import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
@@ -71,7 +73,6 @@ import {
   HardDrive,
   Settings2,
   RefreshCw,
-  Play,
 } from 'lucide-react';
 
 export default function AnalyzePage() {
@@ -129,9 +130,12 @@ function AnalyzePageInner() {
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, tier, refreshProfile } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
+  const tierRef = useRef(tier);
+  useEffect(() => { tierRef.current = tier; }, [tier]);
+  const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
 
@@ -189,15 +193,30 @@ function AnalyzePageInner() {
     if (searchParams.get('checkout') !== 'success') return;
 
     setShowPurchaseBanner(true);
+    setBannerActivated(false);
     events.subscriptionStarted('unknown', 'unknown', 'checkout_redirect');
+
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      await refreshProfile();
+      if (tierRef.current !== 'community' || attempts >= 15) {
+        clearInterval(poll);
+        if (tierRef.current !== 'community') {
+          setBannerActivated(true);
+        }
+      }
+    }, 2000);
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete('checkout');
-    const cleanUrl = params.toString()
+    window.history.replaceState({}, '', params.toString()
       ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname;
-    window.history.replaceState({}, '', cleanUrl);
-  }, [searchParams]);
+      : window.location.pathname);
+
+    return () => clearInterval(poll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // refreshProfile omitted: stable post-login (user doesn't change mid-flow)
 
   // Load lifetime night count from localStorage
   useEffect(() => {
@@ -477,14 +496,29 @@ function AnalyzePageInner() {
   const { status, progress, error, warning, persistenceWarning, warnings } = state;
 
   // Memoize derived data to stabilize references across renders
-  const nights = useMemo<NightResult[]>(() =>
-    isDemo
+  const nights = useMemo<NightResult[]>(() => {
+    const raw = isDemo
       ? SAMPLE_NIGHTS
       : state.nights.length > 0
         ? state.nights
-        : persistedData?.nights ?? [],
-    [isDemo, state.nights, persistedData?.nights]
-  );
+        : persistedData?.nights ?? [];
+
+    const windowDays = getAnalysisWindowDays(tier);
+    if (isDemo || !isFinite(windowDays) || windowDays <= 0) return raw;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - windowDays);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return raw.filter((n) => n.dateStr >= cutoffStr);
+  }, [isDemo, state.nights, persistedData?.nights, tier]);
+
+  const hiddenNightCount = useMemo<number>(() => {
+    if (isDemo) return 0;
+    const windowDays = getAnalysisWindowDays(tier);
+    if (!isFinite(windowDays) || windowDays <= 0) return 0;
+    const raw = state.nights.length > 0 ? state.nights : persistedData?.nights ?? [];
+    return Math.max(0, raw.length - nights.length);
+  }, [isDemo, tier, state.nights, persistedData?.nights, nights]);
   const therapyChangeDate = useMemo<string | null>(() =>
     isDemo
       ? SAMPLE_THERAPY_CHANGE_DATE
@@ -522,7 +556,9 @@ function AnalyzePageInner() {
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
           <span className="flex-1">
-            Your subscription is activating. AI insights will appear automatically — discuss any questions about your data with your clinician.
+            {bannerActivated
+              ? 'Subscription activated! Your premium access is now live — discuss any questions about your data with your clinician.'
+              : 'Your subscription is activating. AI insights will appear automatically — discuss any questions about your data with your clinician.'}
           </span>
           <button
             onClick={() => setShowPurchaseBanner(false)}
@@ -633,26 +669,7 @@ function AnalyzePageInner() {
               </Link>
             </p>
 
-            {/* Demo CTA — shown immediately after upload for discoverability */}
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-                <div className="h-px flex-1 bg-border/50" />
-                <span>or</span>
-                <div className="h-px flex-1 bg-border/50" />
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={loadDemo}
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <Play className="h-3.5 w-3.5" />
-                See sample data
-              </Button>
-              <p className="text-[11px] text-muted-foreground/50">
-                See what AirwayLab looks like with 7 nights of example data
-              </p>
-            </div>
+            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
@@ -1077,7 +1094,14 @@ function AnalyzePageInner() {
             }} />
             <GuidedWalkthrough isComplete={isComplete} />
             {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
-            {!isDemo && <HistoryExpiryWarning nights={nights} />}
+            {!isDemo && (
+              <UploadAgainCta
+                isComplete={isComplete}
+                sessionCount={sessionCount}
+                onUploadAnother={handleReset}
+              />
+            )}
+            {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
             {!isDemo && <EmailOptInNudge />}
             <DataContribution
               nights={nights}
