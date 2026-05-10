@@ -2,7 +2,7 @@
  * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Discovers new candidates (dormancy, activation) -- schedule first so they
+ * 1. Discovers new candidates (activation, re_engagement) -- schedule first so they
  *    can be sent in the same run, avoiding a 24h delay until the next cron.
  * 2. Queries for all due emails (scheduled_at <= now, status = pending)
  * 3. Sends each via Resend (with AB variant subjects where applicable)
@@ -17,9 +17,10 @@ import * as Sentry from '@sentry/nextjs';
 import {
   getPendingEmails,
   markSent,
-  scheduleDormancySequences,
   scheduleActivationSequences,
   scheduleCpapTipsSequences,
+  scheduleReEngagementSequences,
+  suppressReEngagement,
   applySunsetPolicy,
 } from './sequences';
 import { SEQUENCES } from './templates';
@@ -34,6 +35,7 @@ interface CronResult {
   dormancyScheduled: number;
   activationScheduled: number;
   cpapTipsScheduled: number;
+  reEngagementScheduled: number;
   sunsetted: number;
 }
 
@@ -44,14 +46,18 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     dormancyScheduled: 0,
     activationScheduled: 0,
     cpapTipsScheduled: 0,
+    reEngagementScheduled: 0,
     sunsetted: 0,
   };
 
   // 1. Discover new candidates first -- scheduling before sending ensures
   //    newly discovered users get their first email in this run, not 24h later.
-  result.dormancyScheduled = await scheduleDormancySequences(supabase);
+  //    Note: scheduleDormancySequences() is intentionally not called here.
+  //    The re_engagement sequence fully replaces dormancy for new enrollments.
+  //    Existing in-flight dormancy rows continue to send until completion.
   result.activationScheduled = await scheduleActivationSequences(supabase);
   result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
+  result.reEngagementScheduled = await scheduleReEngagementSequences(supabase);
 
   // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);
@@ -88,7 +94,17 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     }
 
     const unsubscribeUrl = getUnsubscribeUrl(email.user_id);
-    const template = config.getTemplate(email.step, unsubscribeUrl);
+
+    const data = email.sequence_name === 're_engagement'
+      ? {
+          first_name: email.display_name?.split(' ')[0] ?? '',
+          last_upload_date: email.last_analysis_at
+            ? new Date(email.last_analysis_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+            : '',
+        }
+      : undefined;
+
+    const template = config.getTemplate(email.step, unsubscribeUrl, data);
     if (!template) {
       console.error(`[email-drips] No template for ${email.sequence_name} step ${email.step}`);
       result.failed++;
@@ -104,6 +120,9 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
 
     if (resendId) {
       await markSent(supabase, email.id, resendId);
+      if (email.sequence_name === 're_engagement' && email.step === 3) {
+        await suppressReEngagement(supabase, email.user_id);
+      }
       result.sent++;
     } else {
       result.failed++;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
-import { scheduleSequence, cancelSequence } from '@/lib/email/sequences';
+import { scheduleSequence, cancelSequence, clearReEngagementSuppression } from '@/lib/email/sequences';
 import { SEQUENCES } from '@/lib/email/templates';
 import { getUnsubscribeUrl } from '@/lib/email/unsubscribe-token';
 import { sendEmail } from '@/lib/email/send';
@@ -91,6 +91,8 @@ export async function POST(request: NextRequest) {
 
     await cancelSequence(supabase, user.id, 'dormancy');
     await cancelSequence(supabase, user.id, 'activation');
+    await cancelSequence(supabase, user.id, 're_engagement');
+    await clearReEngagementSuppression(supabase, user.id);
 
     // Schedule post_upload sequence (idempotent)
     await scheduleSequence(supabase, user.id, 'post_upload');
