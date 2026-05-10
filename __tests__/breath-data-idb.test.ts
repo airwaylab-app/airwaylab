@@ -140,11 +140,26 @@ describe('breath-data-idb error handling', () => {
     }
   });
 
-  it('does not send IndexedDB errors to Sentry (graceful degradation)', async () => {
+  it('adds Sentry breadcrumb before IDB write for observability', async () => {
     const { readFileSync } = await import('fs');
     const { resolve } = await import('path');
     const source = readFileSync(resolve(__dirname, '../lib/breath-data-idb.ts'), 'utf-8');
-    expect(source).not.toContain("import * as Sentry from '@sentry/nextjs'");
+    expect(source).toContain("import * as Sentry from '@sentry/nextjs'");
+    expect(source).toContain('Sentry.addBreadcrumb');
+    expect(source).toContain('estimatedBytes');
+  });
+});
+
+// -- Test 8b: Size guard for OOM prevention ---------------------------
+
+describe('breath-data-idb size guard', () => {
+  it('Test 8b: source has MAX_IDB_BYTES guard before put()', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+    const source = readFileSync(resolve(__dirname, '../lib/breath-data-idb.ts'), 'utf-8');
+    expect(source).toContain('MAX_IDB_BYTES');
+    expect(source).toContain('estimatedBytes > MAX_IDB_BYTES');
+    expect(source).toContain('BYTES_PER_COMPACT_BREATH');
   });
 });
 

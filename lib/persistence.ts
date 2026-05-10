@@ -37,6 +37,7 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
     ned: {
       ...n.ned,
       breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
+      reras: undefined, // RERA candidate list not needed for display; can be large for heavy RERA users
     },
     oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
     // settingsMetrics is a small summary object — keep it for persistence
@@ -122,17 +123,40 @@ export function persistResults(
     }
 
     // Even a single night doesn't fit — total failure
-    console.error('[persistence] Cannot save even 1 night — data too large.');
+    // Compute size breakdown to diagnose root cause in Sentry
+    const singleNightDiag = (() => {
+      if (nights.length === 0) return null;
+      const strippedArr = stripBulkData([nights[0]!]);
+      const stripped = strippedArr[0];
+      if (!stripped) return null;
+      const sections: Record<string, number> = {};
+      for (const key of Object.keys(stripped) as (keyof NightResult)[]) {
+        try {
+          sections[key] = JSON.stringify(stripped[key]).length * 2;
+        } catch {
+          sections[key] = -1;
+        }
+      }
+      const totalBytes = JSON.stringify(stripped).length * 2;
+      return { totalBytes, sections };
+    })();
+
+    console.error('[persistence] Cannot save even 1 night — data too large.', singleNightDiag);
     Sentry.captureMessage('Persistence: total failure — cannot save any nights', {
       level: 'error',
-      extra: { totalNights: nights.length },
+      extra: {
+        totalNights: nights.length,
+        maxStorageBytes: MAX_STORAGE_BYTES,
+        singleNightApproxBytes: singleNightDiag?.totalBytes ?? null,
+        singleNightSections: singleNightDiag?.sections ?? null,
+      },
     });
 
     return {
       saved: false,
       nightsSaved: 0,
       nightsDropped: nights.length,
-      reason: 'Your results are too large to save in this browser. They will be available until you close the tab, but you\'ll need to re-upload next time.',
+      reason: 'Your results are too large to save in this browser. They will be available until you close the tab, but you\'ll need to re-upload next time. Try clearing your browser\'s site data for airwaylab.app if this persists.',
     };
   } catch (err) {
     // QuotaExceededError or SecurityError

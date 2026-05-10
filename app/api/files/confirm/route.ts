@@ -80,16 +80,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (!storageFile || storageFile.length === 0) {
-      // Upload didn't complete — clean up metadata
+      // File absent from storage despite PUT succeeding — capture for diagnosis before cleanup
+      captureApiError(new Error('File absent from storage at confirm step'), {
+        route: 'files/confirm',
+        context: 'storage_list_empty',
+        fileId,
+        storagePath: fileRow.storage_path,
+      });
       await serviceRole.from('user_files').delete().eq('id', fileId);
       return NextResponse.json({ error: 'Upload not found in storage. Metadata cleaned up.' }, { status: 404 });
     }
 
     // Mark upload as confirmed — only confirmed rows are returned by check-hashes
-    await serviceRole
+    const { error: updateError } = await serviceRole
       .from('user_files')
       .update({ upload_confirmed: true })
       .eq('id', fileId);
+
+    if (updateError) {
+      console.error('[files/confirm] Metadata update failed:', updateError);
+      captureApiError(updateError, { route: 'files/confirm', context: 'metadata_update', fileId });
+      return NextResponse.json({ error: 'Failed to confirm upload. Please retry.' }, { status: 500 });
+    }
 
     return NextResponse.json({ confirmed: true });
   } catch (err) {
