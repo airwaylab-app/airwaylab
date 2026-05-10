@@ -652,6 +652,11 @@ class UploadOrchestrator {
       }
       // Other errors (5xx, network): file may be in storage but unconfirmed.
       // The stale orphan detection in presign will clean it up on the next attempt.
+      Sentry.captureMessage('cloud_upload_confirm_nonfatal_error', {
+        level: 'warning',
+        tags: { httpStatus: String(confirmRes.status) },
+        extra: { fileId: presignData.fileId, status: confirmRes.status },
+      });
       console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
     }
 
