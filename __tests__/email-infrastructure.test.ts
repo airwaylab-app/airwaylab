@@ -264,19 +264,23 @@ describe('processEmailDrips execution order', () => {
     const body = source.slice(fnStart);
 
     // Look for the actual await calls, not imports
-    const scheduleCall = body.indexOf('await scheduleDormancySequences');
+    // Note: scheduleDormancySequences is no longer called -- re_engagement replaces it.
     const activationCall = body.indexOf('await scheduleActivationSequences');
+    const reEngagementCall = body.indexOf('await scheduleReEngagementSequences');
     const sendCall = body.indexOf('await getPendingEmails');
     const sunsetCall = body.indexOf('await applySunsetPolicy');
 
-    expect(scheduleCall).toBeGreaterThan(-1);
     expect(activationCall).toBeGreaterThan(-1);
+    expect(reEngagementCall).toBeGreaterThan(-1);
     expect(sendCall).toBeGreaterThan(-1);
     expect(sunsetCall).toBeGreaterThan(-1);
 
     // Schedule must come before send, send before sunset
-    expect(scheduleCall).toBeLessThan(sendCall);
     expect(activationCall).toBeLessThan(sendCall);
+    expect(reEngagementCall).toBeLessThan(sendCall);
     expect(sendCall).toBeLessThan(sunsetCall);
+
+    // Dormancy scheduling must NOT be present -- re_engagement fully replaces it
+    expect(body.indexOf('await scheduleDormancySequences')).toBe(-1);
   });
 });
