@@ -37,6 +37,7 @@ async function discordFetch(
       'Authorization': `Bot ${botToken}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(8000),
   };
   if (body) opts.body = JSON.stringify(body);
   return fetch(`${API}${path}`, opts);
@@ -56,24 +57,36 @@ function getAllPaidRoleIds(): string[] {
   return [c.supporterRoleId, c.championRoleId].filter(Boolean);
 }
 
+export type RoleOpResult = { ok: boolean; httpStatus: number; errorBody?: string };
+
 /** Add a role to a guild member. */
-export async function addMemberRole(discordId: string, roleId: string): Promise<boolean> {
+export async function addMemberRole(discordId: string, roleId: string): Promise<RoleOpResult> {
   const { guildId } = getConfig();
   const res = await discordFetch(
     `/guilds/${guildId}/members/${discordId}/roles/${roleId}`,
     'PUT'
   );
-  return res.ok || res.status === 204;
+  const ok = res.ok || res.status === 204;
+  if (!ok) {
+    const errorBody = await res.text().catch(() => '');
+    return { ok: false, httpStatus: res.status, errorBody };
+  }
+  return { ok: true, httpStatus: res.status };
 }
 
 /** Remove a role from a guild member. */
-export async function removeMemberRole(discordId: string, roleId: string): Promise<boolean> {
+export async function removeMemberRole(discordId: string, roleId: string): Promise<RoleOpResult> {
   const { guildId } = getConfig();
   const res = await discordFetch(
     `/guilds/${guildId}/members/${discordId}/roles/${roleId}`,
     'DELETE'
   );
-  return res.ok || res.status === 204;
+  const ok = res.ok || res.status === 204;
+  if (!ok) {
+    const errorBody = await res.text().catch(() => '');
+    return { ok: false, httpStatus: res.status, errorBody };
+  }
+  return { ok: true, httpStatus: res.status };
 }
 
 /**
@@ -111,49 +124,64 @@ export async function addMemberToGuild(
   return false;
 }
 
+export type SyncRoleResult = { ok: boolean; httpStatus?: number; errorBody?: string };
+
 /**
  * Sync a user's Discord roles to match their subscription tier.
  * Removes all paid roles first, then adds the correct one.
  */
-export async function syncRole(discordId: string, tier: string): Promise<boolean> {
-  if (!isDiscordConfigured()) return false;
+export async function syncRole(discordId: string, tier: string): Promise<SyncRoleResult> {
+  if (!isDiscordConfigured()) return { ok: false };
 
   try {
     const allPaidRoles = getAllPaidRoleIds();
     const targetRoleId = getTierRoleId(tier);
 
-    // Remove all paid roles
+    // Remove all paid roles — log failures but don't abort (best-effort cleanup)
     for (const roleId of allPaidRoles) {
-      await removeMemberRole(discordId, roleId);
+      const result = await removeMemberRole(discordId, roleId);
+      if (!result.ok && result.httpStatus !== 404) {
+        console.error(`[discord] removeMemberRole failed (${result.httpStatus}): ${result.errorBody}`);
+      }
     }
 
     // Add the correct role (if any -- community tier gets no role)
     if (targetRoleId) {
-      return await addMemberRole(discordId, targetRoleId);
+      const result = await addMemberRole(discordId, targetRoleId);
+      if (!result.ok) {
+        console.error(`[discord] addMemberRole failed (${result.httpStatus}): ${result.errorBody}`);
+        Sentry.captureMessage(`Discord role assignment failed: HTTP ${result.httpStatus}`, {
+          level: 'error',
+          tags: { action: 'discord-sync-role', httpStatus: String(result.httpStatus) },
+          extra: { discordId, tier, errorBody: result.errorBody?.slice(0, 500) },
+        });
+        return { ok: false, httpStatus: result.httpStatus, errorBody: result.errorBody };
+      }
+      return { ok: true, httpStatus: result.httpStatus };
     }
 
-    return true;
+    return { ok: true };
   } catch (err) {
     console.error('[discord] syncRole failed:', err);
     Sentry.captureException(err, {
       tags: { action: 'discord-sync-role' },
       extra: { discordId, tier },
     });
-    return false;
+    return { ok: false };
   }
 }
 
 /**
  * Remove all paid roles from a user (on subscription cancellation).
  */
-export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
+export async function revokeAllPaidRoles(discordId: string): Promise<SyncRoleResult> {
   return syncRole(discordId, 'community');
 }
 
 export type GuildSearchResult =
   | { status: 'found'; discordId: string }
   | { status: 'not_found' }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; httpStatus?: number };
 
 /**
  * Search the guild for a member by exact username match.
@@ -175,7 +203,12 @@ export async function searchGuildMember(username: string): Promise<GuildSearchRe
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[discord] searchGuildMember failed (${res.status}): ${errText}`);
-      return { status: 'error', message: `Discord API error (${res.status})` };
+      Sentry.captureMessage(`Discord API error in searchGuildMember: ${res.status}`, {
+        level: 'error',
+        tags: { action: 'discord-search-member', httpStatus: String(res.status) },
+        extra: { username, responseBody: errText.slice(0, 500) },
+      });
+      return { status: 'error', message: `Discord API error (${res.status})`, httpStatus: res.status };
     }
 
     const members = await res.json() as Array<{
