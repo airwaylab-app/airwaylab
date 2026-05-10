@@ -159,9 +159,9 @@ export default function SleepHQAlternativePost() {
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">NED + RERA Detection</p>
+              <p className="text-sm font-semibold text-foreground">NED + RERA Estimation</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Per-breath Negative Effort Dependence scoring and heuristic detection of
+                Per-breath Negative Effort Dependence scoring and heuristic estimation of
                 RERA sequences — respiratory events that standard AHI counting misses.
               </p>
             </div>
@@ -325,7 +325,7 @@ export default function SleepHQAlternativePost() {
           </p>
           <p>
             AirwayLab&apos;s analysis goes further: it runs the Glasgow Index, FL Score, NED, and
-            RERA detection on the raw EDF waveform, independent of what the device firmware
+            RERA estimation on the raw EDF waveform, independent of what the device firmware
             reported. These are per-breath scores, not categorical snapshots. If flow limitation
             is a factor in your data, the additional depth can surface patterns that the device
             channel alone might not show.
