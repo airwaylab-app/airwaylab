@@ -224,7 +224,7 @@ export default function CompareSleepHQPage() {
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
               <p className="text-sm font-semibold text-emerald-400">Four Analysis Engines</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Glasgow Index, WAT (FL Score, Regularity, Periodicity), NED (RERA detection,
+                Glasgow Index, WAT (FL Score, Regularity, Periodicity), NED (RERA estimation,
                 Flatness Index, M-shape), and a 17-metric Oximetry pipeline. SleepHQ provides
                 standard metrics that PAP machines already report.
               </p>
@@ -277,7 +277,7 @@ export default function CompareSleepHQPage() {
                 <td className="px-4 py-2.5 text-center text-emerald-400">4 engines</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">RERA detection</td>
+                <td className="py-2.5 pr-4">RERA estimation</td>
                 <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes (NED)</td>
               </tr>
@@ -462,7 +462,7 @@ export default function CompareSleepHQPage() {
         <h3 className="text-lg font-bold">Try AirwayLab Free</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload your ResMed SD card and get flow limitation analysis in minutes. Four research-grade
-          engines, composite metrics, RERA detection, and trend tracking. No installation, no account
+          engines, composite metrics, RERA estimation, and trend tracking. No installation, no account
           required, 100% private.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">

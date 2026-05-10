@@ -964,8 +964,7 @@ export default function HowPAPTherapyWorksPost() {
                 <strong className="text-foreground">Understanding NED scores?</strong>{' '}
                 Negative Effort Dependence directly reflects the physics we discussed. A high NED
                 score means breathing harder is producing less airflow (the paper straw collapsing).
-                This is a direct signal that EPAP may be too low or that PS could help overcome the
-                restriction.
+                Your clinician can help interpret these findings in context of your therapy data.
               </span>
             </li>
           </ul>

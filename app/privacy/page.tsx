@@ -21,8 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 12 April 2026
-          Last updated: 16 April 2026
+          Last updated: 30 April 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -87,6 +86,13 @@ export default function PrivacyPolicyPage() {
             <li>Email address (for authentication and account communications)</li>
             <li>Display name (optional, for supporter acknowledgement)</li>
             <li>Subscription tier and billing status (via Stripe)</li>
+            <li>
+              <strong>Feedback submissions:</strong> When you submit feedback through the app,
+              your feedback text is stored in our database (Supabase, EU-West). When you submit
+              feedback and <strong>consent to follow-up contact</strong>, your email address and
+              feedback text may also be consolidated into internal Gmail drafts for team review
+              (via Google Gmail API). No health data is included in feedback submissions.
+            </li>
           </ul>
 
           <h3 className="mt-4">3.2 Email Communications (Opt-In)</h3>
@@ -246,6 +252,11 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong>Error logs (Sentry):</strong> Retained for 90 days.
             </li>
+            <li>
+              <strong>Feedback submissions:</strong> Retained in our database until you request
+              account deletion. Gmail drafts created for consented follow-up contact are internal
+              team records and are deleted as part of normal team operations.
+            </li>
           </ul>
         </section>
 
@@ -317,9 +328,9 @@ export default function PrivacyPolicyPage() {
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Upstash</td>
-                  <td className="py-2 pr-4">Rate limiting</td>
+                  <td className="py-2 pr-4">Rate limiting (Redis)</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">User IDs and hashed IP addresses (transient, rate-limit windows only)</td>
+                  <td className="py-2">IP-derived request counters only. No personal data or health data.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Resend</td>
@@ -334,16 +345,12 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2">Discord user ID and username only. No health data is sent to Discord.</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">Upstash</td>
-                  <td className="py-2 pr-4">Rate limiting (Redis)</td>
+                  <td className="py-2 pr-4 font-medium text-foreground">Google (Gmail API)</td>
+                  <td className="py-2 pr-4">Internal feedback consolidation (consent-gated)</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">IP-derived request counters only. No personal data or health data.</td>
+                  <td className="py-2">Email address and feedback text, only for users who consented to follow-up contact. No health data.</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">GitHub API</td>
-                  <td className="py-2 pr-4">Repository metadata (star count)</td>
-                  <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Server-side only. No user data is sent to GitHub.</td>
                   <td className="py-2 pr-4 font-medium text-foreground">GitHub API</td>
                   <td className="py-2 pr-4">Repository star count display</td>
                   <td className="py-2 pr-4">US</td>
@@ -451,12 +458,9 @@ export default function PrivacyPolicyPage() {
           <h2>11. International Data Transfers</h2>
           <p>
             Our primary database is hosted in the EU (Supabase EU-West region). Some services
-            (Anthropic, Sentry, Resend, Upstash) process data in the US. For EU users, these transfers are
-            governed by Standard Contractual Clauses (SCCs) or the EU-US Data Privacy Framework
-            where applicable.
-            (Anthropic, Sentry, Resend, Upstash) process data in the US. For EU users, these
-            transfers are governed by Standard Contractual Clauses (SCCs) or the EU-US Data
-            Privacy Framework where applicable.
+            (Anthropic, Sentry, Resend, Upstash, Google) process data in the US. For EU users,
+            these transfers are governed by Standard Contractual Clauses (SCCs) or the EU-US
+            Data Privacy Framework where applicable.
           </p>
           <p>
             AI insights are opt-in. If you choose not to use AI features, no health-related data

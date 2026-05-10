@@ -523,3 +523,153 @@ describe('detectTherapyChange', () => {
     expect(detectTherapyChange(nights)).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// selectFilesToProcess — regression for AIR-963
+//
+// The orchestrator selects which files to send to the worker based on:
+//   1. Manifest diff: which nights are unchanged (same file fingerprints)
+//   2. Cache: which of those unchanged nights have persisted results
+//
+// BUG: When the manifest existed but the cache was cleared (e.g. after an
+// engine version bump clears STORAGE_KEY while MANIFEST_KEY survives), the
+// original code set filesToProcess = diff.changedFiles, silently dropping
+// the "unchanged-but-uncached" nights. On merge those dates had no cache
+// entry either, so only the few newly-changed nights appeared in the UI.
+//
+// FIX: "unchanged in manifest + absent from cache" → must be re-processed.
+// ---------------------------------------------------------------------------
+
+// Mirror the filesToProcess selection logic from analysis-orchestrator.ts
+// (manifest branch only — the fallback branch is simpler and unaffected).
+function selectFilesToProcess(opts: {
+  sdFiles: { path: string }[];
+  manifestUnchanged: string[];  // dates the manifest says are unchanged
+  manifestChangedNights: Set<string>;  // dates the manifest says are changed
+  cachedDateSet: Set<string>;  // dates available in localStorage cache
+  extractDate: (path: string) => string | null;
+}): { path: string }[] {
+  const { sdFiles, manifestUnchanged, manifestChangedNights, cachedDateSet, extractDate } = opts;
+
+  const unchangedDates = manifestUnchanged.filter((d) => cachedDateSet.has(d));
+  const uncachedUnchanged = new Set(manifestUnchanged.filter((d) => !cachedDateSet.has(d)));
+
+  // All unchanged AND cached — nothing needs processing
+  if (unchangedDates.length > 0 && manifestChangedNights.size === 0 && uncachedUnchanged.size === 0) {
+    return [];
+  }
+
+  if (manifestChangedNights.size > 0 || uncachedUnchanged.size > 0) {
+    const datesNeedingProcessing = new Set([...manifestChangedNights, ...uncachedUnchanged]);
+    return sdFiles.filter(({ path }) => {
+      const date = extractDate(path);
+      return date === null || datesNeedingProcessing.has(date);
+    });
+  }
+
+  return sdFiles;
+}
+
+// Simple date extractor for DATALOG/YYYYMMDD/ paths used in tests.
+function extractDate(path: string): string | null {
+  const m = /(\d{8})\//.exec(path);
+  if (!m) return null;
+  const raw = m[1]!;
+  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+}
+
+function makeFiles(dates: string[]): { path: string }[] {
+  return dates.map((d) => ({ path: `DATALOG/${d.replace(/-/g, '')}/STD.edf` }));
+}
+
+describe('selectFilesToProcess — manifest + cache interaction (AIR-963 regression)', () => {
+  it('returns empty when all nights are unchanged AND cached (instant restore path)', () => {
+    const dates = ['2026-01-01', '2026-01-02', '2026-01-03'];
+    const files = makeFiles(dates);
+    const result = selectFilesToProcess({
+      sdFiles: files,
+      manifestUnchanged: dates,
+      manifestChangedNights: new Set(),
+      cachedDateSet: new Set(dates),
+      extractDate,
+    });
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns only changed files when unchanged nights are fully cached', () => {
+    const historicDates = ['2026-01-01', '2026-01-02', '2026-01-03'];
+    const newDates = ['2026-01-04', '2026-01-05'];
+    const allFiles = makeFiles([...historicDates, ...newDates]);
+    const result = selectFilesToProcess({
+      sdFiles: allFiles,
+      manifestUnchanged: historicDates,
+      manifestChangedNights: new Set(newDates),
+      cachedDateSet: new Set(historicDates),
+      extractDate,
+    });
+    const resultPaths = result.map((f) => f.path);
+    expect(result).toHaveLength(newDates.length);
+    for (const d of newDates) {
+      expect(resultPaths.some((p) => p.includes(d.replace(/-/g, '')))).toBe(true);
+    }
+    for (const d of historicDates) {
+      expect(resultPaths.some((p) => p.includes(d.replace(/-/g, '')))).toBe(false);
+    }
+  });
+
+  it('re-processes unchanged nights when cache is empty (AIR-963 root cause)', () => {
+    // Scenario: 30 historical nights are unchanged per manifest, 3 are new.
+    // Cache is empty (e.g. engine version bump cleared STORAGE_KEY but
+    // MANIFEST_KEY survived). Before the fix, only the 3 new nights were
+    // returned, hiding all historical data. After the fix, all 33 dates
+    // must be included.
+    const historicDates = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(2026, 0, 1 + i);
+      return d.toISOString().slice(0, 10);
+    });
+    const newDates = ['2026-01-31', '2026-02-01', '2026-02-02'];
+    const allFiles = makeFiles([...historicDates, ...newDates]);
+    const result = selectFilesToProcess({
+      sdFiles: allFiles,
+      manifestUnchanged: historicDates,
+      manifestChangedNights: new Set(newDates),
+      cachedDateSet: new Set(), // empty — cache was cleared
+      extractDate,
+    });
+    // All 33 nights must be processed since there is nothing in cache
+    expect(result).toHaveLength(historicDates.length + newDates.length);
+  });
+
+  it('re-processes ALL nights when cache is empty and no new nights (full cache miss)', () => {
+    // Edge case: all nights match manifest fingerprints (no SD card changes),
+    // but cache is completely empty. All nights should be re-processed.
+    const dates = ['2026-01-01', '2026-01-02', '2026-01-03'];
+    const files = makeFiles(dates);
+    const result = selectFilesToProcess({
+      sdFiles: files,
+      manifestUnchanged: dates,
+      manifestChangedNights: new Set(),
+      cachedDateSet: new Set(), // empty cache
+      extractDate,
+    });
+    expect(result).toHaveLength(dates.length);
+  });
+
+  it('always includes non-date files (STR.edf etc.) when any night is processed', () => {
+    const historicDates = ['2026-01-01', '2026-01-02'];
+    const newDates = ['2026-01-03'];
+    const dateFiles = makeFiles([...historicDates, ...newDates]);
+    const nonDateFiles = [{ path: 'STR.edf' }, { path: 'Identification.tgt' }];
+    const allFiles = [...dateFiles, ...nonDateFiles];
+    const result = selectFilesToProcess({
+      sdFiles: allFiles,
+      manifestUnchanged: historicDates,
+      manifestChangedNights: new Set(newDates),
+      cachedDateSet: new Set(historicDates),
+      extractDate,
+    });
+    // Non-date files should be included (date returns null → always included)
+    const nonDateResults = result.filter(({ path }) => extractDate(path) === null);
+    expect(nonDateResults).toHaveLength(nonDateFiles.length);
+  });
+});

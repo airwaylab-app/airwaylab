@@ -16,7 +16,8 @@ type Feature =
   | 'early_access'
   | 'supporter_badge'
   | 'discord_community'
-  | 'analysis_window';
+  | 'analysis_window'
+  | 'historical_trends';
 
 // metric_explanations and next_steps intentionally removed —
 // both are free for all users (data visibility + appointment prep).
@@ -33,6 +34,7 @@ const FEATURE_ACCESS: Record<Feature, Tier[]> = {
   supporter_badge: ['supporter', 'champion'],
   discord_community: ['supporter', 'champion'],
   analysis_window: ['supporter', 'champion'],
+  historical_trends: ['champion'],
 };
 
 const AI_MONTHLY_LIMIT = 3;
@@ -99,5 +101,5 @@ export function incrementAIUsage(): void {
 export function getAnalysisWindowDays(tier: Tier): number {
   if (tier === 'champion') return Infinity;
   if (tier === 'supporter') return 90;
-  return 0; // community: current session only
+  return 14; // community: most recent 14 days
 }
