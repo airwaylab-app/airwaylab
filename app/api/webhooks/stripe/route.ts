@@ -72,16 +72,18 @@ async function syncDiscordForUser(
       .maybeSingle();
 
     if (profile?.discord_id) {
-      await syncRole(profile.discord_id, tier);
+      const syncResult = await syncRole(profile.discord_id, tier);
+      const baseAction = tier === 'community' ? 'revoke' : 'assign';
 
-      // Log the role event
       await supabase.from('discord_role_events').insert({
         user_id: userId,
         discord_id: profile.discord_id,
         role_id: tier,
-        action: tier === 'community' ? 'revoke' : 'assign',
+        action: syncResult.ok ? baseAction : `${baseAction}_failed`,
         reason: `stripe_tier_change_to_${tier}`,
         stripe_event_id: stripeEventId ?? null,
+        http_status: syncResult.httpStatus ?? null,
+        error_message: syncResult.errorBody?.slice(0, 500) ?? null,
       });
     } else {
       // User hasn't linked Discord yet — try to auto-resolve if they saved a username
@@ -101,15 +103,18 @@ async function syncDiscordForUser(
             discord_linked_at: new Date().toISOString(),
           }).eq('id', userId);
 
-          await syncRole(searchResult.discordId, tier);
+          const syncResult = await syncRole(searchResult.discordId, tier);
+          const baseAction = tier === 'community' ? 'revoke' : 'assign';
 
           await supabase.from('discord_role_events').insert({
             user_id: userId,
             discord_id: searchResult.discordId,
             role_id: tier,
-            action: tier === 'community' ? 'revoke' : 'assign',
+            action: syncResult.ok ? baseAction : `${baseAction}_failed`,
             reason: `stripe_auto_resolve_${tier}`,
             stripe_event_id: stripeEventId ?? null,
+            http_status: syncResult.httpStatus ?? null,
+            error_message: syncResult.errorBody?.slice(0, 500) ?? null,
           });
 
           // Clean up any pending roles
