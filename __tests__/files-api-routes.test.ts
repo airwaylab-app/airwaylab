@@ -435,6 +435,54 @@ describe('POST /api/files/confirm', () => {
     expect(body.confirmed).toBe(true);
   });
 
+  it('returns 500 when metadata update fails after storage verification', async () => {
+    setupAuthenticatedUser();
+    const { captureApiError } = await import('@/lib/sentry-utils');
+    const chain = createChain({
+      data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
+      error: null,
+    });
+    // update().eq() resolves with an error
+    const updateChain = { eq: vi.fn(() => Promise.resolve({ error: { message: 'DB write failed', code: '57P01' } })) };
+    chain.update = vi.fn(() => updateChain);
+    mockFrom.mockReturnValue(chain);
+
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: [{ name: 'BRP.edf' }], error: null }),
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toContain('confirm');
+    expect(captureApiError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'DB write failed' }),
+      expect.objectContaining({ context: 'metadata_update' })
+    );
+  });
+
+  it('captures Sentry event when file is absent from storage at confirm step', async () => {
+    setupAuthenticatedUser();
+    const { captureApiError } = await import('@/lib/sentry-utils');
+    const chain = createChain({
+      data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
+      error: null,
+    });
+    chain.delete = vi.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: [], error: null }),
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(404);
+    expect(captureApiError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ context: 'storage_list_empty', fileId: validBody.fileId })
+    );
+  });
+
   it('returns 503 and does NOT delete metadata when storage list errors', async () => {
     setupAuthenticatedUser();
     const deleteMock = vi.fn(() => chain);

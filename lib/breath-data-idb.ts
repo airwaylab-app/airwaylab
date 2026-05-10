@@ -5,12 +5,18 @@
 // version invalidation, non-fatal on failure.
 // ============================================================
 
+import * as Sentry from '@sentry/nextjs';
 import type { Breath } from './types';
 import { openDB } from './waveform-idb';
 import { ENGINE_VERSION } from './engine-version';
 
 const STORE_NAME = 'breath-data';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+// Structured-clone OOM guard: ~256 bytes per compact breath (JSON ~120 chars × 2).
+// IDB quota is disk-based, but the clone algorithm itself can OOM under memory pressure
+// with very large objects — see Sentry JAVASCRIPT-NEXTJS-64.
+const MAX_IDB_BYTES = 20 * 1024 * 1024; // 20 MB
+const BYTES_PER_COMPACT_BREATH = 256;
 
 /**
  * Compact per-breath representation for IndexedDB.
@@ -66,10 +72,26 @@ export async function storeBreathData(
   samplingRate: number
 ): Promise<void> {
   try {
+    const compact = toCompactBreaths(breaths, samplingRate);
+    const estimatedBytes = compact.length * BYTES_PER_COMPACT_BREATH;
+
+    Sentry.addBreadcrumb({
+      message: 'breath-data-idb: storing breath data',
+      category: 'idb',
+      data: { dateStr, breathCount: compact.length, estimatedBytes },
+    });
+
+    if (estimatedBytes > MAX_IDB_BYTES) {
+      console.warn(
+        `[breath-data-idb] breath data too large for IDB (est. ${estimatedBytes} bytes / ${compact.length} breaths) — skipping write to avoid structured-clone OOM`
+      );
+      return;
+    }
+
     const db = await openDB();
     const stored: StoredBreathData = {
       dateStr,
-      breaths: toCompactBreaths(breaths, samplingRate),
+      breaths: compact,
       breathCount: breaths.length,
       samplingRate,
       storedAt: Date.now(),

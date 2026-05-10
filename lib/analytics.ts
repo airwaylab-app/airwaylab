@@ -316,4 +316,15 @@ export const events = {
 
   /** Discord link clicked from community prompt */
   communityPromptDiscordClicked: () => trackEvent('community_prompt_discord_clicked'),
+
+  // ── Champion tier features ────────────────────────────────────
+  /** Champion user viewed the historical machine-metrics trend chart */
+  championTrendViewed: (nightCount: number) => {
+    capturePostHog('Champion Trend Chart Viewed', { night_count: nightCount });
+  },
+
+  /** Non-Champion user saw the historical-trend upsell card */
+  championTrendUpsellViewed: () => {
+    capturePostHog('Champion Trend Upsell Viewed');
+  },
 } as const;
