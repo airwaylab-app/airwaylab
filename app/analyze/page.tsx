@@ -52,6 +52,7 @@ import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
 import { UploadAgainCta } from '@/components/dashboard/upload-again-cta';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
+import { CommunityGateBanner } from '@/components/dashboard/community-gate-banner';
 import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -1102,6 +1103,7 @@ function AnalyzePageInner() {
               />
             )}
             {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
+            {!isDemo && <CommunityGateBanner nights={nights} />}
             {!isDemo && <EmailOptInNudge />}
             <DataContribution
               nights={nights}
