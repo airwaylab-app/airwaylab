@@ -16,6 +16,7 @@ import {
 import type { OximetryTraceData } from '@/lib/types';
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { useChartElementRef } from '@/hooks/use-chart-element-ref';
 import { GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -51,6 +52,7 @@ export const SpO2Trace = memo(function SpO2Trace({
 }: Props) {
   const points = trace.trace;
   const viewport = useSyncedViewport();
+  const elementRef = useChartElementRef(viewport.attachToElement);
 
   // SpO2 uses time-based slicing via the synced viewport
   const data = useMemo(() => {
@@ -119,13 +121,19 @@ export const SpO2Trace = memo(function SpO2Trace({
         <h3 className="text-xs font-medium text-muted-foreground">SpO₂ &amp; Heart Rate Trace</h3>
       </div>
       <div
-        ref={viewport.chartRef}
-        className="relative h-[160px] w-full cursor-grab select-none touch-none sm:h-[200px]"
+        ref={elementRef}
+        className={`relative h-[160px] w-full select-none touch-none sm:h-[200px] ${viewport.dragZoomMode ? 'cursor-crosshair' : 'cursor-grab'}`}
         role="application"
         aria-label="SpO2 and heart rate trace chart. Synchronised with other charts."
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
+        {viewport.dragZoomOverlay.active && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 border-x border-primary/50 bg-primary/15"
+            style={{ left: `${viewport.dragZoomOverlay.leftPct}%`, width: `${viewport.dragZoomOverlay.widthPct}%` }}
+          />
+        )}
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>

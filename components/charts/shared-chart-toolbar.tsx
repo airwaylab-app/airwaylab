@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { ZOOM_PRESETS, PAN_STEP_FRACTION } from '@/hooks/use-chart-viewport';
 import { formatElapsedTimeShort } from '@/lib/waveform-utils';
-import { ZoomIn, ZoomOut, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, ChevronLeft, ChevronRight, Crosshair } from 'lucide-react';
 
 interface Props {
   durationSeconds: number;
@@ -89,6 +89,17 @@ export function SharedChartToolbar({ durationSeconds, disabled = false }: Props)
             aria-label="Reset zoom"
           >
             <Maximize2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant={viewport.dragZoomMode ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => viewport.setDragZoomMode(!viewport.dragZoomMode)}
+            disabled={disabled}
+            className="h-6 w-6 p-0"
+            aria-label={viewport.dragZoomMode ? 'Switch to pan mode' : 'Drag to zoom (range select)'}
+            title={viewport.dragZoomMode ? 'Range select active — click to pan' : 'Range select zoom'}
+          >
+            <Crosshair className="h-3 w-3" />
           </Button>
           <div className="mx-1 h-4 w-px bg-border/50" />
           <Button

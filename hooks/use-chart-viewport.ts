@@ -26,6 +26,14 @@ interface ChartViewportOpts {
   dateStr: string;
 }
 
+export interface DragZoomOverlay {
+  active: boolean;
+  /** Left edge as percent of chart width (0–100) */
+  leftPct: number;
+  /** Width as percent of chart width (0–100) */
+  widthPct: number;
+}
+
 export interface ChartViewportReturn {
   viewStartSec: number;
   viewEndSec: number;
@@ -44,6 +52,13 @@ export interface ChartViewportReturn {
   setViewStartSec: React.Dispatch<React.SetStateAction<number>>;
   setViewEndSec: React.Dispatch<React.SetStateAction<number>>;
   handleKeyDown: (e: React.KeyboardEvent) => void;
+  /** Attach wheel/dblclick/touch listeners to a chart element. Returns cleanup. */
+  attachToElement: (el: HTMLElement) => () => void;
+  /** When true, shift+drag selects a zoom range instead of panning. */
+  dragZoomMode: boolean;
+  setDragZoomMode: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Overlay rect for range-select zoom, expressed as % of chart width. */
+  dragZoomOverlay: DragZoomOverlay;
   chartRef: (el: HTMLElement | null) => void;
 }
 
@@ -55,6 +70,14 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
   // Viewport state: time in seconds
   const [viewStartSec, setViewStartSec] = useState(0);
   const [viewEndSec, setViewEndSec] = useState(Infinity);
+
+  // Drag-zoom mode state
+  const [dragZoomMode, setDragZoomMode] = useState(false);
+  const [dragZoomOverlay, setDragZoomOverlay] = useState<DragZoomOverlay>({
+    active: false,
+    leftPct: 0,
+    widthPct: 0,
+  });
 
   // Refs for drag-to-pan
   const isDragging = useRef(false);
@@ -200,6 +223,10 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
 
   const durationRef = useRef(durationSeconds);
   durationRef.current = durationSeconds;
+
+  // Keep dragZoomMode in a ref so attachToElement closures read the latest value
+  const dragZoomModeRef = useRef(false);
+  dragZoomModeRef.current = dragZoomMode;
 
   const chartRef = useCallback((el: HTMLElement | null) => {
     if (elementRef.current === el) return;
@@ -349,6 +376,162 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     };
   }, [elementVersion]);
 
+  // ── Imperative multi-element API ───────────────────────────
+
+  const attachToElement = useCallback((el: HTMLElement): (() => void) => {
+    // Wheel zoom (passive: false to allow preventDefault)
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = el.getBoundingClientRect();
+      const centerFraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      if (e.deltaY < 0) zoomInRef.current(centerFraction);
+      else zoomOutRef.current(centerFraction);
+    };
+
+    // Double-click resets to full view
+    const handleDblClick = () => {
+      setViewStartSec(0);
+      setViewEndSec(Infinity);
+    };
+
+    // Per-element drag state — each attached element gets its own closure
+    const drag = { active: false, isRange: false, startPct: 0, startX: 0, viewStart: 0, viewEnd: 0 };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      if (dragZoomModeRef.current) {
+        drag.active = true;
+        drag.isRange = true;
+        drag.startPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        setDragZoomOverlay({ active: true, leftPct: drag.startPct * 100, widthPct: 0 });
+      } else {
+        drag.active = true;
+        drag.isRange = false;
+        drag.startX = e.clientX;
+        drag.viewStart = clampedRef.current.start;
+        drag.viewEnd = clampedRef.current.end;
+        el.style.cursor = 'grabbing';
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!drag.active) return;
+      const rect = el.getBoundingClientRect();
+      if (drag.isRange) {
+        const currentPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const leftPct = Math.min(drag.startPct, currentPct) * 100;
+        const widthPct = Math.abs(currentPct - drag.startPct) * 100;
+        setDragZoomOverlay({ active: true, leftPct, widthPct });
+      } else {
+        const dx = e.clientX - drag.startX;
+        const visible = drag.viewEnd - drag.viewStart;
+        const timeDelta = (-dx / rect.width) * visible;
+        const newStart = Math.max(0, Math.min(drag.viewStart + timeDelta, durationRef.current - visible));
+        setViewStartSec(newStart);
+        setViewEndSec(newStart + visible);
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!drag.active) return;
+      if (drag.isRange) {
+        const rect = el.getBoundingClientRect();
+        const currentPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const leftFrac = Math.min(drag.startPct, currentPct);
+        const rightFrac = Math.max(drag.startPct, currentPct);
+        if (rightFrac - leftFrac > 0.02) {
+          const cs = clampedRef.current.start;
+          const ce = clampedRef.current.end;
+          const visible = ce - cs;
+          setViewStartSec(cs + leftFrac * visible);
+          setViewEndSec(cs + rightFrac * visible);
+        }
+        setDragZoomOverlay({ active: false, leftPct: 0, widthPct: 0 });
+      } else {
+        el.style.cursor = dragZoomModeRef.current ? 'crosshair' : 'grab';
+      }
+      drag.active = false;
+    };
+
+    // Touch gesture handlers
+    const touch = { isPanning: false, isPinching: false, startX: 0, pinchDist: 0, viewStart: 0, viewEnd: 0 };
+    const getTouchDist = (t1: Touch, t2: Touch) =>
+      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        touch.isPinching = true;
+        touch.isPanning = false;
+        touch.pinchDist = getTouchDist(e.touches[0]!, e.touches[1]!);
+        touch.viewStart = clampedRef.current.start;
+        touch.viewEnd = clampedRef.current.end;
+        e.preventDefault();
+      } else if (e.touches.length === 1) {
+        touch.isPanning = true;
+        touch.isPinching = false;
+        touch.startX = e.touches[0]!.clientX;
+        touch.viewStart = clampedRef.current.start;
+        touch.viewEnd = clampedRef.current.end;
+        e.preventDefault();
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touch.isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        const dist = getTouchDist(e.touches[0]!, e.touches[1]!);
+        const ratio = dist / touch.pinchDist;
+        if (ratio > 1.05) { zoomInRef.current(0.5); touch.pinchDist = dist; }
+        else if (ratio < 0.95) { zoomOutRef.current(0.5); touch.pinchDist = dist; }
+      } else if (touch.isPanning && e.touches.length === 1) {
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const dx = e.touches[0]!.clientX - touch.startX;
+        const visible = touch.viewEnd - touch.viewStart;
+        const timeDelta = (-dx / rect.width) * visible;
+        const newStart = Math.max(0, Math.min(touch.viewStart + timeDelta, durationRef.current - visible));
+        setViewStartSec(newStart);
+        setViewEndSec(newStart + visible);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        touch.isPanning = false;
+        touch.isPinching = false;
+      } else if (e.touches.length === 1 && touch.isPinching) {
+        touch.isPinching = false;
+        touch.isPanning = true;
+        touch.startX = e.touches[0]!.clientX;
+        touch.viewStart = clampedRef.current.start;
+        touch.viewEnd = clampedRef.current.end;
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('dblclick', handleDblClick);
+    el.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('dblclick', handleDblClick);
+      el.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
   return {
     viewStartSec,
     viewEndSec,
@@ -367,6 +550,10 @@ export function useChartViewport(opts: ChartViewportOpts): ChartViewportReturn {
     setViewStartSec,
     setViewEndSec,
     handleKeyDown,
+    attachToElement,
+    dragZoomMode,
+    setDragZoomMode,
+    dragZoomOverlay,
     chartRef,
   };
 }

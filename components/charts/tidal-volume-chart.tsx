@@ -13,6 +13,7 @@ import {
 import type { TidalVolumePoint } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { useChartElementRef } from '@/hooks/use-chart-element-ref';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -39,6 +40,7 @@ function TVTooltipContent({ active, payload, label }: {
 
 export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume }: Props) {
   const viewport = useSyncedViewport();
+  const elementRef = useChartElementRef(viewport.attachToElement);
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
   const data = useMemo(() =>
@@ -60,13 +62,19 @@ export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume }: 
         <h3 className="text-xs font-medium text-muted-foreground">Tidal Volume</h3>
       </div>
       <div
-        ref={viewport.chartRef}
-        className="relative h-[140px] w-full cursor-grab select-none touch-none sm:h-[160px]"
+        ref={elementRef}
+        className={`relative h-[140px] w-full select-none touch-none sm:h-[160px] ${viewport.dragZoomMode ? 'cursor-crosshair' : 'cursor-grab'}`}
         role="application"
         aria-label="Tidal volume chart. Synchronised with other charts."
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
+        {viewport.dragZoomOverlay.active && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 border-x border-primary/50 bg-primary/15"
+            style={{ left: `${viewport.dragZoomOverlay.leftPct}%`, width: `${viewport.dragZoomOverlay.widthPct}%` }}
+          />
+        )}
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>

@@ -137,7 +137,6 @@ function WaveformCharts({
             flow={flowData}
             pressure={pressureData}
             events={storedWaveform.events}
-
             visibleEventTypes={visibleTypes}
           />
         </ErrorBoundary>

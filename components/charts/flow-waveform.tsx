@@ -16,6 +16,7 @@ import type { FlowSample, PressurePoint, WaveformEvent } from '@/lib/waveform-ty
 import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { useChartElementRef } from '@/hooks/use-chart-element-ref';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
 export type EventType = WaveformEvent['type'];
@@ -92,10 +93,10 @@ export const FlowWaveform = memo(function FlowWaveform({
   flow,
   pressure,
   events,
-
   visibleEventTypes,
 }: Props) {
   const viewport = useSyncedViewport();
+  const elementRef = useChartElementRef(viewport.attachToElement);
   const hasPressure = pressure.length > 0;
 
   // Determine which types are active
@@ -184,13 +185,19 @@ export const FlowWaveform = memo(function FlowWaveform({
         )}
       </div>
       <div
-        ref={viewport.chartRef}
-        className="relative h-[200px] w-full cursor-grab select-none touch-none sm:h-[240px]"
+        ref={elementRef}
+        className={`relative h-[200px] w-full select-none touch-none sm:h-[240px] ${viewport.dragZoomMode ? 'cursor-crosshair' : 'cursor-grab'}`}
         role="application"
         aria-label="Flow waveform chart. Synchronised with other charts."
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
+        {viewport.dragZoomOverlay.active && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 border-x border-primary/50 bg-primary/15"
+            style={{ left: `${viewport.dragZoomOverlay.leftPct}%`, width: `${viewport.dragZoomOverlay.widthPct}%` }}
+          />
+        )}
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
