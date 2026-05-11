@@ -15,6 +15,14 @@ function buildEDFBuffer(opts: {
   samplesPerRecord: number;
   /** Number of complete data records to actually include in the buffer (for truncation testing). */
   actualRecords?: number;
+  /** Override the signal label (default: 'Flow'). */
+  signalLabel?: string;
+  /** Override physical dimension (default: 'L/min'). */
+  physicalDimension?: string;
+  /** Override physicalMin (default: -100). */
+  physicalMin?: number;
+  /** Override physicalMax (default: 100). */
+  physicalMax?: number;
 }): ArrayBuffer {
   const { numDataRecords, samplesPerRecord } = opts;
   const actualRecords = opts.actualRecords ?? numDataRecords;
@@ -51,7 +59,7 @@ function buildEDFBuffer(opts: {
   let offset = 256;
 
   // Labels (16 bytes each)
-  writeField(offset, 16, 'Flow');
+  writeField(offset, 16, opts.signalLabel ?? 'Flow');
   offset += numSignals * 16;
 
   // Transducer (80 bytes each)
@@ -59,15 +67,15 @@ function buildEDFBuffer(opts: {
   offset += numSignals * 80;
 
   // Physical dimension (8 bytes each)
-  writeField(offset, 8, 'L/min');
+  writeField(offset, 8, opts.physicalDimension ?? 'L/min');
   offset += numSignals * 8;
 
   // Physical min (8 bytes each)
-  writeField(offset, 8, '-100');
+  writeField(offset, 8, String(opts.physicalMin ?? -100));
   offset += numSignals * 8;
 
   // Physical max (8 bytes each)
-  writeField(offset, 8, '100');
+  writeField(offset, 8, String(opts.physicalMax ?? 100));
   offset += numSignals * 8;
 
   // Digital min (8 bytes each)
@@ -254,5 +262,50 @@ describe('EDF Parser — Truncation Handling', () => {
 
     // samplingRate = numSamples / recordDuration = 50 / 1 = 50
     expect(result.samplingRate).toBe(50);
+  });
+});
+
+describe('EDF Parser — Flow Signal Detection (AIR-1364)', () => {
+  it('parses files with "Vent" signal label (AirCurve BiPAP variant)', () => {
+    const buffer = buildEDFBuffer({
+      numDataRecords: 5,
+      samplesPerRecord: 25,
+      signalLabel: 'Vent',
+    });
+    const result = parseEDF(buffer, 'test/BRP.edf');
+    expect(result.flowData.length).toBe(5 * 25);
+    expect(result.samplingRate).toBe(25);
+  });
+
+  it('parses files with "AFfl" signal label (older firmware variant)', () => {
+    const buffer = buildEDFBuffer({
+      numDataRecords: 5,
+      samplesPerRecord: 25,
+      signalLabel: 'AFfl',
+    });
+    const result = parseEDF(buffer, 'test/BRP.edf');
+    expect(result.flowData.length).toBe(5 * 25);
+  });
+
+  it('throws with signal labels listed when no flow signal found', () => {
+    const buffer = buildEDFBuffer({
+      numDataRecords: 5,
+      samplesPerRecord: 25,
+      signalLabel: 'PressureX',
+      physicalMin: 0,
+      physicalMax: 30,
+    });
+    expect(() => parseEDF(buffer, 'test/BRP.edf')).toThrow(/Signal labels:/);
+  });
+
+  it('error message includes the actual signal labels found', () => {
+    const buffer = buildEDFBuffer({
+      numDataRecords: 5,
+      samplesPerRecord: 25,
+      signalLabel: 'PressureX',
+      physicalMin: 0,
+      physicalMax: 30,
+    });
+    expect(() => parseEDF(buffer, 'test/BRP.edf')).toThrow(/"PressureX"/);
   });
 });
