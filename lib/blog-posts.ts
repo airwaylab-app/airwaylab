@@ -17,6 +17,55 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'what-does-cpap-ahi-mean',
+    title: 'What Does My CPAP AHI Number Mean? A Plain-Language Guide',
+    seoTitle: 'What Does My CPAP AHI Number Mean? Plain-Language Guide | AirwayLab',
+    description:
+      'Your CPAP AHI counts apneas and hypopneas per hour — but what do the numbers mean, and what does AHI miss? A plain-language guide for PAP users.',
+    date: '2026-05-26',
+    readTime: '9 min read',
+    tags: ['AHI', 'CPAP Data', 'Sleep Apnea', 'Flow Limitation', 'RERAs'],
+    ogDescription:
+      'What does your CPAP AHI number actually mean? This guide covers how AHI is calculated, what the severity ranges represent, and what it misses: flow limitation, RERAs, and scoring variability.',
+    faqItems: [
+      {
+        question: 'What is a good AHI number for CPAP therapy?',
+        answer:
+          'Most clinical guidelines use an AHI below 5 as the target range on PAP therapy. Your clinician sets the specific goal for your situation — some individuals need different targets based on their clinical history. A persistent AHI above 5 on therapy is worth discussing at your next appointment.',
+      },
+      {
+        question: 'What does a high AHI on CPAP mean?',
+        answer:
+          'A high residual AHI on therapy means your machine is recording more scored breathing events than the typical target range. This can happen for several reasons — pressure settings, mask fit, body position, or changes in your upper airway. Your clinician can review your data and advise on next steps.',
+      },
+      {
+        question: 'Why does my AHI vary so much night to night?',
+        answer:
+          'Night-to-night AHI variability is normal. Factors like sleep position, alcohol, sedatives, nasal congestion, and sleep stage distribution can all affect how your airway behaves. A single high night is not necessarily cause for concern; a consistent upward trend is worth discussing with your clinician.',
+      },
+      {
+        question: 'Can I have a low AHI and still feel tired?',
+        answer:
+          'Yes. AHI only counts events that meet specific scoring thresholds. Flow-limited breaths and RERAs can disrupt sleep without appearing in your AHI. Other factors — sleep stage distribution, periodic limb movements, circadian issues — also affect how rested you feel. Your clinician can help evaluate what is contributing.',
+      },
+      {
+        question: 'What is the difference between AHI on a sleep study and AHI on CPAP?',
+        answer:
+          'Your diagnostic AHI from a sleep study reflects your untreated breathing during a supervised study. Your CPAP residual AHI reflects events recorded while the machine is running. They use related but not always identical scoring algorithms and represent different clinical contexts. Your sleep physician can explain what each means for your treatment plan.',
+      },
+      {
+        question: 'Does AirwayLab show my AHI?',
+        answer:
+          "Yes. AirwayLab reads the AHI and event data from your ResMed SD card and displays it alongside additional metrics — flow limitation scores, RERA-related breathing patterns, and breath-by-breath waveform analysis — that do not appear in your device's nightly summary. Everything runs in your browser; no data is uploaded.",
+      },
+      {
+        question: 'What does RDI mean and how is it different from AHI?',
+        answer:
+          'RDI (Respiratory Disturbance Index) typically adds RERAs to the apnea and hypopnea count used in AHI, so RDI is always equal to or higher than AHI for the same night. Most CPAP machines report AHI only. A full comparison of AHI vs RDI is coming in the next article in this series.',
+      },
+    ],
+  },
+  {
     slug: 'hypopnea-vs-apnea-cpap-data',
     title: 'Hypopnea vs Apnea: Understanding the Difference in Your CPAP Data',
     seoTitle: 'Hypopnea vs Apnea: What Each Breathing Event Means in CPAP Data | AirwayLab',
