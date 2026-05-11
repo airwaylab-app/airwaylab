@@ -20,7 +20,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 // ── Mock crypto.randomUUID ──────────────────────────────────
 vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, ContributionRateLimitedError } from '@/lib/contribute';
 
 // ── Helpers ─────────────────────────────────────────────────
 function makeNight(dateStr: string): NightResult {
@@ -186,6 +186,72 @@ describe('contributeNights', () => {
     await expect(contributeNights(nights)).rejects.toThrow(
       'Contribution failed (batch 1): HTTP 503 (non-JSON)'
     );
+  });
+
+  it('throws ContributionRateLimitedError when all 429 retries exhausted', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+      headers: { get: () => 'application/json' },
+    });
+
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    // Suppress unhandled-rejection while fake timers advance; assertion below handles it
+    promise.catch(() => { /* test-only: handled by expect().rejects below */ });
+    await vi.runAllTimersAsync();
+
+    await expect(promise).rejects.toBeInstanceOf(ContributionRateLimitedError);
+    // 1 initial + 3 retries = 4 total fetch calls
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    vi.useRealTimers();
+  });
+
+  it('succeeds after initial 429s are retried and server recovers', async () => {
+    vi.useFakeTimers();
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 429, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: false, status: 429, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    await vi.runAllTimersAsync();
+
+    const result = await promise;
+    expect(result.ok).toBe(true);
+    expect(result.totalSent).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
+  it('ContributionRateLimitedError propagates unwrapped through contributeNights', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('{"error":"Too many contributions."}'),
+      headers: { get: () => 'application/json' },
+    });
+
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    // Suppress unhandled-rejection while fake timers advance; error is caught below
+    promise.catch(() => { /* test-only: error checked in try/catch block below */ });
+    await vi.runAllTimersAsync();
+
+    // Error must be ContributionRateLimitedError, NOT wrapped in "Contribution failed (batch N):"
+    let caughtErr: unknown;
+    try {
+      await promise;
+    } catch (err) {
+      caughtErr = err;
+    }
+    expect(caughtErr).toBeInstanceOf(ContributionRateLimitedError);
+    expect(caughtErr instanceof Error && caughtErr.message).not.toMatch('Contribution failed');
+    vi.useRealTimers();
   });
 });
 

@@ -8,6 +8,13 @@ import * as Sentry from '@sentry/nextjs';
 import type { NightResult, NightNotes } from './types';
 import { loadNightNotes } from './night-notes';
 
+export class ContributionRateLimitedError extends Error {
+  constructor() {
+    super('Contribution rate limited — try again later');
+    this.name = 'ContributionRateLimitedError';
+  }
+}
+
 /**
  * Strip bulky per-breath/trace arrays from NightResult before contribution.
  * The server's anonymiseNight() only reads scalar summary fields, so bulk
@@ -140,11 +147,14 @@ async function sendNightsToServer(
 
     if (res.ok) return;
 
-    // Retry with exponential backoff on rate limit
-    if (res.status === 429 && attempt < RATE_LIMIT_MAX_RETRIES) {
-      const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
-      await new Promise(r => setTimeout(r, delay));
-      continue;
+    if (res.status === 429) {
+      if (attempt < RATE_LIMIT_MAX_RETRIES) {
+        const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      // All retries exhausted on rate limit — soft transient failure, not an error
+      throw new ContributionRateLimitedError();
     }
 
     const text = await res.text().catch(() => '');
@@ -171,7 +181,7 @@ async function sendNightsToServer(
     throw new Error(errorDetail);
   }
 
-  throw new Error('Rate limited after retries');
+  throw new ContributionRateLimitedError();
 }
 
 /**
@@ -204,6 +214,8 @@ export async function contributeNights(
     try {
       await sendNightsToServer(chunk, contextChunk, contributionId);
     } catch (err) {
+      // Pass rate limit errors through unwrapped so callers can detect and handle silently
+      if (err instanceof ContributionRateLimitedError) throw err;
       const detail = err instanceof Error ? err.message : String(err);
       throw new Error(`Contribution failed (batch ${batchNum}): ${detail}`);
     }
