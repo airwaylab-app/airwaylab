@@ -735,6 +735,7 @@ function AnalyzePageInner() {
       {status === 'idle' && !isDemo && (
         !persistedData ? (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
@@ -746,15 +747,13 @@ function AnalyzePageInner() {
                 How to get your ResMed data
               </Link>
             </p>
-
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
       )}
