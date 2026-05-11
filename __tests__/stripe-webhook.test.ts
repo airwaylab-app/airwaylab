@@ -31,6 +31,7 @@ vi.mock('next/server', async (importOriginal) => {
 vi.mock('@/lib/email/sequences', () => ({
   cancelSequence: vi.fn().mockResolvedValue(undefined),
   scheduleSequence: vi.fn().mockResolvedValue(undefined),
+  scheduleWinBackForUser: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/email/send', () => ({
