@@ -9,9 +9,10 @@ Update this file whenever a credential is rotated.
 | Name | Owner | Stored In | Cadence | Last Rotated | Next Rotation Due | Status |
 |------|-------|-----------|---------|--------------|-------------------|--------|
 | `SENTRY_AUTH_TOKEN` | CTO / Board | Vercel env var `SENTRY_AUTH_TOKEN` | 90 days | 2026-04-22† | 2026-07-21 | active |
-| `GITHUB_PAT` (airwaylab-dev) | Board (Demian) | Cortis `.netrc` / git remote URL | 90 days | 2026-04-20 | **2026-04-20 (EXPIRED)** | EXPIRED |
+| `GITHUB_PAT` (airwaylab-dev) | Board (Demian) | Cortis `.netrc` / git remote URL | 90 days | 2026-04-20† | 2026-07-12 | active |
 
 †Estimated from [AIR-927](/AIR/issues/AIR-927) fix date — verify actual expiry in Sentry dashboard and update this row.
+‡Expiry confirmed via live `GET /rate_limit` header check on 2026-05-11 (`github-authentication-token-expiration: 2026-07-12 14:33:16 UTC`). Doc was previously stale (showed EXPIRED). Updated by [AIR-1358](/AIR/issues/AIR-1358) health check.
 
 ---
 
