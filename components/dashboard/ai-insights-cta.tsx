@@ -28,7 +28,7 @@ export function AIInsightsCTA({ isDemo = false, remainingCredits }: Props) {
 
   useEffect(() => {
     if (!isPaid && !dismissed) {
-      events.aiUpsellShown();
+      events.aiUpsellShown('ai_insights_cta');
     }
   }, [isPaid, dismissed]);
 
