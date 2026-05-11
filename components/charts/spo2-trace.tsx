@@ -14,7 +14,7 @@ import {
   Line,
 } from 'recharts';
 import type { OximetryTraceData } from '@/lib/types';
-import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
@@ -23,17 +23,19 @@ interface Props {
   trace: OximetryTraceData;
   showHR?: boolean;
   showODIEvents?: boolean;
+  recordingStartTime?: Date | null;
 }
 
-function SpO2TooltipContent({ active, payload, label }: {
+function SpO2TooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       {payload.map((entry, i) => (
         <p key={i} className="text-muted-foreground">
           <span style={{ color: entry.color }}>{entry.name}:</span>{' '}
@@ -48,6 +50,7 @@ export const SpO2Trace = memo(function SpO2Trace({
   trace,
   showHR = true,
   showODIEvents = true,
+  recordingStartTime,
 }: Props) {
   const points = trace.trace;
   const viewport = useSyncedViewport();
@@ -171,7 +174,7 @@ export const SpO2Trace = memo(function SpO2Trace({
                 label={{ value: 'bpm', angle: 90, position: 'insideRight', style: { fill: 'hsl(0 84% 60%)', fontSize: 9 } }}
               />
             )}
-            <Tooltip content={<SpO2TooltipContent />} isAnimationActive={false} />
+            <Tooltip content={<SpO2TooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
 
             {/* Reference lines */}
             <ReferenceLine yAxisId="spo2" y={90} stroke="hsl(0 84% 60% / 0.5)" strokeDasharray="4 2" />

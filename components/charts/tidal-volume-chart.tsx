@@ -11,24 +11,26 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { TidalVolumePoint } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
 interface Props {
   tidalVolume: TidalVolumePoint[];
+  recordingStartTime?: Date | null;
 }
 
-function TVTooltipContent({ active, payload, label }: {
+function TVTooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: CHART_COLORS[3] }}>Tidal Volume:</span>{' '}
         <span className="font-mono">{Math.round(payload[0]!.value)}</span> mL
@@ -37,7 +39,7 @@ function TVTooltipContent({ active, payload, label }: {
   );
 }
 
-export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume }: Props) {
+export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume, recordingStartTime }: Props) {
   const viewport = useSyncedViewport();
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
@@ -99,7 +101,7 @@ export const TidalVolumeChart = memo(function TidalVolumeChart({ tidalVolume }: 
               width={40}
               label={{ value: 'mL', angle: -90, position: 'insideLeft', style: { fill: CHART_COLORS[3], fontSize: 9 } }}
             />
-            <Tooltip content={<TVTooltipContent />} isAnimationActive={false} />
+            <Tooltip content={<TVTooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
             <Area
               type="monotone"
               dataKey="avg"
