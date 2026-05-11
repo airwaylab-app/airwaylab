@@ -51,8 +51,11 @@ import OSCARAlternativesWebCPAP2026 from '../posts/oscar-alternatives-web-cpap-2
 import AHIVsRDISleepApnea from '../posts/ahi-vs-rdi-sleep-apnea';
 import SleepHQAlternative from '../posts/sleephq-alternative';
 import HypopneaVsApneaCPAPData from '../posts/hypopnea-vs-apnea-cpap-data';
+import FreeCPAPDataAnalysisSoftware from '../posts/free-cpap-data-analysis-software';
+import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,
   'how-to-read-oscar-cpap-charts': HowToReadOSCARCPAPCharts,
   'cpap-leak-rate-meaning': CPAPLeakRateMeaning,
@@ -64,6 +67,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'sleephq-alternative': SleepHQAlternative,
   'hypopnea-vs-apnea-cpap-data': HypopneaVsApneaCPAPData,
   'cpap-compliance-tracking': CPAPComplianceTracking,
+  'free-cpap-data-analysis-software': FreeCPAPDataAnalysisSoftware,
   'resmed-sd-card-browser-analysis': ResMedSDCardBrowserAnalysis,
   'low-ahi-still-tired-flow-limitation-reras': LowAHIStillTiredFlowLimitationRERAs,
   'cpap-data-analysis-browser-no-download': CPAPDataAnalysisBrowserNoDownload,

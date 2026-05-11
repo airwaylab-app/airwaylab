@@ -41,7 +41,7 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults } from '@/lib/persistence';
+import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
@@ -141,6 +141,7 @@ function AnalyzePageInner() {
   const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
+  const [localDataCleared, setLocalDataCleared] = useState(false);
 
   // Warn before closing/refreshing while analysis is in progress
   useEffect(() => {
@@ -488,6 +489,14 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
+  const handleClearLocalData = useCallback(() => {
+    clearPersistedNights();
+    orchestrator.reset();
+    setPersistedData(null);
+    setLocalDataCleared(true);
+    events.dataDeletionCompleted();
+  }, []);
+
   // Scroll active tab into view on change and initial mount
   useEffect(() => {
     const container = tabScrollRef.current;
@@ -529,6 +538,16 @@ function AnalyzePageInner() {
     [isDemo, state.therapyChangeDate, persistedData?.therapyChangeDate]
   );
 
+  // Tier-gated history slice: community sees at most 7 most recent nights.
+  // Export, contribute, and session-level analytics still use the full `nights` array.
+  const visibleNights = useMemo(() => {
+    const windowDays = getAnalysisWindowDays(tier);
+    if (windowDays === Infinity || !windowDays) return nights;
+    const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+    const filtered = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
+    return filtered.slice(-windowDays);
+  }, [nights, tier]);
+
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
 
@@ -558,11 +577,11 @@ function AnalyzePageInner() {
     return () => observer.disconnect();
   }, [isComplete, onWalkthroughStep1Complete]);
 
-  const currentNight = nights[selectedNight] ?? null;
-  const previousNight = nights[selectedNight + 1] ?? null;
+  const currentNight = visibleNights[selectedNight] ?? null;
+  const previousNight = visibleNights[selectedNight + 1] ?? null;
 
   // Memoize date strings to avoid new array allocation on every render
-  const nightDates = useMemo(() => nights.map((n) => n.dateStr), [nights]);
+  const nightDates = useMemo(() => visibleNights.map((n) => n.dateStr), [visibleNights]);
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -827,13 +846,32 @@ function AnalyzePageInner() {
           )}
 
           {/* Persistence warning — nights dropped or save failed */}
-          {!isDemo && persistenceWarning && (
+          {!isDemo && localDataCleared && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Local data cleared</span>
+                {' '}&mdash; Re-upload your SD card to start fresh.
+              </p>
+            </div>
+          )}
+          {!isDemo && persistenceWarning && !localDataCleared && (
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
               <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Storage limit reached</span>
-                {' '}&mdash; {persistenceWarning}
-              </p>
+              <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Storage limit reached</span>
+                  {' '}&mdash; {persistenceWarning}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                  onClick={handleClearLocalData}
+                >
+                  Clear saved data
+                </Button>
+              </div>
             </div>
           )}
 
@@ -884,7 +922,7 @@ function AnalyzePageInner() {
                 selectedIndex={selectedNight}
                 onChange={(idx) => {
                   setSelectedNight(idx);
-                  events.nightSwitched(nights.length);
+                  events.nightSwitched(visibleNights.length);
                 }}
               />
               </div>
@@ -1011,7 +1049,7 @@ function AnalyzePageInner() {
               <div ref={overviewPanelRef} />
               <ErrorBoundary context="Overview">
                 <OverviewTab
-                  nights={nights}
+                  nights={visibleNights}
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
@@ -1032,7 +1070,7 @@ function AnalyzePageInner() {
               <ErrorBoundary context="Graphs">
                 <GraphsTab
                   selectedNight={currentNight}
-                  nights={nights}
+                  nights={visibleNights}
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
                   sdFiles={sdFilesRef.current}
@@ -1049,7 +1087,7 @@ function AnalyzePageInner() {
             <TabsContent value="glasgow" className="mt-6">
               <ErrorBoundary context="Glasgow Index">
                 <GlasgowTab
-                  nights={nights}
+                  nights={visibleNights}
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
@@ -1062,7 +1100,7 @@ function AnalyzePageInner() {
                 <FlowAnalysisTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
-                  nights={nights}
+                  nights={visibleNights}
                 />
               </ErrorBoundary>
             </TabsContent>
@@ -1073,7 +1111,7 @@ function AnalyzePageInner() {
                   <SettingsTab
                     selectedNight={currentNight}
                     previousNight={previousNight}
-                    nights={nights}
+                    nights={visibleNights}
                   />
                 </ErrorBoundary>
               </TabsContent>
@@ -1084,7 +1122,7 @@ function AnalyzePageInner() {
                 <OximetryTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
-                  nights={nights}
+                  nights={visibleNights}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
@@ -1097,7 +1135,7 @@ function AnalyzePageInner() {
             <TabsContent value="trends" className="mt-6">
               <ErrorBoundary context="Trends">
                 <TrendsTab
-                  nights={nights}
+                  nights={visibleNights}
                   therapyChangeDate={therapyChangeDate}
                 />
               </ErrorBoundary>
@@ -1106,7 +1144,7 @@ function AnalyzePageInner() {
             <TabsContent value="compare" className="mt-6">
               <ErrorBoundary context="Comparison">
                 <ComparisonTab
-                  nights={nights}
+                  nights={visibleNights}
                   nightA={currentNight}
                   nightAIndex={selectedNight}
                 />

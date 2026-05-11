@@ -8,6 +8,7 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 import type { NightResult } from '@/lib/types';
 import { isValidDeviceMode } from '@/lib/device-capabilities';
 
+// Tier-blind by design: all uploads are kept for ML data flywheel (AIR-1060)
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 30 });
 
 // ── Validation ───────────────────────────────────────────────

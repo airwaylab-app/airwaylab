@@ -187,6 +187,55 @@ describe('contributeNights', () => {
       'Contribution failed (batch 1): HTTP 503 (non-JSON)'
     );
   });
+
+  it('returns soft rateLimited result on 429 — does not throw', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+      headers: { get: () => 'application/json' },
+    });
+
+    const nights = makeNights(5);
+    const result = await contributeNights(nights);
+
+    expect(result.ok).toBe(false);
+    expect(result.rateLimited).toBe(true);
+    expect(result.totalSent).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns soft rateLimited result mid-batch — reports nights sent so far', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+        headers: { get: () => 'application/json' },
+      });
+
+    const nights = makeNights(1500);
+    const result = await contributeNights(nights);
+
+    expect(result.ok).toBe(false);
+    expect(result.rateLimited).toBe(true);
+    expect(result.totalSent).toBe(1000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry on 429 — only makes one request', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+      headers: { get: () => 'application/json' },
+    });
+
+    await contributeNights(makeNights(1));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('trackContributedDates', () => {

@@ -101,5 +101,5 @@ export function incrementAIUsage(): void {
 export function getAnalysisWindowDays(tier: Tier): number {
   if (tier === 'champion') return Infinity;
   if (tier === 'supporter') return 90;
-  return 14; // community: most recent 14 days
+  return 7; // community: 7 most recent nights
 }

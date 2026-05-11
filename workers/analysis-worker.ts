@@ -231,68 +231,84 @@ async function processFiles(
   const eveFileInfos = filterEVEFiles(fileList);
   const eveEventsByDate = new Map<string, MachineHypopneaSummary[]>();
   const eveReraCountByDate = new Map<string, number>();
-  for (const eveInfo of eveFileInfos) {
+  for (let idx = 0; idx < eveFileInfos.length; idx++) {
+    const eveInfo = eveFileInfos[idx]!;
     const fileData = files.find((f) => f.path === eveInfo.path);
-    if (!fileData) continue;
-    try {
-      const events = parseEVE(fileData.buffer);
-      const nightDate = extractFolderDate(eveInfo.path);
-      if (!nightDate) continue;
-      const hypopneas = events
-        .filter((e) => e.type === 'hypopnea')
-        .map((e) => ({ onsetSec: e.onsetSec, durationSec: e.durationSec }));
-      if (hypopneas.length > 0) {
-        const existing = eveEventsByDate.get(nightDate) ?? [];
-        existing.push(...hypopneas);
-        eveEventsByDate.set(nightDate, existing);
+    if (fileData) {
+      try {
+        const events = parseEVE(fileData.buffer);
+        const nightDate = extractFolderDate(eveInfo.path);
+        if (nightDate) {
+          const hypopneas = events
+            .filter((e) => e.type === 'hypopnea')
+            .map((e) => ({ onsetSec: e.onsetSec, durationSec: e.durationSec }));
+          if (hypopneas.length > 0) {
+            const existing = eveEventsByDate.get(nightDate) ?? [];
+            existing.push(...hypopneas);
+            eveEventsByDate.set(nightDate, existing);
+          }
+          const reraCount = events.filter((e) => e.type === 'rera').length;
+          if (reraCount > 0) {
+            eveReraCountByDate.set(nightDate, (eveReraCountByDate.get(nightDate) ?? 0) + reraCount);
+          }
+        }
+      } catch (err) {
+        const filename = eveInfo.path.split('/').pop() || eveInfo.path;
+        const detail = err instanceof Error ? err.message : String(err);
+        const warning: WorkerWarning = {
+          type: 'WARNING',
+          checkpoint: 'parse_file_failed',
+          detail: `Failed to parse ${filename}: ${detail}`,
+          tags: { file: filename, error: detail },
+        };
+        self.postMessage(warning);
       }
-      const reraCount = events.filter((e) => e.type === 'rera').length;
-      if (reraCount > 0) {
-        eveReraCountByDate.set(nightDate, (eveReraCountByDate.get(nightDate) ?? 0) + reraCount);
-      }
-    } catch (err) {
-      const filename = eveInfo.path.split('/').pop() || eveInfo.path;
-      const detail = err instanceof Error ? err.message : String(err);
-      const warning: WorkerWarning = {
-        type: 'WARNING',
-        checkpoint: 'parse_file_failed',
-        detail: `Failed to parse ${filename}: ${detail}`,
-        tags: { file: filename, error: detail },
-      };
-      self.postMessage(warning);
+    }
+
+    if ((idx + 1) % PARSE_BATCH_SIZE === 0) {
+      postProgress(1, brpFiles.length + 2, `Parsing event files (${idx + 1}/${eveFileInfos.length})...`);
+      await yieldControl();
     }
   }
 
   // Step 3.6: Parse CSL.edf files and group CSR data by night date
   const cslFileInfos = filterCSLFiles(fileList);
   const cslDataByDate = new Map<string, CSLData>();
-  for (const cslInfo of cslFileInfos) {
+  for (let idx = 0; idx < cslFileInfos.length; idx++) {
+    const cslInfo = cslFileInfos[idx]!;
     const fileData = files.find((f) => f.path === cslInfo.path);
-    if (!fileData) continue;
-    try {
-      const cslData = parseCSL(fileData.buffer);
-      const nightDate = extractFolderDate(cslInfo.path);
-      if (!nightDate || !cslData) continue;
-      // Multiple CSL files per night: merge episodes
-      const existing = cslDataByDate.get(nightDate);
-      if (existing) {
-        existing.episodes.push(...cslData.episodes);
-        existing.totalCSRSeconds += cslData.totalCSRSeconds;
-        existing.episodeCount += cslData.episodeCount;
-        // csrPercentage will be recalculated below since it depends on total recording duration
-      } else {
-        cslDataByDate.set(nightDate, cslData);
+    if (fileData) {
+      try {
+        const cslData = parseCSL(fileData.buffer);
+        const nightDate = extractFolderDate(cslInfo.path);
+        if (nightDate && cslData) {
+          // Multiple CSL files per night: merge episodes
+          const existing = cslDataByDate.get(nightDate);
+          if (existing) {
+            existing.episodes.push(...cslData.episodes);
+            existing.totalCSRSeconds += cslData.totalCSRSeconds;
+            existing.episodeCount += cslData.episodeCount;
+            // csrPercentage will be recalculated below since it depends on total recording duration
+          } else {
+            cslDataByDate.set(nightDate, cslData);
+          }
+        }
+      } catch (err) {
+        const filename = cslInfo.path.split('/').pop() || cslInfo.path;
+        const detail = err instanceof Error ? err.message : String(err);
+        const warning: WorkerWarning = {
+          type: 'WARNING',
+          checkpoint: 'parse_file_failed',
+          detail: `Failed to parse ${filename}: ${detail}`,
+          tags: { file: filename, error: detail },
+        };
+        self.postMessage(warning);
       }
-    } catch (err) {
-      const filename = cslInfo.path.split('/').pop() || cslInfo.path;
-      const detail = err instanceof Error ? err.message : String(err);
-      const warning: WorkerWarning = {
-        type: 'WARNING',
-        checkpoint: 'parse_file_failed',
-        detail: `Failed to parse ${filename}: ${detail}`,
-        tags: { file: filename, error: detail },
-      };
-      self.postMessage(warning);
+    }
+
+    if ((idx + 1) % PARSE_BATCH_SIZE === 0) {
+      postProgress(1, brpFiles.length + 2, `Parsing CSR files (${idx + 1}/${cslFileInfos.length})...`);
+      await yieldControl();
     }
   }
 
@@ -332,6 +348,7 @@ async function processFiles(
 
     // Yield every PARSE_BATCH_SIZE PLD files to allow GC to reclaim memory
     if ((i + 1) % PARSE_BATCH_SIZE === 0) {
+      postProgress(1, brpFiles.length + 2, `Parsing PLD files (${i + 1}/${pldFiles.length})...`);
       await yieldControl();
     }
   }

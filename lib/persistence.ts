@@ -326,3 +326,12 @@ export function clearPersistedResults(): void {
     // Silently ignore
   }
 }
+
+export function clearPersistedNights(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('airwaylab_file_manifest');
+  } catch {
+    // Silently ignore — storage may be unavailable
+  }
+}
