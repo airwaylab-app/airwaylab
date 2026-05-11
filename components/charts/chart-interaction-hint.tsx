@@ -55,7 +55,7 @@ export function ChartInteractionHint() {
       <span>
         {isTouch
           ? 'Pinch to zoom \u00b7 Swipe to pan \u00b7 Tap time presets above for quick ranges'
-          : 'Scroll to zoom \u00b7 Drag to pan \u00b7 Use time presets above for quick ranges'}
+          : 'Scroll to zoom \u00b7 Drag to pan \u00b7 Shift+drag to zoom range \u00b7 Double-click to reset'}
       </span>
       <button
         onClick={dismiss}
