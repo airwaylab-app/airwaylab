@@ -538,14 +538,13 @@ function AnalyzePageInner() {
     [isDemo, state.therapyChangeDate, persistedData?.therapyChangeDate]
   );
 
-  // Tier-gated history slice: community sees at most 7 most recent nights.
+  // Tier-gated history window: only nights within the calendar window are visible.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
-    const filtered = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-    return filtered.slice(-windowDays);
+    return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
   }, [nights, tier]);
 
   const isComplete =
