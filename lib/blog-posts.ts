@@ -636,7 +636,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'How can I detect flow limitation and RERAs in my PAP data?',
         answer:
-          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with estimated RERA detection to surface the patterns AHI cannot see.',
+          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with estimated RERA estimation to surface the patterns AHI cannot see.',
       },
     ],
   },
@@ -660,7 +660,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'Is AirwayLab an OSCAR alternative?',
         answer:
-          'AirwayLab and OSCAR complement each other rather than compete. OSCAR is a desktop app with detailed waveform browsing; AirwayLab runs in your browser and adds automated metrics like flow limitation scoring, Glasgow Index, and RERA detection that OSCAR does not compute.',
+          'AirwayLab and OSCAR complement each other rather than compete. OSCAR is a desktop app with detailed waveform browsing; AirwayLab runs in your browser and adds automated metrics like flow limitation scoring, Glasgow Index, and RERA estimation that OSCAR does not compute.',
       },
       {
         question: 'Does AirwayLab upload my CPAP data?',
@@ -1004,7 +1004,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         question: 'How is flow limitation detected in PAP data?',
-        answer: 'Flow limitation is detected through breath shape analysis of the waveform data recorded on your PAP machine SD card. Key scoring methods include the Glasgow Index (9-component breath shape score, range 0-9), NED (Negative Effort Dependence, measuring whether increased effort decreases airflow), and estimated RERA detection. These require dedicated analysis software that reads the raw EDF files.',
+        answer: 'Flow limitation is detected through breath shape analysis of the waveform data recorded on your PAP machine SD card. Key scoring methods include the Glasgow Index (9-component breath shape score, range 0-9), NED (Negative Effort Dependence, measuring whether increased effort decreases airflow), and estimated RERA estimation. These require dedicated analysis software that reads the raw EDF files.',
       },
       {
         question: 'What is the Glasgow Index?',
@@ -1200,9 +1200,9 @@ export const blogPosts: BlogPost[] = [
           'AirwayLab calculates the NED score as: (peak flow - mid-inspiration flow) / peak flow x 100. A higher percentage means a larger drop in flow during the mid-inspiratory phase, the waveform signature of effort-dependent restriction.',
       },
       {
-        question: 'What is RERA detection in AirwayLab?',
+        question: 'What is RERA estimation in AirwayLab?',
         answer:
-          "AirwayLab's RERA detection identifies sequences of 3-15 consecutive breaths showing progressive flow limitation features followed by a recovery breath. It uses NED slope, recovery breath shape, and sigh detection. This is a flow-based heuristic from EDF data -- it is not equivalent to polysomnography-based RERA scoring by a sleep clinician.",
+          "AirwayLab's RERA estimation identifies sequences of 3-15 consecutive breaths showing progressive flow limitation features followed by a recovery breath. It uses NED slope, recovery breath shape, and sigh detection. This is a flow-based heuristic from EDF data -- it is not equivalent to polysomnography-based RERA scoring by a sleep clinician.",
       },
     ],
   },
