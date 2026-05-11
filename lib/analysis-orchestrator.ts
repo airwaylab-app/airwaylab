@@ -449,7 +449,8 @@ class AnalysisOrchestrator {
         // Opaque load failures have no filename or message (browser cannot
         // expose cross-origin script errors, or the script simply failed to fetch).
         // Retry once silently — handles transient network blips and browser-extension
-        // interference on the first load attempt.
+        // interference on the first load attempt. The original `files` buffers are
+        // preserved (copies are transferred below, not originals) so the retry is safe.
         const isLoadFailure = !err.filename && !err.message;
         if (attempt === 1 && isLoadFailure) {
           Sentry.addBreadcrumb({
@@ -489,12 +490,25 @@ class AnalysisOrchestrator {
         reject(workerError);
       };
 
-      // Transfer ArrayBuffers for zero-copy
-      const transferable = files.map((f) => f.buffer);
-      this.worker.postMessage(
-        { type: 'ANALYZE', files, oximetryCSVs, deviceType, bmcSerial },
-        transferable
-      );
+      // Copy each ArrayBuffer before transferring so the originals in `files` remain
+      // valid if the worker fails to load and runWorker is retried with the same array.
+      // Without the copy, postMessage detaches the originals and the retry throws
+      // DataCloneError: ArrayBuffer at index N is already detached.
+      // postMessage is also wrapped in a try-catch because a synchronous throw
+      // must not escape the Promise constructor.
+      const transferBuffers = files.map((f) => f.buffer.slice(0));
+      const filesForWorker = files.map((f, i) => ({ ...f, buffer: transferBuffers[i]! }));
+      try {
+        this.worker.postMessage(
+          { type: 'ANALYZE', files: filesForWorker, oximetryCSVs, deviceType, bmcSerial },
+          transferBuffers
+        );
+      } catch (err) {
+        settle();
+        this.terminate();
+        Sentry.captureException(err, { extra: { context: 'analysis-worker-postmessage', attempt } });
+        reject(new Error('Analysis failed to start. Try refreshing the page.'));
+      }
     });
   }
 

@@ -102,7 +102,8 @@ export const ShareButton = memo(function ShareButton({
       });
 
       if (!presignRes.ok) {
-        throw new Error('Could not prepare file upload');
+        const errBody = await presignRes.json().catch(() => ({})) as { error?: string };
+        throw new Error(errBody.error ?? 'Could not prepare file upload');
       }
 
       const { uploadUrls } = await presignRes.json() as {
