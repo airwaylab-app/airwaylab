@@ -120,7 +120,7 @@ describe('HistoryExpiryWarning — community variant', () => {
   it('renders community banner when tier=community and hiddenNightCount=3', () => {
     render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(3))]} hiddenNightCount={3} />);
     expect(screen.getByText(/viewing the last 14 nights/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /see full history/i })).toHaveAttribute('href', '/pricing');
+    expect(screen.getByRole('link', { name: /see full history/i })).toHaveAttribute('href', '/pricing?source=community_window');
   });
 
   it('does not render community banner when hiddenNightCount=0', () => {
@@ -162,6 +162,6 @@ describe('HistoryExpiryWarning — supporter expiry warning (regression)', () =>
     const nights = [makeNight(daysAgoStr(77))];
     render(<HistoryExpiryWarning nights={nights} />);
     expect(screen.getByText(/expire/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /keep your history/i })).toHaveAttribute('href', '/pricing');
+    expect(screen.getByRole('link', { name: /keep your history/i })).toHaveAttribute('href', '/pricing?source=history_expiry');
   });
 });
