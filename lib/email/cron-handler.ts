@@ -2,7 +2,7 @@
  * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Discovers new candidates (activation, re_engagement) -- schedule first so they
+ * 1. Discovers new candidates (activation, re_engagement, win_back) -- schedule first so they
  *    can be sent in the same run, avoiding a 24h delay until the next cron.
  * 2. Queries for all due emails (scheduled_at <= now, status = pending)
  * 3. Sends each via Resend (with AB variant subjects where applicable)

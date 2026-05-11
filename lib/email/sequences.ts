@@ -437,6 +437,7 @@ export async function scheduleReEngagementSequences(
   return scheduled;
 }
 
+/**
  * Schedule a win-back email for a single cancelled paying user.
  * Called from the Stripe webhook on customer.subscription.deleted.
  * baseDate defaults to now — the email sends 7 days later.
