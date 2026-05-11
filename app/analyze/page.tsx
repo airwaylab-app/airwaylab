@@ -527,13 +527,23 @@ function AnalyzePageInner() {
     [isDemo, state.therapyChangeDate, persistedData?.therapyChangeDate]
   );
 
+  // Tier-gated history slice: community sees at most 7 most recent nights.
+  // Export, contribute, and session-level analytics still use the full `nights` array.
+  const visibleNights = useMemo(() => {
+    const windowDays = getAnalysisWindowDays(tier);
+    if (windowDays === Infinity || !windowDays) return nights;
+    const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+    const filtered = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
+    return filtered.slice(-windowDays);
+  }, [nights, tier]);
+
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
-  const currentNight = nights[selectedNight] ?? null;
-  const previousNight = nights[selectedNight + 1] ?? null;
+  const currentNight = visibleNights[selectedNight] ?? null;
+  const previousNight = visibleNights[selectedNight + 1] ?? null;
 
   // Memoize date strings to avoid new array allocation on every render
-  const nightDates = useMemo(() => nights.map((n) => n.dateStr), [nights]);
+  const nightDates = useMemo(() => visibleNights.map((n) => n.dateStr), [visibleNights]);
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -855,7 +865,7 @@ function AnalyzePageInner() {
                 selectedIndex={selectedNight}
                 onChange={(idx) => {
                   setSelectedNight(idx);
-                  events.nightSwitched(nights.length);
+                  events.nightSwitched(visibleNights.length);
                 }}
               />
               </div>
@@ -981,7 +991,7 @@ function AnalyzePageInner() {
             <TabsContent value="overview" className="mt-4">
               <ErrorBoundary context="Overview">
                 <OverviewTab
-                  nights={nights}
+                  nights={visibleNights}
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
@@ -1002,7 +1012,7 @@ function AnalyzePageInner() {
               <ErrorBoundary context="Graphs">
                 <GraphsTab
                   selectedNight={currentNight}
-                  nights={nights}
+                  nights={visibleNights}
                   therapyChangeDate={therapyChangeDate}
                   isDemo={isDemo}
                   sdFiles={sdFilesRef.current}
@@ -1019,7 +1029,7 @@ function AnalyzePageInner() {
             <TabsContent value="glasgow" className="mt-6">
               <ErrorBoundary context="Glasgow Index">
                 <GlasgowTab
-                  nights={nights}
+                  nights={visibleNights}
                   selectedNight={currentNight}
                   previousNight={previousNight}
                   therapyChangeDate={therapyChangeDate}
@@ -1032,7 +1042,7 @@ function AnalyzePageInner() {
                 <FlowAnalysisTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
-                  nights={nights}
+                  nights={visibleNights}
                 />
               </ErrorBoundary>
             </TabsContent>
@@ -1043,7 +1053,7 @@ function AnalyzePageInner() {
                   <SettingsTab
                     selectedNight={currentNight}
                     previousNight={previousNight}
-                    nights={nights}
+                    nights={visibleNights}
                   />
                 </ErrorBoundary>
               </TabsContent>
@@ -1054,7 +1064,7 @@ function AnalyzePageInner() {
                 <OximetryTab
                   selectedNight={currentNight}
                   previousNight={previousNight}
-                  nights={nights}
+                  nights={visibleNights}
                   onUploadOximetry={
                     !isDemo && !currentNight.oximetry
                       ? handleOximetryUpload
@@ -1067,7 +1077,7 @@ function AnalyzePageInner() {
             <TabsContent value="trends" className="mt-6">
               <ErrorBoundary context="Trends">
                 <TrendsTab
-                  nights={nights}
+                  nights={visibleNights}
                   therapyChangeDate={therapyChangeDate}
                 />
               </ErrorBoundary>
@@ -1076,7 +1086,7 @@ function AnalyzePageInner() {
             <TabsContent value="compare" className="mt-6">
               <ErrorBoundary context="Comparison">
                 <ComparisonTab
-                  nights={nights}
+                  nights={visibleNights}
                   nightA={currentNight}
                   nightAIndex={selectedNight}
                 />
