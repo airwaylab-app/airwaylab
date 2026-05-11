@@ -567,7 +567,7 @@ export function winBackCancelledPaying(unsubscribeUrl: string): { subject: strin
       ])}
       ${paragraph('If you\'d like to bring AI-powered insights back, you can reactivate from your account page.')}
       ${ctaButton('Come Back to AirwayLab', `${BASE_URL}/pricing?utm_source=email&utm_medium=win_back&utm_campaign=win_back`)}
-      ${paragraph('If you\'re done for now — that\'s completely fine. Your data stays in your browser and you\'re always welcome back later.')}
+      ${paragraph(`If you're done for now — that's completely fine. Your data stays in your browser and you're always welcome back later. <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe here</a> to stop these emails.`)}
       ${paragraph('<em>AirwayLab is not a medical device. This email contains no health data. Your clinician can help interpret your results in the context of your care.</em>')}
     `, unsubscribeUrl),
   };
