@@ -17,55 +17,6 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
-    slug: 'what-does-cpap-ahi-mean',
-    title: 'What Does My CPAP AHI Number Mean? A Plain-Language Guide',
-    seoTitle: 'What Does My CPAP AHI Number Mean? Plain-Language Guide | AirwayLab',
-    description:
-      'Your CPAP AHI counts apneas and hypopneas per hour — but what do the numbers mean, and what does AHI miss? A plain-language guide for PAP users.',
-    date: '2026-05-26',
-    readTime: '9 min read',
-    tags: ['AHI', 'CPAP Data', 'Sleep Apnea', 'Flow Limitation', 'RERAs'],
-    ogDescription:
-      'What does your CPAP AHI number actually mean? This guide covers how AHI is calculated, what the severity ranges represent, and what it misses: flow limitation, RERAs, and scoring variability.',
-    faqItems: [
-      {
-        question: 'What is a good AHI number for CPAP therapy?',
-        answer:
-          'Most clinical guidelines use an AHI below 5 as the target range on PAP therapy. Your clinician sets the specific goal for your situation — some individuals need different targets based on their clinical history. A persistent AHI above 5 on therapy is worth discussing at your next appointment.',
-      },
-      {
-        question: 'What does a high AHI on CPAP mean?',
-        answer:
-          'A high residual AHI on therapy means your machine is recording more scored breathing events than the typical target range. This can happen for several reasons — pressure settings, mask fit, body position, or changes in your upper airway. Your clinician can review your data and advise on next steps.',
-      },
-      {
-        question: 'Why does my AHI vary so much night to night?',
-        answer:
-          'Night-to-night AHI variability is normal. Factors like sleep position, alcohol, sedatives, nasal congestion, and sleep stage distribution can all affect how your airway behaves. A single high night is not necessarily cause for concern; a consistent upward trend is worth discussing with your clinician.',
-      },
-      {
-        question: 'Can I have a low AHI and still feel tired?',
-        answer:
-          'Yes. AHI only counts events that meet specific scoring thresholds. Flow-limited breaths and RERAs can disrupt sleep without appearing in your AHI. Other factors — sleep stage distribution, periodic limb movements, circadian issues — also affect how rested you feel. Your clinician can help evaluate what is contributing.',
-      },
-      {
-        question: 'What is the difference between AHI on a sleep study and AHI on CPAP?',
-        answer:
-          'Your diagnostic AHI from a sleep study reflects your untreated breathing during a supervised study. Your CPAP residual AHI reflects events recorded while the machine is running. They use related but not always identical scoring algorithms and represent different clinical contexts. Your sleep physician can explain what each means for your treatment plan.',
-      },
-      {
-        question: 'Does AirwayLab show my AHI?',
-        answer:
-          "Yes. AirwayLab reads the AHI and event data from your ResMed SD card and displays it alongside additional metrics — flow limitation scores, RERA-related breathing patterns, and breath-by-breath waveform analysis — that do not appear in your device's nightly summary. Everything runs in your browser; no data is uploaded.",
-      },
-      {
-        question: 'What does RDI mean and how is it different from AHI?',
-        answer:
-          'RDI (Respiratory Disturbance Index) typically adds RERAs to the apnea and hypopnea count used in AHI, so RDI is always equal to or higher than AHI for the same night. Most CPAP machines report AHI only. A full comparison of AHI vs RDI is coming in the next article in this series.',
-      },
-    ],
-  },
-  {
     slug: 'hypopnea-vs-apnea-cpap-data',
     title: 'Hypopnea vs Apnea: Understanding the Difference in Your CPAP Data',
     seoTitle: 'Hypopnea vs Apnea: What Each Breathing Event Means in CPAP Data | AirwayLab',
@@ -101,51 +52,6 @@ export const blogPosts: BlogPost[] = [
         question: 'Why does my CPAP show mostly hypopneas and few apneas?',
         answer:
           'The proportion of hypopneas vs apneas in CPAP data varies based on many factors. Your sleep physician can review your event breakdown alongside your full clinical history to interpret what the pattern shows.',
-      },
-    ],
-  },
-  {
-    slug: 'how-to-download-resmed-cpap-data',
-    title: 'How to Download Your ResMed CPAP Data (AirSense 10 & 11)',
-    seoTitle:
-      'How to Download ResMed CPAP Data: AirSense 10 & 11 Step-by-Step Guide | AirwayLab',
-    description:
-      'Step-by-step guide to getting your full CPAP data off a ResMed AirSense 10 or AirSense 11. What myAir shows vs. what the SD card contains — and how to open your files for analysis.',
-    date: '2026-06-09',
-    readTime: '6 min read',
-    tags: ['ResMed', 'CPAP Data', 'AirSense 10', 'AirSense 11', 'myAir', 'How-To'],
-    ogDescription:
-      'Your ResMed device records detailed breathing data every night. myAir shows you a summary score. This guide shows you how to access the full data — including waveforms — from your SD card.',
-    faqItems: [
-      {
-        question: 'How do I download data from my ResMed AirSense 10?',
-        answer:
-          'Power off the machine, remove the SD card from the right side panel, insert it into your computer, and open the DATALOG folder. The .edf files inside contain your full therapy data. Analysis tools like OSCAR and AirwayLab can read these files directly.',
-      },
-      {
-        question: 'Does ResMed AirSense 11 have an SD card?',
-        answer:
-          'Yes. The AirSense 11 uses a microSD card rather than a standard SD card. Some units shipped without a card pre-installed — you can insert a Class 10 microSD (8 GB or larger) and the device will begin recording detailed data from the next session.',
-      },
-      {
-        question: 'What does myAir not show you?',
-        answer:
-          'myAir shows usage hours, headline AHI, and leak rate. It does not provide raw flow waveforms, flow limitation data, RERA patterns, or access to your EDF files. Detailed analysis of breathing patterns requires tools that read the SD card data directly.',
-      },
-      {
-        question: 'How do I read EDF files from my ResMed CPAP?',
-        answer:
-          'EDF (European Data Format) files from a ResMed SD card can be read by OSCAR (desktop) or AirwayLab (browser-based, no install). You do not need to convert or open the files manually — just point the tool at your DATALOG folder.',
-      },
-      {
-        question: 'What is the DATALOG folder on my ResMed SD card?',
-        answer:
-          'DATALOG is the main folder on your ResMed SD card containing your therapy session files. Inside it are subfolders organised by date, each containing .edf files — including BRP.edf (the continuous flow waveform) and, if applicable, SAD.edf (SpO₂ data).',
-      },
-      {
-        question: 'Can I read my ResMed CPAP data without installing software?',
-        answer:
-          'Yes. AirwayLab runs entirely in your browser — drag your DATALOG folder in and your data loads immediately. No installation, no account, and no upload required.',
       },
     ],
   },
@@ -252,7 +158,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'Can AirwayLab show RDI?',
         answer:
-          "AirwayLab does not compute a clinical RDI — that requires EEG data that home CPAP devices do not record. AirwayLab's NED engine estimates RERA-type patterns per hour, which reflects similar airway behaviour. These estimates are not equivalent to a clinical RERA count and should be discussed with your clinician.",
+          'AirwayLab does not compute a clinical RDI — that requires EEG data that home CPAP devices do not record. AirwayLab\'s NED engine estimates RERA-type patterns per hour, which reflects similar airway behaviour. These estimates are not equivalent to a clinical RERA count and should be discussed with your clinician.',
       },
       {
         question: 'Is RDI or AHI more accurate?',
@@ -759,7 +665,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'How can I detect flow limitation and RERAs in my PAP data?',
         answer:
-          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with estimated RERA estimation to surface the patterns AHI cannot see.',
+          'Your ResMed SD card contains breath-by-breath flow waveform data. Tools like AirwayLab analyse this data using the Glasgow Index (breath shape scoring), FL Score (flow limitation percentage), and NED with RERA estimation to surface the patterns AHI cannot see.',
       },
     ],
   },
@@ -1127,7 +1033,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         question: 'How is flow limitation detected in PAP data?',
-        answer: 'Flow limitation is detected through breath shape analysis of the waveform data recorded on your PAP machine SD card. Key scoring methods include the Glasgow Index (9-component breath shape score, range 0-9), NED (Negative Effort Dependence, measuring whether increased effort decreases airflow), and estimated RERA estimation. These require dedicated analysis software that reads the raw EDF files.',
+        answer: 'Flow limitation is detected through breath shape analysis of the waveform data recorded on your PAP machine SD card. Key scoring methods include the Glasgow Index (9-component breath shape score, range 0-9), NED (Negative Effort Dependence, measuring whether increased effort decreases airflow), and RERA estimation. These require dedicated analysis software that reads the raw EDF files.',
       },
       {
         question: 'What is the Glasgow Index?',

@@ -308,6 +308,21 @@ export default function BeyondAHIPost() {
         </div>
       </section>
 
+      {/* Medical disclaimer */}
+      <section className="mt-8">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <p className="text-xs font-semibold text-foreground">Medical disclaimer</p>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            This article is for informational purposes only and does not constitute medical advice.
+            AirwayLab does not diagnose, treat, or provide clinical recommendations. Always discuss
+            your therapy data and any concerns with your clinician.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">Go Beyond AHI with AirwayLab</h3>

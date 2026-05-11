@@ -74,7 +74,7 @@ export default function WhatIsNEDSleepApnea() {
             </div>
 
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">RERA detection</p>
+              <p className="text-sm font-semibold text-foreground">RERA estimation</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Sequences of 3-15 consecutive breaths showing progressive flow limitation features,
                 followed by a recovery breath, are flagged as potential Respiratory Effort-Related
@@ -144,7 +144,7 @@ export default function WhatIsNEDSleepApnea() {
         <h3 className="text-lg font-bold">See Your NED Analysis</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload your ResMed SD card data for full NED analysis in your browser -- NED score,
-          flatness index, RERA detection, and H1/H2 split. No data uploaded.
+          flatness index, RERA estimation, and H1/H2 split. No data uploaded.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
           <Link
