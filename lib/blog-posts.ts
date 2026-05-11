@@ -17,6 +17,40 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'what-does-ahi-mean',
+    title: 'What Does AHI Mean? Understanding Your Sleep Apnea Score',
+    seoTitle: 'What Does AHI Mean? Understanding Your Sleep Apnea Score | AirwayLab',
+    description:
+      "AHI measures how many breathing pauses occur per hour during sleep. Here's what the number means, what it doesn't cover, and when to talk to your clinician.",
+    date: '2026-05-11',
+    readTime: '7 min read',
+    tags: ['AHI', 'Sleep Apnea', 'CPAP Metrics', 'Getting Started'],
+    ogDescription:
+      "AHI measures how many breathing pauses occur per hour during sleep. Here's what the number means, what it doesn't cover, and when to talk to your clinician.",
+    faqItems: [
+      {
+        question: 'What does AHI stand for?',
+        answer:
+          'AHI stands for Apnea-Hypopnea Index. It counts the number of apneas (complete breathing pauses) and hypopneas (partial breathing reductions) per hour of recorded sleep time.',
+      },
+      {
+        question: 'What is a normal AHI for CPAP therapy?',
+        answer:
+          'Most ResMed devices aim to keep residual AHI below 5/hr during therapy, but what constitutes a well-managed result is something your clinician determines for you specifically based on your full history.',
+      },
+      {
+        question: 'What is the difference between diagnostic AHI and residual AHI?',
+        answer:
+          'Diagnostic AHI is measured during a sleep study before you start therapy. Residual AHI is the value your CPAP machine reports while you are using therapy — this is what you see in AirwayLab and tools like OSCAR.',
+      },
+      {
+        question: 'Why does my AHI vary night to night?',
+        answer:
+          'Night-to-night variation in AHI is expected. Trends over weeks or months are more meaningful than individual nights. If you notice a persistent upward trend, it is worth raising with your sleep physician.',
+      },
+    ],
+  },
+  {
     slug: 'oscar-alternatives-web-cpap-2026',
     title: 'OSCAR Alternatives: Web-Based CPAP Analysis Tools for 2026',
     seoTitle: 'OSCAR Alternatives: Best Free CPAP Analysis Tools for 2026',
