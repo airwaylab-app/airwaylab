@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
+import type { NightResult } from '@/lib/types';
 
 vi.mock('@sentry/nextjs', () => ({
   addBreadcrumb: vi.fn(),
@@ -226,5 +228,78 @@ describe('persistence', () => {
     it('does not throw when nothing is saved', () => {
       expect(() => clearPersistedResults()).not.toThrow();
     });
+  });
+
+  describe('clearPersistedNights', () => {
+    it('removes airwaylab_results from localStorage', () => {
+      localStorage.setItem('airwaylab_results', '{"nights":[],"therapyChangeDate":null,"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_results')).toBeNull();
+    });
+
+    it('removes airwaylab_file_manifest from localStorage', () => {
+      localStorage.setItem('airwaylab_file_manifest', '{"manifests":[],"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
+    });
+  });
+});
+
+// ── filterNightsToTierWindow ────────────────────────────────────
+
+function makeDatedNight(dateStr: string): NightResult {
+  return { ...SAMPLE_NIGHTS[0]!, dateStr, date: new Date(dateStr) } as NightResult;
+}
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+describe('filterNightsToTierWindow', () => {
+  it('community tier keeps nights within 14 days and excludes older ones', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(5)),
+      makeDatedNight(daysAgo(10)),
+      makeDatedNight(daysAgo(20)),  // outside window
+      makeDatedNight(daysAgo(40)),  // outside window
+    ];
+    const result = filterNightsToTierWindow(nights, 'community');
+    expect(result).toHaveLength(3);
+    expect(result.map((n) => n.dateStr)).toEqual(
+      expect.not.arrayContaining([daysAgo(20), daysAgo(40)])
+    );
+  });
+
+  it('supporter tier keeps nights within 90 days and excludes older ones', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(45)),
+      makeDatedNight(daysAgo(80)),
+      makeDatedNight(daysAgo(100)),  // outside window
+    ];
+    const result = filterNightsToTierWindow(nights, 'supporter');
+    expect(result).toHaveLength(3);
+  });
+
+  it('champion tier keeps all nights regardless of age', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(200)),
+      makeDatedNight(daysAgo(500)),
+    ];
+    const result = filterNightsToTierWindow(nights, 'champion');
+    expect(result).toHaveLength(3);
+  });
+
+  it('returns empty array when no nights fall within community window', () => {
+    const nights = [
+      makeDatedNight(daysAgo(20)),
+      makeDatedNight(daysAgo(60)),
+    ];
+    const result = filterNightsToTierWindow(nights, 'community');
+    expect(result).toHaveLength(0);
   });
 });
