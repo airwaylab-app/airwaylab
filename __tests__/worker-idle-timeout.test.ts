@@ -189,4 +189,29 @@ describe('runWorker — idle timeout watchdog', () => {
     // Timer should be cleared — advancing 5 minutes must not produce a second rejection
     vi.advanceTimersByTime(6 * 60 * 1000);
   });
+
+  it('resolves successfully when multiple files with ArrayBuffers are passed (multi-session guard)', async () => {
+    // Regression test: multi-session SD card uploads send multiple ArrayBuffers as
+    // Transferables. Before the copy-before-transfer fix, a worker load failure on
+    // attempt 1 would detach the buffers, and the retry would throw DataCloneError.
+    // This test verifies that passing real ArrayBuffers does not produce DataCloneError.
+    const { Ctor, send } = makeControllableWorkerCtor();
+    vi.stubGlobal('Worker', Ctor);
+
+    const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+    const multiSessionFiles = [
+      { buffer: new ArrayBuffer(1024), path: 'DATALOG/20260501/BRP.edf' },
+      { buffer: new ArrayBuffer(512),  path: 'DATALOG/20260502/BRP.edf' },
+      { buffer: new ArrayBuffer(2048), path: 'STR.edf' },
+    ];
+
+    const promise = (orchestrator as unknown as { runWorker: RunWorker }).runWorker(multiSessionFiles);
+
+    // All buffers survive postMessage (copies were transferred, originals remain).
+    // Worker resolves cleanly.
+    send({ type: 'RESULTS', nights: [] });
+
+    await expect(promise).resolves.toEqual([]);
+  });
 });
