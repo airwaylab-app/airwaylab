@@ -40,6 +40,8 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
       reras: undefined, // RERA candidate list not needed for display; can be large for heavy RERA users
     },
     oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
+    // CSL episodes accumulate for severe CSR patients; keep aggregate stats, drop the episode list
+    csl: n.csl ? { ...n.csl, episodes: [] } : null,
     // settingsMetrics is a small summary object — keep it for persistence
   }));
 }

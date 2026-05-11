@@ -48,6 +48,7 @@ function stripNightBulkData(night: NightResult): NightResult {
     ...night,
     ned: { ...night.ned, breaths: [] },
     oximetryTrace: null,
+    csl: night.csl ? { ...night.csl, episodes: [] } : null,
   };
 }
 
