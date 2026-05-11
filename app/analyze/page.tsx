@@ -43,7 +43,7 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, RateLimitError } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
@@ -432,7 +432,11 @@ function AnalyzePageInner() {
       })
       .catch((err) => {
         Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
-        setAutoSubmitStatus('error');
+        if (err instanceof RateLimitError) {
+          setAutoSubmitStatus('paused'); // rate-limited: user can retry; not a permanent error
+        } else {
+          setAutoSubmitStatus('error');
+        }
       });
   }, []);
 

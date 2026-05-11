@@ -39,8 +39,8 @@ const CHUNK_SIZE = 1000;
 const MAX_SAFE_PAYLOAD_BYTES = 2_097_152; // 2 MB
 
 /** Thrown when the server returns 429 — treated as a soft transient failure, not an error. */
-class RateLimitError extends Error {
-  constructor() {
+export class RateLimitError extends Error {
+  constructor(public readonly retryAfterMs: number = 0) {
     super('rate_limited');
     this.name = 'RateLimitError';
   }
@@ -94,8 +94,6 @@ interface ContributionResult {
   ok: boolean;
   totalSent: number;
   contributionId: string;
-  /** True when the server returned 429 — contribution was paused, not lost. */
-  rateLimited?: boolean;
 }
 
 /**
@@ -151,7 +149,9 @@ async function sendNightsToServer(
   // retries are pointless. Throw RateLimitError so the caller can handle it
   // without raising a Sentry exception.
   if (res.status === 429) {
-    throw new RateLimitError();
+    const retryAfter = res.headers.get('Retry-After');
+    const retryAfterMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 0;
+    throw new RateLimitError(retryAfterMs);
   }
 
   const text = await res.text().catch(() => '');
@@ -209,15 +209,14 @@ export async function contributeNights(
       await sendNightsToServer(chunk, contextChunk, contributionId);
     } catch (err) {
       if (err instanceof RateLimitError) {
-        // Soft transient failure — paused for this session, analysis results unaffected.
-        // Do NOT call captureException: this is expected behaviour, not a bug.
+        // Re-throw so the caller can distinguish rate-limit (paused) from hard errors.
         Sentry.addBreadcrumb({
           category: 'contribute',
           message: 'contribute: rate limited — pausing contribution',
           level: 'info',
           data: { batchNum, totalSent, remaining: nights.length - totalSent },
         });
-        return { ok: false, rateLimited: true, totalSent, contributionId };
+        throw err;
       }
       const detail = err instanceof Error ? err.message : String(err);
       throw new Error(`Contribution failed (batch ${batchNum}): ${detail}`);
