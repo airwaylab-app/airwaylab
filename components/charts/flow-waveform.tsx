@@ -13,7 +13,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { FlowSample, PressurePoint, WaveformEvent } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime } from '@/lib/waveform-utils';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
@@ -29,6 +29,8 @@ interface Props {
   events: WaveformEvent[];
   /** Set of visible event types. If undefined, all events are shown. Empty set = no events. */
   visibleEventTypes?: Set<EventType>;
+  /** Recording start time from EDF header — enables wall-clock timestamps in tooltips. */
+  recordingStartTime?: Date | null;
 }
 
 const EVENT_COLORS: Record<string, { fill: string; stroke: string }> = {
@@ -67,16 +69,17 @@ const ALGORITHM_LEGEND: { type: EventType; label: string; tailwindClass: string 
   { type: 'm-shape', label: 'M', tailwindClass: 'bg-chart-1/25' },
 ];
 
-function FlowTooltipContent({ active, payload, label }: {
+function FlowTooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
 
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       {payload.map((entry, i) => (
         <p key={i} className="text-muted-foreground">
           <span style={{ color: entry.color }}>{entry.name}:</span>{' '}
@@ -92,8 +95,8 @@ export const FlowWaveform = memo(function FlowWaveform({
   flow,
   pressure,
   events,
-
   visibleEventTypes,
+  recordingStartTime,
 }: Props) {
   const viewport = useSyncedViewport();
   const hasPressure = pressure.length > 0;
@@ -243,7 +246,7 @@ export const FlowWaveform = memo(function FlowWaveform({
               />
             )}
             <Tooltip
-              content={<FlowTooltipContent />}
+              content={<FlowTooltipContent recordingStartTime={recordingStartTime} />}
               isAnimationActive={false}
             />
 
