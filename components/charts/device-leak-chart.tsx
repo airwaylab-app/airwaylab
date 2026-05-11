@@ -14,6 +14,7 @@ import {
 import type { LeakPoint } from '@/lib/waveform-types';
 import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
+import { useChartElementRef } from '@/hooks/use-chart-element-ref';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
 /** ResMed published threshold for clinically significant total leak */
@@ -46,6 +47,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
   leak,
 }: Props) {
   const viewport = useSyncedViewport();
+  const elementRef = useChartElementRef(viewport.attachToElement);
   const bucketSeconds = leak.length > 1 ? leak[1]!.t - leak[0]!.t : 2;
 
   const data = useMemo(() => {
@@ -81,13 +83,19 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
         </h3>
       </div>
       <div
-        ref={viewport.chartRef}
-        className="relative h-[140px] w-full cursor-grab select-none touch-none sm:h-[160px]"
+        ref={elementRef}
+        className={`relative h-[140px] w-full select-none touch-none sm:h-[160px] ${viewport.dragZoomMode ? 'cursor-crosshair' : 'cursor-grab'}`}
         role="application"
         aria-label="Leak rate chart. Synchronised with other charts."
         tabIndex={0}
         onKeyDown={viewport.handleKeyDown}
       >
+        {viewport.dragZoomOverlay.active && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 border-x border-primary/50 bg-primary/15"
+            style={{ left: `${viewport.dragZoomOverlay.leftPct}%`, width: `${viewport.dragZoomOverlay.widthPct}%` }}
+          />
+        )}
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
