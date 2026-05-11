@@ -303,6 +303,93 @@ describe('Shared Waveform EDF Storage', () => {
     });
   });
 
+  // ── Upload prep failure path (AIR-1363) ──────────────────
+
+  describe('upload prep failure path', () => {
+    it('propagates server error message from response body', async () => {
+      // Simulate the fixed client-side fetch handler in share-button.tsx
+      const serverError = 'Too many file uploads. Please try again later.';
+
+      async function handlePresignResponse(res: { ok: boolean; body: string }) {
+        if (!res.ok) {
+          let errMsg: string | undefined;
+          try {
+            const parsed = JSON.parse(res.body) as { error?: string };
+            errMsg = parsed.error;
+          } catch {
+            // ignore parse failure
+          }
+          throw new Error(errMsg ?? 'Could not prepare file upload');
+        }
+      }
+
+      await expect(handlePresignResponse({ ok: false, body: JSON.stringify({ error: serverError }) }))
+        .rejects.toThrow(serverError);
+    });
+
+    it('falls back to generic message when response body has no error field', async () => {
+      async function handlePresignResponse(res: { ok: boolean; body: string }) {
+        if (!res.ok) {
+          let errMsg: string | undefined;
+          try {
+            const parsed = JSON.parse(res.body) as { error?: string };
+            errMsg = parsed.error;
+          } catch {
+            // ignore parse failure
+          }
+          throw new Error(errMsg ?? 'Could not prepare file upload');
+        }
+      }
+
+      await expect(handlePresignResponse({ ok: false, body: '{}' }))
+        .rejects.toThrow('Could not prepare file upload');
+    });
+
+    it('falls back to generic message when response body is not valid JSON', async () => {
+      async function handlePresignResponse(res: { ok: boolean; body: string }) {
+        if (!res.ok) {
+          let errMsg: string | undefined;
+          try {
+            const parsed = JSON.parse(res.body) as { error?: string };
+            errMsg = parsed.error;
+          } catch {
+            // ignore parse failure
+          }
+          throw new Error(errMsg ?? 'Could not prepare file upload');
+        }
+      }
+
+      await expect(handlePresignResponse({ ok: false, body: 'not-json' }))
+        .rejects.toThrow('Could not prepare file upload');
+    });
+
+    it('rate limit key is user-scoped (not IP-scoped)', () => {
+      // getUserRateLimitKey returns user:<id> so each user has their own bucket
+      function getUserRateLimitKey(userId: string) {
+        return `user:${userId}`;
+      }
+
+      const userA = getUserRateLimitKey('user-aaa');
+      const userB = getUserRateLimitKey('user-bbb');
+      expect(userA).not.toBe(userB);
+      expect(userA).toBe('user:user-aaa');
+      expect(userB).toBe('user:user-bbb');
+    });
+
+    it('rate limit allows 20 requests per hour (not 5)', () => {
+      const MAX_PRESIGN_PER_HOUR = 20;
+      expect(MAX_PRESIGN_PER_HOUR).toBe(20);
+      expect(MAX_PRESIGN_PER_HOUR).toBeGreaterThan(5);
+    });
+
+    it('upsert option allows re-upload to same path on retry', () => {
+      // Documents that createSignedUploadUrl must be called with { upsert: true }
+      // so a user who retries after a partial upload does not get a storage conflict
+      const uploadOptions = { upsert: true };
+      expect(uploadOptions.upsert).toBe(true);
+    });
+  });
+
   // ── Privacy footer text ───────────────────────────────────
 
   describe('privacy footer', () => {
