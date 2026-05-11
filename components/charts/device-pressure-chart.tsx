@@ -78,6 +78,16 @@ export const DevicePressureChart = memo(function DevicePressureChart({
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
+        {viewport.dragSelectState && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-20 border-x border-blue-400/60 bg-blue-500/15"
+            style={{
+              left: `${viewport.dragSelectState.leftFraction * 100}%`,
+              width: `${viewport.dragSelectState.widthFraction * 100}%`,
+            }}
+          />
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(217 33% 15% / 0.3)" vertical={false} />
