@@ -189,20 +189,15 @@ export function exportCSV(nights: NightResult[]): string {
 }
 
 export function exportJSON(nights: NightResult[]): string {
-  // ned.breaths contains Float32Array (inspFlow) per breath. Serializing them
-  // produces enormous objects that can exceed the JS string length limit
-  // (RangeError: Invalid string length — JAVASCRIPT-NEXTJS-63).
-  // Strip bulk arrays before stringifying; all summary metrics are preserved.
-  const safeNights = nights.map((n) => ({
+  // Strip per-breath arrays before serialization — they can be tens of MB for
+  // long recordings and will throw RangeError: Invalid string length in V8.
+  const stripped = nights.map((n) => ({
     ...n,
-    ned: {
-      ...n.ned,
-      breaths: [],      // per-breath raw data stored in IndexedDB, not needed in export
-      reras: undefined, // RERA candidate list can be large; summary reraIndex/reraCount are kept
-    },
-    oximetryTrace: null, // raw trace stored in IndexedDB, not needed in export
+    ned: { ...n.ned, breaths: [], reras: [] },
+    oximetryTrace: null,
+    csl: n.csl ? { ...n.csl, episodes: [] } : null,
   }));
-  return JSON.stringify(safeNights, null, 2);
+  return JSON.stringify(stripped, null, 2);
 }
 
 export function downloadFile(content: string, filename: string, mime: string): void {
