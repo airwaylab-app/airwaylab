@@ -43,7 +43,7 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, RateLimitError } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
@@ -430,7 +430,10 @@ function AnalyzePageInner() {
         ).catch(() => { /* logged in contributeOximetryTraceBackground */ });
       })
       .catch((err) => {
-        Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
+        // Rate limit is a soft transient failure — no Sentry, no alarming UI
+        if (!(err instanceof RateLimitError)) {
+          Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
+        }
         setAutoSubmitStatus('error');
       });
   }, []);

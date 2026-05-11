@@ -20,7 +20,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 // ── Mock crypto.randomUUID ──────────────────────────────────
 vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, RateLimitError } from '@/lib/contribute';
 
 // ── Helpers ─────────────────────────────────────────────────
 function makeNight(dateStr: string): NightResult {
@@ -186,6 +186,72 @@ describe('contributeNights', () => {
     await expect(contributeNights(nights)).rejects.toThrow(
       'Contribution failed (batch 1): HTTP 503 (non-JSON)'
     );
+  });
+
+  it('throws RateLimitError (not generic Error) on 429 response', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: (_key: string) => null },
+    });
+
+    const nights = makeNights(1);
+    await expect(contributeNights(nights)).rejects.toBeInstanceOf(RateLimitError);
+  });
+
+  it('RateLimitError carries retryAfterMs from Retry-After header', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: (key: string) => key === 'Retry-After' ? '3600' : null },
+    });
+
+    const nights = makeNights(1);
+    let thrown: unknown;
+    try {
+      await contributeNights(nights);
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(RateLimitError);
+    expect((thrown as RateLimitError).retryAfterMs).toBe(3_600_000);
+  });
+
+  it('RateLimitError message includes "Too many" so existing UI checks keep working', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+    });
+
+    const nights = makeNights(1);
+    let thrown: unknown;
+    try {
+      await contributeNights(nights);
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(RateLimitError);
+    expect((thrown as RateLimitError).message).toContain('Too many');
+  });
+
+  it('RateLimitError does not get wrapped in "Contribution failed (batch N)" prefix', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+    });
+
+    const nights = makeNights(1);
+    let thrown: unknown;
+    try {
+      await contributeNights(nights);
+    } catch (err) {
+      thrown = err;
+    }
+    // Must be RateLimitError, not a generic Error wrapping the message
+    expect(thrown).toBeInstanceOf(RateLimitError);
+    expect((thrown as Error).message).not.toContain('Contribution failed');
   });
 });
 
