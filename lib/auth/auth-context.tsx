@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('profiles')
       .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       // "Lock was stolen" is transient Supabase SSR lock contention -- suppress
@@ -75,6 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           tags: { context: 'auth-profile-fetch' },
         });
       }
+      return;
+    }
+
+    if (!profileData) {
+      // No profile row — trigger gap for users created during migration 006-027 window
+      Sentry.captureMessage(`Profile row missing for authenticated user`, {
+        level: 'warning',
+        tags: { context: 'auth-profile-missing' },
+      });
       return;
     }
 
