@@ -325,10 +325,6 @@ export function clearPersistedResults(): void {
   }
 }
 
-/**
- * Clear all locally persisted nights and the file manifest.
- * Called when the user explicitly clears data from the UI.
- */
 export function clearPersistedNights(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);

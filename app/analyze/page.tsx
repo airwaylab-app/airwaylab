@@ -380,7 +380,7 @@ function AnalyzePageInner() {
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial);
     },
     [lifetimeNights]
   );
@@ -401,7 +401,7 @@ function AnalyzePageInner() {
       hadOximetryRef.current = false;
 
       // Use oximetry-only path: merges into cached nights without re-processing SD card
-      orchestrator.analyzeOximetryOnly(files, tierRef.current);
+      orchestrator.analyzeOximetryOnly(files);
 
       // Reset input so same file can be re-selected
       if (oxInputRef.current) oxInputRef.current.value = '';
