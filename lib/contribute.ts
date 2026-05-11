@@ -8,6 +8,16 @@ import * as Sentry from '@sentry/nextjs';
 import type { NightResult, NightNotes } from './types';
 import { loadNightNotes } from './night-notes';
 
+/** Thrown when the server returns HTTP 429 — soft transient failure, not a permanent error. */
+export class RateLimitError extends Error {
+  retryAfterMs?: number;
+  constructor(retryAfterMs?: number) {
+    super('Too many contributions. Please try again later.');
+    this.name = 'RateLimitError';
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 /**
  * Strip bulky per-breath/trace arrays from NightResult before contribution.
  * The server's anonymiseNight() only reads scalar summary fields, so bulk
@@ -37,14 +47,6 @@ const CHUNK_SIZE = 1000;
 // Stay well below both Vercel's 4.5 MB proxy limit and the server's 3 MB check.
 // JSON is mostly ASCII for this data, so body.length ≈ byte count.
 const MAX_SAFE_PAYLOAD_BYTES = 2_097_152; // 2 MB
-
-/** Thrown when the server returns 429 — treated as a soft transient failure, not an error. */
-class RateLimitError extends Error {
-  constructor() {
-    super('rate_limited');
-    this.name = 'RateLimitError';
-  }
-}
 
 /** Structured night context for contribution (no free text — only enums + numeric) */
 interface NightContext {
@@ -151,7 +153,9 @@ async function sendNightsToServer(
   // retries are pointless. Throw RateLimitError so the caller can handle it
   // without raising a Sentry exception.
   if (res.status === 429) {
-    throw new RateLimitError();
+    const retryAfterHeader = res.headers.get('Retry-After');
+    const retryAfterMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : undefined;
+    throw new RateLimitError(retryAfterMs);
   }
 
   const text = await res.text().catch(() => '');
@@ -209,7 +213,7 @@ export async function contributeNights(
       await sendNightsToServer(chunk, contextChunk, contributionId);
     } catch (err) {
       if (err instanceof RateLimitError) {
-        // Soft transient failure — paused for this session, analysis results unaffected.
+        // Soft transient failure — rethrow so the caller can show a 'paused' UI state.
         // Do NOT call captureException: this is expected behaviour, not a bug.
         Sentry.addBreadcrumb({
           category: 'contribute',
@@ -217,7 +221,7 @@ export async function contributeNights(
           level: 'info',
           data: { batchNum, totalSent, remaining: nights.length - totalSent },
         });
-        return { ok: false, rateLimited: true, totalSent, contributionId };
+        throw err;
       }
       const detail = err instanceof Error ? err.message : String(err);
       throw new Error(`Contribution failed (batch ${batchNum}): ${detail}`);

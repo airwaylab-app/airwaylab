@@ -20,7 +20,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 // ── Mock crypto.randomUUID ──────────────────────────────────
 vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, RateLimitError } from '@/lib/contribute';
 
 // ── Helpers ─────────────────────────────────────────────────
 function makeNight(dateStr: string): NightResult {
@@ -188,53 +188,55 @@ describe('contributeNights', () => {
     );
   });
 
-  it('returns soft rateLimited result on 429 — does not throw', async () => {
+  it('throws RateLimitError (not a generic Error) when server returns 429', async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 429,
-      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
-      headers: { get: () => 'application/json' },
+      headers: { get: () => null },
     });
 
-    const nights = makeNights(5);
-    const result = await contributeNights(nights);
-
-    expect(result.ok).toBe(false);
-    expect(result.rateLimited).toBe(true);
-    expect(result.totalSent).toBe(0);
+    const err = await contributeNights(makeNights(1)).catch((e) => e);
+    expect(err).toBeInstanceOf(RateLimitError);
+    expect(err.message).toBe('Too many contributions. Please try again later.');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('returns soft rateLimited result mid-batch — reports nights sent so far', async () => {
+  it('parses Retry-After header into retryAfterMs', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: (h: string) => (h === 'Retry-After' ? '3600' : null) },
+    });
+
+    const err = await contributeNights(makeNights(1)).catch((e) => e);
+    expect(err).toBeInstanceOf(RateLimitError);
+    expect(err.retryAfterMs).toBe(3_600_000);
+  });
+
+  it('sets retryAfterMs to undefined when no Retry-After header', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+    });
+
+    const err = await contributeNights(makeNights(1)).catch((e) => e);
+    expect(err).toBeInstanceOf(RateLimitError);
+    expect(err.retryAfterMs).toBeUndefined();
+  });
+
+  it('propagates RateLimitError mid-batch without wrapping', async () => {
     fetchMock
-      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({
         ok: false,
         status: 429,
-        text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
-        headers: { get: () => 'application/json' },
+        headers: { get: () => null },
       });
 
-    const nights = makeNights(1500);
-    const result = await contributeNights(nights);
-
-    expect(result.ok).toBe(false);
-    expect(result.rateLimited).toBe(true);
-    expect(result.totalSent).toBe(1000);
+    const err = await contributeNights(makeNights(1500)).catch((e) => e);
+    expect(err).toBeInstanceOf(RateLimitError);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-
-  it('does not retry on 429 — only makes one request', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 429,
-      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
-      headers: { get: () => 'application/json' },
-    });
-
-    await contributeNights(makeNights(1));
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 

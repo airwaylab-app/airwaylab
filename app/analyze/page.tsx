@@ -43,7 +43,7 @@ import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, RateLimitError } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
 import { safeGetItem } from '@/lib/safe-local-storage';
@@ -431,8 +431,12 @@ function AnalyzePageInner() {
         ).catch(() => { /* logged in contributeOximetryTraceBackground */ });
       })
       .catch((err) => {
-        Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
-        setAutoSubmitStatus('error');
+        if (err instanceof RateLimitError) {
+          setAutoSubmitStatus('paused'); // rate-limited: user can retry; not a permanent error
+        } else {
+          Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
+          setAutoSubmitStatus('error');
+        }
       });
   }, []);
 
@@ -536,14 +540,13 @@ function AnalyzePageInner() {
     [isDemo, state.therapyChangeDate, persistedData?.therapyChangeDate]
   );
 
-  // Tier-gated history slice: community sees at most 7 most recent nights.
+  // Tier-gated history window: community sees nights within the last 7 calendar days.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
-    const filtered = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-    return filtered.slice(-windowDays);
+    return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
   }, [nights, tier]);
 
   const isComplete =
