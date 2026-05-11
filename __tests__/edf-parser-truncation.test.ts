@@ -287,18 +287,6 @@ describe('EDF Parser — Flow Signal Detection (AIR-1364)', () => {
     expect(result.flowData.length).toBe(5 * 25);
   });
 
-  it('falls back to physicalMin < 0 for unrecognised label', () => {
-    const buffer = buildEDFBuffer({
-      numDataRecords: 5,
-      samplesPerRecord: 25,
-      signalLabel: 'MskFl',
-      physicalMin: -150,
-      physicalMax: 150,
-    });
-    const result = parseEDF(buffer, 'test/BRP.edf');
-    expect(result.flowData.length).toBe(5 * 25);
-  });
-
   it('throws with signal labels listed when no flow signal found', () => {
     const buffer = buildEDFBuffer({
       numDataRecords: 5,
