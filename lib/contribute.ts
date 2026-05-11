@@ -148,8 +148,17 @@ async function sendNightsToServer(
     if (res.ok) return;
 
     if (res.status === 429) {
+      const retryAfterHeader = res.headers.get('Retry-After');
+      const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+      // Long Retry-After (>60s) signals a per-window rate limit, not a transient spike.
+      // Skip retries entirely and surface a soft failure — no Sentry noise.
+      if (!isNaN(retryAfterSeconds) && retryAfterSeconds > 60) {
+        throw new ContributionRateLimitedError();
+      }
       if (attempt < RATE_LIMIT_MAX_RETRIES) {
-        const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
+        const delay = !isNaN(retryAfterSeconds) && retryAfterSeconds > 0
+          ? retryAfterSeconds * 1000
+          : RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
