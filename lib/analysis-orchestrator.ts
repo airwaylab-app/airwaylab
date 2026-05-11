@@ -14,6 +14,8 @@ import type {
   WorkerResponse,
   WorkerSettingsDiagnostic,
 } from './types';
+import type { Tier } from './auth/auth-context';
+import { getAnalysisWindowDays } from './auth/feature-gate';
 import { loadPersistedResults, persistResults, persistNightsIncremental } from './persistence';
 import {
   extractNightDate,
@@ -48,6 +50,7 @@ class AnalysisOrchestrator {
   private incrementalNights: NightResult[] = [];
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private boundBeforeUnload: (() => void) | null = null;
+  private currentTier: Tier = 'community';
 
   /** Diagnostic info from settings extraction failure (null when extraction succeeded). */
   settingsDiagnostic: WorkerSettingsDiagnostic | null = null;
@@ -75,8 +78,10 @@ class AnalysisOrchestrator {
     sdFiles: FileList | File[],
     oximetryFiles?: FileList | File[],
     deviceType?: string,
-    bmcSerial?: string
+    bmcSerial?: string,
+    tier: Tier = 'community'
   ): Promise<NightResult[]> {
+    this.currentTier = tier;
     this.terminate();
     const sdArr = Array.from(sdFiles);
     this.setState({
@@ -114,7 +119,7 @@ class AnalysisOrchestrator {
         if (unchangedDates.length > 0 && changedNights.size === 0 && uncachedUnchanged.size === 0) {
           // Everything unchanged AND fully cached — instant restore or oximetry-only
           if (hasNewOximetry) {
-            return this.analyzeOximetryOnly(oximetryFiles!);
+            return this.analyzeOximetryOnly(oximetryFiles!, tier);
           }
           await restoreOximetryTraces(cachedNights);
           await restoreBreathData(cachedNights);
@@ -160,7 +165,7 @@ class AnalysisOrchestrator {
 
         if (newDates.size === 0 && cachedNights.length > 0) {
           if (hasNewOximetry) {
-            return this.analyzeOximetryOnly(oximetryFiles!);
+            return this.analyzeOximetryOnly(oximetryFiles!, tier);
           }
           await restoreOximetryTraces(cachedNights);
           await restoreBreathData(cachedNights);
@@ -273,11 +278,12 @@ class AnalysisOrchestrator {
         }
       }
 
-      // ── Authoritative save of final results ──
-      const persistResult = persistResults(merged, therapyChangeDate);
-      persistOximetryTraces(merged);
-      persistBreathData(merged);
-      persistPLDTraces(merged);
+      // ── Authoritative save of final results (tier-gated) ──
+      const nightsToSave = filterNightsToTierWindow(merged, tier);
+      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      persistOximetryTraces(nightsToSave);
+      persistBreathData(nightsToSave);
+      persistPLDTraces(nightsToSave);
 
       Sentry.addBreadcrumb({ message: 'Analysis complete', category: 'analysis', data: { nightCount: merged.length } });
 
@@ -503,8 +509,10 @@ class AnalysisOrchestrator {
    * Does not re-read or re-process SD card files.
    */
   async analyzeOximetryOnly(
-    oximetryFiles: FileList | File[]
+    oximetryFiles: FileList | File[],
+    tier: Tier = 'community'
   ): Promise<NightResult[]> {
+    this.currentTier = tier;
     this.terminate();
 
     const cached = loadPersistedResults();
@@ -553,10 +561,11 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results
+      // Persist updated results (tier-gated)
       const therapyChangeDate = detectTherapyChange(merged);
-      const persistResult = persistResults(merged, therapyChangeDate);
-      persistOximetryTraces(merged);
+      const nightsToSave = filterNightsToTierWindow(merged, tier);
+      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      persistOximetryTraces(nightsToSave);
 
       this.setState({
         status: 'complete',
@@ -684,7 +693,8 @@ class AnalysisOrchestrator {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       if (this.incrementalNights.length > 0) {
-        persistNightsIncremental(this.incrementalNights);
+        const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier);
+        persistNightsIncremental(nights);
       }
     }, 2000);
   }
@@ -703,7 +713,8 @@ class AnalysisOrchestrator {
     this.boundBeforeUnload = () => {
       if (this.incrementalNights.length > 0) {
         try {
-          persistNightsIncremental(this.incrementalNights);
+          const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier);
+          persistNightsIncremental(nights);
         } catch {
           // Best effort — page is closing
         }
@@ -736,6 +747,19 @@ class AnalysisOrchestrator {
 }
 
 // ── Helpers ──────────────────────────────────────────────────
+
+/**
+ * Slice a sorted (most-recent-first) nights array to the tier's analysis window.
+ * Champions get all nights; supporters get 90 days; community gets 7 nights.
+ */
+function filterNightsToTierWindow(nights: NightResult[], tier: Tier): NightResult[] {
+  const windowDays = getAnalysisWindowDays(tier);
+  if (windowDays === Infinity) return nights;
+  const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+  const inWindow = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
+  // nights is sorted most-recent-first; keep at most windowDays entries
+  return inWindow.slice(0, windowDays);
+}
 
 async function readFileList(
   files: File[],
