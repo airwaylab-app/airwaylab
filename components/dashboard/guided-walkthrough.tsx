@@ -41,9 +41,11 @@ type WalkthroughPhase = 'hidden' | 'prompt' | 'touring' | 'done';
 
 interface Props {
   isComplete: boolean;
+  onStep1Acknowledged?: () => void;
+  onDismiss?: () => void;
 }
 
-export function GuidedWalkthrough({ isComplete }: Props) {
+export function GuidedWalkthrough({ isComplete, onStep1Acknowledged, onDismiss }: Props) {
   const { profile, markWalkthroughComplete, isPaid } = useAuth();
   const [phase, setPhase] = useState<WalkthroughPhase>('hidden');
   const [currentStep, setCurrentStep] = useState(0);
@@ -79,7 +81,8 @@ export function GuidedWalkthrough({ isComplete }: Props) {
     setPhase('done');
     events.walkthroughSkipped(atStep);
     markWalkthroughComplete();
-  }, [markWalkthroughComplete]);
+    onDismiss?.();
+  }, [markWalkthroughComplete, onDismiss]);
 
   const next = useCallback(() => {
     if (currentStep >= STEPS.length - 1) {
@@ -87,12 +90,14 @@ export function GuidedWalkthrough({ isComplete }: Props) {
       setPhase('done');
       events.walkthroughCompleted();
       markWalkthroughComplete();
+      onDismiss?.();
     } else {
+      if (currentStep === 0) onStep1Acknowledged?.();
       const nextIdx = currentStep + 1;
       setCurrentStep(nextIdx);
       events.walkthroughStepViewed(nextIdx + 1, STEPS[nextIdx]!.name);
     }
-  }, [currentStep, markWalkthroughComplete]);
+  }, [currentStep, markWalkthroughComplete, onDismiss, onStep1Acknowledged]);
 
   /** Allow re-starting the tour from external triggers */
   const restart = useCallback(() => {
