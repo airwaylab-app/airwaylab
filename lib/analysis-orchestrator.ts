@@ -749,16 +749,15 @@ class AnalysisOrchestrator {
 // ── Helpers ──────────────────────────────────────────────────
 
 /**
- * Slice a sorted (most-recent-first) nights array to the tier's analysis window.
- * Champions get all nights; supporters get 90 days; community gets 7 nights.
+ * Filter nights to those within the tier's analysis window (pure date-cutoff).
+ * Champions get all nights; supporters get 90 days; community gets 7 days.
+ * `now` is injectable for deterministic testing.
  */
-function filterNightsToTierWindow(nights: NightResult[], tier: Tier): NightResult[] {
+export function filterNightsToTierWindow(nights: NightResult[], tier: Tier, now = Date.now()): NightResult[] {
   const windowDays = getAnalysisWindowDays(tier);
   if (windowDays === Infinity) return nights;
-  const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
-  const inWindow = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  // nights is sorted most-recent-first; keep at most windowDays entries
-  return inWindow.slice(0, windowDays);
+  const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
+  return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
 }
 
 async function readFileList(

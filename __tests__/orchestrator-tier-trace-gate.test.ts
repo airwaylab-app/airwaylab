@@ -1,19 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Tier } from '@/lib/auth/auth-context';
-import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
+import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import type { NightResult } from '@/lib/types';
-
-// ---------------------------------------------------------------------------
-// Local copy of filterNightsToTierWindow (matches logic in analysis-orchestrator.ts)
-// If the source logic changes, update this copy to match.
-// ---------------------------------------------------------------------------
-function filterNightsToTierWindow(nights: NightResult[], tier: Tier, now = Date.now()): NightResult[] {
-  const windowDays = getAnalysisWindowDays(tier);
-  if (windowDays === Infinity) return nights;
-  const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
-  const inWindow = nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  return inWindow.slice(0, windowDays);
-}
 
 // ---------------------------------------------------------------------------
 // Minimal NightResult stub — only dateStr is needed for filter tests
@@ -34,16 +21,17 @@ function makeNights(count: number, mostRecentDate: Date): NightResult[] {
 describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist', () => {
   const now = new Date('2026-05-11').getTime();
 
-  describe('community tier (7-night window)', () => {
-    it('prunes 10 nights to the 7 most recent', () => {
+  describe('community tier (7-day window)', () => {
+    it('prunes nights outside the 7-day cutoff', () => {
+      // 10 nights: 2026-05-11 to 2026-05-02. Cutoff = 2026-05-04. Kept = 8 (05-11 to 05-04).
       const nights = makeNights(10, new Date('2026-05-11'));
       const result = filterNightsToTierWindow(nights, 'community', now);
-      expect(result).toHaveLength(7);
+      expect(result).toHaveLength(8);
       expect(result[0]!.dateStr).toBe('2026-05-11');
-      expect(result[6]!.dateStr).toBe('2026-05-05');
+      expect(result[7]!.dateStr).toBe('2026-05-04');
     });
 
-    it('keeps all nights when count is at or below 7', () => {
+    it('keeps all nights when all are within 7 days', () => {
       const nights = makeNights(5, new Date('2026-05-11'));
       const result = filterNightsToTierWindow(nights, 'community', now);
       expect(result).toHaveLength(5);
@@ -115,10 +103,10 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
     });
 
     it('community with oximetry-trace nights — only keeps within-window nights for IDB persist', () => {
-      // Simulate 10 nights; IDB stores should only see the 7 most recent
+      // 10 nights: 8 within the 7-day cutoff, 2 outside. IDB should not see the 2 oldest.
       const nights = makeNights(10, new Date('2026-05-11'));
       const toSave = filterNightsToTierWindow(nights, 'community', now);
-      const oldest = nights[nights.length - 1]!.dateStr;
+      const oldest = nights[nights.length - 1]!.dateStr; // '2026-05-02'
       expect(toSave.find((n) => n.dateStr === oldest)).toBeUndefined();
     });
   });
