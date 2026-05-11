@@ -363,7 +363,7 @@ export const blogPosts: BlogPost[] = [
       {
         question: 'What does AirwayLab do that SleepHQ does not?',
         answer:
-          'AirwayLab runs four additional analysis engines on your raw EDF waveform: the Glasgow Index (9-component breath shape score), WAT (FL Score, breathing regularity, periodicity), NED (per-breath negative effort dependence), and RERA detection. These go beyond device-reported metrics to score flow limitation at breath-by-breath resolution.',
+          'AirwayLab runs four additional analysis engines on your raw EDF waveform: the Glasgow Index (9-component breath shape score), WAT (FL Score, breathing regularity, periodicity), NED (per-breath negative effort dependence), and RERA estimation. These go beyond device-reported metrics to score flow limitation at breath-by-breath resolution.',
       },
       {
         question: 'Is AirwayLab open source?',
