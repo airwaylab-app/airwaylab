@@ -571,6 +571,7 @@ export interface NightResult {
   dateStr: string;
   durationHours: number;
   sessionCount: number;
+  sessionStartTime?: Date;
   settings: MachineSettings;
   glasgow: GlasgowComponents;
   wat: WATResults;
