@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 
 vi.mock('@sentry/nextjs', () => ({
@@ -225,6 +225,20 @@ describe('persistence', () => {
 
     it('does not throw when nothing is saved', () => {
       expect(() => clearPersistedResults()).not.toThrow();
+    });
+  });
+
+  describe('clearPersistedNights', () => {
+    it('removes airwaylab_results from localStorage', () => {
+      localStorage.setItem('airwaylab_results', '{"nights":[],"therapyChangeDate":null,"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_results')).toBeNull();
+    });
+
+    it('removes airwaylab_file_manifest from localStorage', () => {
+      localStorage.setItem('airwaylab_file_manifest', '{"manifests":[],"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
     });
   });
 });

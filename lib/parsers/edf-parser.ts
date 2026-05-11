@@ -108,11 +108,20 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   }
 
   // --- Find flow and pressure signal indices ---
-  const flowIdx = signals.findIndex(
-    (s) => s.label.toLowerCase().includes('flow') || s.label.toLowerCase().includes('flw')
-  );
+  // Match known flow signal label variants across ResMed firmware generations.
+  const flowIdx = signals.findIndex((s) => {
+    const label = s.label.toLowerCase();
+    return (
+      label.includes('flow') ||
+      label.includes('flw') ||
+      label.includes('vent') ||
+      label.includes('affl')
+    );
+  });
+
   if (flowIdx === -1) {
-    throw new Error('No flow signal found in EDF file');
+    const signalLabels = signals.map((s) => `"${s.label.trim()}"`).join(', ');
+    throw new Error(`No flow signal found in EDF file. Signal labels: ${signalLabels}`);
   }
 
   const pressIdx = signals.findIndex((s) => s.label.toLowerCase().includes('press'));
