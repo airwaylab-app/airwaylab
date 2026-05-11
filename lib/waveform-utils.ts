@@ -738,6 +738,33 @@ export function formatElapsedTimeShort(seconds: number): string {
 }
 
 /**
+ * Format a waveform event time as wall-clock primary with elapsed secondary.
+ * Returns e.g. "2:18 AM (3h 15m in)".
+ * Falls back to elapsed-only when recordingDate is unavailable.
+ *
+ * Note: recordingDate is a JS Date in local time from the EDF header. If a
+ * recording spans a DST boundary, JS Date handles the offset correctly by
+ * default — no extra logic is needed.
+ */
+export function formatWallClockTime(recordingDate: Date | undefined | null, elapsedSec: number): string {
+  const elapsed = formatElapsedTime(elapsedSec);
+  if (!recordingDate) return elapsed;
+
+  const wallClock = new Date(recordingDate.getTime() + elapsedSec * 1000);
+  const timeStr = wallClock.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const h = Math.floor(elapsedSec / 3600);
+  const m = Math.floor((elapsedSec % 3600) / 60);
+  const elapsedLabel = h > 0 ? `${h}h ${m}m in` : `${m}m in`;
+
+  return `${timeStr} (${elapsedLabel})`;
+}
+
+/**
  * M-shape detection for waveform worker.
  * Matches NED engine logic: valley < 80% of Qpeak in middle 50% of inspiration,
  * with bi-modal verification (peaks on both sides must exceed 80% threshold).

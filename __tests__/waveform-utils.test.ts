@@ -11,6 +11,7 @@ import {
   getTargetRate,
   formatElapsedTime,
   formatElapsedTimeShort,
+  formatWallClockTime,
   downsampleFlow,
   downsamplePressure,
 } from '@/lib/waveform-utils';
@@ -429,5 +430,47 @@ describe('formatElapsedTimeShort', () => {
 
   it('formats 8 hours', () => {
     expect(formatElapsedTimeShort(28800)).toBe('8:00');
+  });
+});
+
+// ── formatWallClockTime ─────────────────────────────────────
+
+describe('formatWallClockTime', () => {
+  it('falls back to elapsed-only when recordingDate is null', () => {
+    expect(formatWallClockTime(null, 3661)).toBe('1:01:01');
+  });
+
+  it('falls back to elapsed-only when recordingDate is undefined', () => {
+    expect(formatWallClockTime(undefined, 65)).toBe('0:01:05');
+  });
+
+  it('includes wall-clock and elapsed label for sub-hour elapsed', () => {
+    // 11:00 PM start + 30 minutes elapsed = 11:30 PM
+    const start = new Date('2026-05-11T23:00:00');
+    const result = formatWallClockTime(start, 1800);
+    expect(result).toContain('30m in');
+    // Should contain a time string (locale-dependent format)
+    expect(result).toMatch(/\d+:\d{2}/);
+  });
+
+  it('includes hours and minutes in elapsed label for multi-hour elapsed', () => {
+    const start = new Date('2026-05-11T22:00:00');
+    const result = formatWallClockTime(start, 3600 * 3 + 60 * 15); // 3h 15m in
+    expect(result).toContain('3h 15m in');
+  });
+
+  it('wall-clock time reflects correct offset from recording start', () => {
+    // Use a fixed timezone-safe check: the offset in ms should match
+    const start = new Date('2026-05-11T22:00:00');
+    const elapsedSec = 11700; // 3h 15m = 11700s
+    const expected = new Date(start.getTime() + elapsedSec * 1000);
+    const result = formatWallClockTime(start, elapsedSec);
+    expect(result).toContain('3h 15m in');
+    const expectedTime = expected.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    expect(result).toContain(expectedTime);
   });
 });

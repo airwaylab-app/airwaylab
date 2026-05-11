@@ -137,15 +137,15 @@ function WaveformCharts({
             flow={flowData}
             pressure={pressureData}
             events={storedWaveform.events}
-
             visibleEventTypes={visibleTypes}
+            recordingStartTime={selectedNight.sessionStartTime}
           />
         </ErrorBoundary>
 
         {/* Tidal Volume */}
         {hasTidalVolume ? (
           <ErrorBoundary context="Tidal Volume">
-            <TidalVolumeChart tidalVolume={storedWaveform.tidalVolume} />
+            <TidalVolumeChart tidalVolume={storedWaveform.tidalVolume} recordingStartTime={selectedNight.sessionStartTime} />
           </ErrorBoundary>
         ) : (
           <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
@@ -156,7 +156,7 @@ function WaveformCharts({
         {/* Respiratory Rate */}
         {hasRespRate ? (
           <ErrorBoundary context="Respiratory Rate">
-            <RespiratoryRateChart respiratoryRate={storedWaveform.respiratoryRate} />
+            <RespiratoryRateChart respiratoryRate={storedWaveform.respiratoryRate} recordingStartTime={selectedNight.sessionStartTime} />
           </ErrorBoundary>
         ) : (
           <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
@@ -170,6 +170,7 @@ function WaveformCharts({
             <DevicePressureChart
               pressure={pressureData}
               settings={selectedNight.settings}
+              recordingStartTime={selectedNight.sessionStartTime}
             />
           </ErrorBoundary>
         ) : (
@@ -181,7 +182,7 @@ function WaveformCharts({
         {/* Leak */}
         {hasLeak ? (
           <ErrorBoundary context="Leak">
-            <DeviceLeakChart leak={storedWaveform.leak} />
+            <DeviceLeakChart leak={storedWaveform.leak} recordingStartTime={selectedNight.sessionStartTime} />
           </ErrorBoundary>
         ) : (
           <div className="flex items-center justify-center py-4 text-xs text-muted-foreground/80">
@@ -192,7 +193,7 @@ function WaveformCharts({
         {/* SpO2 — always visible */}
         {oxTrace ? (
           <ErrorBoundary context="SpO₂ Trace">
-            <SpO2Trace trace={oxTrace} showHR={showHR} showODIEvents={showODIEvents} />
+            <SpO2Trace trace={oxTrace} showHR={showHR} showODIEvents={showODIEvents} recordingStartTime={selectedNight.sessionStartTime} />
           </ErrorBoundary>
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 py-6">
