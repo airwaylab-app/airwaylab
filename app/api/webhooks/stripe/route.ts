@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
+import { cancelSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
@@ -469,6 +469,9 @@ export async function POST(request: NextRequest) {
 
           // Send cancellation email (non-blocking)
           void sendCancellationNotification(supabase, userId);
+
+          // Schedule win-back email 7 days from now for opted-in users (non-blocking)
+          void scheduleWinBackForUser(supabase, userId);
 
           // Sync Discord role (revoke if downgraded to community)
           void syncDiscordForUser(supabase, userId, newTier, event.id);
