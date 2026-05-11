@@ -51,6 +51,45 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
+    slug: 'how-to-read-cpap-therapy-report',
+    title: 'How to Read Your CPAP Therapy Report: AHI, Leak Rate, and Pressure Explained',
+    seoTitle: 'How to Read Your CPAP Therapy Report: AHI, Leak Rate and Pressure | AirwayLab',
+    description:
+      'Understand every field in your CPAP therapy report — residual AHI, event types (OA, CA, H, RERA), mask leak rate, pressure data, and usage hours — with plain-language explanations.',
+    date: '2026-06-12',
+    readTime: '7 min read',
+    tags: ['CPAP', 'AHI', 'Leak Rate', 'Pressure', 'Therapy Report'],
+    ogDescription:
+      'Understand every field in your CPAP therapy report — AHI, event types, leak rate, pressure, and usage hours explained in plain language.',
+    faqItems: [
+      {
+        question: 'What is residual AHI on CPAP?',
+        answer:
+          'Residual AHI is the apnea-hypopnea index recorded while CPAP therapy is active — events that occurred despite the pressure support. A residual AHI below 5/hr is a common reference point, but your sleep physician determines what is appropriate for your individual situation.',
+      },
+      {
+        question: 'What does RERA mean in a CPAP report?',
+        answer:
+          'RERA stands for Respiratory Effort-Related Arousal — a sequence of increasingly restricted breaths that end in an arousal before meeting the full hypopnea criteria. ResMed machines record these separately. RERAs contribute to sleep fragmentation and daytime symptoms even when AHI is low.',
+      },
+      {
+        question: 'What is a good leak rate on CPAP?',
+        answer:
+          'ResMed documentation typically cites unintentional leak below 24 L/min as within the acceptable range for most mask types. High leak can affect event detection accuracy, making AHI readings on high-leak nights less reliable. Your clinician can interpret recurring high-leak patterns in context.',
+      },
+      {
+        question: 'What does 95th percentile pressure mean on APAP?',
+        answer:
+          'The 95th percentile pressure is the level your APAP device was at or below for 95% of the night. It gives a cleaner picture of typical operating pressure than the maximum. A rising 95th-percentile pressure over multiple weeks is worth discussing with your sleep clinician.',
+      },
+      {
+        question: 'How can I see my full CPAP therapy report in AirwayLab?',
+        answer:
+          'Load your ResMed SD card at airwaylab.app/analyze. AirwayLab reads your EDF files in the browser — your data never leaves your device. The overview tab shows AHI, event breakdown, leak, pressure, and usage hours. Additional tabs cover breath-shape scoring, flow limitation analysis, and nightly trends.',
+      },
+    ],
+  },
+  {
     slug: 'what-does-cpap-ahi-mean',
     title: 'What Does My CPAP AHI Number Mean? A Plain-Language Guide',
     seoTitle: 'What Does My CPAP AHI Number Mean? Plain-Language Guide | AirwayLab',
