@@ -108,11 +108,33 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   }
 
   // --- Find flow and pressure signal indices ---
-  const flowIdx = signals.findIndex(
-    (s) => s.label.toLowerCase().includes('flow') || s.label.toLowerCase().includes('flw')
-  );
+  // Match known flow signal label variants across ResMed firmware generations.
+  let flowIdx = signals.findIndex((s) => {
+    const label = s.label.toLowerCase();
+    return (
+      label.includes('flow') ||
+      label.includes('flw') ||
+      label.includes('vent') ||
+      label.includes('affl')
+    );
+  });
+
+  // Fallback: flow waveforms are bidirectional (inspiration positive, expiration negative),
+  // so their physicalMin is always negative. Pressure and event channels are never negative.
+  // This catches unrecognised label variants from new firmware or device model variants.
   if (flowIdx === -1) {
-    throw new Error('No flow signal found in EDF file');
+    flowIdx = signals.findIndex((s) => s.numSamples > 1 && s.physicalMin < 0);
+    if (flowIdx !== -1) {
+      const signalLabels = signals.map((s) => `"${s.label.trim()}"`).join(', ');
+      console.error(
+        `[edf-parser] Unrecognised flow signal label; using physicalMin fallback on "${signals[flowIdx]!.label.trim()}". Labels in file: ${signalLabels}`
+      );
+    }
+  }
+
+  if (flowIdx === -1) {
+    const signalLabels = signals.map((s) => `"${s.label.trim()}"`).join(', ');
+    throw new Error(`No flow signal found in EDF file. Signal labels: ${signalLabels}`);
   }
 
   const pressIdx = signals.findIndex((s) => s.label.toLowerCase().includes('press'));
