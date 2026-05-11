@@ -241,7 +241,10 @@ export async function POST(request: NextRequest) {
       console.error('[contribute-data] 429 rate limited', { ip });
       return NextResponse.json(
         { error: 'Too many contributions. Please try again later.' },
-        { status: 429 }
+        {
+          status: 429,
+          headers: { 'Retry-After': '3600' },
+        }
       );
     }
 

@@ -253,6 +253,41 @@ describe('contributeNights', () => {
     expect(caughtErr instanceof Error && caughtErr.message).not.toMatch('Contribution failed');
     vi.useRealTimers();
   });
+
+  it('skips retries immediately when Retry-After header exceeds 60s', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+      headers: { get: (name: string) => name === 'Retry-After' ? '3600' : null },
+    });
+
+    const nights = makeNights(1);
+    await expect(contributeNights(nights)).rejects.toBeInstanceOf(ContributionRateLimitedError);
+    // Long Retry-After must bypass the retry loop — exactly 1 fetch call, not 4
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses Retry-After delay when ≤60s instead of exponential backoff', async () => {
+    vi.useFakeTimers();
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve('{}'),
+        headers: { get: (name: string) => name === 'Retry-After' ? '5' : null },
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    await vi.runAllTimersAsync();
+
+    const result = await promise;
+    expect(result.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
 });
 
 describe('trackContributedDates', () => {
