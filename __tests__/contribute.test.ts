@@ -20,7 +20,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 // ── Mock crypto.randomUUID ──────────────────────────────────
 vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, ContributionRateLimitedError } from '@/lib/contribute';
 
 // ── Helpers ─────────────────────────────────────────────────
 function makeNight(dateStr: string): NightResult {
@@ -188,7 +188,8 @@ describe('contributeNights', () => {
     );
   });
 
-  it('returns soft rateLimited result on 429 — does not throw', async () => {
+  it('throws ContributionRateLimitedError when all 429 retries exhausted', async () => {
+    vi.useFakeTimers();
     fetchMock.mockResolvedValue({
       ok: false,
       status: 429,
@@ -196,45 +197,61 @@ describe('contributeNights', () => {
       headers: { get: () => 'application/json' },
     });
 
-    const nights = makeNights(5);
-    const result = await contributeNights(nights);
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    // Suppress unhandled-rejection while fake timers advance; assertion below handles it
+    promise.catch(() => { /* test-only: handled by expect().rejects below */ });
+    await vi.runAllTimersAsync();
 
-    expect(result.ok).toBe(false);
-    expect(result.rateLimited).toBe(true);
-    expect(result.totalSent).toBe(0);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await expect(promise).rejects.toBeInstanceOf(ContributionRateLimitedError);
+    // 1 initial + 3 retries = 4 total fetch calls
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    vi.useRealTimers();
   });
 
-  it('returns soft rateLimited result mid-batch — reports nights sent so far', async () => {
+  it('succeeds after initial 429s are retried and server recovers', async () => {
+    vi.useFakeTimers();
     fetchMock
-      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
-        headers: { get: () => 'application/json' },
-      });
+      .mockResolvedValueOnce({ ok: false, status: 429, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: false, status: 429, text: () => Promise.resolve('{}'), headers: { get: () => 'application/json' } })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
-    const nights = makeNights(1500);
-    const result = await contributeNights(nights);
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    await vi.runAllTimersAsync();
 
-    expect(result.ok).toBe(false);
-    expect(result.rateLimited).toBe(true);
-    expect(result.totalSent).toBe(1000);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const result = await promise;
+    expect(result.ok).toBe(true);
+    expect(result.totalSent).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
   });
 
-  it('does not retry on 429 — only makes one request', async () => {
+  it('ContributionRateLimitedError propagates unwrapped through contributeNights', async () => {
+    vi.useFakeTimers();
     fetchMock.mockResolvedValue({
       ok: false,
       status: 429,
-      text: () => Promise.resolve('{"error":"Too many contributions. Please try again later."}'),
+      text: () => Promise.resolve('{"error":"Too many contributions."}'),
       headers: { get: () => 'application/json' },
     });
 
-    await contributeNights(makeNights(1));
+    const nights = makeNights(1);
+    const promise = contributeNights(nights);
+    // Suppress unhandled-rejection while fake timers advance; error is caught below
+    promise.catch(() => { /* test-only: error checked in try/catch block below */ });
+    await vi.runAllTimersAsync();
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Error must be ContributionRateLimitedError, NOT wrapped in "Contribution failed (batch N):"
+    let caughtErr: unknown;
+    try {
+      await promise;
+    } catch (err) {
+      caughtErr = err;
+    }
+    expect(caughtErr).toBeInstanceOf(ContributionRateLimitedError);
+    expect(caughtErr instanceof Error && caughtErr.message).not.toMatch('Contribution failed');
+    vi.useRealTimers();
   });
 });
 

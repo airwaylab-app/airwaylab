@@ -5,13 +5,13 @@ import * as Sentry from '@sentry/nextjs';
 import { Users, Loader2, X, Shield, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
-import { contributeNights, trackContributedDates } from '@/lib/contribute';
+import { contributeNights, trackContributedDates, ContributionRateLimitedError } from '@/lib/contribute';
 import { getConsentState, setConsentState } from '@/components/upload/contribution-consent-utils';
 import type { NightResult } from '@/lib/types';
 
 const DISMISS_KEY = 'airwaylab_contribute_dismissed';
 
-export type AutoSubmitStatus = 'idle' | 'sending' | 'success' | 'error';
+export type AutoSubmitStatus = 'idle' | 'sending' | 'success' | 'error' | 'paused';
 
 interface Props {
   nights: NightResult[];
@@ -90,12 +90,12 @@ export function DataContribution({
       // Persist opt-in so the user isn't prompted again on future visits
       setConsentState(true);
     } catch (err) {
-      // Rate limit errors are expected behavior — only report unexpected failures to Sentry
-      const isRateLimit = err instanceof Error &&
-        (err.message.includes('Rate limited') || err.message.includes('Too many'));
-      if (!isRateLimit) {
-        Sentry.captureException(err, { tags: { action: 'contribute-data' } });
+      if (err instanceof ContributionRateLimitedError) {
+        // Soft transient failure — reset to idle silently, analysis is unaffected
+        setStatus('idle');
+        return;
       }
+      Sentry.captureException(err, { tags: { action: 'contribute-data' } });
       setStatus('error');
     }
   }, [nights]);
@@ -136,6 +136,20 @@ export function DataContribution({
 
   // ── Opted-in path: show auto-contribution status ──────────
   if (isOptedIn) {
+    // Auto-submit rate limited — soft informational message, not an error
+    if (autoSubmitStatus === 'paused') {
+      return (
+        <div aria-live="polite" className="rounded-lg border border-primary/10 bg-primary/[0.02] px-4 py-3 animate-fade-in-up">
+          <div className="flex items-center gap-2.5">
+            <Heart className="h-4 w-4 text-primary/40" />
+            <p className="text-sm text-muted-foreground">
+              Data contribution paused — your analysis results are unaffected.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     // Auto-submit in flight
     if (autoSubmitStatus === 'sending') {
       return (
