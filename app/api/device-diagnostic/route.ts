@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
@@ -58,6 +59,11 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error('[device-diagnostic] Supabase error:', error.message);
         Sentry.captureException(error, { tags: { route: 'device-diagnostic' } });
+      } else {
+        void sendAlert('user-signals', '', [formatUserSignalEmbed({
+          type: 'unsupported_device',
+          message: `Settings extraction failed - model: ${deviceModel}, hasStr: ${hasStrFile}`,
+        })]);
       }
     }
 

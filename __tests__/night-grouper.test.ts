@@ -470,4 +470,43 @@ describe('findIdentificationFile', () => {
     ];
     expect(findIdentificationFile(files)).toBeNull();
   });
+
+  it('finds CurrentSettings.json in SETTINGS/ path (AirSense 11)', () => {
+    const files = [
+      { name: 'BRP.edf', path: 'DATALOG/20260315/BRP.edf' },
+      { name: 'CurrentSettings.json', path: 'SETTINGS/CurrentSettings.json' },
+    ];
+    expect(findIdentificationFile(files)).toEqual({
+      name: 'CurrentSettings.json',
+      path: 'SETTINGS/CurrentSettings.json',
+    });
+  });
+
+  it('does not match CurrentSettings.json outside a settings/ path', () => {
+    const files = [
+      { name: 'CurrentSettings.json', path: 'DATALOG/CurrentSettings.json' },
+    ];
+    expect(findIdentificationFile(files)).toBeNull();
+  });
+
+  it('is case-insensitive for currentsettings.json filename and settings/ path', () => {
+    const files = [
+      { name: 'currentsettings.json', path: 'Settings/currentsettings.json' },
+    ];
+    expect(findIdentificationFile(files)).toEqual({
+      name: 'currentsettings.json',
+      path: 'Settings/currentsettings.json',
+    });
+  });
+
+  it('prefers identification.tgt over currentsettings.json when both present', () => {
+    const files = [
+      { name: 'Identification.tgt', path: '/a/Identification.tgt' },
+      { name: 'CurrentSettings.json', path: 'SETTINGS/CurrentSettings.json' },
+    ];
+    expect(findIdentificationFile(files)).toEqual({
+      name: 'Identification.tgt',
+      path: '/a/Identification.tgt',
+    });
+  });
 });

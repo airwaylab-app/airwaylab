@@ -209,7 +209,10 @@ export function findIdentificationFile(
   return (
     files.find((f) => {
       const name = f.name.toLowerCase();
-      return name === 'identification.tgt' || name === 'identification.json';
+      const path = f.path.toLowerCase();
+      return name === 'identification.tgt'
+        || name === 'identification.json'
+        || (name === 'currentsettings.json' && path.includes('settings/'));
     }) ?? null
   );
 }

@@ -159,10 +159,8 @@ async function processFiles(
       } catch {
         // Machine summary extraction failed — continue without summary
       }
-      // Capture signal labels for diagnostics when extraction returns empty
-      if (Object.keys(dailySettings).length === 0) {
-        strSignalLabels = getSTRSignalLabels(strFile.buffer);
-      }
+      // Always capture signal labels — needed for both empty-settings and AirCurve partial-support diagnostics
+      strSignalLabels = getSTRSignalLabels(strFile.buffer);
     }
   }
 
@@ -176,6 +174,23 @@ async function processFiles(
       hasStrFile: !!strFileInfo,
     };
     self.postMessage(diag);
+  }
+
+  // Post diagnostic when AirCurve 10 STR has settings but is missing expected BiPAP signals
+  if (Object.keys(dailySettings).length > 0 && deviceModel.toLowerCase().includes('aircurve')) {
+    const expectedBiPAP = ['PS_Min', 'PS_Max', 'SpMode', 'Spont'];
+    const anyMissing = expectedBiPAP.some(
+      (s) => !strSignalLabels.some((l) => l.toLowerCase().includes(s.toLowerCase()))
+    );
+    if (anyMissing) {
+      self.postMessage({
+        type: 'SETTINGS_DIAGNOSTIC',
+        deviceModel,
+        signalLabels: strSignalLabels,
+        identificationText: identificationText ? identificationText.slice(0, 2000) : null,
+        hasStrFile: !!strFileInfo,
+      } satisfies WorkerSettingsDiagnostic);
+    }
   }
 
   postProgress(1, brpFiles.length + 2, 'Parsing EDF files...');
