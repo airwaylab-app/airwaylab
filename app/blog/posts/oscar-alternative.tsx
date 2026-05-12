@@ -380,7 +380,7 @@ export default function OSCARAlternativePost() {
         <h3 className="text-lg font-bold">Try AirwayLab Free</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload your ResMed SD card and get flow limitation analysis in minutes. Four research-grade
-          engines, composite metrics, RERA detection, and trend tracking. No installation, no account
+          engines, composite metrics, RERA estimation, and trend tracking. No installation, no account
           required, 100% private.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
