@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { LeakPoint } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -23,17 +23,19 @@ const Y_AXIS_MAX = 80;
 
 interface Props {
   leak: LeakPoint[];
+  recordingStartTime?: Date | null;
 }
 
-function LeakTooltipContent({ active, payload, label }: {
+function LeakTooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: 'hsl(280 60% 55%)' }}>Leak:</span>{' '}
         <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> L/min
@@ -44,6 +46,7 @@ function LeakTooltipContent({ active, payload, label }: {
 
 export const DeviceLeakChart = memo(function DeviceLeakChart({
   leak,
+  recordingStartTime,
 }: Props) {
   const viewport = useSyncedViewport();
   const bucketSeconds = leak.length > 1 ? leak[1]!.t - leak[0]!.t : 2;
@@ -111,7 +114,7 @@ export const DeviceLeakChart = memo(function DeviceLeakChart({
               width={40}
               label={{ value: 'L/min', angle: -90, position: 'insideLeft', style: { fill: 'hsl(280 60% 55%)', fontSize: 9 } }}
             />
-            <Tooltip content={<LeakTooltipContent />} isAnimationActive={false} />
+            <Tooltip content={<LeakTooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
 
             {/* Threshold line */}
             <ReferenceLine

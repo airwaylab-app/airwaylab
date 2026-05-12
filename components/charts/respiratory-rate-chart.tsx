@@ -11,24 +11,26 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { RespiratoryRatePoint } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
 interface Props {
   respiratoryRate: RespiratoryRatePoint[];
+  recordingStartTime?: Date | null;
 }
 
-function RRTooltipContent({ active, payload, label }: {
+function RRTooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: CHART_COLORS[5] }}>Respiratory Rate:</span>{' '}
         <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> br/min
@@ -37,7 +39,7 @@ function RRTooltipContent({ active, payload, label }: {
   );
 }
 
-export const RespiratoryRateChart = memo(function RespiratoryRateChart({ respiratoryRate }: Props) {
+export const RespiratoryRateChart = memo(function RespiratoryRateChart({ respiratoryRate, recordingStartTime }: Props) {
   const viewport = useSyncedViewport();
   const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
 
@@ -70,6 +72,16 @@ export const RespiratoryRateChart = memo(function RespiratoryRateChart({ respira
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
+        {viewport.dragSelectState && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-20 border-x border-blue-400/60 bg-blue-500/15"
+            style={{
+              left: `${viewport.dragSelectState.leftFraction * 100}%`,
+              width: `${viewport.dragSelectState.widthFraction * 100}%`,
+            }}
+          />
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -89,7 +101,7 @@ export const RespiratoryRateChart = memo(function RespiratoryRateChart({ respira
               width={40}
               label={{ value: 'br/min', angle: -90, position: 'insideLeft', style: { fill: CHART_COLORS[5], fontSize: 9 } }}
             />
-            <Tooltip content={<RRTooltipContent />} isAnimationActive={false} />
+            <Tooltip content={<RRTooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
             <Area
               type="monotone"
               dataKey="avg"

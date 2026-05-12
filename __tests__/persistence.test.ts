@@ -246,6 +246,26 @@ describe('persistence', () => {
       const result = loadPersistedResults();
       expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
+
+    it('restores sessionStartTime as a Date after round-trip through localStorage', () => {
+      const startTime = new Date('2025-03-15T22:31:00Z');
+      const nightWithStartTime = {
+        ...SAMPLE_NIGHTS[0]!,
+        sessionStartTime: startTime,
+      };
+      persistResults([nightWithStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = loadPersistedResults();
+      expect(result!.nights[0]!.sessionStartTime).toBeInstanceOf(Date);
+      expect(result!.nights[0]!.sessionStartTime!.toISOString()).toBe(startTime.toISOString());
+    });
+
+    it('tolerates nights without sessionStartTime (legacy data migration)', () => {
+      const nightWithoutStartTime = { ...SAMPLE_NIGHTS[0]! };
+      delete (nightWithoutStartTime as Partial<typeof SAMPLE_NIGHTS[0]>).sessionStartTime;
+      persistResults([nightWithoutStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = loadPersistedResults();
+      expect(result!.nights[0]!.sessionStartTime).toBeUndefined();
+    });
   });
 
   describe('clearPersistedResults', () => {
