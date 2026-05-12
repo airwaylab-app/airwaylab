@@ -236,6 +236,10 @@ export function loadPersistedResults(): {
     // Restore Date objects and migrate missing fields
     for (const night of data.nights) {
       night.date = new Date(night.date);
+      // Migrate: sessionStartTime added in AIR-1393 for wall-clock event cross-referencing
+      if (night.sessionStartTime !== undefined) {
+        night.sessionStartTime = new Date(night.sessionStartTime as unknown as string);
+      }
       // Migrate: estimatedArousalIndex added in v0.6.0
       if (night.ned && night.ned.estimatedArousalIndex === undefined) {
         night.ned.estimatedArousalIndex = 0;
@@ -322,5 +326,14 @@ export function clearPersistedResults(): void {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Silently ignore
+  }
+}
+
+export function clearPersistedNights(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('airwaylab_file_manifest');
+  } catch {
+    // Silently ignore — storage may be unavailable
   }
 }

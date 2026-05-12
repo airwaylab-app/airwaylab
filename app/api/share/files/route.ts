@@ -3,14 +3,14 @@ import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
-import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
+import { RateLimiter, getUserRateLimitKey, getRateLimitKey } from '@/lib/rate-limit';
 
 const SHARED_FILES_BUCKET = 'shared-files';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB per file
 const MAX_TOTAL_BYTES = 500 * 1024 * 1024; // 500 MB total per share
 const SIGNED_URL_TTL = 300; // 5 minutes
 
-const presignLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
+const presignLimiter = new RateLimiter({ windowMs: 3_600_000, max: 20, persistent: true });
 const downloadLimiter = new RateLimiter({ windowMs: 3_600_000, max: 50 });
 
 // ── Schemas ──────────────────────────────────────────────────
@@ -46,7 +46,7 @@ function isSafeFileName(name: string): boolean {
  * POST /api/share/files
  *
  * Generate presigned upload URLs for share files.
- * Requires authentication. Rate limited to 5/hour per user.
+ * Requires authentication. Rate limited to 20/hour per user.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -54,15 +54,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const ip = getRateLimitKey(request);
-    if (await presignLimiter.isLimited(ip)) {
-      return NextResponse.json(
-        { error: 'Too many file uploads. Please try again later.' },
-        { status: 429 }
-      );
-    }
-
-    // Auth check
+    // Auth check — must come before rate limiting so we can key by user ID
     const supabaseAuth = await getSupabaseServer();
     if (!supabaseAuth) {
       return NextResponse.json({ error: 'Auth not configured' }, { status: 503 });
@@ -71,6 +63,14 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limit per user (not IP) so shared-IP users each get their own bucket
+    if (await presignLimiter.isLimited(getUserRateLimitKey(user.id))) {
+      return NextResponse.json(
+        { error: 'Too many file uploads. Please try again later.' },
+        { status: 429 }
+      );
     }
 
     const serviceRole = getSupabaseServiceRole();
@@ -129,9 +129,10 @@ export async function POST(request: NextRequest) {
 
     for (const file of files) {
       const storagePath = `${shareId}/${file.fileName}`;
+      // upsert: true allows re-uploading to the same path on retry without conflict
       const { data: signedData, error: signError } = await serviceRole.storage
         .from(SHARED_FILES_BUCKET)
-        .createSignedUploadUrl(storagePath);
+        .createSignedUploadUrl(storagePath, { upsert: true });
 
       if (signError || !signedData) {
         console.error(`[share/files] Failed to create upload URL for ${storagePath}:`, signError?.message);

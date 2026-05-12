@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import type { PressurePoint } from '@/lib/waveform-types';
 import type { MachineSettings } from '@/lib/types';
-import { formatElapsedTimeShort, formatElapsedTime, sliceByTime } from '@/lib/waveform-utils';
+import { formatElapsedTimeShort, formatWallClockTime, sliceByTime } from '@/lib/waveform-utils';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
 
@@ -22,17 +22,19 @@ interface Props {
   settings: MachineSettings;
   deliveredP10?: number | null;
   deliveredP90?: number | null;
+  recordingStartTime?: Date | null;
 }
 
-function PressureTooltipContent({ active, payload, label }: {
+function PressureTooltipContent({ active, payload, label, recordingStartTime }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
   label?: number;
+  recordingStartTime?: Date | null;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatElapsedTime(label)}</p>
+      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
       <p className="text-muted-foreground">
         <span style={{ color: 'hsl(142 71% 45%)' }}>Pressure:</span>{' '}
         <span className="font-mono">{payload[0]!.value.toFixed(1)}</span> cmH₂O
@@ -46,6 +48,7 @@ export const DevicePressureChart = memo(function DevicePressureChart({
   settings,
   deliveredP10,
   deliveredP90,
+  recordingStartTime,
 }: Props) {
   const viewport = useSyncedViewport();
 
@@ -75,6 +78,16 @@ export const DevicePressureChart = memo(function DevicePressureChart({
         <span className="pointer-events-none absolute bottom-1 right-2 z-10 select-none text-[9px] text-muted-foreground/70">
           airwaylab.app
         </span>
+        {viewport.dragSelectState && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-20 border-x border-blue-400/60 bg-blue-500/15"
+            style={{
+              left: `${viewport.dragSelectState.leftFraction * 100}%`,
+              width: `${viewport.dragSelectState.widthFraction * 100}%`,
+            }}
+          />
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(217 33% 15% / 0.3)" vertical={false} />
@@ -94,7 +107,7 @@ export const DevicePressureChart = memo(function DevicePressureChart({
               width={40}
               label={{ value: 'cmH₂O', angle: -90, position: 'insideLeft', style: { fill: 'hsl(142 71% 45%)', fontSize: 9 } }}
             />
-            <Tooltip content={<PressureTooltipContent />} isAnimationActive={false} />
+            <Tooltip content={<PressureTooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
 
             {/* Reference lines — prescribed (dashed) */}
             {isCPAP ? (

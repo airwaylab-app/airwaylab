@@ -41,7 +41,7 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults } from '@/lib/persistence';
+import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { events } from '@/lib/analytics';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
@@ -139,6 +139,7 @@ function AnalyzePageInner() {
   const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
+  const [localDataCleared, setLocalDataCleared] = useState(false);
 
   // Warn before closing/refreshing while analysis is in progress
   useEffect(() => {
@@ -486,6 +487,14 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
+  const handleClearLocalData = useCallback(() => {
+    clearPersistedNights();
+    orchestrator.reset();
+    setPersistedData(null);
+    setLocalDataCleared(true);
+    events.dataDeletionCompleted();
+  }, []);
+
   // Scroll active tab into view on change and initial mount
   useEffect(() => {
     const container = tabScrollRef.current;
@@ -808,13 +817,32 @@ function AnalyzePageInner() {
           )}
 
           {/* Persistence warning — nights dropped or save failed */}
-          {!isDemo && persistenceWarning && (
+          {!isDemo && localDataCleared && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Local data cleared</span>
+                {' '}&mdash; Re-upload your SD card to start fresh.
+              </p>
+            </div>
+          )}
+          {!isDemo && persistenceWarning && !localDataCleared && (
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
               <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Storage limit reached</span>
-                {' '}&mdash; {persistenceWarning}
-              </p>
+              <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Storage limit reached</span>
+                  {' '}&mdash; {persistenceWarning}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                  onClick={handleClearLocalData}
+                >
+                  Clear saved data
+                </Button>
+              </div>
             </div>
           )}
 

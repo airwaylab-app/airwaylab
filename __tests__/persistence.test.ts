@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 
 vi.mock('@sentry/nextjs', () => ({
@@ -213,6 +213,26 @@ describe('persistence', () => {
       const result = loadPersistedResults();
       expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
+
+    it('restores sessionStartTime as a Date after round-trip through localStorage', () => {
+      const startTime = new Date('2025-03-15T22:31:00Z');
+      const nightWithStartTime = {
+        ...SAMPLE_NIGHTS[0]!,
+        sessionStartTime: startTime,
+      };
+      persistResults([nightWithStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = loadPersistedResults();
+      expect(result!.nights[0]!.sessionStartTime).toBeInstanceOf(Date);
+      expect(result!.nights[0]!.sessionStartTime!.toISOString()).toBe(startTime.toISOString());
+    });
+
+    it('tolerates nights without sessionStartTime (legacy data migration)', () => {
+      const nightWithoutStartTime = { ...SAMPLE_NIGHTS[0]! };
+      delete (nightWithoutStartTime as Partial<typeof SAMPLE_NIGHTS[0]>).sessionStartTime;
+      persistResults([nightWithoutStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = loadPersistedResults();
+      expect(result!.nights[0]!.sessionStartTime).toBeUndefined();
+    });
   });
 
   describe('clearPersistedResults', () => {
@@ -225,6 +245,20 @@ describe('persistence', () => {
 
     it('does not throw when nothing is saved', () => {
       expect(() => clearPersistedResults()).not.toThrow();
+    });
+  });
+
+  describe('clearPersistedNights', () => {
+    it('removes airwaylab_results from localStorage', () => {
+      localStorage.setItem('airwaylab_results', '{"nights":[],"therapyChangeDate":null,"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_results')).toBeNull();
+    });
+
+    it('removes airwaylab_file_manifest from localStorage', () => {
+      localStorage.setItem('airwaylab_file_manifest', '{"manifests":[],"savedAt":1}');
+      clearPersistedNights();
+      expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
     });
   });
 });
