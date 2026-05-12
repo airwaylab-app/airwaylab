@@ -10,6 +10,8 @@ const STORAGE_KEY = 'airwaylab_post_analysis_upgrade_dismissed';
 
 interface Props {
   isComplete: boolean;
+  sequencerActive?: boolean;
+  onDismiss?: () => void;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * Only appears for community-tier users who haven't dismissed it.
  * Designed to surface at the peak value moment — right after seeing results.
  */
-export function PostAnalysisUpgrade({ isComplete }: Props) {
+export function PostAnalysisUpgrade({ isComplete, sequencerActive, onDismiss }: Props) {
   const { tier } = useAuth();
   const [visible, setVisible] = useState(false);
 
@@ -30,10 +32,15 @@ export function PostAnalysisUpgrade({ isComplete }: Props) {
       return;
     }
 
+    if (sequencerActive) {
+      setVisible(true);
+      return;
+    }
+
     // Small delay so it doesn't compete with the walkthrough prompt
     const timer = setTimeout(() => setVisible(true), 2000);
     return () => clearTimeout(timer);
-  }, [isComplete, tier]);
+  }, [isComplete, tier, sequencerActive]);
 
   if (!visible) return null;
 
@@ -43,6 +50,7 @@ export function PostAnalysisUpgrade({ isComplete }: Props) {
       localStorage.setItem(STORAGE_KEY, '1');
     } catch { /* noop */ }
     events.upgradeNudgeDismissed('post_analysis');
+    onDismiss?.();
   };
 
   return (
