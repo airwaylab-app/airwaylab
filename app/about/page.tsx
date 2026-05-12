@@ -41,7 +41,7 @@ const faqData = [
   {
     question: 'What PAP devices are supported?',
     answer:
-      "AirwayLab currently supports ResMed AirSense 10 and AirCurve 10 series machines (CPAP, AutoSet, VPAP, ASV). These machines store detailed flow waveform data in EDF format on the SD card. AirSense 11 / AirCurve 11: ResMed's newer generation machines use an updated EDF format with different signal names. AirwayLab may partially work with AirSense 11 data, but full support is in development and results are not yet validated. Philips Respironics and other manufacturers use different data formats and are not currently supported.",
+      "AirwayLab currently supports ResMed AirSense 10, AirSense 11 AutoSet, AirSense 11 Elite, and AirCurve 10 series machines. These machines store detailed flow waveform data in EDF format on the SD card. Philips Respironics and other manufacturers use different data formats and are not currently supported.",
   },
   {
     question: 'How do I get the data from my SD card?',
@@ -433,25 +433,12 @@ export default function AboutPage() {
         <div className="rounded-xl border border-border/50 bg-card/30 px-5">
           <FAQItem question="What PAP devices are supported?">
             <p className="mb-3">
-              AirwayLab currently supports <strong className="text-foreground">ResMed AirSense 10</strong> and{' '}
-              <strong className="text-foreground">AirCurve 10</strong> series machines (CPAP, AutoSet,
-              VPAP, ASV). These machines store detailed flow waveform data in EDF
-              format on the SD card.
+              AirwayLab currently supports <strong className="text-foreground">ResMed AirSense 10</strong>,{' '}
+              <strong className="text-foreground">AirSense 11 AutoSet</strong>,{' '}
+              <strong className="text-foreground">AirSense 11 Elite</strong>, and{' '}
+              <strong className="text-foreground">AirCurve 10</strong> series machines. These machines store detailed
+              flow waveform data in EDF format on the SD card.
             </p>
-            <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-              <p className="text-xs">
-                <strong className="text-foreground">AirSense 11 / AirCurve 11:</strong> ResMed&rsquo;s
-                newer generation machines use an updated EDF format with different
-                signal names. AirwayLab may partially work with AirSense 11 data,
-                but full support is in development and results are not yet validated.
-                If you have an AirSense 11, you&rsquo;re welcome to try &mdash; please{' '}
-                <a href="https://github.com/airwaylab-app/airwaylab/issues" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-foreground hover:text-primary">
-                  report any issues
-                </a>{' '}
-                to help us improve compatibility.
-              </p>
-            </div>
             <p>
               Philips Respironics and other manufacturers use different
               data formats and are not currently supported.
