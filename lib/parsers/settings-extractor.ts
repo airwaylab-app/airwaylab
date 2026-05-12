@@ -30,8 +30,8 @@ const SENSITIVITY_MAP: Record<number, string> = {
   0: 'very low',
 };
 
-/** AirCurve 11 uses a 1-5 sensitivity scale instead of 0-4 */
-const SENSITIVITY_MAP_AC11: Record<number, string> = {
+/** AirCurve 11 (BiPAP) uses a 1-5 sensitivity scale instead of 0-4. AirSense 11 (CPAP) does not have trigger/cycle settings. */
+const SENSITIVITY_MAP_AIRCURVE11: Record<number, string> = {
   5: 'very high',
   4: 'high',
   3: 'medium',
@@ -47,7 +47,7 @@ const MASK_MAP: Record<number, string> = {
 
 export function sensitivityLabel(value: number | undefined, isAirCurve11 = false): string {
   if (value === undefined || value === null) return 'N/A';
-  const map = isAirCurve11 ? SENSITIVITY_MAP_AC11 : SENSITIVITY_MAP;
+  const map = isAirCurve11 ? SENSITIVITY_MAP_AIRCURVE11 : SENSITIVITY_MAP;
   return map[value] ?? String(value);
 }
 
@@ -57,12 +57,9 @@ const TYPED_SIGNAL_LABELS = new Set([
   'S.RiseTime', 'S.Trigger', 'S.Cycle', 'S.EasyBreathe',
   'S.EPR.Level', 'S.EPR.EPREnable', 'S.C.Press',
   'S.VA.Trigger', 'S.VA.Cycle', // AirCurve 11 VAuto-specific signals
-  'S.RampEnable', 'S.RampTime',
-  'S.RampPress', 'S.VA.StartPress', 'S.C.StartPress', // ramp start pressure variants
-  'S.Humid.Level', 'S.HumidLevel', 'S.HumLevel', // humidity level variants (firmware varies)
-  'S.ClimateControl', 'S.Humid.Status',
-  'S.TubeTemp', 'S.Tube.Temp', 'S.Temp', // tube temp variants (firmware varies)
-  'S.Mask', 'S.SmartStart',
+  'S.RampEnable', 'S.RampTime', 'S.RampPress',
+  'S.Humid.Level', 'S.HumidLevel', 'S.ClimateControl', 'S.Humid.Status',
+  'S.TubeTemp', 'S.Tube.Temp', 'S.Mask', 'S.SmartStart',
   'S.TiMax', 'S.TiMin',
 ]);
 
@@ -79,14 +76,9 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const allLabels = signals.map((s) => s.label);
   console.error(`[settings] STR.edf signals (${allLabels.length}): ${allLabels.join(', ')}`);
 
-  const isAC11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
-  // AirCurve devices (10 and 11) share VAuto signal names; used for S.VA.* signal selection
-  const isAirCurveDevice = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve');
-  // VAuto devices use mode 8 for VAuto; AirCurve 10 ST-A uses mode 8 for iVAPS (different firmware)
-  const isVAutoDevice = deviceModel.replace(/\s/g, '').toLowerCase().includes('vauto');
-  // AirSense 11 — CPAP/APAP device. Uses same STR signal names as AirSense 10 per firmware audit.
-  // Tracked separately for diagnostics and future AS11-specific handling.
-  const isAS11 = /airsense[\s_]?11/i.test(deviceModel);
+  // AirCurve 11 (BiPAP) uses different sensitivity scale and VAuto mode mapping.
+  // AirSense 11 (CPAP/APAP) uses the same signal names as AirSense 10 — detected via signals below.
+  const isAirCurve11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
 
   const findSignal = (substring: string) =>
     signals.find((s) => s.label.includes(substring));
@@ -101,41 +93,27 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const modeSignal = findSignal('Mode');
   const dateSignal = findSignal('Date');
   const riseTimeSignal = findSignal('S.RiseTime');
-  // AirCurve devices (10+11) use S.VA.Trigger/S.VA.Cycle for VAuto mode.
+  // AirCurve 11 VAuto uses S.VA.Trigger/S.VA.Cycle signals.
   // findSignal('S.Trigger') would match S.S.Trigger (Spont mode) via substring,
-  // so prefer S.VA.* exact matches for any AirCurve device, falling back to generic.
-  const triggerSignal = isAirCurveDevice
+  // so prefer S.VA.* exact matches for AirCurve 11 devices, falling back to generic.
+  const triggerSignal = isAirCurve11
     ? (findSignalExact('S.VA.Trigger') ?? findSignal('S.Trigger'))
     : findSignal('S.Trigger');
-  const cycleSignal = isAirCurveDevice
+  const cycleSignal = isAirCurve11
     ? (findSignalExact('S.VA.Cycle') ?? findSignal('S.Cycle'))
     : findSignal('S.Cycle');
   const easyBreatheSignal = findSignal('S.EasyBreathe');
-  // S.EPR.LevelS is an alternate label seen in some AirSense 11 firmware versions
-  const eprLevelSignal = findSignalExact('S.EPR.Level') ?? findSignalExact('S.EPR.LevelS');
+  const eprLevelSignal = findSignal('S.EPR.Level');
   const eprEnableSignal = findSignal('S.EPR.EPREnable');
   const cpapPressSignal = findSignal('S.C.Press');
 
   // Comfort/environment signals
   const rampEnableSignal = findSignal('S.RampEnable');
   const rampTimeSignal = findSignal('S.RampTime');
-  // AirCurve 10 uses S.VA.StartPress; AirSense CPAP uses S.C.StartPress; legacy uses S.RampPress
-  const rampPressSignal =
-    findSignal('S.RampPress') ??
-    findSignalExact('S.VA.StartPress') ??
-    findSignalExact('S.C.StartPress');
-  // Humidity signal name varies by firmware: S.Humid.Level → S.HumidLevel → S.HumLevel
-  const humidLevelSignal =
-    findSignal('S.Humid.Level') ??
-    findSignal('S.HumidLevel') ??
-    findSignalExact('S.HumLevel');
+  const rampPressSignal = findSignal('S.RampPress');
+  const humidLevelSignal = findSignal('S.Humid.Level') ?? findSignal('S.HumidLevel');
   const climateControlSignal = findSignal('S.ClimateControl') ?? findSignal('S.Humid.Status');
-  // Tube temp signal name varies by firmware: S.TubeTemp → S.Tube.Temp → S.Temp
-  // Use exact match for S.Temp to avoid matching S.TempEnable via substring
-  const tubeTempSignal =
-    findSignalExact('S.TubeTemp') ??
-    findSignalExact('S.Tube.Temp') ??
-    findSignalExact('S.Temp');
+  const tubeTempSignal = findSignal('S.TubeTemp') ?? findSignal('S.Tube.Temp');
   const maskSignal = findSignal('S.Mask');
   const smartStartSignal = findSignal('S.SmartStart');
   const tiMaxSignal = findSignal('S.TiMax');
@@ -152,12 +130,7 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const isAirCurve = !!(targetIPAP && targetEPAP);
   const isAirSense = !!(cpapPressSignal && eprLevelSignal && eprEnableSignal && !targetIPAP);
 
-  if (!isAirCurve && !isAirSense) {
-    if (isAS11) {
-      console.error(`[settings] AirSense 11 detected but device type could not be determined from STR signals. Expected S.C.Press + S.EPR.Level + S.EPR.EPREnable. Found: ${allLabels.join(', ')}`);
-    }
-    return dailySettings;
-  }
+  if (!isAirCurve && !isAirSense) return dailySettings;
 
   const dates = dateSignal.physicalValues;
 
@@ -235,10 +208,9 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       }
     }
 
-    // VAuto devices (AC10 VAuto and AC11) use mode 8 for VAuto, not iVAPS.
-    // AirCurve 10 ST-A uses mode 8 for iVAPS and must NOT be remapped.
+    // AirCurve 11 uses mode 8 for VAuto, not iVAPS
     let papMode = MODE_MAP[modeNum] ?? `Mode ${modeNum}`;
-    if (isVAutoDevice && modeNum === 8) {
+    if (isAirCurve11 && modeNum === 8) {
       papMode = 'VAuto';
     }
 
@@ -249,8 +221,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       pressureSupport: Math.round((ipap - epap) * 10) / 10,
       papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
-      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAC11),
-      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAC11),
+      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAirCurve11),
+      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAirCurve11),
       easyBreathe: easyBreatheOn,
       rampEnabled: rampEnableRaw !== undefined ? Math.round(rampEnableRaw) !== 0 : null,
       rampTime: rampTimeRaw !== undefined ? Math.round(rampTimeRaw) : null,
@@ -268,14 +240,6 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   }
 
   return dailySettings;
-}
-
-/**
- * Returns true when the device model string identifies an AirSense 11 device.
- * Exported for unit testing device-detection logic without requiring EDF fixture data.
- */
-export function isAirSense11(deviceModel: string): boolean {
-  return /airsense[\s_]?11/i.test(deviceModel);
 }
 
 /**
