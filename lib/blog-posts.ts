@@ -17,6 +17,40 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'dreammapper-shutting-down',
+    title: 'DreamMapper Shutting Down: What CPAP Users Should Do Now',
+    seoTitle: 'DreamMapper Shutting Down: What to Do With Your CPAP Data',
+    description:
+      'DreamMapper is being discontinued by Philips. Here\'s what happens to your therapy data, how to export it, and what alternatives exist for CPAP data analysis.',
+    date: '2026-05-11',
+    readTime: '6 min read',
+    tags: ['DreamMapper', 'Philips', 'CPAP Software', 'OSCAR', 'Data Privacy'],
+    ogDescription:
+      'DreamMapper is shutting down. Learn what happens to your CPAP data, how to export it before the deadline, and which free alternatives to use next.',
+    faqItems: [
+      {
+        question: 'What is happening to DreamMapper?',
+        answer:
+          'Philips Respironics is discontinuing the DreamMapper CPAP data app. The shutdown is a product lifecycle decision separate from the 2021 DreamStation foam recall. Users are advised to export their data before the shutdown date and transition to alternatives like OSCAR.',
+      },
+      {
+        question: 'What happens to my DreamMapper data after shutdown?',
+        answer:
+          'Data stored on your SD card remains accessible regardless of DreamMapper\'s status — it\'s in EDF format and can be read by third-party tools like OSCAR. Data synced to DreamMapper\'s cloud servers may not be exportable after shutdown, so export it while the app is still available.',
+      },
+      {
+        question: 'What is the best DreamMapper alternative?',
+        answer:
+          'For Respironics / DreamStation users, OSCAR is the community standard: free, open-source, and reads DreamStation SD card data directly. For ResMed users, AirwayLab offers browser-based analysis with no data upload required.',
+      },
+      {
+        question: 'Does AirwayLab support Philips DreamStation data?',
+        answer:
+          'Not currently. AirwayLab supports ResMed AirSense 10, AirSense 11, and AirCurve devices. For Philips DreamStation data, OSCAR is the recommended free tool.',
+      },
+    ],
+  },
+  {
     slug: 'what-does-cpap-ahi-mean',
     title: 'What Does My CPAP AHI Number Mean? A Plain-Language Guide',
     seoTitle: 'What Does My CPAP AHI Number Mean? Plain-Language Guide | AirwayLab',
