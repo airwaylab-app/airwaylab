@@ -61,7 +61,9 @@ function getMetricColor(n: NightResult, key: SortKey, t: Record<string, Threshol
     case 'boi': return t.briefObstructionIndex ? getTrafficColor(getTrafficLight(n.ned.briefObstructionIndex ?? 0, t.briefObstructionIndex)) : '';
     case 'ahi': return n.machineSummary?.ahi != null && t.machineAhi ? getTrafficColor(getTrafficLight(n.machineSummary.ahi, t.machineAhi)) : '';
     case 'leak95': return n.machineSummary?.leak95 != null && t.leak95 ? getTrafficColor(getTrafficLight(n.machineSummary.leak95, t.leak95)) : '';
-    case 'spontPct': return '';
+    case 'spontPct': return n.spontaneousPct != null && t.spontCycPct
+      ? getTrafficColor(getTrafficLight(n.spontaneousPct, t.spontCycPct))
+      : '';
     default: return '';
   }
 }
