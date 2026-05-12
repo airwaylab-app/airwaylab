@@ -85,7 +85,7 @@ function makeNightResult(overrides?: Partial<NightResult>): NightResult {
     machineSummary: { ahi: 2.1, ai: 0.5, hi: 1.0, cai: 0.6 } as unknown as NightResult['machineSummary'],
     settingsFingerprint: null,
     csl: null,
-    pldSummary: null,
+    pldSummary: null, spontaneousPct: null, timedPct: null,
     ...overrides,
   };
 }

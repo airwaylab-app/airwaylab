@@ -595,6 +595,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 2: 2025-01-16 — good night, low FL, oximetry
   {
@@ -629,6 +631,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 3: 2025-01-15 — moderate FL, first night after settings change, oximetry
   {
@@ -663,6 +667,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 4: 2025-01-14 — worst night, elevated FL, old settings (settings change day)
   {
@@ -697,6 +703,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 5: 2025-01-13 — good-moderate, with oximetry (old settings)
   {
@@ -731,6 +739,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 6: 2025-01-12 — moderate FL, with oximetry (old settings)
   {
@@ -765,6 +775,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
   // Night 7: 2025-01-11 — oldest, moderate-high FL, no oximetry (old settings)
   {
@@ -799,6 +811,8 @@ export const SAMPLE_NIGHTS: NightResult[] = [
     settingsFingerprint: null,
     csl: null,
     pldSummary: null,
+    spontaneousPct: null,
+    timedPct: null,
   },
 ];
 

@@ -87,7 +87,7 @@ function makeNight(dateStr: string, withBulkData: boolean): NightResult {
     machineSummary: null,
     settingsFingerprint: null,
     csl: null,
-    pldSummary: null,
+    pldSummary: null, spontaneousPct: null, timedPct: null,
   };
 }
 

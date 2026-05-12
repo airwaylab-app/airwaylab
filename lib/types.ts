@@ -584,6 +584,10 @@ export interface NightResult {
   settingsFingerprint: SettingsFingerprint | null;
   csl: CSLData | null;
   pldSummary: PLDSummary | null;
+  /** Percentage of breaths classified as spontaneous (patient-triggered). Null for CPAP/APAP devices. */
+  spontaneousPct: number | null;
+  /** Percentage of breaths classified as timed (machine backup-rate triggered). Null for CPAP/APAP devices. */
+  timedPct: number | null;
 }
 
 export interface AnalysisState {

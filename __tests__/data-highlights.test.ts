@@ -153,7 +153,7 @@ function makeNight(overrides?: {
     oximetry: overrides?.oximetry === null ? null : makeOximetry(overrides?.oximetry),
     oximetryTrace: null,
     settingsMetrics: overrides?.settingsMetrics === null ? null : makeSettingsMetrics(overrides?.settingsMetrics),
-    crossDevice: null, machineSummary: null, settingsFingerprint: null, csl: null, pldSummary: null,
+    crossDevice: null, machineSummary: null, settingsFingerprint: null, csl: null, pldSummary: null, spontaneousPct: null, timedPct: null,
   };
 }
 
