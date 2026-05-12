@@ -30,8 +30,8 @@ const SENSITIVITY_MAP: Record<number, string> = {
   0: 'very low',
 };
 
-/** AirCurve 11 uses a 1-5 sensitivity scale instead of 0-4 */
-const SENSITIVITY_MAP_AC11: Record<number, string> = {
+/** AirCurve 11 (BiPAP) uses a 1-5 sensitivity scale instead of 0-4. AirSense 11 (CPAP) does not have trigger/cycle settings. */
+const SENSITIVITY_MAP_AIRCURVE11: Record<number, string> = {
   5: 'very high',
   4: 'high',
   3: 'medium',
@@ -47,7 +47,7 @@ const MASK_MAP: Record<number, string> = {
 
 export function sensitivityLabel(value: number | undefined, isAirCurve11 = false): string {
   if (value === undefined || value === null) return 'N/A';
-  const map = isAirCurve11 ? SENSITIVITY_MAP_AC11 : SENSITIVITY_MAP;
+  const map = isAirCurve11 ? SENSITIVITY_MAP_AIRCURVE11 : SENSITIVITY_MAP;
   return map[value] ?? String(value);
 }
 
@@ -56,7 +56,7 @@ const TYPED_SIGNAL_LABELS = new Set([
   'TgtIPAP.50', 'TgtEPAP.50', 'Mode', 'Date',
   'S.RiseTime', 'S.Trigger', 'S.Cycle', 'S.EasyBreathe',
   'S.EPR.Level', 'S.EPR.EPREnable', 'S.C.Press',
-  'S.VA.Trigger', 'S.VA.Cycle', // AirCurve 11 VAuto-specific signals
+  'S.VA.Trigger', 'S.VA.Cycle', // AirCurve VAuto-specific signals
   'S.RampEnable', 'S.RampTime',
   'S.RampPress', 'S.VA.StartPress', 'S.C.StartPress', // ramp start pressure variants
   'S.Humid.Level', 'S.HumidLevel', 'S.HumLevel', // humidity level variants (firmware varies)
@@ -79,7 +79,7 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const allLabels = signals.map((s) => s.label);
   console.error(`[settings] STR.edf signals (${allLabels.length}): ${allLabels.join(', ')}`);
 
-  const isAC11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
+  const isAirCurve11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
   // AirCurve devices (10 and 11) share VAuto signal names; used for S.VA.* signal selection
   const isAirCurveDevice = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve');
   // VAuto devices use mode 8 for VAuto; AirCurve 10 ST-A uses mode 8 for iVAPS (different firmware)
@@ -249,8 +249,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       pressureSupport: Math.round((ipap - epap) * 10) / 10,
       papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
-      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAC11),
-      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAC11),
+      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAirCurve11),
+      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAirCurve11),
       easyBreathe: easyBreatheOn,
       rampEnabled: rampEnableRaw !== undefined ? Math.round(rampEnableRaw) !== 0 : null,
       rampTime: rampTimeRaw !== undefined ? Math.round(rampTimeRaw) : null,
