@@ -353,6 +353,54 @@ describe('parseIdentification — AirSense 11 identification', () => {
 });
 
 // ============================================================
+// extractSettings — AirCurve 10 VAuto mode mapping (AIR-1437)
+// ============================================================
+
+describe('extractSettings — AirCurve 10 VAuto', () => {
+  it('maps mode 8 to VAuto for AirCurve 10 VAuto', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 VAuto');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    expect(result[dates[0]!]!.papMode).toBe('VAuto');
+  });
+
+  it('does NOT remap mode 8 for AirCurve 10 ST-A (iVAPS device)', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 ST-A');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    expect(result[dates[0]!]!.papMode).toBe('iVAPS');
+  });
+
+  it('uses S.VA.Trigger exact-match over substring for AirCurve 10', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',         values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50',   values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50',   values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',         values: [5],  physMin: 0,  physMax: 10 },
+      { label: 'S.VA.Trigger', values: [3],  physMin: 0,  physMax: 4 },
+      { label: 'S.VA.Cycle',   values: [2],  physMin: 0,  physMax: 4 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 VAuto');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    // Old scale: 3 = high
+    expect(result[dates[0]!]!.trigger).toBe('high');
+  });
+});
+
+// ============================================================
 // extractSettings — AirSense 11 CPAP signal extraction
 // ============================================================
 
