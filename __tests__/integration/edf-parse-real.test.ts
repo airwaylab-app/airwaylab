@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { parseEDF, parseSTR } from '@/lib/parsers/edf-parser';
 import { extractSettings, parseIdentification, getSettingsForDate } from '@/lib/parsers/settings-extractor';
+import { computeSpontaneousPct } from '@/lib/bilevel-metrics';
 
 const FIXTURES = path.resolve(__dirname, '../fixtures/sd-card');
 
@@ -144,6 +145,39 @@ describe('Real EDF parsing', () => {
         expect(typeof settings.trigger).toBe('string');
         expect(typeof settings.cycle).toBe('string');
       }
+    });
+  });
+
+  // ── TrigCycEvt / Spontaneous% integration ────────────────────
+
+  describe('bilevel breath classification (TrigCycEvt channel)', () => {
+    // Both BRP fixtures were recorded on an AirCurve 10 VAuto and carry
+    // a "TrigCycEvt.40ms" signal channel (confirmed by inspecting EDF headers).
+    // OSCAR event code mapping: 1=Spontaneous, 2=Timed, 3=Hypopnea.
+    const bilevelBrp = 'DATALOG/20260309/20260310_000159_BRP.edf';
+
+    it('parses respEventData as a non-null Float32Array for bilevel BRP', () => {
+      const buffer = readFixture(bilevelBrp);
+      const edf = parseEDF(buffer, bilevelBrp);
+      expect(edf.respEventData).not.toBeNull();
+      expect(edf.respEventData).toBeInstanceOf(Float32Array);
+      expect(edf.respEventData!.length).toBeGreaterThan(0);
+    });
+
+    it('computeSpontaneousPct returns non-null with plausible values for bilevel BRP', () => {
+      const buffer = readFixture(bilevelBrp);
+      const edf = parseEDF(buffer, bilevelBrp);
+
+      // The fixture carries TrigCycEvt data — result must be non-null
+      const result = computeSpontaneousPct(edf.respEventData!);
+      expect(result).not.toBeNull();
+
+      // Percentages must be in [0, 100] and sum to ≤ 100
+      expect(result!.spontaneousPct).toBeGreaterThanOrEqual(0);
+      expect(result!.spontaneousPct).toBeLessThanOrEqual(100);
+      expect(result!.timedPct).toBeGreaterThanOrEqual(0);
+      expect(result!.timedPct).toBeLessThanOrEqual(100);
+      expect(result!.spontaneousPct + result!.timedPct).toBeLessThanOrEqual(100);
     });
   });
 
