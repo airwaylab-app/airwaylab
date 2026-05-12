@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Cloud, Shield, ChevronDown } from 'lucide-react';
+import { Cloud, Shield, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -29,8 +29,12 @@ function setCloudSyncConsent(enabled: boolean): void {
  */
 export function CloudSyncNudge({
   onEnable,
+  sequencerActive,
+  onDismiss,
 }: {
   onEnable: () => void;
+  sequencerActive?: boolean;
+  onDismiss?: () => void;
 }) {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
@@ -38,11 +42,16 @@ export function CloudSyncNudge({
 
   useEffect(() => {
     if (!user) return;
-    // Only show if not already opted in
+    if (sequencerActive !== undefined) {
+      // Sequencer-controlled: only show when sequencer activates this nudge
+      setVisible(sequencerActive && !hasCloudSyncConsent());
+      return;
+    }
+    // Legacy: show if not already opted in
     if (!hasCloudSyncConsent()) {
       setVisible(true);
     }
-  }, [user]);
+  }, [user, sequencerActive]);
 
   if (!visible || !user) return null;
 
@@ -65,6 +74,11 @@ export function CloudSyncNudge({
     onEnable();
   };
 
+  const handleDismiss = () => {
+    setVisible(false);
+    onDismiss?.();
+  };
+
   return (
     <div className="rounded-xl border border-sky-500/20 bg-gradient-to-br from-sky-500/[0.06] to-sky-500/[0.01] p-4 animate-fade-in-up">
       <div className="flex items-start gap-4">
@@ -72,9 +86,20 @@ export function CloudSyncNudge({
           <Cloud className="h-5 w-5 text-sky-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">
-            Back up your SD card data to the cloud
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground">
+              Back up your SD card data to the cloud
+            </h3>
+            {onDismiss && (
+              <button
+                onClick={handleDismiss}
+                aria-label="Dismiss cloud sync prompt"
+                className="shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
             Securely store your raw files so you can view waveforms and re-analyse without re-uploading.
             Encrypted, EU servers, only accessible by you.

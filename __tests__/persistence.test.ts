@@ -116,6 +116,39 @@ describe('persistence', () => {
       expect(parsed.nights[0].ned.reras).toBeUndefined();
     });
 
+    it('strips csl.episodes from persisted data but keeps aggregate stats', () => {
+      const nightWithCSL = {
+        ...SAMPLE_NIGHTS[0]!,
+        csl: {
+          episodes: Array.from({ length: 50 }, (_, i) => ({
+            startSec: i * 120,
+            endSec: i * 120 + 90,
+            durationSec: 90,
+          })),
+          totalCSRSeconds: 4500,
+          csrPercentage: 15.6,
+          episodeCount: 50,
+        },
+      };
+      persistResults([nightWithCSL] as unknown as typeof SAMPLE_NIGHTS, null);
+      const saved = storage.get('airwaylab_results');
+      const parsed = JSON.parse(saved!);
+      // Episode list stripped to save space
+      expect(parsed.nights[0].csl.episodes).toEqual([]);
+      // Aggregate stats preserved for dashboard display
+      expect(parsed.nights[0].csl.csrPercentage).toBe(15.6);
+      expect(parsed.nights[0].csl.episodeCount).toBe(50);
+      expect(parsed.nights[0].csl.totalCSRSeconds).toBe(4500);
+    });
+
+    it('preserves null csl when night has no CSL data', () => {
+      const nightWithoutCSL = { ...SAMPLE_NIGHTS[0]!, csl: null };
+      persistResults([nightWithoutCSL] as unknown as typeof SAMPLE_NIGHTS, null);
+      const saved = storage.get('airwaylab_results');
+      const parsed = JSON.parse(saved!);
+      expect(parsed.nights[0].csl).toBeNull();
+    });
+
     it('reports size diagnostics in Sentry on total failure', () => {
       // Force total failure: override trySerialise by making the JSON size check fail.
       // We do this by making the first night have a field that JSON.stringify produces > 4MB.

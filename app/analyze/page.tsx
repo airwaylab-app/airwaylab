@@ -50,6 +50,7 @@ import { safeGetItem } from '@/lib/safe-local-storage';
 import { isIOSDevice } from '@/lib/directory-traversal';
 import { GuidedWalkthrough } from '@/components/dashboard/guided-walkthrough';
 import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrade';
+import { useNudgeSequencer } from '@/hooks/use-nudge-sequencer';
 import { UploadAgainCta } from '@/components/dashboard/upload-again-cta';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
 import { CommunityGateBanner } from '@/components/dashboard/community-gate-banner';
@@ -131,7 +132,8 @@ function AnalyzePageInner() {
   const [engineUpgraded, setEngineUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
-  const { user, tier, refreshProfile } = useAuth();
+  const overviewPanelRef = useRef<HTMLDivElement>(null);
+  const { user, tier, refreshProfile, profile } = useAuth();
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
   const tierRef = useRef(tier);
@@ -380,9 +382,9 @@ function AnalyzePageInner() {
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tier);
     },
-    [lifetimeNights]
+    [lifetimeNights, tier]
   );
 
   const handleOximetryUpload = useCallback(() => {
@@ -401,12 +403,12 @@ function AnalyzePageInner() {
       hadOximetryRef.current = false;
 
       // Use oximetry-only path: merges into cached nights without re-processing SD card
-      orchestrator.analyzeOximetryOnly(files);
+      orchestrator.analyzeOximetryOnly(files, tier);
 
       // Reset input so same file can be re-selected
       if (oxInputRef.current) oxInputRef.current.value = '';
     },
-    []
+    [tier]
   );
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
@@ -548,6 +550,33 @@ function AnalyzePageInner() {
 
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
+
+  const walkthroughDone = !!(
+    profile?.walkthrough_completed || safeGetItem('airwaylab_walkthrough_done') === '1'
+  );
+
+  const { activeNudge, advanceNudge, onWalkthroughStep1Complete } = useNudgeSequencer({
+    isAnalysisComplete: isComplete,
+    isAuthenticated: !!user,
+    tier,
+    hasContributeOptIn: contributeOptInRef.current,
+    hasCloudSyncConsent: hasCloudSyncConsent(),
+    hasEmailOptIn: profile?.email_opt_in ?? false,
+    walkthroughDone,
+  });
+
+  // Scroll gate: when overview panel exits viewport, unlock contribution nudge
+  useEffect(() => {
+    const el = overviewPanelRef.current;
+    if (!el || !isComplete) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry && !entry.isIntersecting) { onWalkthroughStep1Complete(); } },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isComplete, onWalkthroughStep1Complete]);
+
   const currentNight = visibleNights[selectedNight] ?? null;
   const previousNight = visibleNights[selectedNight + 1] ?? null;
 
@@ -1017,6 +1046,7 @@ function AnalyzePageInner() {
             </div>
 
             <TabsContent value="overview" className="mt-4">
+              <div ref={overviewPanelRef} />
               <ErrorBoundary context="Overview">
                 <OverviewTab
                   nights={visibleNights}
@@ -1124,15 +1154,30 @@ function AnalyzePageInner() {
 
           {/* Nudge banners — below dashboard content so data is always visible first */}
           <div className="flex flex-col gap-4">
-            <CloudSyncNudge onEnable={() => {
-              if (sdFilesRef.current.length > 0) {
-                events.cloudSyncUsed();
-                const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
-                uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
-              }
-            }} />
-            <GuidedWalkthrough isComplete={isComplete} />
-            {!isDemo && <PostAnalysisUpgrade isComplete={isComplete} />}
+            <CloudSyncNudge
+              onEnable={() => {
+                if (sdFilesRef.current.length > 0) {
+                  events.cloudSyncUsed();
+                  const filesToUpload = [...sdFilesRef.current, ...oxFilesRef.current];
+                  uploadOrchestrator.upload(filesToUpload).catch(() => { /* handled by orchestrator */ });
+                }
+                advanceNudge('cloud-sync');
+              }}
+              sequencerActive={activeNudge === 'cloud-sync'}
+              onDismiss={() => advanceNudge('cloud-sync')}
+            />
+            <GuidedWalkthrough
+              isComplete={isComplete}
+              onStep1Acknowledged={onWalkthroughStep1Complete}
+              onDismiss={() => advanceNudge('walkthrough')}
+            />
+            {!isDemo && (
+              <PostAnalysisUpgrade
+                isComplete={isComplete}
+                sequencerActive={activeNudge === 'upgrade'}
+                onDismiss={() => advanceNudge('upgrade')}
+              />
+            )}
             {!isDemo && (
               <UploadAgainCta
                 isComplete={isComplete}
@@ -1142,7 +1187,7 @@ function AnalyzePageInner() {
             )}
             {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
             {!isDemo && <CommunityGateBanner nights={nights} />}
-            {!isDemo && <EmailOptInNudge />}
+            {!isDemo && activeNudge === 'email-opt-in' && <EmailOptInNudge />}
             <DataContribution
               nights={nights}
               isDemo={isDemo}
@@ -1156,11 +1201,11 @@ function AnalyzePageInner() {
       )}
 
       {/* Contribution nudge dialog — shown after analysis if user didn't opt in */}
-      {showContributeNudge && (
+      {showContributeNudge && activeNudge === 'contribution' && (
         <ContributionNudgeDialog
           nightCount={pendingNightsRef.current.length}
-          onContribute={handleNudgeContribute}
-          onDismiss={handleNudgeDismiss}
+          onContribute={() => { handleNudgeContribute(); advanceNudge('contribution'); }}
+          onDismiss={() => { handleNudgeDismiss(); advanceNudge('contribution'); }}
         />
       )}
 
