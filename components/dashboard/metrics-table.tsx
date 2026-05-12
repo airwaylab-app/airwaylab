@@ -12,7 +12,7 @@ import type { NightResult } from '@/lib/types';
 import { fmtHrs } from '@/lib/format-utils';
 import { findSettingsChangeBoundaries } from '@/lib/comparison-guard';
 
-type SortKey = 'date' | 'glasgow' | 'fl' | 'regularity' | 'periodicity' | 'ned' | 'rera' | 'boi' | 'duration' | 'ahi' | 'leak95' | 'spontCyc';
+type SortKey = 'date' | 'glasgow' | 'fl' | 'regularity' | 'periodicity' | 'ned' | 'rera' | 'boi' | 'duration' | 'ahi' | 'leak95' | 'spontPct';
 
 interface Props {
   nights: NightResult[];
@@ -30,7 +30,7 @@ const cols: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: 'ned', label: 'NED Mean', shortLabel: 'NED' },
   { key: 'rera', label: 'RERA/hr', shortLabel: 'RERA' },
   { key: 'boi', label: 'BOI/hr', shortLabel: 'BOI' },
-  { key: 'spontCyc', label: 'Spont%', shortLabel: 'Sp%' },
+  { key: 'spontPct', label: 'Spontaneous%', shortLabel: 'Sp%' },
 ];
 
 function getMetricValue(n: NightResult, key: SortKey): string {
@@ -46,7 +46,7 @@ function getMetricValue(n: NightResult, key: SortKey): string {
     case 'boi': return (n.ned.briefObstructionIndex ?? 0).toFixed(1);
     case 'ahi': return n.machineSummary?.ahi != null ? n.machineSummary.ahi.toFixed(1) : '-';
     case 'leak95': return n.machineSummary?.leak95 != null ? n.machineSummary.leak95.toFixed(0) : '-';
-    case 'spontCyc': return n.machineSummary?.spontCycPct != null ? n.machineSummary.spontCycPct.toFixed(0) + '%' : '-';
+    case 'spontPct': return n.spontaneousPct != null ? n.spontaneousPct.toFixed(1) + '%' : '—';
   }
 }
 
@@ -61,7 +61,7 @@ function getMetricColor(n: NightResult, key: SortKey, t: Record<string, Threshol
     case 'boi': return t.briefObstructionIndex ? getTrafficColor(getTrafficLight(n.ned.briefObstructionIndex ?? 0, t.briefObstructionIndex)) : '';
     case 'ahi': return n.machineSummary?.ahi != null && t.machineAhi ? getTrafficColor(getTrafficLight(n.machineSummary.ahi, t.machineAhi)) : '';
     case 'leak95': return n.machineSummary?.leak95 != null && t.leak95 ? getTrafficColor(getTrafficLight(n.machineSummary.leak95, t.leak95)) : '';
-    case 'spontCyc': return n.machineSummary?.spontCycPct != null && t.spontCycPct ? getTrafficColor(getTrafficLight(n.machineSummary.spontCycPct, t.spontCycPct)) : '';
+    case 'spontPct': return '';
     default: return '';
   }
 }
@@ -94,7 +94,7 @@ export function MetricsTable({ nights }: Props) {
       case 'duration': return n.durationHours;
       case 'ahi': return n.machineSummary?.ahi ?? -1;
       case 'leak95': return n.machineSummary?.leak95 ?? -1;
-      case 'spontCyc': return n.machineSummary?.spontCycPct ?? -1;
+      case 'spontPct': return n.spontaneousPct ?? -1;
     }
   };
 
@@ -106,7 +106,7 @@ export function MetricsTable({ nights }: Props) {
 
   const visible = sorted.slice(0, visibleCount);
   const remaining = sorted.length - visibleCount;
-  const metricKeys: SortKey[] = ['ahi', 'leak95', 'glasgow', 'fl', 'regularity', 'periodicity', 'ned', 'rera', 'boi', 'spontCyc'];
+  const metricKeys: SortKey[] = ['ahi', 'leak95', 'glasgow', 'fl', 'regularity', 'periodicity', 'ned', 'rera', 'boi', 'spontPct'];
 
   // Detect settings change boundaries for visual markers
   const boundaries = useMemo(() => {

@@ -579,6 +579,23 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClick={() => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
+
+      {/* Bilevel-specific metrics — only shown for AirCurve/BiPAP nights */}
+      {n.spontaneousPct != null && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
+          <MetricCard
+            label="Spontaneous%"
+            value={n.spontaneousPct}
+            unit="%"
+            format="pct"
+            previousValue={p?.spontaneousPct ?? undefined}
+            compact
+            tooltip="Percentage of breaths triggered by the patient (spontaneous) vs the machine backup rate (timed)."
+            plainLanguage={METRIC_PLAIN_LANGUAGE.spontaneousPct}
+          />
+        </div>
+      )}
+
       <MetricExplanation
         text={[
           getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai!),
