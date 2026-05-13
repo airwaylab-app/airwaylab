@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'cpap-vs-bipap',
+    title: 'CPAP vs BiPAP: Which Device Do You Need and Why?',
+    seoTitle: 'CPAP vs BiPAP: Difference Between CPAP and BiPAP Explained | AirwayLab',
+    description:
+      'CPAP delivers one pressure; BiPAP delivers two. Learn the difference between CPAP and BiPAP, why bilevel therapy is prescribed, and how the therapy data looks different.',
+    date: '2026-06-09',
+    readTime: '7 min read',
+    tags: ['CPAP', 'BiPAP', 'Bilevel', 'PAP Therapy', 'Device Comparison'],
+    ogDescription:
+      "CPAP vs BiPAP: what the difference is, when bilevel therapy is prescribed, and how each device's therapy data looks when you analyse it.",
+    faqItems: [
+      {
+        question: 'What is the difference between CPAP and BiPAP?',
+        answer:
+          'CPAP (Continuous Positive Airway Pressure) delivers a single continuous pressure during both inhalation and exhalation. BiPAP (Bilevel Positive Airway Pressure) delivers two separate pressure levels — a higher IPAP during inhalation and a lower EPAP during exhalation. The pressure difference (pressure support) actively assists the breathing effort.',
+      },
+      {
+        question: 'When is BiPAP prescribed instead of CPAP?',
+        answer:
+          'BiPAP is typically considered when high pressure is required and exhaling against it is uncomfortable, when there is a component of hypoventilation, when central or complex sleep apnea patterns are present, or when CPAP cannot be tolerated despite adequate time and fitting adjustments. The decision is made by a sleep physician based on diagnostic results and clinical history.',
+      },
+      {
+        question: 'Is BiPAP better than CPAP for sleep apnea?',
+        answer:
+          "Neither device type is universally better — the appropriate choice depends on each person's clinical situation. CPAP is effective for most people with obstructive sleep apnea. BiPAP addresses specific scenarios where single-pressure therapy is not adequate or well-tolerated. Your sleep physician can advise which approach fits your situation.",
+      },
+      {
+        question: 'Does AirwayLab work with BiPAP data?',
+        answer:
+          'AirwayLab currently reads ResMed EDF format. Some ResMed BiPAP models write compatible EDF files and the available metrics depend on what your device records. Check the community forum for device-specific compatibility notes.',
+      },
+      {
+        question: 'What does pressure support mean on BiPAP?',
+        answer:
+          'Pressure support (PS) is the difference between IPAP (inspiratory pressure) and EPAP (expiratory pressure) on a BiPAP device. For example, IPAP 14 and EPAP 8 gives a pressure support of 6 cmH₂O. This pressure difference actively assists inhalation. The PS level is set by the prescribing clinician.',
+      },
+    ],
+  },
+  {
     slug: 'dreammapper-shutting-down',
     title: 'DreamMapper Shutting Down: What CPAP Users Should Do Now',
     seoTitle: 'DreamMapper Shutting Down: What to Do With Your CPAP Data',
@@ -47,6 +86,45 @@ export const blogPosts: BlogPost[] = [
         question: 'Does AirwayLab support Philips DreamStation data?',
         answer:
           'Not currently. AirwayLab supports ResMed AirSense 10, AirSense 11, and AirCurve devices. For Philips DreamStation data, OSCAR is the recommended free tool.',
+      },
+    ],
+  },
+  {
+    slug: 'how-to-read-cpap-therapy-report',
+    title: 'How to Read Your CPAP Therapy Report: AHI, Leak Rate, and Pressure Explained',
+    seoTitle: 'How to Read Your CPAP Therapy Report: AHI, Leak Rate and Pressure | AirwayLab',
+    description:
+      'Understand every field in your CPAP therapy report — residual AHI, event types (OA, CA, H, RERA), mask leak rate, pressure data, and usage hours — with plain-language explanations.',
+    date: '2026-06-12',
+    readTime: '7 min read',
+    tags: ['CPAP', 'AHI', 'Leak Rate', 'Pressure', 'Therapy Report'],
+    ogDescription:
+      'Understand every field in your CPAP therapy report — AHI, event types, leak rate, pressure, and usage hours explained in plain language.',
+    faqItems: [
+      {
+        question: 'What is residual AHI on CPAP?',
+        answer:
+          'Residual AHI is the apnea-hypopnea index recorded while CPAP therapy is active — events that occurred despite the pressure support. A residual AHI below 5/hr is a common reference point, but your sleep physician determines what is appropriate for your individual situation.',
+      },
+      {
+        question: 'What does RERA mean in a CPAP report?',
+        answer:
+          'RERA stands for Respiratory Effort-Related Arousal — a sequence of increasingly restricted breaths that end in an arousal before meeting the full hypopnea criteria. ResMed machines record these separately. RERAs contribute to sleep fragmentation and daytime symptoms even when AHI is low.',
+      },
+      {
+        question: 'What is a good leak rate on CPAP?',
+        answer:
+          'ResMed documentation typically cites unintentional leak below 24 L/min as within the acceptable range for most mask types. High leak can affect event detection accuracy, making AHI readings on high-leak nights less reliable. Your clinician can interpret recurring high-leak patterns in context.',
+      },
+      {
+        question: 'What does 95th percentile pressure mean on APAP?',
+        answer:
+          'The 95th percentile pressure is the level your APAP device was at or below for 95% of the night. It gives a cleaner picture of typical operating pressure than the maximum. A rising 95th-percentile pressure over multiple weeks is worth discussing with your sleep clinician.',
+      },
+      {
+        question: 'How can I see my full CPAP therapy report in AirwayLab?',
+        answer:
+          'Load your ResMed SD card at airwaylab.app/analyze. AirwayLab reads your EDF files in the browser — your data never leaves your device. The overview tab shows AHI, event breakdown, leak, pressure, and usage hours. Additional tabs cover breath-shape scoring, flow limitation analysis, and nightly trends.',
       },
     ],
   },
