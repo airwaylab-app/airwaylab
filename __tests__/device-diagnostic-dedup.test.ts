@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(true),
@@ -105,5 +106,97 @@ describe('device-diagnostic dedup', () => {
     }
 
     expect(insertSpy).toHaveBeenCalledTimes(callCount)
+  })
+})
+
+describe('device-diagnostic route — validation and error boundaries', () => {
+  beforeEach(() => {
+    __resetForTests()
+    mockSendAlert.mockClear()
+    vi.mocked(Sentry.captureException).mockClear()
+    vi.mocked(Sentry.captureMessage).mockClear()
+  })
+
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('returns 403 when validateOrigin rejects the request', async () => {
+    const { validateOrigin } = await import('@/lib/csrf')
+    vi.mocked(validateOrigin).mockReturnValueOnce(false)
+    const res = await POST(makeRequest('ResMed-AirSense10'))
+    expect(res.status).toBe(403)
+    const body = await res.json() as { error: string }
+    expect(body.error).toMatch(/origin/i)
+  })
+
+  it('returns 429 when rate limiter is exhausted', async () => {
+    const { RateLimiter } = await import('@/lib/rate-limit')
+    // All RateLimiter instances share the same isLimited mock fn (see module mock above)
+    const shared = new (RateLimiter as unknown as new () => { isLimited: ReturnType<typeof vi.fn> })()
+    shared.isLimited.mockResolvedValueOnce(true)
+    const res = await POST(makeRequest('ResMed-AirSense10'))
+    expect(res.status).toBe(429)
+    const body = await res.json() as { error: string }
+    expect(body.error).toMatch(/rate/i)
+  })
+
+  it('returns 400 for an invalid payload (missing required field)', async () => {
+    const req = new NextRequest('http://localhost/api/device-diagnostic', {
+      method: 'POST',
+      body: JSON.stringify({ deviceModel: 'X' }), // missing signalLabels, hasStrFile
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json() as { error: string }
+    expect(body.error).toMatch(/invalid/i)
+  })
+
+  it('returns 400 for an invalid payload (deviceModel exceeds max length)', async () => {
+    const req = new NextRequest('http://localhost/api/device-diagnostic', {
+      method: 'POST',
+      body: JSON.stringify({
+        deviceModel: 'X'.repeat(201),
+        signalLabels: [],
+        identificationText: null,
+        hasStrFile: false,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 500 and captures exception when request body is not valid JSON', async () => {
+    const req = new NextRequest('http://localhost/api/device-diagnostic', {
+      method: 'POST',
+      body: 'not json {{{',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(500)
+    expect(vi.mocked(Sentry.captureException)).toHaveBeenCalled()
+  })
+
+  it('captures Sentry message but still returns 200 when Supabase is not configured', async () => {
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    vi.mocked(getSupabaseAdmin).mockReturnValueOnce(null as unknown as ReturnType<typeof getSupabaseAdmin>)
+    const res = await POST(makeRequest('ResMed-AirSense10'))
+    expect(res.status).toBe(200)
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith(
+      'Supabase not configured - data lost',
+      expect.objectContaining({ level: 'error' })
+    )
+  })
+
+  it('captures Sentry exception but still returns 200 when Supabase insert errors', async () => {
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    vi.mocked(getSupabaseAdmin).mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: { message: 'DB constraint violation' } }),
+      }),
+    } as unknown as ReturnType<typeof getSupabaseAdmin>)
+    const res = await POST(makeRequest('ResMed-AirSense10'))
+    expect(res.status).toBe(200)
+    expect(vi.mocked(Sentry.captureException)).toHaveBeenCalled()
   })
 })
