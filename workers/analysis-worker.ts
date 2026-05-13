@@ -591,12 +591,17 @@ async function processFiles(
       pldSummary,
     });
 
-    // Emit incremental result so the orchestrator can persist progress
+    // Emit incremental result so the orchestrator can persist progress.
+    // Bulk arrays (ned.breaths, oximetryTrace) are lifted to top-level fields
+    // and stripped from night to keep the structured-clone payload small.
+    const latestNight = nights[nights.length - 1]!;
     const nightMsg: WorkerNightResult = {
       type: 'NIGHT_RESULT',
-      night: nights[nights.length - 1]!,
+      night: stripNightBulkData(latestNight),
       nightIndex: i,
       totalNights: nightGroups.length,
+      breaths: latestNight.ned.breaths,
+      oximetryTrace: latestNight.oximetryTrace,
     };
     self.postMessage(nightMsg);
   }
@@ -766,9 +771,11 @@ async function processBMCFiles(
 
     const nightMsg: WorkerNightResult = {
       type: 'NIGHT_RESULT',
-      night,
+      night: stripNightBulkData(night),
       nightIndex: i,
       totalNights: nightDates.length,
+      breaths: night.ned.breaths,
+      oximetryTrace: night.oximetryTrace,
     };
     self.postMessage(nightMsg);
   }
