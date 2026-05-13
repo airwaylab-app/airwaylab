@@ -278,12 +278,12 @@ class AnalysisOrchestrator {
         }
       }
 
-      // ── Authoritative save of final results (tier-gated) ──
+      // ── Authoritative save of final results (tier-gated window) ──
       const nightsToSave = filterNightsToTierWindow(merged, tier);
       const persistResult = persistResults(nightsToSave, therapyChangeDate);
-      persistOximetryTraces(nightsToSave);
-      persistBreathData(nightsToSave);
-      persistPLDTraces(nightsToSave);
+      persistOximetryTraces(merged);
+      persistBreathData(merged);
+      persistPLDTraces(merged);
 
       Sentry.addBreadcrumb({ message: 'Analysis complete', category: 'analysis', data: { nightCount: merged.length } });
 
@@ -575,11 +575,11 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results (tier-gated)
+      // Persist updated results (tier-gated window)
       const therapyChangeDate = detectTherapyChange(merged);
       const nightsToSave = filterNightsToTierWindow(merged, tier);
       const persistResult = persistResults(nightsToSave, therapyChangeDate);
-      persistOximetryTraces(nightsToSave);
+      persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',

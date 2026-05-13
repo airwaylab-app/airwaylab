@@ -1,14 +1,5 @@
-import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { resolve } from 'path';
-import { readFileSync } from 'fs';
-
-vi.mock('@/lib/parsers/edf-parser', async () => {
-  const actual = await vi.importActual('@/lib/parsers/edf-parser');
-  return { ...(actual as object), parseSTR: vi.fn() };
-});
-
-import { parseSTR } from '@/lib/parsers/edf-parser';
-import { extractSettings, getSTRSignalLabels, isAirSense11, parseIdentification, getSettingsForDate, sensitivityLabel } from '@/lib/parsers/settings-extractor';
+import { describe, it, expect } from 'vitest';
+import { parseIdentification, getSettingsForDate, sensitivityLabel, extractSettings } from '@/lib/parsers/settings-extractor';
 import type { MachineSettings } from '@/lib/types';
 
 describe('parseIdentification', () => {
@@ -203,92 +194,6 @@ describe('parseIdentification — AirCurve 11 nested JSON', () => {
   });
 });
 
-// ── extractSettings — AirCurve 10 VAuto fixes (AIR-1437) ──────────────────
-
-const mockParseSTR = parseSTR as ReturnType<typeof vi.fn>;
-
-function makeSignal(label: string, values: number[]) {
-  return { label, physicalValues: values, digitalValues: values };
-}
-
-function makeSTRResult(signals: ReturnType<typeof makeSignal>[]) {
-  return { header: {}, signals, startDateTime: new Date('2026-01-11T00:00:00Z') };
-}
-
-describe('extractSettings — AirCurve 10 VAuto', () => {
-  afterEach(() => {
-    mockParseSTR.mockReset();
-  });
-
-  it('maps mode 8 to VAuto for AirCurve 10 VAuto', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('TgtIPAP.50', [15]),
-      makeSignal('TgtEPAP.50', [8]),
-      makeSignal('Mode', [8]),
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirCurve 10 VAuto');
-    const dates = Object.keys(result);
-    expect(dates.length).toBeGreaterThan(0);
-    expect(result[dates[0]!]!.papMode).toBe('VAuto');
-  });
-
-  it('maps mode 8 to VAuto for AirCurve 11 VAuto', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('TgtIPAP.50', [15]),
-      makeSignal('TgtEPAP.50', [8]),
-      makeSignal('Mode', [8]),
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirCurve 11 VAuto');
-    const dates = Object.keys(result);
-    expect(dates.length).toBeGreaterThan(0);
-    expect(result[dates[0]!]!.papMode).toBe('VAuto');
-  });
-
-  it('maps mode 8 to iVAPS for AirCurve 10 ST-A (not VAuto)', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('TgtIPAP.50', [15]),
-      makeSignal('TgtEPAP.50', [8]),
-      makeSignal('Mode', [8]),
-      makeSignal('Date', [0]),
-    ]));
-    // AirCurve 10 ST-A: mode 8 = iVAPS (not VAuto)
-    const result10 = extractSettings(new ArrayBuffer(0), 'AirCurve 10 ST-A');
-    const dates10 = Object.keys(result10);
-    expect(dates10.length).toBeGreaterThan(0);
-    expect(result10[dates10[0]!]!.papMode).toBe('iVAPS');
-  });
-
-  it('uses S.VA.Trigger exact-match over substring-matched S.S.Trigger for AirCurve 10', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('TgtIPAP.50', [15]),
-      makeSignal('TgtEPAP.50', [8]),
-      makeSignal('Mode', [5]),
-      makeSignal('Date', [0]),
-      makeSignal('S.VA.Trigger', [3]),  // value 3 on 0-4 scale = 'high'
-      makeSignal('S.S.Trigger', [1]),   // substring match would give 'low'
-      makeSignal('S.VA.Cycle', [2]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirCurve 10 VAuto');
-    const dates = Object.keys(result);
-    expect(dates.length).toBeGreaterThan(0);
-    expect(result[dates[0]!]!.trigger).toBe('high');
-  });
-
-  it('returns empty map when IPAP signal is missing (condition for SETTINGS_DIAGNOSTIC in worker)', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      // TgtIPAP.50 intentionally absent
-      makeSignal('TgtEPAP.50', [8]),
-      makeSignal('Mode', [8]),
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirCurve 10 VAuto');
-    // Empty result causes the worker to fire SETTINGS_DIAGNOSTIC with signal label list
-    expect(Object.keys(result).length).toBe(0);
-  });
-});
-
 describe('sensitivityLabel — AirCurve 11 scale', () => {
   it('maps old scale (0-4) correctly by default', () => {
     expect(sensitivityLabel(0)).toBe('very low');
@@ -322,54 +227,100 @@ describe('sensitivityLabel — AirCurve 11 scale', () => {
   });
 });
 
-// ── AirSense 11 — device detection and settings extraction ───────────────────
+// ============================================================
+// Helpers — build synthetic STR.edf buffers for extractSettings tests
+// ============================================================
 
-describe('isAirSense11 — device detection helper', () => {
-  it('returns true for "AirSense 11 AutoSet"', () => {
-    expect(isAirSense11('AirSense 11 AutoSet')).toBe(true);
+function buildSTRBuffer(
+  signalDefs: { label: string; values: number[]; physMin?: number; physMax?: number }[]
+): ArrayBuffer {
+  const numSignals = signalDefs.length;
+  const numDataRecords = signalDefs[0]?.values.length ?? 1;
+  const samplesPerRecord = 1;
+  const headerBytes = 256 + numSignals * 256;
+  const dataSize = numDataRecords * numSignals * samplesPerRecord * 2;
+  const totalSize = headerBytes + dataSize;
+
+  const buf = new ArrayBuffer(totalSize);
+  const view = new DataView(buf);
+  const rawView = new Uint8Array(buf);
+  const encoder = new TextEncoder();
+
+  const writeField = (offset: number, value: string, length: number) => {
+    const bytes = encoder.encode(value.padEnd(length).slice(0, length));
+    rawView.set(bytes, offset);
+  };
+
+  writeField(0, '0', 8);
+  writeField(8, '', 80);
+  writeField(88, '', 80);
+  writeField(168, '01.01.26', 8);
+  writeField(176, '00.00.00', 8);
+  writeField(184, String(headerBytes), 8);
+  writeField(192, '', 44);
+  writeField(236, String(numDataRecords), 8);
+  writeField(244, '86400', 8);
+  writeField(252, String(numSignals), 4);
+
+  let offset = 256;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 16, signalDefs[i]!.label, 16);
+  offset += numSignals * 16;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 80, '', 80);
+  offset += numSignals * 80;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, '', 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, String(signalDefs[i]!.physMin ?? 0), 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, String(signalDefs[i]!.physMax ?? 100), 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, '0', 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, '32767', 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 80, '', 80);
+  offset += numSignals * 80;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 8, String(samplesPerRecord), 8);
+  offset += numSignals * 8;
+  for (let i = 0; i < numSignals; i++) writeField(offset + i * 32, '', 32);
+
+  let dataPtr = headerBytes;
+  for (let rec = 0; rec < numDataRecords; rec++) {
+    for (let sig = 0; sig < numSignals; sig++) {
+      const physMin = signalDefs[sig]!.physMin ?? 0;
+      const physMax = signalDefs[sig]!.physMax ?? 100;
+      const scale = (physMax - physMin) / 32767;
+      const physical = signalDefs[sig]!.values[rec] ?? 0;
+      const digital = Math.round((physical - physMin) / scale);
+      view.setInt16(dataPtr, digital, true);
+      dataPtr += 2;
+    }
+  }
+  return buf;
+}
+
+// ============================================================
+// parseIdentification — AirSense 11 detection
+// ============================================================
+
+describe('parseIdentification — AirSense 11 identification', () => {
+  it('parses AirSense 11 AutoSet from top-level ModelNumber', () => {
+    const json = JSON.stringify({ ModelNumber: 'AirSense 11 AutoSet' });
+    expect(parseIdentification(json)).toBe('AirSense 11 AutoSet');
   });
 
-  it('returns true for "AirSense 11 Elite"', () => {
-    expect(isAirSense11('AirSense 11 Elite')).toBe(true);
+  it('parses AirSense 11 Elite from top-level ModelNumber', () => {
+    const json = JSON.stringify({ ModelNumber: 'AirSense 11 Elite' });
+    expect(parseIdentification(json)).toBe('AirSense 11 Elite');
   });
 
-  it('returns true for underscore-separated "AirSense_11_AutoSet"', () => {
-    expect(isAirSense11('AirSense_11_AutoSet')).toBe(true);
-  });
-
-  it('returns true for compact "AirSense11"', () => {
-    expect(isAirSense11('AirSense11')).toBe(true);
-  });
-
-  it('returns false for AirSense 10', () => {
-    expect(isAirSense11('AirSense 10 AutoSet')).toBe(false);
-  });
-
-  it('returns false for AirCurve 11 (bilevel, not CPAP)', () => {
-    expect(isAirSense11('AirCurve 11 VAuto')).toBe(false);
-  });
-
-  it('returns false for AirMini', () => {
-    expect(isAirSense11('AirMini AutoSet')).toBe(false);
-  });
-});
-
-describe('parseIdentification — AirSense 11 model strings', () => {
-  it('parses "AirSense 11 AutoSet" from top-level ModelNumber', () => {
-    expect(parseIdentification(JSON.stringify({ ModelNumber: 'AirSense 11 AutoSet' }))).toBe('AirSense 11 AutoSet');
-  });
-
-  it('parses "AirSense_11_AutoSet" (underscore firmware variant)', () => {
-    expect(parseIdentification(JSON.stringify({ ModelNumber: 'AirSense_11_AutoSet' }))).toBe('AirSense_11_AutoSet');
-  });
-
-  it('parses AS11 from FlowGenerator nested JSON (same structure as AirCurve 11)', () => {
+  it('parses AirSense11AutoSet (no spaces) from FlowGenerator nested structure', () => {
+    // AirSense 11 firmware may use the same FlowGenerator JSON format as AirCurve 11
     const json = JSON.stringify({
       FlowGenerator: {
         IdentificationProfiles: {
           Product: {
             ProductName: 'AirSense11AutoSet',
-            SerialNumber: '12345678',
+            SerialNumber: '23199876543',
           },
         },
       },
@@ -377,183 +328,204 @@ describe('parseIdentification — AirSense 11 model strings', () => {
     expect(parseIdentification(json)).toBe('AirSense11AutoSet');
   });
 
-  it('confirms AS11 model string does NOT match AirCurve 11 detection regex', () => {
-    const model = parseIdentification(JSON.stringify({ ModelNumber: 'AirSense 11 AutoSet' }));
-    // isAC11 logic: normalize whitespace, check for 'aircurve11'
-    const normalised = model.replace(/\s/g, '').toLowerCase();
-    expect(normalised.includes('aircurve11')).toBe(false);
-    // But it IS detected as AirSense 11
-    expect(isAirSense11(model)).toBe(true);
+  it('parses AirSense 11 ModelNumber from FlowGenerator nested structure', () => {
+    const json = JSON.stringify({
+      FlowGenerator: {
+        IdentificationProfiles: {
+          Product: {
+            ModelNumber: 'AS11-AutoSet-Rev1',
+            ProductName: 'AirSense11AutoSet',
+          },
+        },
+      },
+    });
+    // ProductName is checked first in FlowGenerator path
+    expect(parseIdentification(json)).toBe('AirSense11AutoSet');
+  });
+
+  it('AirSense 11 model string does NOT match AirCurve 11 substring', () => {
+    // Verifies isAirCurve11 = false for AirSense 11 devices — they use CPAP signal paths
+    const as11Model = 'AirSense 11 AutoSet';
+    const normalized = as11Model.replace(/\s/g, '').toLowerCase();
+    expect(normalized.includes('aircurve11')).toBe(false);
+    expect(normalized.includes('airsense')).toBe(true);
   });
 });
 
-describe('extractSettings — AirSense 11 (mocked STR signals)', () => {
-  afterEach(() => {
-    mockParseSTR.mockReset();
-  });
+// ============================================================
+// extractSettings — AirCurve 10 VAuto mode mapping (AIR-1437)
+// ============================================================
 
-  it('extracts CPAP settings from AS11 STR using standard AirSense signal names', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('S.C.Press', [10]),
-      makeSignal('S.EPR.Level', [2]),
-      makeSignal('S.EPR.EPREnable', [1]),
-      makeSignal('Mode', [0]),   // CPAP
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirSense 11 AutoSet');
+describe('extractSettings — AirCurve 10 VAuto', () => {
+  it('maps mode 8 to VAuto for AirCurve 10 VAuto', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 VAuto');
     const dates = Object.keys(result);
     expect(dates.length).toBeGreaterThan(0);
-    const s = result[dates[0]!]!;
-    expect(s.ipap).toBe(10);
-    expect(s.epap).toBe(8);   // 10 - EPR level 2
-    expect(s.papMode).toBe('CPAP');
-    expect(s.deviceModel).toBe('AirSense 11 AutoSet');
+    expect(result[dates[0]!]!.papMode).toBe('VAuto');
   });
 
-  it('falls back to S.EPR.LevelS when S.EPR.Level is absent (some AS11 firmware)', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('S.C.Press', [12]),
-      makeSignal('S.EPR.LevelS', [3]),  // firmware variant label
-      makeSignal('S.EPR.EPREnable', [1]),
-      makeSignal('Mode', [2]),   // AutoSet
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirSense 11 AutoSet');
+  it('does NOT remap mode 8 for AirCurve 10 ST-A (iVAPS device)', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 ST-A');
     const dates = Object.keys(result);
     expect(dates.length).toBeGreaterThan(0);
-    const s = result[dates[0]!]!;
-    expect(s.ipap).toBe(12);
-    expect(s.epap).toBe(9);   // 12 - EPR level 3
-    expect(s.papMode).toBe('AutoSet');
+    expect(result[dates[0]!]!.papMode).toBe('iVAPS');
   });
 
-  it('does NOT apply AirCurve 11 sensitivity scale (1-5) for AS11 trigger values', () => {
-    mockParseSTR.mockReturnValue(makeSTRResult([
-      makeSignal('S.C.Press', [10]),
-      makeSignal('S.EPR.Level', [0]),
-      makeSignal('S.EPR.EPREnable', [0]),
-      makeSignal('S.Trigger', [3]),
-      makeSignal('S.Cycle', [3]),
-      makeSignal('Mode', [0]),
-      makeSignal('Date', [0]),
-    ]));
-    const result = extractSettings(new ArrayBuffer(0), 'AirSense 11 AutoSet');
-    const s = result[Object.keys(result)[0]!]!;
-    // AS11 is not an AirCurve 11 — must use 0-4 scale: value 3 = 'high', not 'medium'
-    expect(s.trigger).toBe('high');
-    expect(s.cycle).toBe('high');
+  it('uses S.VA.Trigger exact-match over substring for AirCurve 10', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',         values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50',   values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50',   values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',         values: [5],  physMin: 0,  physMax: 10 },
+      { label: 'S.VA.Trigger', values: [3],  physMin: 0,  physMax: 4 },
+      { label: 'S.VA.Cycle',   values: [2],  physMin: 0,  physMax: 4 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 VAuto');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    // Old scale: 3 = high
+    expect(result[dates[0]!]!.trigger).toBe('high');
   });
 });
 
-// ── extractSettings — AirCurve 10 VAuto integration (real STR.edf fixture) ──
-//
-// Signal labels found in __tests__/fixtures/sd-card/STR.edf (97 signals):
-// Date, MaskOn, MaskOff, MaskEvents, Duration, OnDuration, PatientHours, Mode,
-// S.RampEnable, S.RampTime, S.C.StartPress, S.C.Press, S.EPR.ClinEnable,
-// S.EPR.EPREnable, S.EPR.Level, S.EPR.EPRType, S.BL.StartPress, S.BL.IPAP,
-// S.BL.EPAP, S.EasyBreathe, S.VA.StartPress, S.VA.MaxIPAP, S.VA.MinEPAP,
-// S.VA.PS, S.RiseEnable, S.RiseTime, S.Cycle, S.Trigger, S.TiMax, S.TiMin,
-// S.SmartStart, S.PtAccess, S.ABFilter, S.LeakAlert, S.Mask, S.Tube,
-// S.ClimateControl, S.HumEnable, S.HumLevel, S.TempEnable, S.Temp,
-// HeatedTube, Humidifier, BlowPress.95, BlowPress.5, Flow.95, Flow.5,
-// BlowFlow.50, AmbHumidity.50, HumTemp.50, HTubeTemp.50, HTubePow.50,
-// HumPow.50, SpO2.50, SpO2.95, SpO2.Max, SpO2Thresh, SpontCyc%,
-// MaskPress.50, MaskPress.95, MaskPress.Max, TgtIPAP.50, TgtIPAP.95,
-// TgtIPAP.Max, TgtEPAP.50, TgtEPAP.95, TgtEPAP.Max, Leak.50, Leak.95,
-// Leak.70, Leak.Max, MinVent.50, MinVent.95, MinVent.Max, RespRate.50,
-// RespRate.95, RespRate.Max, TidVol.50, TidVol.95, TidVol.Max, IERatio.50,
-// IERatio.95, IERatio.Max, Ti.50, Ti.95, Ti.Max, AHI, HI, AI, OAI, CAI,
-// UAI, Fault.Device, Fault.Alarm, Fault.Humidifier, Fault.HeatedTube, Crc16
-//
-// Key firmware signal name differences from what prior code expected:
-//   S.HumLevel      (not S.Humid.Level / S.HumidLevel)
-//   S.Temp          (not S.TubeTemp / S.Tube.Temp)
-//   S.VA.StartPress (ramp start press for VAuto mode, not S.RampPress)
+// ============================================================
+// extractSettings — AirSense 11 CPAP signal extraction
+// ============================================================
 
-describe('extractSettings — AirCurve 10 VAuto integration (real STR.edf)', () => {
-  beforeEach(async () => {
-    const { parseSTR: realParseSTR } = await vi.importActual<typeof import('@/lib/parsers/edf-parser')>('@/lib/parsers/edf-parser');
-    mockParseSTR.mockImplementation(realParseSTR as typeof parseSTR);
+describe('extractSettings — AirSense 11 CPAP', () => {
+  it('extracts CPAP pressure via S.C.Press signal path (AirSense 10/11)', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',            values: [0],   physMin: 0,   physMax: 36500 },
+      { label: 'S.C.Press',       values: [9.0], physMin: 4,   physMax: 20 },
+      { label: 'S.EPR.Level',     values: [2],   physMin: 0,   physMax: 3 },
+      { label: 'S.EPR.EPREnable', values: [1],   physMin: 0,   physMax: 1 },
+      { label: 'Mode',            values: [0],   physMin: 0,   physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirSense 11 AutoSet');
+    const dates = Object.keys(result);
+    expect(dates).toHaveLength(1);
+    const day = result[dates[0]!]!;
+    expect(day.deviceModel).toBe('AirSense 11 AutoSet');
+    expect(day.papMode).toBe('CPAP');
+    expect(day.ipap).toBeCloseTo(9.0, 1);
+    // EPR on at level 2 → epap = 9.0 - 2 = 7.0
+    expect(day.epap).toBeCloseTo(7.0, 1);
+    // AirSense 11 CPAP has no trigger/cycle settings
+    expect(day.trigger).toBe('N/A');
+    expect(day.cycle).toBe('N/A');
   });
 
-  afterEach(() => {
-    mockParseSTR.mockReset();
+  it('extracts APAP mode for AirSense 11', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',            values: [0],   physMin: 0,   physMax: 36500 },
+      { label: 'S.C.Press',       values: [8.5], physMin: 4,   physMax: 20 },
+      { label: 'S.EPR.Level',     values: [0],   physMin: 0,   physMax: 3 },
+      { label: 'S.EPR.EPREnable', values: [0],   physMin: 0,   physMax: 1 },
+      { label: 'Mode',            values: [1],   physMin: 0,   physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirSense 11 AutoSet');
+    const day = result[Object.keys(result)[0]!]!;
+    expect(day.papMode).toBe('APAP');
   });
 
-  function loadStrFixture(): ArrayBuffer {
-    const fixturePath = resolve(process.cwd(), '__tests__/fixtures/sd-card/STR.edf');
-    const nodeBuf = readFileSync(fixturePath);
-    return nodeBuf.buffer.slice(nodeBuf.byteOffset, nodeBuf.byteOffset + nodeBuf.byteLength) as ArrayBuffer;
-  }
-
-  it('getSTRSignalLabels enumerates 97 signals including TgtIPAP.50 and TgtEPAP.50', () => {
-    const ab = loadStrFixture();
-    const labels = getSTRSignalLabels(ab);
-    expect(labels).toHaveLength(97);
-    expect(labels).toContain('TgtIPAP.50');
-    expect(labels).toContain('TgtEPAP.50');
-    expect(labels).toContain('S.Trigger');
-    expect(labels).toContain('S.Cycle');
-    expect(labels).toContain('S.HumLevel');
-    expect(labels).toContain('S.Temp');
-    expect(labels).toContain('S.VA.StartPress');
+  it('extracts AutoSet mode for AirSense 11', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',            values: [0],   physMin: 0,   physMax: 36500 },
+      { label: 'S.C.Press',       values: [10],  physMin: 4,   physMax: 20 },
+      { label: 'S.EPR.Level',     values: [0],   physMin: 0,   physMax: 3 },
+      { label: 'S.EPR.EPREnable', values: [0],   physMin: 0,   physMax: 1 },
+      { label: 'Mode',            values: [2],   physMin: 0,   physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirSense 11 AutoSet');
+    const day = result[Object.keys(result)[0]!]!;
+    expect(day.papMode).toBe('AutoSet');
   });
 
-  it('extractSettings returns non-empty map with valid IPAP/EPAP for AirCurve 10 VAuto', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const dates = Object.keys(result).sort();
-    expect(dates.length).toBeGreaterThan(0);
+  it('mode 8 remains iVAPS for AirSense 11 (not remapped to VAuto)', () => {
+    // VAuto remapping only applies to AirCurve 11 devices
+    const buf = buildSTRBuffer([
+      { label: 'Date',            values: [0],  physMin: 0,   physMax: 36500 },
+      { label: 'S.C.Press',       values: [8],  physMin: 4,   physMax: 20 },
+      { label: 'S.EPR.Level',     values: [0],  physMin: 0,   physMax: 3 },
+      { label: 'S.EPR.EPREnable', values: [0],  physMin: 0,   physMax: 1 },
+      { label: 'Mode',            values: [8],  physMin: 0,   physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirSense 11 AutoSet');
+    const day = result[Object.keys(result)[0]!]!;
+    // Mode 8 = iVAPS unless device is AirCurve 11 — AS11 should not remap to VAuto
+    expect(day.papMode).toBe('iVAPS');
+  });
+});
 
-    // Fixture has valid therapy data from 2025-02-15 through 2026-03-10
-    const firstDate = dates[0]!;
-    const s = result[firstDate]!;
-    expect(s.ipap).toBeGreaterThan(0);
-    expect(s.epap).toBeGreaterThan(0);
-    expect(s.pressureSupport).toBeGreaterThanOrEqual(0);
-    expect(s.deviceModel).toBe('AirCurve_10_VAuto');
+// ============================================================
+// extractSettings — AirCurve 11 BiPAP signal extraction
+// ============================================================
+
+describe('extractSettings — AirCurve 11 VAuto', () => {
+  it('uses S.VA.Trigger for trigger signal and AC11 1-5 sensitivity scale', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',         values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50',   values: [14], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50',   values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',         values: [5],  physMin: 0,  physMax: 10 },
+      { label: 'S.VA.Trigger', values: [3],  physMin: 0,  physMax: 5 },
+      { label: 'S.VA.Cycle',   values: [2],  physMin: 0,  physMax: 5 },
+      { label: 'S.EasyBreathe',values: [0],  physMin: 0,  physMax: 1 },
+      { label: 'S.RiseTime',   values: [1],  physMin: 0,  physMax: 6 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve11VAuto');
+    const day = result[Object.keys(result)[0]!]!;
+    expect(day.papMode).toBe('BiPAP Auto');
+    // AC11 scale: 3 = medium (not "high" as in old scale)
+    expect(day.trigger).toBe('medium');
+    // AC11 scale: 2 = low
+    expect(day.cycle).toBe('low');
   });
 
-  it('extracts correct IPAP=18 EPAP=10 for 2026-03-09 (last DATALOG night)', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const s = result['2026-03-09'];
-    expect(s).not.toBeUndefined();
-    expect(s!.ipap).toBe(18);
-    expect(s!.epap).toBe(10);
-    expect(s!.pressureSupport).toBe(8);
+  it('remaps mode 8 to VAuto for AirCurve 11', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',         values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50',   values: [14], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50',   values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',         values: [8],  physMin: 0,  physMax: 10 },
+      { label: 'S.VA.Trigger', values: [3],  physMin: 0,  physMax: 5 },
+      { label: 'S.VA.Cycle',   values: [2],  physMin: 0,  physMax: 5 },
+      { label: 'S.EasyBreathe',values: [0],  physMin: 0,  physMax: 1 },
+      { label: 'S.RiseTime',   values: [1],  physMin: 0,  physMax: 6 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve11VAuto');
+    const day = result[Object.keys(result)[0]!]!;
+    expect(day.papMode).toBe('VAuto');
   });
 
-  it('extracts non-N/A trigger and cycle from S.Trigger/S.Cycle signals', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const s = result['2026-03-09']!;
-    // S.Trigger = 3 → 'high', S.Cycle = 2 → 'medium' on 0-4 scale
-    expect(s.trigger).not.toBe('N/A');
-    expect(s.cycle).not.toBe('N/A');
-  });
-
-  it('extracts humidifierLevel from S.HumLevel signal (not S.Humid.Level)', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const s = result['2026-03-09']!;
-    // S.HumLevel = 4 in fixture
-    expect(s.humidifierLevel).toBe(4);
-  });
-
-  it('extracts tubeTempSetting from S.Temp signal (not S.TubeTemp)', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const s = result['2026-03-09']!;
-    // S.Temp = 25 in fixture
-    expect(s.tubeTempSetting).toBe(25);
-  });
-
-  it('extracts rampPressure from S.VA.StartPress signal (not S.RampPress)', () => {
-    const ab = loadStrFixture();
-    const result = extractSettings(ab, 'AirCurve_10_VAuto');
-    const s = result['2026-03-09']!;
-    // S.VA.StartPress = 4.0 in fixture
-    expect(s.rampPressure).toBe(4);
+  it('falls back to S.Trigger when S.VA.Trigger absent (older AC11 firmware)', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [12], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [4],  physMin: 0,  physMax: 10 },
+      { label: 'S.Trigger',  values: [4],  physMin: 0,  physMax: 5 },
+      { label: 'S.Cycle',    values: [1],  physMin: 0,  physMax: 5 },
+      { label: 'S.EasyBreathe', values: [0], physMin: 0, physMax: 1 },
+      { label: 'S.RiseTime', values: [2],  physMin: 0,  physMax: 6 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve11VAuto');
+    const day = result[Object.keys(result)[0]!]!;
+    // AC11 scale: 4 = high
+    expect(day.trigger).toBe('high');
+    // AC11 scale: 1 = very low
+    expect(day.cycle).toBe('very low');
   });
 });

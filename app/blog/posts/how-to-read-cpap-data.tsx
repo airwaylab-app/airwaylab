@@ -197,7 +197,7 @@ export default function HowToReadCPAPDataPost() {
               <p className="text-sm font-semibold text-foreground">RERAs (estimated)</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Runs of breaths with progressive flow limitation features that don&apos;t reach
-                the threshold of a scored apnoea or hypopnoea. AirwayLab&apos;s RERA detection
+                the threshold of a scored apnoea or hypopnoea. AirwayLab&apos;s RERA estimation
                 uses NED slope, recovery breath shape, and sigh detection from the EDF waveform —
                 it is a flow-based heuristic, not polysomnography-grade scoring.
               </p>
