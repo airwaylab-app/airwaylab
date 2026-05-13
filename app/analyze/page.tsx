@@ -382,9 +382,9 @@ function AnalyzePageInner() {
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tier);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current);
     },
-    [lifetimeNights, tier]
+    [lifetimeNights]
   );
 
   const handleOximetryUpload = useCallback(() => {
@@ -403,12 +403,12 @@ function AnalyzePageInner() {
       hadOximetryRef.current = false;
 
       // Use oximetry-only path: merges into cached nights without re-processing SD card
-      orchestrator.analyzeOximetryOnly(files, tier);
+      orchestrator.analyzeOximetryOnly(files, tierRef.current);
 
       // Reset input so same file can be re-selected
       if (oxInputRef.current) oxInputRef.current.value = '';
     },
-    [tier]
+    []
   );
 
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {

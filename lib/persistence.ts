@@ -62,7 +62,16 @@ function trySerialise(
     savedAt: Date.now(),
     engineVersion: ENGINE_VERSION,
   };
-  const json = JSON.stringify(data);
+
+  let json: string;
+  try {
+    json = JSON.stringify(data);
+  } catch {
+    // JSON.stringify can throw RangeError: Invalid string length when the payload approaches
+    // V8's ~512MB string-length cap. Return null so the caller's binary-search can retry
+    // with a smaller slice rather than propagating the exception to persistResults' catch.
+    return null;
+  }
 
   if (json.length * 2 <= MAX_STORAGE_BYTES) {
     return { json, nightCount: nights.length };
