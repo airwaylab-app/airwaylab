@@ -392,7 +392,8 @@ async function processFiles(
   const oximetryByDate = new Map<string, ReturnType<typeof parseOximetryCSV>>();
   const sa2Files = filterSA2Files(fileList);
   if (sa2Files.length > 0) {
-    for (const sa2Info of sa2Files) {
+    for (let idx = 0; idx < sa2Files.length; idx++) {
+      const sa2Info = sa2Files[idx]!;
       const fileData = files.find((f) => f.path === sa2Info.path);
       if (!fileData) continue;
       try {
@@ -414,6 +415,10 @@ async function processFiles(
       } catch (err) {
         const filename = sa2Info.path.split('/').pop() || sa2Info.path;
         console.error(`[sa2] Failed to parse ${filename}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      if ((idx + 1) % PARSE_BATCH_SIZE === 0) {
+        postProgress(1, brpFiles.length + 2, `Parsing SA2 files (${idx + 1}/${sa2Files.length})...`);
+        await yieldControl();
       }
     }
   }
