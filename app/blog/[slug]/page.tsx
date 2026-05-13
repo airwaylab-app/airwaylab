@@ -54,8 +54,10 @@ import HypopneaVsApneaCPAPData from '../posts/hypopnea-vs-apnea-cpap-data';
 import HowToDownloadResMedCPAPData from '../posts/how-to-download-resmed-cpap-data';
 import FreeCPAPDataAnalysisSoftware from '../posts/free-cpap-data-analysis-software';
 import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
+import DreamMapperShuttingDown from '../posts/dreammapper-shutting-down';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'dreammapper-shutting-down': DreamMapperShuttingDown,
   'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
   'how-to-download-resmed-cpap-data': HowToDownloadResMedCPAPData,
   'understanding-cpap-pressure-settings': UnderstandingCPAPPressureSettings,

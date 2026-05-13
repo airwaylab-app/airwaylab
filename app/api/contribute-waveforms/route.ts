@@ -24,6 +24,10 @@ const WaveformMetadataSchema = z.object({
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 20 });
 const MAX_BODY_BYTES = 5 * 1024 * 1024; // 5 MB
 
+function isTransientStorageError(message: string): boolean {
+  return /bad gateway|gateway timeout|service unavailable|502|503|504/i.test(message);
+}
+
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
@@ -110,23 +114,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage — retry up to 2 extra times on transient errors
     const storagePath = `${contributionId}/${nightDate}.flow${isCompressed ? '.gz' : '.bin'}`;
-    const { error: storageError } = await supabase.storage
-      .from('research-waveforms')
-      .upload(storagePath, Buffer.from(body), {
-        contentType: 'application/octet-stream',
-        upsert: false,
-      });
+    let storageError: { message?: string } | null = null;
+    const STORAGE_MAX_ATTEMPTS = 3;
+    for (let attempt = 0; attempt < STORAGE_MAX_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        await new Promise<void>(r => setTimeout(r, 500 * attempt));
+      }
+      const { error } = await supabase.storage
+        .from('research-waveforms')
+        .upload(storagePath, Buffer.from(body), {
+          contentType: 'application/octet-stream',
+          upsert: false,
+        });
+      storageError = error;
+      if (!storageError) break;
+      if (storageError.message?.includes('already exists') || storageError.message?.includes('Duplicate')) break;
+      if (!isTransientStorageError(storageError.message ?? '')) break;
+    }
 
     if (storageError) {
       // Duplicate upload — treat as success (idempotent)
       if (storageError.message?.includes('already exists') || storageError.message?.includes('Duplicate')) {
         return NextResponse.json({ ok: true, duplicate: true });
       }
+      const transient = isTransientStorageError(storageError.message ?? '');
       console.error('[contribute-waveforms] Storage error:', storageError.message);
-      Sentry.captureException(storageError, { tags: { route: 'contribute-waveforms' } });
-      return NextResponse.json({ error: 'Storage error.' }, { status: 500 });
+      Sentry.captureException(storageError, { tags: { route: 'contribute-waveforms', transient: String(transient) } });
+      return NextResponse.json(
+        { error: transient ? 'Storage temporarily unavailable.' : 'Storage error.' },
+        { status: transient ? 503 : 500 }
+      );
     }
 
     // Insert metadata row

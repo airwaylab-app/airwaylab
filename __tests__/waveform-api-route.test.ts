@@ -237,4 +237,66 @@ describe('contribute-waveforms API route', () => {
     const response = await POST(request as never);
     expect(response.status).toBe(400);
   });
+
+  it('retries on transient storage errors and succeeds on 2nd attempt', async () => {
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    // First attempt fails with Bad Gateway, second succeeds
+    mockUpload
+      .mockResolvedValueOnce({ error: { message: 'Bad Gateway' } })
+      .mockResolvedValueOnce({ error: null });
+
+    const request = makeRequest();
+    const response = await POST(request as never);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(mockUpload).toHaveBeenCalledTimes(2);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 503 after exhausting all retries on transient errors', async () => {
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    // All 3 attempts fail with Bad Gateway
+    mockUpload.mockResolvedValue({ error: { message: 'Bad Gateway' } });
+
+    const request = makeRequest();
+    const response = await POST(request as never);
+    const json = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(json.error).toBe('Storage temporarily unavailable.');
+    expect(mockUpload).toHaveBeenCalledTimes(3);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('does not retry on non-transient storage errors', async () => {
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    mockUpload.mockResolvedValue({ error: { message: 'Permission denied' } });
+
+    const request = makeRequest();
+    const response = await POST(request as never);
+
+    expect(response.status).toBe(500);
+    // Should only try once — no retry on non-transient error
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+  });
+
+  it('tags Sentry with transient=true for Bad Gateway errors', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    mockUpload.mockResolvedValue({ error: { message: 'Bad Gateway' } });
+
+    const request = makeRequest();
+    await POST(request as never);
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Bad Gateway' }),
+      expect.objectContaining({ tags: expect.objectContaining({ transient: 'true' }) })
+    );
+  });
 });
