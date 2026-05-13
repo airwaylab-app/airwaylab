@@ -58,12 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
 
-    // M1: Handle query errors instead of swallowing them
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       // "Lock was stolen" is transient Supabase SSR lock contention -- suppress
@@ -78,25 +77,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // M2: Safe field mapping instead of unsafe cast
-    if (profileData) {
-      const validTiers: Tier[] = ['community', 'supporter', 'champion'];
-      const profileTier = validTiers.includes(profileData.tier) ? profileData.tier : 'community';
-      setProfile({
-        id: profileData.id,
-        email: profileData.email,
-        display_name: profileData.display_name,
-        tier: profileTier,
-        stripe_customer_id: profileData.stripe_customer_id,
-        show_on_supporters: profileData.show_on_supporters,
-        walkthrough_completed: profileData.walkthrough_completed ?? false,
-        email_opt_in: profileData.email_opt_in ?? false,
-        discord_id: profileData.discord_id ?? null,
-        discord_username: profileData.discord_username ?? null,
+    if (!profileData) {
+      // Profile row missing — auth trigger may not have fired for this user
+      console.error('[auth-context] No profile row found for user:', userId);
+      Sentry.captureMessage('Profile row missing for authenticated user', {
+        level: 'warning',
+        tags: { context: 'auth-profile-fetch' },
       });
+      return;
     }
 
-    // M1: Use maybeSingle() — .single() errors when 0 rows
+    const validTiers: Tier[] = ['community', 'supporter', 'champion'];
+    const profileTier = validTiers.includes(profileData.tier) ? profileData.tier : 'community';
+    setProfile({
+      id: profileData.id,
+      email: profileData.email,
+      display_name: profileData.display_name,
+      tier: profileTier,
+      stripe_customer_id: profileData.stripe_customer_id,
+      show_on_supporters: profileData.show_on_supporters,
+      walkthrough_completed: profileData.walkthrough_completed ?? false,
+      email_opt_in: profileData.email_opt_in ?? false,
+      discord_id: profileData.discord_id ?? null,
+      discord_username: profileData.discord_username ?? null,
+    });
     const { data: subData, error: subError } = await supabase
       .from('subscriptions')
       .select('id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end')
