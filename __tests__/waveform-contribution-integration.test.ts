@@ -372,6 +372,61 @@ describe('contributeWaveformsBackground — integration', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('does not report to Sentry on transient server errors (5xx)', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const { contributeWaveformsBackground } = await import('@/lib/contribute-waveforms');
+
+    fetchSpy.mockResolvedValue({ ok: false, status: 503, text: async () => 'Storage temporarily unavailable.' });
+
+    const nights = [makeNight('2025-01-15')];
+    const files = [makeBRPFile('2025-01-15')];
+
+    await contributeWaveformsBackground(nights, files, 'test-id');
+
+    // sessionFailedDates should be set (cooldown applied)
+    expect(_sessionFailedDates.has('2025-01-15')).toBe(true);
+    // Sentry captureMessage should NOT be called for transient 5xx errors
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('does not report to Sentry on network errors (undefined status)', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const { contributeWaveformsBackground } = await import('@/lib/contribute-waveforms');
+
+    fetchSpy.mockRejectedValue(new Error('Network error'));
+
+    const nights = [makeNight('2025-01-15')];
+    const files = [makeBRPFile('2025-01-15')];
+
+    await contributeWaveformsBackground(nights, files, 'test-id');
+
+    // sessionFailedDates should be set (cooldown applied)
+    expect(_sessionFailedDates.has('2025-01-15')).toBe(true);
+    // Sentry captureMessage should NOT be called for network errors
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('does report to Sentry on permanent client errors (4xx except 429)', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const { contributeWaveformsBackground } = await import('@/lib/contribute-waveforms');
+
+    fetchSpy.mockResolvedValue({ ok: false, status: 400, text: async () => 'Bad request.' });
+
+    const nights = [makeNight('2025-01-15')];
+    const files = [makeBRPFile('2025-01-15')];
+
+    await contributeWaveformsBackground(nights, files, 'test-id');
+
+    // Sentry captureMessage SHOULD be called for permanent 4xx errors
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Waveform upload failed'),
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ status: '400' }),
+      })
+    );
+  });
+
   it('skips failed dates within the same session even when localStorage is unavailable', async () => {
     const { contributeWaveformsBackground } = await import('@/lib/contribute-waveforms');
 
