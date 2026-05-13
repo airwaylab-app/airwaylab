@@ -307,7 +307,10 @@ class AnalysisOrchestrator {
         }
       }
       this.clearIncrementalState();
-      const error = err instanceof Error ? err.message : String(err);
+      let error = err instanceof Error ? err.message : String(err);
+      if (err instanceof DOMException && err.name === 'NotFoundError') {
+        error = 'The SD card was removed or became unavailable. Please reconnect and try again.';
+      }
       Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
       this.setState({ status: 'error', error });
       throw err;
