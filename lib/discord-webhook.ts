@@ -14,8 +14,6 @@
  * the caller continues without error.
  */
 
-import * as Sentry from '@sentry/nextjs'
-
 // ── Types ────────────────────────────────────────────────────
 
 interface DiscordEmbedField {
@@ -88,8 +86,10 @@ export async function sendAlert(
 
     return true
   } catch (err) {
+    // Fail-open: Discord alerts are non-critical notifications. Log only; do not
+    // forward to Sentry because fire-and-forget callers would create misleading
+    // error attribution (the active request scope is unrelated to Discord health).
     console.error(`[discord-webhook] ${channel} send failed:`, err instanceof Error ? err.message : 'unknown')
-    Sentry.captureException(err, { tags: { action: 'discord-webhook', channel } })
     return false
   }
 }
