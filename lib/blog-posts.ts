@@ -17,45 +17,6 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
-    slug: 'what-is-a-good-ahi-on-cpap',
-    title: 'What Is a Good AHI on CPAP? (And What to Do If Yours Is Still High)',
-    seoTitle: 'What Is a Good AHI on CPAP? Residual AHI Explained | AirwayLab',
-    description:
-      'Wondering what AHI is good on CPAP therapy? Learn what residual AHI means, what numbers are typical, and what to ask your doctor if yours stays elevated.',
-    date: '2026-06-16',
-    readTime: '9 min read',
-    tags: ['AHI', 'CPAP Therapy', 'Residual AHI', 'Sleep Apnea', 'Flow Limitation'],
-    ogDescription:
-      'Wondering what AHI is good on CPAP therapy? Learn what residual AHI means, what numbers are typical, and what to ask your doctor if yours stays elevated.',
-    faqItems: [
-      {
-        question: 'What AHI is considered good on CPAP?',
-        answer:
-          'Many sleep specialists use a residual AHI below 5 as a common benchmark for CPAP therapy. The right target for you depends on your individual situation — your sleep physician can advise.',
-      },
-      {
-        question: 'Why is my AHI still high on CPAP?',
-        answer:
-          'Common contributing factors include mask leak, pressure settings, sleep position, and the type of events occurring. A clinician can review your full therapy data and advise on next steps.',
-      },
-      {
-        question: 'Is an AHI of 2 good on CPAP?',
-        answer:
-          "An AHI below 5 falls within the range many clinicians consider typical on therapy. Whether it's optimal for your specific situation is something your sleep physician can assess in context.",
-      },
-      {
-        question: 'What is residual AHI?',
-        answer:
-          "Residual AHI is the Apnea-Hypopnea Index recorded by your CPAP device while you're on therapy — as distinct from your diagnostic AHI measured during your pre-treatment sleep study.",
-      },
-      {
-        question: 'Can CPAP make AHI worse?',
-        answer:
-          "In some cases, pressure settings that don't match your needs may result in certain event types. Your sleep physician or respiratory therapist can review your data and determine whether any clinical adjustments are warranted.",
-      },
-    ],
-  },
-  {
     slug: 'dreammapper-shutting-down',
     title: 'DreamMapper Shutting Down: What CPAP Users Should Do Now',
     seoTitle: 'DreamMapper Shutting Down: What to Do With Your CPAP Data',
