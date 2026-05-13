@@ -410,18 +410,19 @@ export async function contributeWaveformsBackground(
         // Update in-memory guard first — survives even if localStorage write fails below
         sessionFailedDates.add(night.dateStr);
         trackFailedWaveformDate(night.dateStr);
-        // Rate-limited (429) is expected behavior -- log locally only, never to Sentry.
-        // Actual failures (4xx/5xx) are reported to Sentry as warnings.
+        // Rate-limited (429) and transient server errors (5xx, network) are expected —
+        // log locally only. Server already retries 3 times before returning 5xx.
+        // Only permanent client/validation errors (4xx except 429) go to Sentry.
         if (result.status === 429) {
-          console.warn(
-            `Waveform upload rate-limited for ${night.dateStr} (429)`
-          );
+          console.warn(`[contribute-waveforms] Upload rate-limited for ${night.dateStr} (429)`);
+        } else if (result.status === undefined || result.status >= 500) {
+          console.warn(`[contribute-waveforms] Transient upload failure for ${night.dateStr} (${result.status ?? 'network error'})`);
         } else {
           Sentry.captureMessage(
             `Waveform upload failed for ${night.dateStr}`,
             {
               level: 'warning',
-              tags: { feature: 'waveform-contribution', status: String(result.status ?? 'unknown') },
+              tags: { feature: 'waveform-contribution', status: String(result.status) },
               extra: { detail: result.detail },
             }
           );
