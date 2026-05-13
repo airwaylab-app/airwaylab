@@ -56,8 +56,10 @@ import FreeCPAPDataAnalysisSoftware from '../posts/free-cpap-data-analysis-softw
 import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
 import DreamMapperShuttingDown from '../posts/dreammapper-shutting-down';
 import CPAPDataReportWhatDoctorSees from '../posts/cpap-data-report-what-doctor-sees';
+import GoodAHIOnCPAP from '../posts/good-ahi-on-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'good-ahi-on-cpap': GoodAHIOnCPAP,
   'cpap-data-report-what-doctor-sees': CPAPDataReportWhatDoctorSees,
   'dreammapper-shutting-down': DreamMapperShuttingDown,
   'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
