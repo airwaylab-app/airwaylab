@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { NightResult, NEDResults, Breath, OximetryTraceData } from '@/lib/types';
+import type { NightResult, NEDResults, Breath, OximetryTraceData, WorkerNightResult } from '@/lib/types';
 
 // Mirror of the stripNightBulkData function from workers/analysis-worker.ts
 // (not exported from worker — duplicated here for testing, must stay in sync)
@@ -8,6 +8,19 @@ function stripNightBulkData(night: NightResult): NightResult {
     ...night,
     ned: { ...night.ned, breaths: [] },
     oximetryTrace: null,
+    csl: night.csl ? { ...night.csl, episodes: [] } : null,
+  };
+}
+
+// Mirrors the NIGHT_RESULT construction in the worker (both ResMed and BMC paths)
+function buildNightResultMsg(night: NightResult, i: number, total: number): WorkerNightResult {
+  return {
+    type: 'NIGHT_RESULT',
+    night: stripNightBulkData(night),
+    nightIndex: i,
+    totalNights: total,
+    breaths: night.ned.breaths,
+    oximetryTrace: night.oximetryTrace,
   };
 }
 
@@ -154,5 +167,62 @@ describe('stripNightBulkData — worker RESULTS payload size reduction', () => {
       expect(night.ned.breaths ?? []).toHaveLength(0);
       expect(night.oximetryTrace).toBeNull();
     }
+  });
+});
+
+describe('WorkerNightResult NIGHT_RESULT message — bulk data lifted to top-level', () => {
+  it('msg.night has no breaths; msg.breaths carries the per-breath array', () => {
+    const night = makeNight('2026-01-01', true);
+    const originalBreaths = night.ned.breaths!;
+
+    const msg = buildNightResultMsg(night, 0, 1);
+
+    expect(msg.night.ned.breaths).toHaveLength(0);
+    expect(msg.breaths).toBe(originalBreaths); // same reference — no copy
+    expect(msg.breaths).toHaveLength(500);
+  });
+
+  it('msg.night has no oximetryTrace; msg.oximetryTrace carries the trace', () => {
+    const night = makeNight('2026-01-01', true);
+    const originalTrace = night.oximetryTrace!;
+
+    const msg = buildNightResultMsg(night, 0, 1);
+
+    expect(msg.night.oximetryTrace).toBeNull();
+    expect(msg.oximetryTrace).toBe(originalTrace);
+    expect(msg.oximetryTrace?.trace).toHaveLength(100);
+  });
+
+  it('msg.breaths is empty when night has no breaths', () => {
+    const night = makeNight('2026-01-02', false);
+    const msg = buildNightResultMsg(night, 0, 1);
+
+    expect(msg.breaths ?? []).toHaveLength(0);
+    expect(msg.oximetryTrace).toBeNull();
+  });
+
+  it('msg.night preserves all scalar fields after stripping', () => {
+    const night = makeNight('2026-01-01', true);
+    const msg = buildNightResultMsg(night, 0, 1);
+
+    expect(msg.night.dateStr).toBe('2026-01-01');
+    expect(msg.night.durationHours).toBe(7.5);
+    expect(msg.night.ned.breathCount).toBe(500);
+    expect(msg.night.ned.nedMean).toBe(22.5);
+    expect(msg.nightIndex).toBe(0);
+    expect(msg.totalNights).toBe(1);
+  });
+
+  it('orchestrator can read IDB data from top-level fields instead of night object', () => {
+    const night = makeNight('2026-01-01', true);
+    const msg = buildNightResultMsg(night, 0, 1);
+
+    // Simulate orchestrator IDB write conditions (from analysis-orchestrator.ts)
+    const breathsForIdb = msg.breaths;
+    const traceForIdb = msg.oximetryTrace;
+
+    expect(breathsForIdb).toBeDefined();
+    expect(breathsForIdb!.length).toBeGreaterThan(0);
+    expect(traceForIdb).not.toBeNull();
   });
 });

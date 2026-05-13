@@ -21,7 +21,15 @@ function makeNights(count: number, mostRecentDate: Date): NightResult[] {
 describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist', () => {
   const now = new Date('2026-05-11').getTime();
 
-  describe('community tier (7-day window)', () => {
+  describe('community tier (7-day calendar window)', () => {
+    it('returns all nights within the 7-day window (no count cap)', () => {
+      // 10 consecutive nights all within cutoff — all pass, no .slice cap
+      const now10 = new Date('2026-04-30').getTime();
+      const nights = makeNights(10, new Date('2026-05-03'));
+      const result = filterNightsToTierWindow(nights, 'community', now10);
+      expect(result).toHaveLength(10);
+    });
+
     it('prunes nights outside the 7-day cutoff', () => {
       // 10 nights: 2026-05-11 to 2026-05-02. Cutoff = 2026-05-04. Kept = 8 (05-11 to 05-04).
       const nights = makeNights(10, new Date('2026-05-11'));
@@ -29,6 +37,14 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
       expect(result).toHaveLength(8);
       expect(result[0]!.dateStr).toBe('2026-05-11');
       expect(result[7]!.dateStr).toBe('2026-05-04');
+    });
+
+    it('8 nights spanning 8 days: only the 7 within the window are returned', () => {
+      // May 3 is 8 days before midnight May 11, so it falls below the cutoff
+      const nights = makeNights(8, new Date('2026-05-10'));
+      const result = filterNightsToTierWindow(nights, 'community', now);
+      expect(result).toHaveLength(7);
+      expect(result[6]!.dateStr).toBe('2026-05-04');
     });
 
     it('keeps all nights when all are within 7 days', () => {

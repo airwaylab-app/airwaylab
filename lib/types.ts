@@ -635,9 +635,14 @@ export interface WorkerOximetryResult {
 
 export interface WorkerNightResult {
   type: 'NIGHT_RESULT';
+  /** NightResult with ned.breaths and oximetryTrace stripped — bulk arrays are in the sibling fields below */
   night: NightResult;
   nightIndex: number;
   totalNights: number;
+  /** Per-breath data for IDB storage — lifted out of night to keep postMessage payload small */
+  breaths?: Breath[];
+  /** Oximetry trace for IDB storage — lifted out of night to keep postMessage payload small */
+  oximetryTrace?: OximetryTraceData | null;
 }
 
 export interface WorkerError {
