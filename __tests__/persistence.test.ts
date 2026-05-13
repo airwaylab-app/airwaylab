@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
+import type { NightResult } from '@/lib/types';
 
 vi.mock('@sentry/nextjs', () => ({
   addBreadcrumb: vi.fn(),
@@ -149,6 +151,54 @@ describe('persistence', () => {
       expect(parsed.nights[0].csl).toBeNull();
     });
 
+    describe('RangeError handling (AIR-1433)', () => {
+      afterEach(() => { vi.restoreAllMocks(); });
+
+      it('does not throw when JSON.stringify raises RangeError (V8 string-length overflow)', () => {
+        // RangeError: Invalid string length fires inside JSON.stringify before any size guard runs.
+        // The outer persistResults catch must handle it gracefully rather than crashing the page.
+        vi.spyOn(JSON, 'stringify').mockImplementation(() => {
+          throw new RangeError('Invalid string length');
+        });
+
+        let result: ReturnType<typeof persistResults>;
+        expect(() => { result = persistResults(SAMPLE_NIGHTS, null); }).not.toThrow();
+        expect(result!.saved).toBe(false);
+        expect(result!.nightsSaved).toBe(0);
+        expect(result!.nightsDropped).toBe(SAMPLE_NIGHTS.length);
+      });
+
+      it('falls back to binary-search subset when JSON.stringify throws RangeError for large payloads only (AIR-1433 regression)', () => {
+        // Root cause of AIR-1433: trySerialise propagates RangeError instead of returning null,
+        // which breaks out of the binary search and causes a total save failure even when a
+        // smaller subset of nights would have fitted.
+        // After the fix (try-catch inside trySerialise), binary search converges to 1 night.
+        if (SAMPLE_NIGHTS.length < 2) return;
+
+        const originalStringify = JSON.stringify;
+        vi.spyOn(JSON, 'stringify').mockImplementation((...args: Parameters<typeof JSON.stringify>) => {
+          const first = args[0];
+          if (
+            first !== null &&
+            typeof first === 'object' &&
+            'nights' in (first as object) &&
+            Array.isArray((first as { nights: unknown }).nights) &&
+            (first as { nights: unknown[] }).nights.length >= 2
+          ) {
+            throw new RangeError('Invalid string length');
+          }
+          return originalStringify(...args);
+        });
+
+        const result = persistResults(SAMPLE_NIGHTS, null);
+
+        // Fixed behaviour: binary search saves the largest subset that serialises (1 night here).
+        expect(result.saved).toBe(true);
+        expect(result.nightsSaved).toBe(1);
+        expect(result.nightsDropped).toBe(SAMPLE_NIGHTS.length - 1);
+      });
+    });
+
     it('reports size diagnostics in Sentry on total failure', () => {
       // Force total failure: override trySerialise by making the JSON size check fail.
       // We do this by making the first night have a field that JSON.stringify produces > 4MB.
@@ -293,5 +343,64 @@ describe('persistence', () => {
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
     });
+  });
+});
+
+// ── filterNightsToTierWindow ────────────────────────────────────
+
+function makeDatedNight(dateStr: string): NightResult {
+  return { ...SAMPLE_NIGHTS[0]!, dateStr, date: new Date(dateStr) } as NightResult;
+}
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+describe('filterNightsToTierWindow', () => {
+  it('community tier keeps nights within 7 days and excludes older ones', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(3)),
+      makeDatedNight(daysAgo(5)),
+      makeDatedNight(daysAgo(10)),  // outside 7-day window
+      makeDatedNight(daysAgo(30)),  // outside 7-day window
+    ];
+    const result = filterNightsToTierWindow(nights, 'community');
+    expect(result).toHaveLength(3);
+    expect(result.map((n) => n.dateStr)).toEqual(
+      expect.not.arrayContaining([daysAgo(10), daysAgo(30)])
+    );
+  });
+
+  it('supporter tier keeps nights within 90 days and excludes older ones', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(45)),
+      makeDatedNight(daysAgo(80)),
+      makeDatedNight(daysAgo(100)),  // outside window
+    ];
+    const result = filterNightsToTierWindow(nights, 'supporter');
+    expect(result).toHaveLength(3);
+  });
+
+  it('champion tier keeps all nights regardless of age', () => {
+    const nights = [
+      makeDatedNight(daysAgo(1)),
+      makeDatedNight(daysAgo(200)),
+      makeDatedNight(daysAgo(500)),
+    ];
+    const result = filterNightsToTierWindow(nights, 'champion');
+    expect(result).toHaveLength(3);
+  });
+
+  it('returns empty array when no nights fall within community window', () => {
+    const nights = [
+      makeDatedNight(daysAgo(10)),
+      makeDatedNight(daysAgo(60)),
+    ];
+    const result = filterNightsToTierWindow(nights, 'community');
+    expect(result).toHaveLength(0);
   });
 });

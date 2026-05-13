@@ -38,7 +38,7 @@ export default function HiddenRespiratoryEventsPost() {
           <p>
             To understand what&apos;s being missed, it helps to understand what current tools detect.
             AHI counts complete breathing stops (apneas) and sustained airflow reductions (hypopneas)
-            that last at least 10 seconds. RERA detection looks for sequences of 3-15 breaths where
+            that last at least 10 seconds. RERA estimation looks for sequences of 3-15 breaths where
             effort progressively increases. NED (Negative Effort Dependence) measures the shape of each
             breath to detect mid-inspiratory flow drops.
           </p>
@@ -57,7 +57,7 @@ export default function HiddenRespiratoryEventsPost() {
               </p>
             </div>
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-              <p className="text-sm font-semibold text-blue-400">RERA Detection</p>
+              <p className="text-sm font-semibold text-blue-400">RERA Estimation</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Requires 3-15 consecutive flow-limited breaths. A single-breath collapse doesn&apos;t qualify.
               </p>
