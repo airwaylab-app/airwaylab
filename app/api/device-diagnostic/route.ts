@@ -50,16 +50,39 @@ export async function POST(request: NextRequest) {
       });
     }
     if (supabase) {
-      const { error } = await supabase.from('device_diagnostics').insert({
-        device_model: deviceModel,
-        signal_labels: signalLabels,
-        identification_text: identificationText,
-        has_str_file: hasStrFile,
-      });
+      try {
+        let timeoutHandle: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<never>(
+          (_, reject) =>
+            (timeoutHandle = setTimeout(
+              () =>
+                reject(
+                  Object.assign(new Error('Supabase insert timed out'), { name: 'AbortError' }),
+                ),
+              4_000,
+            )),
+        );
 
-      if (error) {
-        console.error('[device-diagnostic] Supabase error:', error.message);
-        Sentry.captureException(error, { tags: { route: 'device-diagnostic' } });
+        const { error } = await Promise.race([
+          supabase.from('device_diagnostics').insert({
+            device_model: deviceModel,
+            signal_labels: signalLabels,
+            identification_text: identificationText,
+            has_str_file: hasStrFile,
+          }),
+          timeoutPromise,
+        ]).finally(() => clearTimeout(timeoutHandle));
+
+        if (error) {
+          console.error('[device-diagnostic] Supabase error:', error.message);
+          Sentry.captureException(error, { tags: { route: 'device-diagnostic' } });
+        }
+      } catch (insertErr) {
+        if (insertErr instanceof Error && insertErr.name === 'AbortError') {
+          console.warn('[device-diagnostic] Supabase insert timed out — data dropped');
+        } else {
+          Sentry.captureException(insertErr, { tags: { route: 'device-diagnostic' } });
+        }
       }
     }
 
