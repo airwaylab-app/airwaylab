@@ -213,7 +213,11 @@ export async function fetchAIInsights(
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       console.error('[ai-insights] Network error (standard mode)');
-      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'network_fetch_failed', mode: 'standard', route: 'ai-insights' },
+      });
+      throw new Error('The AI analysis service is temporarily unavailable. Please try again.');
     }
     throw err;
   } finally {
@@ -302,7 +306,11 @@ export async function fetchDeepAIInsights(
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       console.error('[ai-insights] Network error (deep mode)');
-      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'network_fetch_failed', mode: 'deep', route: 'ai-insights' },
+      });
+      throw new Error('The AI analysis service is temporarily unavailable. Please try again.');
     }
     throw err;
   } finally {
