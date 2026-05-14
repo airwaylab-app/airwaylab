@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
       'user_files',
       'user_storage_usage',
       'analysis_data',
+      'user_nights',
     ];
 
     for (const table of tables) {
@@ -126,11 +127,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // remind_requests has no user_id FK — delete by email
+    if (user.email) {
+      try {
+        const { error: remindError } = await serviceRole
+          .from('remind_requests')
+          .delete()
+          .eq('email', user.email);
+
+        if (remindError) {
+          Sentry.captureException(remindError, {
+            extra: { userId: user.id, step: 'delete_remind_requests' },
+          });
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { userId: user.id, step: 'delete_remind_requests' },
+        });
+      }
+    }
+
     // consent_audit is intentionally retained (GDPR Art. 17(3)(b) — legal compliance)
+
+    // 3. Delete auth user — cascades to profiles and all FK children
+    //    (profiles → user_files, user_storage_usage, user_nights, subscriptions;
+    //     auth.users → analysis_data, ai_insights_log, account_deletion_requests)
+    const { error: deleteAuthError } = await serviceRole.auth.admin.deleteUser(user.id);
+    if (deleteAuthError) {
+      Sentry.captureException(deleteAuthError, {
+        extra: { userId: user.id, step: 'delete_auth_user' },
+      });
+      return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    Sentry.captureException(error, { tags: { route: 'delete-user-data' } });
+    Sentry.captureException(error, {
+      tags: { route: 'delete-user-data' },
+      extra: {
+        errorName: error instanceof Error ? error.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+    });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
