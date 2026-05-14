@@ -57,6 +57,7 @@ import WhatDoesCpapAhiMean from '../posts/what-does-cpap-ahi-mean';
 import DreamMapperShuttingDown from '../posts/dreammapper-shutting-down';
 import HowToReadCPAPTherapyReport from '../posts/how-to-read-cpap-therapy-report';
 import CPAPVsBiPAP from '../posts/cpap-vs-bipap';
+import OSCARCPAPSoftwareAlternatives from '../posts/oscar-cpap-software-alternatives';
 
 const postComponents: Record<string, React.ComponentType> = {
   'cpap-vs-bipap': CPAPVsBiPAP,
@@ -111,6 +112,7 @@ const postComponents: Record<string, React.ComponentType> = {
   'pap-data-privacy': PAPDataPrivacy,
   'what-is-flow-limitation-cpap': WhatIsFlowLimitationCPAP,
   'what-is-central-apnea-cpap': WhatIsCentralApneaCPAP,
+  'oscar-cpap-software-alternatives': OSCARCPAPSoftwareAlternatives,
 };
 
 export function generateStaticParams() {
