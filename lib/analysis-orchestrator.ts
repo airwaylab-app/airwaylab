@@ -767,7 +767,7 @@ class AnalysisOrchestrator {
 
 /**
  * Filter nights to those within the tier's analysis window (pure date-cutoff).
- * Champions get all nights; supporters get 90 days; community gets 30 days.
+ * Champions get all nights; supporters get 90 days; community gets 14 days.
  * `now` is injectable for deterministic testing.
  */
 export function filterNightsToTierWindow(nights: NightResult[], tier: Tier, now = Date.now()): NightResult[] {

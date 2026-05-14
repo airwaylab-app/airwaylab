@@ -104,7 +104,7 @@ export function HistoryExpiryWarning({ nights, hiddenNightCount }: Props) {
           <div className="flex-1">
             <div className="flex items-start justify-between">
               <h3 className="text-sm font-semibold text-foreground">
-                You&apos;re viewing the last 30 nights of history. Upgrade to Supporter to see 90 days.
+                You&apos;re viewing the last 14 nights of history. Upgrade to Supporter to see 90 days.
               </h3>
               <button
                 onClick={dismissCommunity}
