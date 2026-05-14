@@ -93,6 +93,7 @@ airwaylab/
 │   └── *.test.ts           → 16 test files covering engines, exports, insights, etc.
 ├── supabase/
 │   └── migrations/         → Database migrations (append-only, never edit existing)
+│       └── NEXT_MIGRATION  → Next available migration number (increment in same commit as new migration)
 └── public/                 → Static assets (OG image, favicons)
 ```
 
@@ -248,6 +249,27 @@ After merge, "verified" means ALL of these:
 - [ ] Self-review: no regressions, loading/error/empty states handled
 - [ ] PR contains one concern only
 ```
+
+## Migration Numbering Convention
+
+Migration files in `supabase/migrations/` are numbered sequentially. Collisions cause silent data loss or failed deployments.
+
+**Rules:**
+
+1. **Always read `NEXT_MIGRATION` first.** Before writing any new migration file, read `supabase/migrations/NEXT_MIGRATION` to get the next available number.
+2. **Increment `NEXT_MIGRATION` in the same commit.** Any PR that adds a migration file must also update `NEXT_MIGRATION` to the subsequent number in the same commit.
+3. **Reserve numbers with stub files for manual prod changes.** If a migration is applied directly to prod (e.g. a hotfix), immediately commit a stub file:
+   ```
+   supabase/migrations/{N}_manually_applied.sql
+   ```
+   with this header:
+   ```sql
+   -- Applied manually to prod on YYYY-MM-DD. Do not re-run.
+   ```
+   This reserves the number in the repo so future PRs cannot reuse it. Increment `NEXT_MIGRATION` in the same commit.
+4. **Never reuse or skip numbers.** Migration numbers are permanent. Gaps are acceptable; collisions are not.
+
+**Before opening a migration PR:** verify that your file's number matches `NEXT_MIGRATION`. If another PR has already claimed that number, bump your number and update `NEXT_MIGRATION` again.
 
 ## Anti-Patterns
 
