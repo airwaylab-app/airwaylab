@@ -183,8 +183,8 @@ describe('AI usage tracking helpers', () => {
 });
 
 describe('getAnalysisWindowDays — analysis window per tier', () => {
-  it('returns 7 for community tier', () => {
-    expect(getAnalysisWindowDays('community')).toBe(7);
+  it('returns 30 for community tier', () => {
+    expect(getAnalysisWindowDays('community')).toBe(30);
   });
 
   it('returns 90 for supporter tier', () => {

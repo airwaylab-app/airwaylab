@@ -67,8 +67,8 @@ function makeNight(dateStr: string): NightResult {
 // ── Tests: getAnalysisWindowDays ──────────────────────────────────
 
 describe('getAnalysisWindowDays', () => {
-  it('returns 7 for community tier', () => {
-    expect(getAnalysisWindowDays('community')).toBe(7);
+  it('returns 30 for community tier', () => {
+    expect(getAnalysisWindowDays('community')).toBe(30);
   });
 
   it('returns 90 for supporter tier', () => {
@@ -80,15 +80,17 @@ describe('getAnalysisWindowDays', () => {
   });
 });
 
-// ── Tests: 7-night filter logic ──────────────────────────────────
+// ── Tests: 30-night filter logic ──────────────────────────────────
 
-describe('7-night community window filter logic', () => {
-  it('keeps nights within 7 nights and drops older ones', () => {
+describe('30-night community window filter logic', () => {
+  it('keeps nights within 30 nights and drops older ones', () => {
     const raw = [
       makeNight(daysAgoStr(3)),
       makeNight(daysAgoStr(5)),
       makeNight(daysAgoStr(10)),
       makeNight(daysAgoStr(20)),
+      makeNight(daysAgoStr(31)),   // outside 30-day window
+      makeNight(daysAgoStr(45)),   // outside 30-day window
     ];
 
     const windowDays = getAnalysisWindowDays('community');
@@ -97,10 +99,12 @@ describe('7-night community window filter logic', () => {
     const cutoffStr = cutoff.toISOString().slice(0, 10);
 
     const filtered = raw.filter((n) => n.dateStr >= cutoffStr);
-    expect(filtered).toHaveLength(2);
+    expect(filtered).toHaveLength(4);
     expect(filtered.map((n) => n.dateStr)).toEqual([
       daysAgoStr(3),
       daysAgoStr(5),
+      daysAgoStr(10),
+      daysAgoStr(20),
     ]);
   });
 });
@@ -116,24 +120,24 @@ describe('HistoryExpiryWarning — community variant', () => {
 
   it('renders community banner when tier=community and hiddenNightCount=3', () => {
     render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(3))]} hiddenNightCount={3} />);
-    expect(screen.getByText(/viewing the last 7 nights/i)).toBeInTheDocument();
+    expect(screen.getByText(/viewing the last 30 nights/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /see full history/i })).toHaveAttribute('href', '/pricing');
   });
 
   it('does not render community banner when hiddenNightCount=0', () => {
     render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(3))]} hiddenNightCount={0} />);
-    expect(screen.queryByText(/viewing the last 7 nights/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/viewing the last 30 nights/i)).not.toBeInTheDocument();
   });
 
   it('does not render community banner when hiddenNightCount is omitted', () => {
     render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(3))]} />);
-    expect(screen.queryByText(/viewing the last 7 nights/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/viewing the last 30 nights/i)).not.toBeInTheDocument();
   });
 
   it('dismisses community banner and stores timestamp in localStorage', () => {
-    render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(3))]} hiddenNightCount={2} />);
+    render(<HistoryExpiryWarning nights={[makeNight(daysAgoStr(2))]} hiddenNightCount={2} />);
     fireEvent.click(screen.getByLabelText(/dismiss for now/i));
-    expect(screen.queryByText(/viewing the last 7 nights/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/viewing the last 30 nights/i)).not.toBeInTheDocument();
     expect(storage.get('airwaylab_community_window_dismissed')).toBeDefined();
   });
 });

@@ -141,7 +141,7 @@ export const BROADCAST_TEMPLATES: Record<string, BroadcastTemplate> = {
   },
   analysis_window_announcement: {
     id: 'analysis_window_announcement',
-    description: 'May 2026 history window cap: community tier 7-night limit shipping May 27',
+    description: 'May 2026 history window cap: community tier 30-night limit shipping May 27',
     getTemplate: analysisWindowAnnouncement,
   },
 }
