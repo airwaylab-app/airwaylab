@@ -36,7 +36,7 @@ const SUPPORTER_FEATURES = [
   '6-10 deep AI insights per analysis (unlimited)',
   '90-day analysis history with AI re-analysis',
   'Cloud sync across devices',
-  'PDF clinician reports',
+  'Unlimited PDF exports',
   'Enhanced export with annotations',
   'Detailed metric explanations',
   'Supporter badge on forum posts',
