@@ -586,6 +586,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.RateLimitError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'rate_limit' },
+        extra: { anthropicStatus: err.status },
         level: 'warning',
       });
       console.error('[ai-insights] Rate limit exceeded after retries');
@@ -598,6 +599,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'auth' },
+        extra: { anthropicStatus: err.status },
         level: 'error',
       });
       console.error('[ai-insights] Auth/permission error:', err instanceof Anthropic.AuthenticationError ? 'authentication' : 'permission');
@@ -635,6 +637,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.NotFoundError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'not_found' },
+        extra: { anthropicStatus: err.status },
         level: 'error',
       });
       console.error('[ai-insights] Model not found');
@@ -648,6 +651,7 @@ export async function POST(request: NextRequest) {
       const isBillingError = err.message?.includes('credit balance');
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: isBillingError ? 'billing' : 'bad_request' },
+        extra: { anthropicStatus: err.status },
         level: isBillingError ? 'fatal' : 'error',
       });
       if (isBillingError) {
@@ -668,6 +672,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.InternalServerError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'server_error' },
+        extra: { anthropicStatus: err.status },
         level: 'warning',
       });
       console.error('[ai-insights] Anthropic internal server error');
