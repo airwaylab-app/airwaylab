@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-download-cpap-data-sd-card',
+    title: 'How to Download Your CPAP Data from an SD Card (ResMed, Philips and More)',
+    seoTitle: 'How to Download CPAP Data from SD Card: ResMed, Philips & More | AirwayLab',
+    description:
+      'Step-by-step guide to removing and reading your CPAP SD card on Windows and Mac, then uploading your therapy records to AirwayLab for night-by-night analysis.',
+    date: '2026-05-14',
+    readTime: '6 min read',
+    tags: ['CPAP', 'SD Card', 'ResMed', 'Philips', 'Getting Started', 'Data Download'],
+    ogDescription:
+      'Step-by-step guide to removing and reading your CPAP SD card on Windows and Mac, then uploading your therapy records to AirwayLab for night-by-night analysis.',
+    faqItems: [
+      {
+        question: 'Can I damage my CPAP machine by removing the SD card?',
+        answer:
+          'Not if you power it off first. The card records during a session and data is written at session end. Powering down before removal is the one step not to skip.',
+      },
+      {
+        question: 'How often should I download my data?',
+        answer:
+          'SD cards on most machines hold at least a year of sessions. Many users download every month or two, or when they want to look at a specific period. There is no technical reason to download more frequently.',
+      },
+      {
+        question: 'My ResMed AirSense 11 does not seem to have an SD card — am I missing something?',
+        answer:
+          'The AirSense 11 has both an SD card slot (same location as the 10) and myAir cloud connectivity. The SD card is present and records the same detailed data as the AirSense 10; it is just less prominently documented in the consumer-facing materials.',
+      },
+      {
+        question: 'Can I upload my CPAP data without removing the SD card?',
+        answer:
+          "On some machines with cloud sync enabled, data uploads automatically to the manufacturer's platform. AirwayLab currently reads from SD card upload or OSCAR import; direct cloud sync is on the roadmap.",
+      },
+      {
+        question: 'What is AHI?',
+        answer:
+          'AHI stands for Apnea-Hypopnea Index — the number of apnea and hypopnea events recorded per hour of sleep. Your machine logs this metric each session. Your sleep physician can help you interpret what your recorded AHI values mean in the context of your therapy.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-vs-bipap',
     title: 'CPAP vs BiPAP: Which Device Do You Need and Why?',
     seoTitle: 'CPAP vs BiPAP: Difference Between CPAP and BiPAP Explained | AirwayLab',
