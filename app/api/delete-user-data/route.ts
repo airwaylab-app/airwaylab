@@ -147,7 +147,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // consent_audit is intentionally retained (GDPR Art. 17(3)(b) — legal compliance)
+    // consent_audit is intentionally retained (GDPR Art. 17(3)(b) — legal compliance).
+    // The FK is ON DELETE SET NULL so auth.admin.deleteUser() anonymises rows rather
+    // than cascade-deleting them; the audit trail survives as pseudonymous records.
 
     // 3. Delete auth user — cascades to profiles and all FK children
     //    (profiles → user_files, user_storage_usage, user_nights, subscriptions;
