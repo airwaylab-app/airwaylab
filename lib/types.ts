@@ -598,6 +598,8 @@ export interface AnalysisState {
   persistenceWarning: string | null;
   /** Accumulated non-fatal warnings from analysis (e.g. truncated EDF files) */
   warnings: string[];
+  /** Nights excluded by the tier history window (community cap). Populated after analysis completes. */
+  nightsCappedCount?: number;
 }
 
 export interface WorkerAnalyzeMessage {
