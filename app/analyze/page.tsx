@@ -307,7 +307,7 @@ function AnalyzePageInner() {
           const resolvedWindowDays = overrideWindowDaysRef.current ?? getAnalysisWindowDays('community');
           capturePostHog('tier_window_hit', {
             cohort: String(overrideWindowDaysRef.current ?? 'control'),
-            nights_total: newState.nights.length + (newState.nightsCappedCount ?? 0),
+            nights_total: newState.nights.length,
             nights_capped: newState.nightsCappedCount ?? 0,
             tier_window_days: resolvedWindowDays,
             is_free_user: true,
@@ -315,8 +315,9 @@ function AnalyzePageInner() {
           // Set cap_encountered_at on first encounter only
           const capKey = 'airwaylab_cap_first_encounter';
           if (!localStorage.getItem(capKey)) {
-            localStorage.setItem(capKey, new Date().toISOString());
-            setPostHogPersonProps({ cap_encountered_at: new Date().toISOString() });
+            const encounteredAt = new Date().toISOString();
+            localStorage.setItem(capKey, encounteredAt);
+            setPostHogPersonProps({ cap_encountered_at: encounteredAt });
           }
         }
 
