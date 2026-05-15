@@ -148,6 +148,22 @@ describe('Step 5: Account settings', () => {
     expect(src).toContain('analysis_data');
     expect(src).toContain('ai_usage');
   });
+
+  it('consent_audit FK uses ON DELETE SET NULL to preserve audit rows after user deletion', () => {
+    const migration = fs.readFileSync(
+      path.join(ROOT, 'supabase/migrations/043_consent_audit_retain_on_delete.sql'),
+      'utf-8'
+    );
+    expect(migration).toContain('ON DELETE SET NULL');
+    expect(migration).toContain('DROP NOT NULL');
+    expect(migration).not.toContain('ON DELETE CASCADE');
+  });
+
+  it('delete-user-data route documents SET NULL FK behaviour for consent_audit', () => {
+    const src = readSource('app/api/delete-user-data/route.ts');
+    expect(src).toContain('ON DELETE SET NULL');
+    expect(src).toContain('Art. 17(3)(b)');
+  });
 });
 
 // ── Test 6: Free AI insights (aggregate-based) ────────────────
