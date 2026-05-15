@@ -34,6 +34,15 @@ export function capturePostHog(
   }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
 }
 
+export function setPostHogPersonProps(props: Record<string, string | number | boolean>) {
+  if (typeof window === 'undefined') return;
+  import('posthog-js').then(({ default: posthog }) => {
+    if (posthog.__loaded) {
+      posthog.setPersonProperties(props);
+    }
+  }).catch(() => { /* analytics failure is non-critical */ });
+}
+
 // ── Existing events ──────────────────────────────────────────
 export const events = {
   /** User uploaded SD card files */
