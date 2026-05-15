@@ -105,6 +105,44 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
     });
   });
 
+  describe('overrideWindowDays (PostHog experiment)', () => {
+    it('community: overrideWindowDays=30 includes nights between 14 and 30 days ago', () => {
+      // 20 nights ending today (2026-05-11). Default 14-day window would include 15 nights.
+      // With override=30 all 20 nights should be included (max span is 20 days).
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const result14 = filterNightsToTierWindow(nights, 'community', now);
+      const result30 = filterNightsToTierWindow(nights, 'community', now, 30);
+      expect(result14).toHaveLength(15);
+      expect(result30).toHaveLength(20);
+    });
+
+    it('community: overrideWindowDays=7 restricts to 7-day window', () => {
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const result = filterNightsToTierWindow(nights, 'community', now, 7);
+      // Cutoff = 2026-05-04. Nights from 2026-05-04 to 2026-05-11 = 8 nights.
+      expect(result).toHaveLength(8);
+      expect(result[0]!.dateStr).toBe('2026-05-11');
+      expect(result[result.length - 1]!.dateStr).toBe('2026-05-04');
+    });
+
+    it('overrideWindowDays is ignored for non-community tiers', () => {
+      const nights = makeNights(10, new Date('2026-05-11'));
+      // Champion always returns all nights regardless of override
+      const resultChampion = filterNightsToTierWindow(nights, 'champion', now, 5);
+      expect(resultChampion).toHaveLength(10);
+      // Supporter uses its own 90-day window, not the override
+      const resultSupporter = filterNightsToTierWindow(nights, 'supporter', now, 5);
+      expect(resultSupporter).toHaveLength(10);
+    });
+
+    it('community: overrideWindowDays=undefined falls back to default 14-day window', () => {
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const withUndefined = filterNightsToTierWindow(nights, 'community', now, undefined);
+      const withoutOverride = filterNightsToTierWindow(nights, 'community', now);
+      expect(withUndefined).toHaveLength(withoutOverride.length);
+    });
+  });
+
   describe('edge cases', () => {
     it('handles empty input for any tier', () => {
       expect(filterNightsToTierWindow([], 'community', now)).toHaveLength(0);

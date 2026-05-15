@@ -42,7 +42,8 @@ import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
-import { events } from '@/lib/analytics';
+import { events, capturePostHog, setPostHogPersonProps } from '@/lib/analytics';
+import { useTierHistoryWindowDays } from '@/hooks/use-tier-history-window-days';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
@@ -137,6 +138,9 @@ function AnalyzePageInner() {
   useEffect(() => { userRef.current = user; }, [user]);
   const tierRef = useRef(tier);
   useEffect(() => { tierRef.current = tier; }, [tier]);
+  const overrideWindowDays = useTierHistoryWindowDays();
+  const overrideWindowDaysRef = useRef(overrideWindowDays);
+  useEffect(() => { overrideWindowDaysRef.current = overrideWindowDays; }, [overrideWindowDays]);
   const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
@@ -297,6 +301,26 @@ function AnalyzePageInner() {
       // Persist results when analysis completes
       if (newState.status === 'complete' && newState.nights.length > 0) {
         events.analysisComplete(newState.nights.length);
+
+        // PostHog experiment: fire tier_window_hit when community cap excludes nights
+        if ((newState.nightsCappedCount ?? 0) > 0 && tierRef.current === 'community') {
+          const resolvedWindowDays = overrideWindowDaysRef.current ?? getAnalysisWindowDays('community');
+          capturePostHog('tier_window_hit', {
+            cohort: String(overrideWindowDaysRef.current ?? 'control'),
+            nights_total: newState.nights.length,
+            nights_capped: newState.nightsCappedCount ?? 0,
+            tier_window_days: resolvedWindowDays,
+            is_free_user: true,
+          });
+          // Set cap_encountered_at on first encounter only
+          const capKey = 'airwaylab_cap_first_encounter';
+          if (!localStorage.getItem(capKey)) {
+            const encounteredAt = new Date().toISOString();
+            localStorage.setItem(capKey, encounteredAt);
+            setPostHogPersonProps({ cap_encountered_at: encounteredAt });
+          }
+        }
+
         // Orchestrator already calls persistResults internally — don't double-persist.
         // The persistenceWarning from the orchestrator state will surface any issues.
         setPersistedData(null);
@@ -381,7 +405,7 @@ function AnalyzePageInner() {
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current, overrideWindowDaysRef.current);
     },
     [lifetimeNights]
   );
