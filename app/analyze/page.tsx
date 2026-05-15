@@ -539,7 +539,9 @@ function AnalyzePageInner() {
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
-    if (isDemo || !isFinite(windowDays) || windowDays <= 0) return raw;
+    // Bypass window filter for demo mode, fresh uploads (state.nights), and non-finite/zero windows.
+    // Only persisted history (previous sessions) is subject to the tier window.
+    if (isDemo || state.nights.length > 0 || !isFinite(windowDays) || windowDays <= 0) return raw;
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - windowDays);
@@ -564,11 +566,14 @@ function AnalyzePageInner() {
   // Tier-gated history window: only nights within the calendar window are visible.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
+    // Demo mode and fresh uploads bypass the window — sample data and just-uploaded
+    // SD card data should always be visible regardless of tier window.
+    if (isDemo || state.nights.length > 0) return nights;
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
     return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  }, [nights, tier]);
+  }, [nights, tier, isDemo, state.nights.length]);
 
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
