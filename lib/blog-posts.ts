@@ -17,6 +17,35 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'oscar-cpap-software-alternatives',
+    title: 'OSCAR CPAP Software Alternatives (And How They Compare)',
+    seoTitle: 'OSCAR CPAP Software Alternatives: AirwayLab, SleepHQ & More | AirwayLab',
+    description:
+      'Looking for OSCAR CPAP software alternatives? We compare AirwayLab, SleepHQ, and ResMed myAir so you can find the right tool for your therapy data.',
+    date: '2026-05-14',
+    readTime: '7 min read',
+    tags: ['OSCAR', 'CPAP Software', 'SleepHQ', 'Comparison', 'Data Privacy'],
+    ogDescription:
+      'Looking for OSCAR CPAP software alternatives? We compare AirwayLab, SleepHQ, and ResMed myAir so you can find the right tool for your therapy data.',
+    faqItems: [
+      {
+        question: 'Is AirwayLab a replacement for OSCAR?',
+        answer:
+          'No — AirwayLab and OSCAR serve different use cases. OSCAR offers deep desktop-based waveform analysis; AirwayLab provides web-based, privacy-first visualisations you can access from any browser. Many users use both.',
+      },
+      {
+        question: 'Does AirwayLab upload my CPAP data to a server?',
+        answer:
+          'No. All processing happens locally in your browser. Your data never leaves your device.',
+      },
+      {
+        question: 'Is AirwayLab free?',
+        answer:
+          'Yes — the free tier covers full analysis and is free and always will be. Premium adds longer history exports and additional trend views.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-vs-bipap',
     title: 'CPAP vs BiPAP: Which Device Do You Need and Why?',
     seoTitle: 'CPAP vs BiPAP: Difference Between CPAP and BiPAP Explained | AirwayLab',
