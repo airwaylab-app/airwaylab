@@ -21,8 +21,8 @@ function makeNights(count: number, mostRecentDate: Date): NightResult[] {
 describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist', () => {
   const now = new Date('2026-05-11').getTime();
 
-  describe('community tier (7-day calendar window)', () => {
-    it('returns all nights within the 7-day window (no count cap)', () => {
+  describe('community tier (14-day calendar window)', () => {
+    it('returns all nights within the 14-day window (no count cap)', () => {
       // 10 consecutive nights all within cutoff — all pass, no .slice cap
       const now10 = new Date('2026-04-30').getTime();
       const nights = makeNights(10, new Date('2026-05-03'));
@@ -30,35 +30,35 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
       expect(result).toHaveLength(10);
     });
 
-    it('prunes nights outside the 7-day cutoff', () => {
-      // 10 nights: 2026-05-11 to 2026-05-02. Cutoff = 2026-05-04. Kept = 8 (05-11 to 05-04).
-      const nights = makeNights(10, new Date('2026-05-11'));
+    it('prunes nights outside the 14-day cutoff', () => {
+      // 20 nights: 2026-05-11 to 2026-04-22. Cutoff = 2026-04-27. Kept = 15 (05-11 to 04-27).
+      const nights = makeNights(20, new Date('2026-05-11'));
       const result = filterNightsToTierWindow(nights, 'community', now);
-      expect(result).toHaveLength(8);
+      expect(result).toHaveLength(15);
       expect(result[0]!.dateStr).toBe('2026-05-11');
-      expect(result[7]!.dateStr).toBe('2026-05-04');
+      expect(result[14]!.dateStr).toBe('2026-04-27');
     });
 
-    it('8 nights spanning 8 days: only the 7 within the window are returned', () => {
-      // May 3 is 8 days before midnight May 11, so it falls below the cutoff
-      const nights = makeNights(8, new Date('2026-05-10'));
+    it('16 nights spanning 16 days: only the 14 within the window are returned', () => {
+      // Apr 26 is 15 days before midnight May 11, so it falls below the cutoff
+      const nights = makeNights(16, new Date('2026-05-10'));
       const result = filterNightsToTierWindow(nights, 'community', now);
-      expect(result).toHaveLength(7);
-      expect(result[6]!.dateStr).toBe('2026-05-04');
+      expect(result).toHaveLength(14);
+      expect(result[13]!.dateStr).toBe('2026-04-27');
     });
 
-    it('keeps all nights when all are within 7 days', () => {
+    it('keeps all nights when all are within 14 days', () => {
       const nights = makeNights(5, new Date('2026-05-11'));
       const result = filterNightsToTierWindow(nights, 'community', now);
       expect(result).toHaveLength(5);
     });
 
-    it('excludes nights older than 7 days even when count is under 7', () => {
-      const oldNight = makeNight('2026-04-28'); // 13 days ago
+    it('excludes nights older than 14 days even when count is under 14', () => {
+      const oldNight = makeNight('2026-04-01'); // 40 days ago — outside 14-day window
       const recentNights = makeNights(3, new Date('2026-05-11'));
       const nights = [oldNight, ...recentNights].sort((a, b) => b.dateStr.localeCompare(a.dateStr));
       const result = filterNightsToTierWindow(nights, 'community', now);
-      expect(result.find((n) => n.dateStr === '2026-04-28')).toBeUndefined();
+      expect(result.find((n) => n.dateStr === '2026-04-01')).toBeUndefined();
       expect(result).toHaveLength(3);
     });
 
@@ -105,6 +105,44 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
     });
   });
 
+  describe('overrideWindowDays (PostHog experiment)', () => {
+    it('community: overrideWindowDays=30 includes nights between 14 and 30 days ago', () => {
+      // 20 nights ending today (2026-05-11). Default 14-day window would include 15 nights.
+      // With override=30 all 20 nights should be included (max span is 20 days).
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const result14 = filterNightsToTierWindow(nights, 'community', now);
+      const result30 = filterNightsToTierWindow(nights, 'community', now, 30);
+      expect(result14).toHaveLength(15);
+      expect(result30).toHaveLength(20);
+    });
+
+    it('community: overrideWindowDays=7 restricts to 7-day window', () => {
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const result = filterNightsToTierWindow(nights, 'community', now, 7);
+      // Cutoff = 2026-05-04. Nights from 2026-05-04 to 2026-05-11 = 8 nights.
+      expect(result).toHaveLength(8);
+      expect(result[0]!.dateStr).toBe('2026-05-11');
+      expect(result[result.length - 1]!.dateStr).toBe('2026-05-04');
+    });
+
+    it('overrideWindowDays is ignored for non-community tiers', () => {
+      const nights = makeNights(10, new Date('2026-05-11'));
+      // Champion always returns all nights regardless of override
+      const resultChampion = filterNightsToTierWindow(nights, 'champion', now, 5);
+      expect(resultChampion).toHaveLength(10);
+      // Supporter uses its own 90-day window, not the override
+      const resultSupporter = filterNightsToTierWindow(nights, 'supporter', now, 5);
+      expect(resultSupporter).toHaveLength(10);
+    });
+
+    it('community: overrideWindowDays=undefined falls back to default 14-day window', () => {
+      const nights = makeNights(20, new Date('2026-05-11'));
+      const withUndefined = filterNightsToTierWindow(nights, 'community', now, undefined);
+      const withoutOverride = filterNightsToTierWindow(nights, 'community', now);
+      expect(withUndefined).toHaveLength(withoutOverride.length);
+    });
+  });
+
   describe('edge cases', () => {
     it('handles empty input for any tier', () => {
       expect(filterNightsToTierWindow([], 'community', now)).toHaveLength(0);
@@ -112,17 +150,17 @@ describe('filterNightsToTierWindow — oximetry/breath trace pruning for persist
       expect(filterNightsToTierWindow([], 'champion', now)).toHaveLength(0);
     });
 
-    it('community: exactly 7 nights within window passes through unchanged', () => {
-      const nights = makeNights(7, new Date('2026-05-11'));
+    it('community: exactly 14 nights within window passes through unchanged', () => {
+      const nights = makeNights(14, new Date('2026-05-11'));
       const result = filterNightsToTierWindow(nights, 'community', now);
-      expect(result).toHaveLength(7);
+      expect(result).toHaveLength(14);
     });
 
     it('community with oximetry-trace nights — only keeps within-window nights for IDB persist', () => {
-      // 10 nights: 8 within the 7-day cutoff, 2 outside. IDB should not see the 2 oldest.
-      const nights = makeNights(10, new Date('2026-05-11'));
+      // 20 nights: 15 within the 14-day cutoff, 5 outside. IDB should not see the 5 oldest.
+      const nights = makeNights(20, new Date('2026-05-11'));
       const toSave = filterNightsToTierWindow(nights, 'community', now);
-      const oldest = nights[nights.length - 1]!.dateStr; // '2026-05-02'
+      const oldest = nights[nights.length - 1]!.dateStr; // '2026-04-22'
       expect(toSave.find((n) => n.dateStr === oldest)).toBeUndefined();
     });
   });
