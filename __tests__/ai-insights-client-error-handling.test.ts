@@ -104,4 +104,44 @@ describe('AI Insights Client Error Handling (AIR-1538)', () => {
       'AI service is temporarily unavailable. Our team has been notified and is working on it.'
     );
   });
+
+  // AIR-1647: graceful degradation when API returns empty/malformed response (JAVASCRIPT-NEXTJS-6N + 6P)
+  it('throws user-facing error when API returns empty object {} (JAVASCRIPT-NEXTJS-6N)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
+    );
+  });
+
+  it('throws user-facing error when API returns insights: [] (all filtered server-side)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ insights: [], source: 'ai' }),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
+    );
+  });
+
+  it('throws user-facing error when insights contain objects missing required fields', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ insights: [{ invalid: true }], source: 'ai' }),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
+    );
+  });
 });
