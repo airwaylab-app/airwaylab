@@ -311,7 +311,10 @@ class AnalysisOrchestrator {
         }
       }
       this.clearIncrementalState();
-      const error = err instanceof Error ? err.message : String(err);
+      let error = err instanceof Error ? err.message : String(err);
+      if (err instanceof DOMException && err.name === 'NotReadableError') {
+        error = 'File could not be read — please re-select your SD card files and try again';
+      }
       Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
       this.setState({ status: 'error', error });
       throw err;
