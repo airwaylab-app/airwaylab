@@ -513,6 +513,7 @@ export async function POST(request: NextRequest) {
     const validTypes = new Set(['positive', 'warning', 'actionable', 'info']);
     const validCategories = new Set(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'correlation', 'temporal']);
 
+    const preFilterCount = insights.length;
     insights = insights.filter(
       (i) =>
         i &&
@@ -522,6 +523,15 @@ export async function POST(request: NextRequest) {
         typeof i.body === 'string' &&
         validCategories.has(i.category)
     );
+
+    if (insights.length === 0) {
+      Sentry.captureMessage('AI insights: all insights filtered as invalid', {
+        level: 'error',
+        tags: { route: 'ai-insights', error_type: 'ai_response' },
+        extra: { preFilterCount, responsePreview: textBlock.text.slice(0, 200), stopReason: message.stop_reason },
+      });
+      return NextResponse.json({ error: 'AI returned no valid insights. Please try again.' }, { status: 502 });
+    }
 
     // Increment server-side AI usage counter atomically via RPC (with token tracking)
     const inputTokens = message.usage?.input_tokens ?? 0;
