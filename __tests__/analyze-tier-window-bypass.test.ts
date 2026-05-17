@@ -7,9 +7,9 @@
  * (fix/air-940-e2e-tier-window-bypass)
  *
  * The useMemo hooks in app/analyze/page.tsx must bypass the window filter for:
- *   1. isDemo mode — sample data should always be visible
- *   2. state.nights.length > 0 — freshly uploaded session data bypasses the persisted
- *      history window (the tier window applies to stored history, not active sessions)
+ *   1. isDemo — sample data always visible
+ *   2. state.nights.length > 0 — freshly uploaded session data bypasses the window
+ *   3. isRecentRestore — session saved <24 h ago is shown in full (same-day reload)
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
@@ -19,16 +19,15 @@ const ROOT = path.resolve(__dirname, '..');
 const src = fs.readFileSync(path.join(ROOT, 'app/analyze/page.tsx'), 'utf-8');
 
 describe('analyze page — tier window bypass conditions (AIR-940 regression)', () => {
-  it('nights useMemo bypasses window filter when isDemo or fresh upload (return raw)', () => {
-    // The bypass condition must include both isDemo and state.nights.length > 0
-    // before returning the unfiltered raw array.
-    expect(src).toContain('if (isDemo || state.nights.length > 0 || !isFinite(windowDays) || windowDays <= 0) return raw;');
+  it('nights useMemo bypasses window filter for isDemo, fresh upload, and recent restore', () => {
+    // All three bypass cases must guard the raw return before applying the date cutoff.
+    expect(src).toContain('if (isDemo || state.nights.length > 0 || isRecentRestore || !isFinite(windowDays) || windowDays <= 0) return raw;');
   });
 
-  it('visibleNights useMemo bypasses window filter for demo mode and fresh uploads (return nights)', () => {
-    // visibleNights short-circuits before getAnalysisWindowDays for demo and active sessions.
+  it('visibleNights useMemo bypasses window filter for demo, fresh uploads, and recent restore', () => {
+    // visibleNights short-circuits for demo, active sessions, and same-day restores.
     const visibleNightsMemo = src.slice(src.indexOf('visibleNights = useMemo'));
-    expect(visibleNightsMemo).toContain('if (isDemo || state.nights.length > 0) return nights;');
+    expect(visibleNightsMemo).toContain('if (isDemo || state.nights.length > 0 || isRecentRestore) return nights;');
   });
 
   it('nights useMemo dependency array includes isDemo and state.nights', () => {
