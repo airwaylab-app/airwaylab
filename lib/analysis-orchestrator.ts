@@ -281,9 +281,12 @@ class AnalysisOrchestrator {
         }
       }
 
-      // ── Authoritative save of final results (tier-gated window) ──
+      // ── Authoritative save of final results ──
+      // Save all merged nights regardless of tier window so the session can be
+      // restored on reload. The page applies the tier window on display, but
+      // bypasses it when the session was saved recently (same-day restore).
       const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
-      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
       persistBreathData(merged);
       persistPLDTraces(merged);
@@ -582,10 +585,11 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results (tier-gated window)
+      // Persist updated results — save all nights so reload can restore the session.
+      // The tier window is applied at display time on the page.
       const therapyChangeDate = detectTherapyChange(merged);
       const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
-      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
       this.setState({

@@ -195,6 +195,7 @@ export function persistResults(
 export function loadPersistedResults(): {
   nights: NightResult[];
   therapyChangeDate: string | null;
+  savedAt?: number;
   engineUpgraded?: boolean;
 } | null {
   try {
@@ -302,6 +303,7 @@ export function loadPersistedResults(): {
     return {
       nights: data.nights,
       therapyChangeDate: data.therapyChangeDate,
+      savedAt: data.savedAt,
     };
   } catch {
     return null;
