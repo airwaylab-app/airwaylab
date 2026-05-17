@@ -297,6 +297,15 @@ describe('persistence', () => {
       expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
 
+    it('returns savedAt timestamp in the result (recent-restore bypass needs it)', () => {
+      const before = Date.now();
+      persistResults(SAMPLE_NIGHTS, null);
+      const after = Date.now();
+      const result = loadPersistedResults();
+      expect(result?.savedAt).toBeGreaterThanOrEqual(before);
+      expect(result?.savedAt).toBeLessThanOrEqual(after);
+    });
+
     it('restores sessionStartTime as a Date after round-trip through localStorage', () => {
       const startTime = new Date('2025-03-15T22:31:00Z');
       const nightWithStartTime = {
