@@ -473,4 +473,19 @@ describe('formatWallClockTime', () => {
     });
     expect(result).toContain(expectedTime);
   });
+
+  it('handles midnight wraparound correctly', () => {
+    // 11:30 PM start + 1 hour elapsed = 12:30 AM next day
+    const start = new Date('2026-05-11T23:30:00');
+    const elapsedSec = 3600; // 1 hour
+    const expected = new Date(start.getTime() + elapsedSec * 1000);
+    const result = formatWallClockTime(start, elapsedSec);
+    expect(result).toContain('1h 0m in');
+    const expectedTime = expected.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    expect(result).toContain(expectedTime);
+  });
 });
