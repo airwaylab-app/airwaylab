@@ -74,11 +74,14 @@ export async function sendAlert(
     if (content) body.content = content
     if (embeds && embeds.length > 0) body.embeds = embeds
 
+    // 3s is ample for Discord; the prior 10s timeout kept void-called
+    // sendAlert() Promises alive until the Vercel function budget expired,
+    // producing unhandled TimeoutError events (JAVASCRIPT-NEXTJS-56).
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(3_000),
     })
 
     if (!res.ok) {
