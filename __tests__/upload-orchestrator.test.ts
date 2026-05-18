@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError, getPartialFailureLevel } from '@/lib/storage/upload-orchestrator';
+import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles } from '@/lib/storage/upload-orchestrator';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -92,5 +92,51 @@ describe('getPartialFailureLevel', () => {
   it('returns error when uploaded === 0 and failed === 0', () => {
     // Edge case: no files processed at all
     expect(getPartialFailureLevel(0, 0)).toBe('error');
+  });
+});
+
+describe('filterUploadableFiles', () => {
+  it('excludes files with size === 0 from uploadable list', () => {
+    const empty = new File([], 'CSL.edf');
+    const real = new File(['data'], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([empty, real]);
+    expect(uploadable).toHaveLength(1);
+    expect(uploadable[0]).toBe(real);
+    expect(emptyCount).toBe(1);
+  });
+
+  it('returns all files when none are empty', () => {
+    const f1 = new File(['a'], 'DATALOG.edf');
+    const f2 = new File(['b'], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([f1, f2]);
+    expect(uploadable).toHaveLength(2);
+    expect(emptyCount).toBe(0);
+  });
+
+  it('returns empty uploadable list when all files are 0-byte', () => {
+    const e1 = new File([], 'CSL.edf');
+    const e2 = new File([], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([e1, e2]);
+    expect(uploadable).toHaveLength(0);
+    expect(emptyCount).toBe(2);
+  });
+
+  it('returns empty lists for empty input', () => {
+    const { uploadable, emptyCount } = filterUploadableFiles([]);
+    expect(uploadable).toHaveLength(0);
+    expect(emptyCount).toBe(0);
+  });
+
+  it('counts multiple empty files accurately', () => {
+    const files = [
+      new File([], 'a.edf'),
+      new File(['x'], 'b.edf'),
+      new File([], 'c.edf'),
+      new File(['y'], 'd.edf'),
+      new File([], 'e.edf'),
+    ];
+    const { uploadable, emptyCount } = filterUploadableFiles(files);
+    expect(uploadable).toHaveLength(2);
+    expect(emptyCount).toBe(3);
   });
 });

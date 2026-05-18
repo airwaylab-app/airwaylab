@@ -890,16 +890,20 @@ function AnalyzePageInner() {
               <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Storage limit reached</span>
-                  {' '}&mdash; {persistenceWarning}
+                  {' '}&mdash; {hasCloudSyncConsent()
+                    ? `Viewing your ${nights.length} most recent night${nights.length !== 1 ? 's' : ''}. All your data is safely backed up.`
+                    : persistenceWarning}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                  onClick={handleClearLocalData}
-                >
-                  Clear saved data
-                </Button>
+                {!hasCloudSyncConsent() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                    onClick={handleClearLocalData}
+                  >
+                    Clear saved data
+                  </Button>
+                )}
               </div>
             </div>
           )}
