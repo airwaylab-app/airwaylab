@@ -883,7 +883,9 @@ function AnalyzePageInner() {
               </p>
             </div>
           )}
-          {!isDemo && persistenceWarning && !localDataCleared && (
+          {/* Only show localStorage warning if cloud sync is not active.
+              Cloud sync users don't need to re-upload — files are already backed up. */}
+          {!isDemo && persistenceWarning && !localDataCleared && !hasCloudSyncConsent() && (
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
               <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
@@ -900,6 +902,14 @@ function AnalyzePageInner() {
                   Clear saved data
                 </Button>
               </div>
+            </div>
+          )}
+          {!isDemo && persistenceWarning && !localDataCleared && hasCloudSyncConsent() && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 animate-fade-in-up">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
+              <p className="text-sm text-muted-foreground">
+                More than 90 days of data was uploaded. Your files are safely backed up in the cloud.
+              </p>
             </div>
           )}
 

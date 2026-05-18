@@ -38,6 +38,8 @@ export interface UploadResult {
   skipped: number;
   failed: number;
   errors: string[];
+  /** Files filtered before upload because they were 0 bytes (e.g. AirSense placeholder files) */
+  skippedEmpty: number;
 }
 
 export type UploadStatus = 'idle' | 'hashing' | 'checking' | 'uploading' | 'complete' | 'error';

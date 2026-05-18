@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError, getPartialFailureLevel } from '@/lib/storage/upload-orchestrator';
+import * as fs from 'fs';
+import * as path from 'path';
+import { isTransientServerError, getPartialFailureLevel, uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
+
+const ROOT = path.resolve(__dirname, '..');
+const orchestratorSrc = fs.readFileSync(
+  path.join(ROOT, 'lib/storage/upload-orchestrator.ts'),
+  'utf-8'
+);
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -92,5 +100,35 @@ describe('getPartialFailureLevel', () => {
   it('returns error when uploaded === 0 and failed === 0', () => {
     // Edge case: no files processed at all
     expect(getPartialFailureLevel(0, 0)).toBe('error');
+  });
+});
+
+describe('upload(): 0-byte file filtering (AIR-1731)', () => {
+  it('filters out 0-byte files before building the upload queue (source check)', () => {
+    expect(orchestratorSrc).toContain("files.filter(f => f.size > 0)");
+    expect(orchestratorSrc).toContain('skippedEmpty');
+  });
+
+  it('returns skippedEmpty === 1 when the only file is 0 bytes (runtime)', async () => {
+    const emptyFile = new File([], 'CSL.edf', { type: 'application/octet-stream' });
+    const result = await uploadOrchestrator.upload([emptyFile]);
+    expect(result.skippedEmpty).toBe(1);
+    expect(result.uploaded).toBe(0);
+    expect(result.failed).toBe(0);
+  });
+
+  it('returns skippedEmpty === 2 when all files are empty (runtime)', async () => {
+    const empty1 = new File([], 'CSL.edf');
+    const empty2 = new File([], 'STR.edf');
+    const result = await uploadOrchestrator.upload([empty1, empty2]);
+    expect(result.skippedEmpty).toBe(2);
+  });
+
+  it('UploadResult type includes skippedEmpty field (source check)', () => {
+    const typesSrc = fs.readFileSync(
+      path.join(ROOT, 'lib/storage/types.ts'),
+      'utf-8'
+    );
+    expect(typesSrc).toContain('skippedEmpty: number');
   });
 });
