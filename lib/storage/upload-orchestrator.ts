@@ -47,6 +47,16 @@ export function getPartialFailureLevel(uploaded: number, failed: number): 'error
   return 'warning';
 }
 
+/**
+ * Split files into uploadable (size > 0) and empty.
+ * 0-byte files are AirSense SD card placeholders (CSL.edf, sometimes STR.edf)
+ * that have no upload value and would fail presign validation.
+ */
+export function filterUploadableFiles(files: File[]): { uploadable: File[]; emptyCount: number } {
+  const uploadable = files.filter(f => f.size > 0);
+  return { uploadable, emptyCount: files.length - uploadable.length };
+}
+
 function getFilePath(file: File): string {
   return (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
 }
@@ -156,18 +166,22 @@ class UploadOrchestrator {
    * Upload files to cloud storage. Handles hashing, dedup, and upload.
    */
   async upload(files: File[]): Promise<UploadResult> {
-    if (files.length === 0) {
-      return { uploaded: 0, skipped: 0, failed: 0, errors: [] };
+    // Filter empty files before presigning — 0-byte SD card placeholder files (empty CSL.edf etc.) have no upload value
+    const nonEmptyFiles = files.filter(f => f.size > 0);
+    const emptyFileCount = files.length - nonEmptyFiles.length;
+
+    if (nonEmptyFiles.length === 0) {
+      return { uploaded: 0, skipped: emptyFileCount, failed: 0, errors: [] };
     }
 
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
     this.guardPageExit();
 
-    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+    const totalBytes = nonEmptyFiles.reduce((sum, f) => sum + f.size, 0);
     this.setState({
       status: 'hashing',
-      progress: { current: 0, total: files.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
+      progress: { current: 0, total: nonEmptyFiles.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
       result: null,
       error: null,
     });
@@ -181,7 +195,7 @@ class UploadOrchestrator {
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 1: Hash all files
-      const fileHashes = await this.hashFiles(files, signal);
+      const fileHashes = await this.hashFiles(nonEmptyFiles, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 2: Check which files already exist
@@ -190,12 +204,12 @@ class UploadOrchestrator {
         progress: { ...this.state.progress, stage: 'checking' },
       });
 
-      const existingHashes = await this.checkExisting(files, fileHashes, signal);
+      const existingHashes = await this.checkExisting(nonEmptyFiles, fileHashes, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 3: Upload new files
-      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]!));
-      const skipped = files.length - toUpload.length;
+      const toUpload = nonEmptyFiles.filter((_, i) => !existingHashes.has(fileHashes[i]!));
+      const skipped = nonEmptyFiles.length - toUpload.length;
 
       this.setState({
         status: 'uploading',
@@ -209,12 +223,12 @@ class UploadOrchestrator {
         },
       });
 
-      const result = await this.uploadFiles(toUpload, fileHashes, files, signal);
-      result.skipped = skipped;
+      const result = await this.uploadFiles(toUpload, fileHashes, nonEmptyFiles, signal);
+      result.skipped = skipped + emptyFileCount;
 
       // Report systematic failures to Sentry
       if (result.failed > 0) {
-        this.reportFailures(result, files.length);
+        this.reportFailures(result, nonEmptyFiles.length);
       }
 
       this.releasePageExit();
@@ -233,11 +247,11 @@ class UploadOrchestrator {
         Sentry.captureMessage('cloud_upload_failed', {
           level: 'error',
           tags: { stage: this.state.status },
-          extra: { error, fileCount: files.length },
+          extra: { error, fileCount: nonEmptyFiles.length },
         });
       }
       this.setState({ status: 'error', error });
-      return { uploaded: 0, skipped: 0, failed: files.length, errors: [error] };
+      return { uploaded: 0, skipped: emptyFileCount, failed: nonEmptyFiles.length, errors: [error] };
     }
   }
 
