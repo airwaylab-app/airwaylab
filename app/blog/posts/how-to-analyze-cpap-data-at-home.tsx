@@ -200,7 +200,7 @@ export default function HowToAnalyzeCPAPDataAtHome() {
               range selectors to compare weeks or months, and look for consistent changes rather
               than one-off readings. The{' '}
               <Link
-                href="/blog/how-to-read-cpap-data"
+                href="/blog/how-to-read-cpap-therapy-report"
                 className="text-primary hover:text-primary/80"
               >
                 How to Read CPAP Data

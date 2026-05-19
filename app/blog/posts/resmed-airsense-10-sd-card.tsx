@@ -431,7 +431,7 @@ export default function ResmedAirsense10SdCardPost() {
           </p>
           <p>
             <Link
-              href="/blog/how-to-read-cpap-data"
+              href="/blog/how-to-read-cpap-therapy-report"
               className="text-primary hover:text-primary/80"
             >
               How to Read Your CPAP Data

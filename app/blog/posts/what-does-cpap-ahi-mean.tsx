@@ -327,6 +327,69 @@ export default function WhatDoesCpapAhiMean() {
         </div>
       </section>
 
+      {/* OA/CA/mixed breakdown */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Activity className="h-5 w-5 text-blue-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">
+            OA, CA, and Mixed: What the AHI Breakdown Actually Means
+          </h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            Many CPAP therapy reports show a breakdown of events — not just total AHI, but
+            separate counts for OA, CA, and H (or similar labels). Here is what each category
+            means in your data:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/30">
+                  <th className="py-2 pr-4 text-left font-semibold text-foreground">Label</th>
+                  <th className="py-2 pr-4 text-left font-semibold text-foreground">Full name</th>
+                  <th className="py-2 text-left font-semibold text-foreground">What happened</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/20">
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">OA</td>
+                  <td className="py-2 pr-4">Obstructive Apnea</td>
+                  <td className="py-2">Airflow stopped for ≥10 s while the airway physically obstructed. The machine was delivering pressure but airflow dropped.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">CA</td>
+                  <td className="py-2 pr-4">Central Apnea</td>
+                  <td className="py-2">Airflow stopped for ≥10 s and the effort signal also stopped — no attempt to breathe. Associated with central nervous system signalling, not airway obstruction.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">H</td>
+                  <td className="py-2 pr-4">Hypopnea</td>
+                  <td className="py-2">Airflow reduced by ≥30% for ≥10 s (with a desaturation or arousal, depending on scoring criteria). A partial reduction, not a complete stop.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">Mixed</td>
+                  <td className="py-2 pr-4">Mixed Apnea</td>
+                  <td className="py-2">Starts as a central apnea (no effort), then transitions to an obstructive pattern as effort resumes but airway remains blocked.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Your total AHI is the sum of all these events per hour. A breakdown skewed toward
+            central apneas is one pattern your sleep physician may want to look at more closely,
+            as it can appear with certain pressure settings or other factors. Discuss your
+            breakdown with your clinician rather than interpreting it in isolation.
+          </p>
+          <p>
+            <strong className="text-foreground">Why does my AHI vary night to night?</strong>{' '}
+            Sleep position, sleep stage distribution, alcohol, sedatives, nasal congestion, and
+            pressure settings can all affect the event count from one night to the next. A
+            single high-AHI night is less meaningful than a consistent trend over weeks. Your
+            data is most useful when your clinician reviews a multi-week summary.
+          </p>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="mt-10">
         <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
@@ -422,6 +485,14 @@ export default function WhatDoesCpapAhiMean() {
           </p>
         </div>
       </section>
+
+      {/* YMYL disclosure — verbatim AIR-1611 */}
+      <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+        This article is for educational and informational purposes only. It has not been
+        reviewed by a licensed clinician and is not a substitute for professional medical
+        advice. Consult your sleep specialist or healthcare provider before making any
+        changes to your therapy.
+      </p>
 
       {/* Bottom disclaimer */}
       <p className="mt-8 text-xs italic text-muted-foreground/60">

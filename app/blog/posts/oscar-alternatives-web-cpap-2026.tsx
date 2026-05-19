@@ -176,7 +176,7 @@ export default function OSCARAlternativesWebCPAP2026() {
           <p>
             OSCAR is the right tool when you want to see exactly what happened breath by breath on a
             specific night. If you&apos;re new to reading PAP data, our{' '}
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               guide to CPAP data
             </Link>{' '}
             is a good place to start before opening OSCAR for the first time.
@@ -481,7 +481,7 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               Guide to CPAP data
             </Link>{' '}
             &mdash; understanding what the numbers on your device actually mean.

@@ -395,6 +395,42 @@ export default function WhyAHIIsLyingPost() {
         </div>
       </section>
 
+      {/* Balance paragraph */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Scale className="h-5 w-5 text-amber-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">
+            A Note on Balance: AHI Is Imperfect, Not Worthless
+          </h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            The point of this article is not that AHI is useless — it is that AHI alone is
+            incomplete. A consistently low AHI (below 5) does indicate that frank apneas and
+            hypopneas are under control. That still matters. The problem is treating it as
+            the <em>only</em> signal.
+          </p>
+          <p>
+            <strong className="text-foreground">CPAP AHI vs in-lab AHI: are they the same?</strong>{' '}
+            Not quite. In-lab polysomnography scores events using manually scored EEG arousals
+            and nasal pressure cannulas, which are more sensitive than the flow signal your
+            CPAP machine uses. Studies comparing the two find reasonable agreement at moderate
+            and severe AHI levels, but divergence at the low end. If your CPAP reports an AHI
+            of 1–3, a lab study might score it differently — higher or lower — depending on
+            the scoring rules applied. This is another reason to discuss your full data picture
+            with your sleep physician rather than relying on a single number.
+          </p>
+        </div>
+      </section>
+
+      {/* YMYL disclosure — verbatim AIR-1611 */}
+      <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+        This article is for educational and informational purposes only. It has not been
+        reviewed by a licensed clinician and is not a substitute for professional medical
+        advice. Consult your sleep specialist or healthcare provider before making any
+        changes to your therapy.
+      </p>
+
       {/* Medical disclaimer */}
       <section className="mt-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
