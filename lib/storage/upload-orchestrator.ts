@@ -649,29 +649,43 @@ class UploadOrchestrator {
       throw new Error(`Upload failed: ${uploadRes.status}`);
     }
 
-    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB
-    const confirmRes = await fetch('/api/files/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ fileId: presignData.fileId }),
-      signal,
-    });
+    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB.
+    // Retry up to 2 times for transient 5xx failures before treating as non-fatal.
+    const CONFIRM_RETRIES = 2;
+    const CONFIRM_RETRY_BASE_MS = 300;
+    let confirmRes: Response | null = null;
+    let confirmAttempts = 0;
 
-    if (!confirmRes.ok) {
-      if (confirmRes.status === 404) {
+    for (let attempt = 0; attempt <= CONFIRM_RETRIES; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, CONFIRM_RETRY_BASE_MS * attempt));
+      }
+      confirmAttempts = attempt + 1;
+      confirmRes = await fetch('/api/files/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fileId: presignData.fileId }),
+        signal,
+      });
+      // Stop retrying on success, 404 (definitive), or non-5xx client errors
+      if (confirmRes.ok || confirmRes.status === 404 || confirmRes.status < 500) break;
+    }
+
+    if (!confirmRes!.ok) {
+      if (confirmRes!.status === 404) {
         // File is not in storage despite the PUT appearing to succeed.
         // Treat as a failed upload — the metadata row was already cleaned up by the confirm route.
-        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes.status})`);
+        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes!.status})`);
       }
-      // Other errors (5xx, network): file may be in storage but unconfirmed.
+      // Other errors (5xx) after retries: file may be in storage but unconfirmed.
       // The stale orphan detection in presign will clean it up on the next attempt.
       Sentry.captureMessage('cloud_upload_confirm_nonfatal_error', {
         level: 'warning',
-        tags: { httpStatus: String(confirmRes.status) },
-        extra: { fileId: presignData.fileId, status: confirmRes.status },
+        tags: { httpStatus: String(confirmRes!.status) },
+        extra: { fileId: presignData.fileId, status: confirmRes!.status, attempts: confirmAttempts },
       });
-      console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
+      console.error('[upload-orchestrator] confirm failed after retries:', confirmRes!.status);
     }
 
     return true;
