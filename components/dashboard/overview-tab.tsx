@@ -55,6 +55,7 @@ interface Props {
   onAdjustThreshold?: (metricKey: string) => void;
   isDemo?: boolean;
   isNewUser?: boolean;
+  isSharedView?: boolean;
 }
 
 /** Compute simple mean of the last 7 nights for a given accessor. Returns undefined if <2 nights. */
@@ -66,7 +67,7 @@ function avg7(nights: NightResult[], accessor: (n: NightResult) => number | null
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, onAdjustThreshold, isDemo = false, isNewUser = false }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, onAdjustThreshold, isDemo = false, isNewUser = false, isSharedView = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -163,20 +164,24 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         );
       })()}
 
-      {/* Symptom Rating — how did you sleep? */}
-      <SymptomRating
-        night={n}
-        value={symptomRating}
-        onChange={handleSymptomRatingChange}
-        isContributeConsented={isContributeConsented}
-      />
+      {/* Symptom Rating — owner-only; hidden in shared view */}
+      {!isSharedView && (
+        <SymptomRating
+          night={n}
+          value={symptomRating}
+          onChange={handleSymptomRatingChange}
+          isContributeConsented={isContributeConsented}
+        />
+      )}
 
-      {/* Night Context — structured enum fields (caffeine, position, stress, etc.) */}
-      <NightContextEditor
-        night={n}
-        notes={nightNotes}
-        onNotesChange={handleNotesChange}
-      />
+      {/* Night Context — owner-only; hidden in shared view */}
+      {!isSharedView && (
+        <NightContextEditor
+          night={n}
+          notes={nightNotes}
+          onNotesChange={handleNotesChange}
+        />
+      )}
 
       {/* Start-here guidance for new users — positioned right below hero */}
       {isNewUser && (
