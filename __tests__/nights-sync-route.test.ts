@@ -148,6 +148,21 @@ describe('POST /api/nights/sync', () => {
     expect(storedNed?.nedMean).toBe(12);
   });
 
+  it('strips csl.episodes before upsert', async () => {
+    const nightWithCsl = {
+      ...makeNight('2024-03-14'),
+      csl: { score: 0.08, episodes: [{ start: 0, end: 90 }, { start: 200, end: 300 }] },
+    };
+
+    const { POST } = await import('@/app/api/nights/sync/route');
+    await POST(makeRequest({ nights: [nightWithCsl] }));
+
+    const calls = mockUpsert.mock.calls as unknown as Array<[{ analysis_data: { csl: Record<string, unknown> } }]>;
+    const storedCsl = (calls[0]?.[0])?.analysis_data.csl;
+    expect((storedCsl?.episodes as unknown[]).length).toBe(0);
+    expect(storedCsl?.score).toBe(0.08);
+  });
+
   it('counts skipped nights when upsert errors', async () => {
     const supabaseError = { message: 'db error', code: '23505', details: '', hint: '' };
     mockUpsert.mockResolvedValue({ error: supabaseError as unknown as null });

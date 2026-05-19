@@ -25,10 +25,12 @@ type SyncResult = { synced: number; skipped: number; failed: number };
 function stripBulkData(night: NightResult): Record<string, unknown> {
   const { breaths: _breaths, reras: _reras, ...nedSummary } = night.ned;
   const { oximetryTrace: _oximetryTrace, ...rest } = night as NightResult & { oximetryTrace?: unknown };
+  const csl = night.csl as Record<string, unknown> | null | undefined;
   return {
     ...rest,
     ned: nedSummary,
     oximetry: night.oximetry ?? null,
+    csl: csl ? { ...csl, episodes: [] } : (csl ?? null),
   };
 }
 

@@ -112,6 +112,23 @@ describe('syncAnalysisToCloud', () => {
     expect(payload.nights[0]?.oximetryTrace).toBeUndefined();
   });
 
+  it('strips csl.episodes before sending', async () => {
+    mockFetch.mockReturnValueOnce(okResponse(1));
+
+    const nightWithCsl = {
+      ...makeNight('2024-03-01'),
+      csl: { score: 0.12, episodes: [{ start: 0, end: 60 }, { start: 120, end: 180 }] },
+    } as unknown as NightResult;
+
+    await syncAnalysisToCloud([nightWithCsl]);
+
+    const call = mockFetch.mock.calls[0]?.[1] as { body: string };
+    const payload = JSON.parse(call.body) as { nights: Array<{ csl: Record<string, unknown> }> };
+    const sentCsl = payload.nights[0]?.csl;
+    expect(sentCsl?.episodes).toHaveLength(0);
+    expect(sentCsl?.score).toBe(0.12);
+  });
+
   it('marks failed count on HTTP error but does not throw', async () => {
     mockFetch.mockReturnValueOnce(errorResponse(500));
 

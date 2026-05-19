@@ -35,11 +35,14 @@ function stripBulkData(night: StrippedNight): StrippedNight {
   delete ned.breaths;
   delete ned.reras;
 
+  const csl = night.csl as Record<string, unknown> | null | undefined;
+
   return {
     ...night,
     ned,
     // oximetryTrace lives at the top level in full NightResult
     oximetryTrace: undefined,
+    csl: csl ? { ...csl, episodes: [] } : csl,
   };
 }
 
