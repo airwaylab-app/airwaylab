@@ -19,7 +19,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
-import { syncAnalysisToCloud } from '@/lib/storage/nights-sync';
+import { syncAnalysisToCloud, fetchNightsFromCloud } from '@/lib/storage/nights-sync';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -234,6 +234,33 @@ function AnalyzePageInner() {
       if (stored > 0) setLifetimeNights(stored);
     } catch { /* noop */ }
   }, []);
+
+  // Cloud-first hydration: on auth, fetch stored nights and merge with localStorage
+  useEffect(() => {
+    if (!user || state.status !== 'idle' || isDemo) return;
+
+    fetchNightsFromCloud()
+      .then((cloudNights) => {
+        if (cloudNights.length === 0) return;
+
+        setPersistedData((prev) => {
+          const merged = new Map<string, NightResult>();
+          for (const n of (prev?.nights ?? [])) merged.set(n.dateStr, n);
+          // Cloud wins on date conflict
+          for (const n of cloudNights) merged.set(n.dateStr, n);
+
+          const nights = Array.from(merged.values()).sort((a, b) =>
+            b.dateStr.localeCompare(a.dateStr)
+          );
+          return { nights, therapyChangeDate: prev?.therapyChangeDate ?? null };
+        });
+      })
+      .catch((err) => {
+        // Non-fatal: fall back to localStorage silently
+        Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Fires once on auth; state/isDemo are stable at auth time
 
   // Auto-upload + store analysis data when user authenticates with loaded results
   useEffect(() => {

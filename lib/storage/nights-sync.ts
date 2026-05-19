@@ -2,6 +2,24 @@ import type { NightResult } from '@/lib/types';
 
 const BATCH_SIZE = 50;
 
+/**
+ * Fetches the user's stored nights from the cloud (GET /api/nights).
+ * Throws on non-OK response so callers can treat it as non-fatal.
+ */
+export async function fetchNightsFromCloud(): Promise<NightResult[]> {
+  const res = await fetch('/api/nights', {
+    method: 'GET',
+    credentials: 'same-origin',
+  });
+
+  if (!res.ok) {
+    throw new Error(`[nights-sync] cloud fetch failed: ${res.status}`);
+  }
+
+  const data = (await res.json()) as { nights?: NightResult[] };
+  return data.nights ?? [];
+}
+
 type SyncResult = { synced: number; skipped: number; failed: number };
 
 function stripBulkData(night: NightResult): Record<string, unknown> {
