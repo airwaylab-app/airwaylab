@@ -210,6 +210,7 @@ export function SharedViewClient({
                 previousNight={previousNight}
                 therapyChangeDate={null}
                 isDemo={false}
+                isSharedView={true}
               />
             </ErrorBoundary>
           </TabsContent>
