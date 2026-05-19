@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
+import { FolderOpen, FileText, CheckCircle2, AlertTriangle, XCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateSDFiles, validateOximetryFiles, checkOximetryFormats, type ValidationResult } from '@/lib/upload-validation';
 import { UnsupportedFormatDialog } from './unsupported-format-dialog';
@@ -294,11 +294,13 @@ export function FileUpload({ onFilesSelected, disabled }: FileUploadProps) {
               {!isMobile && (
                 <a
                   href="/getting-started"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   First time? See the getting started guide
-                  <ArrowRight className="h-3 w-3" />
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               )}
               {isMobile && (

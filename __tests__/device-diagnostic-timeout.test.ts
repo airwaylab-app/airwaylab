@@ -30,10 +30,9 @@ vi.mock('@/lib/discord-webhook', () => ({
   formatUserSignalEmbed: vi.fn(() => ({})),
 }));
 
-vi.mock('./_dedup', () => ({
+vi.mock('@/app/api/device-diagnostic/_dedup', () => ({
   DEDUP_WINDOW_MS: 86_400_000,
-  deviceModelLastAlertTs: new Map(),
-  deviceModelHitCount: new Map(),
+  checkAndUpdateDedup: vi.fn().mockResolvedValue({ shouldFire: false, suppressedCount: 0 }),
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────

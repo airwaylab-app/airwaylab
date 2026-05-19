@@ -8,6 +8,7 @@ import {
   Monitor,
   Scale,
   Shield,
+  Workflow,
 } from 'lucide-react';
 
 export default function OSCARAlternativesWebCPAP2026() {
@@ -72,6 +73,7 @@ export default function OSCARAlternativesWebCPAP2026() {
                 <th className="px-4 py-3 text-center font-semibold text-foreground">OSCAR</th>
                 <th className="px-4 py-3 text-center font-semibold text-foreground">SleepHQ</th>
                 <th className="px-4 py-3 text-center font-semibold text-foreground">AirwayLab</th>
+                <th className="px-4 py-3 text-center font-semibold text-primary">OSCAR + AirwayLab</th>
               </tr>
             </thead>
             <tbody className="text-muted-foreground">
@@ -80,42 +82,49 @@ export default function OSCARAlternativesWebCPAP2026() {
                 <td className="px-4 py-2.5 text-center">Desktop app</td>
                 <td className="px-4 py-2.5 text-center">Browser / mobile</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Browser only</td>
+                <td className="px-4 py-2.5 text-center text-primary">Desktop + Browser</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Devices supported</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">ResMed, Philips, F&amp;P, others</td>
                 <td className="px-4 py-2.5 text-center">ResMed (myAir)</td>
                 <td className="px-4 py-2.5 text-center">ResMed SD card</td>
+                <td className="px-4 py-2.5 text-center text-primary">Widest (both)</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Data location</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Local — your device</td>
                 <td className="px-4 py-2.5 text-center">Cloud — SleepHQ servers</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Your browser only</td>
+                <td className="px-4 py-2.5 text-center text-primary">Both local</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Automated scoring</td>
                 <td className="px-4 py-2.5 text-center">Summary stats</td>
                 <td className="px-4 py-2.5 text-center">Summary stats</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Glasgow Index, FL Score, NED, oximetry</td>
+                <td className="px-4 py-2.5 text-center text-primary">Composite + waveforms</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Open source</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">GPL-2.0</td>
                 <td className="px-4 py-2.5 text-center text-muted-foreground/60">Closed source</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">GPL-3.0</td>
+                <td className="px-4 py-2.5 text-center text-primary">Both GPL</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Cost</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Free</td>
                 <td className="px-4 py-2.5 text-center">Free + paid tiers</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Free (optional premium)</td>
+                <td className="px-4 py-2.5 text-center text-primary">Both free</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-4">Best for</td>
                 <td className="px-4 py-2.5 text-center">Waveform review</td>
                 <td className="px-4 py-2.5 text-center">Cloud sync, remote access</td>
                 <td className="px-4 py-2.5 text-center">Automated pattern analysis</td>
+                <td className="px-4 py-2.5 text-center text-primary">Complete picture</td>
               </tr>
             </tbody>
           </table>
@@ -341,13 +350,79 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
       </section>
 
+      {/* Using OSCAR and AirwayLab Together */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Workflow className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold sm:text-2xl">Using OSCAR and AirwayLab Together</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            Framing OSCAR and AirwayLab as competitors misses what makes them most useful. They
+            approach the same data differently, and many users get the most complete picture by
+            using both.
+          </p>
+          <p>
+            OSCAR is built for manual waveform inspection — once you have data imported you can
+            zoom into any window, examine individual breaths, and correlate events with timestamps
+            across months of history.
+          </p>
+          <p>
+            AirwayLab runs automated scoring algorithms across every breath and surfaces composite
+            metrics — FL Score, Glasgow Index, Regularity, Periodicity — that are harder to derive
+            from manual inspection. It runs in your browser, so nothing needs to be installed.
+          </p>
+          <p className="font-medium text-foreground">A practical combined workflow:</p>
+          <div className="space-y-3">
+            {[
+              {
+                step: '1',
+                label: 'Open AirwayLab',
+                desc: 'Get a composite-metrics overview of recent nights — FL Score, Glasgow Index, overall patterns across sessions.',
+              },
+              {
+                step: '2',
+                label: 'Flag nights for closer review',
+                desc: 'Note any nights where metrics differ from your baseline, or where you had poor sleep quality.',
+              },
+              {
+                step: '3',
+                label: 'Open those nights in OSCAR',
+                desc: 'Inspect waveforms at breath level and review the event timeline for flagged sessions.',
+              },
+              {
+                step: '4',
+                label: 'Return to AirwayLab',
+                desc: 'Check whether patterns hold consistently across multiple nights over weeks.',
+              },
+            ].map(({ step, label, desc }) => (
+              <div key={step} className="flex gap-4 rounded-xl border border-border/50 p-4">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  {step}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p>
+            Both tools process your data locally. Neither depends on a company&apos;s server staying
+            online. That combination — complementary capabilities, shared privacy ethos, both
+            GPL-licensed — is what makes them worth using alongside each other rather than treating
+            the choice as binary.
+          </p>
+        </div>
+      </section>
+
       {/* Which tool */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <Lock className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold sm:text-2xl">Which Tool Is Right for You?</h2>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
             <p className="text-sm font-semibold text-blue-400">Choose OSCAR if:</p>
             <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
@@ -374,11 +449,19 @@ export default function OSCARAlternativesWebCPAP2026() {
               <li>You want Glasgow Index, FL Score, and NED computed automatically</li>
             </ul>
           </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm font-semibold text-primary">Choose OSCAR + AirwayLab if:</p>
+            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+              <li>You want the most complete picture of your therapy data</li>
+              <li>You want composite metrics alongside breath-level waveform detail</li>
+              <li>You have a ResMed device and want both automated scoring and event review</li>
+              <li>You prefer both tools keeping your data entirely local</li>
+            </ul>
+          </div>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
-          <strong className="text-foreground">Use more than one if</strong> you&apos;re working
-          through why your metrics look the way they do. Each tool gives you a different view of the
-          same underlying data, and they genuinely complement each other.
+          Your clinician can help interpret what any of these tools show in the context of your full
+          therapy history.
         </p>
       </section>
 

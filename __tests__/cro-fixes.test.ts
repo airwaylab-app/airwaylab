@@ -133,7 +133,7 @@ describe('A2 — Getting started link in upload zone', () => {
     expect(noFilesBlock).toBeGreaterThan(-1);
   });
 
-  it('includes ArrowRight icon', () => {
-    expect(fileUploadSrc).toContain('ArrowRight');
+  it('includes an icon on the help link', () => {
+    expect(fileUploadSrc).toContain('ExternalLink');
   });
 });

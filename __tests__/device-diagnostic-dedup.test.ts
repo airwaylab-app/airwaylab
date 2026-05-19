@@ -2,17 +2,46 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 
+interface KvRow {
+  key: string
+  last_fired_at: string
+  suppressed_count: number
+}
+
+// Stateful kv_alert_dedup store — persists across module resets (module-level Map)
+const kvStore = new Map<string, KvRow>()
+// Shared insert spy delegated to via wrapper — survives vi.resetModules()
+let _insertFn = vi.fn().mockResolvedValue({ error: null })
+// Shared sendAlert spy delegated to via wrapper — survives vi.resetModules()
+let _sendAlertFn = vi.fn().mockResolvedValue(true)
+
 vi.mock('@/lib/discord-webhook', () => ({
-  sendAlert: vi.fn().mockResolvedValue(true),
+  sendAlert: (...args: unknown[]) => _sendAlertFn(...args),
   formatUserSignalEmbed: vi.fn().mockReturnValue({}),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
-  getSupabaseAdmin: vi.fn().mockReturnValue({
-    from: vi.fn().mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
-    }),
-  }),
+  getSupabaseAdmin: vi.fn().mockImplementation(() => ({
+    from: (table: string) => {
+      if (table === 'kv_alert_dedup') {
+        return {
+          select: () => ({
+            eq: (_col: string, key: string) => ({
+              single: () => {
+                const row = kvStore.get(key)
+                return Promise.resolve({ data: row ?? null, error: null })
+              },
+            }),
+          }),
+          upsert: (row: KvRow) => {
+            kvStore.set(row.key, row)
+            return Promise.resolve({ error: null })
+          },
+        }
+      }
+      return { insert: (...args: unknown[]) => _insertFn(...args) }
+    },
+  })),
 }))
 
 vi.mock('@/lib/csrf', () => ({
@@ -32,10 +61,6 @@ vi.mock('@sentry/nextjs', () => ({
 }))
 
 import { POST } from '@/app/api/device-diagnostic/route'
-import { __resetForTests } from '@/app/api/device-diagnostic/_dedup'
-import { sendAlert } from '@/lib/discord-webhook'
-
-const mockSendAlert = sendAlert as ReturnType<typeof vi.fn>
 
 function makeRequest(deviceModel: string, hasStrFile = false): NextRequest {
   return new NextRequest('http://localhost/api/device-diagnostic', {
@@ -52,15 +77,16 @@ function makeRequest(deviceModel: string, hasStrFile = false): NextRequest {
 
 describe('device-diagnostic dedup', () => {
   beforeEach(() => {
-    __resetForTests()
-    mockSendAlert.mockClear()
+    kvStore.clear()
+    _insertFn = vi.fn().mockResolvedValue({ error: null })
+    _sendAlertFn = vi.fn().mockResolvedValue(true)
   })
 
   it('fires 1 alert for 10 calls with the same device model', async () => {
     for (let i = 0; i < 10; i++) {
       await POST(makeRequest('ResMed-AirSense10'))
     }
-    expect(mockSendAlert).toHaveBeenCalledTimes(1)
+    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
   })
 
   it('fires 2 alerts for two distinct device models (5 calls each)', async () => {
@@ -70,7 +96,7 @@ describe('device-diagnostic dedup', () => {
     for (let i = 0; i < 5; i++) {
       await POST(makeRequest('Philips-DreamStation'))
     }
-    expect(mockSendAlert).toHaveBeenCalledTimes(2)
+    expect(_sendAlertFn).toHaveBeenCalledTimes(2)
   })
 
   it('re-fires alert for same model after 24h TTL elapses', async () => {
@@ -78,41 +104,56 @@ describe('device-diagnostic dedup', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => fakeNow)
 
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(mockSendAlert).toHaveBeenCalledTimes(1)
+    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
 
     // Still within 24h — no second alert
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(mockSendAlert).toHaveBeenCalledTimes(1)
+    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
 
     // Advance past 24h window
     fakeNow += 24 * 60 * 60 * 1000 + 1
 
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(mockSendAlert).toHaveBeenCalledTimes(2)
+    expect(_sendAlertFn).toHaveBeenCalledTimes(2)
 
     vi.restoreAllMocks()
   })
 
   it('writes device_diagnostics row on every request regardless of dedup state', async () => {
-    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
-    const insertSpy = vi.fn().mockResolvedValue({ error: null })
-    ;(getSupabaseAdmin as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: vi.fn().mockReturnValue({ insert: insertSpy }),
-    })
-
     const callCount = 10
     for (let i = 0; i < callCount; i++) {
       await POST(makeRequest('ResMed-AirSense10'))
     }
+    expect(_insertFn).toHaveBeenCalledTimes(callCount)
+  })
 
-    expect(insertSpy).toHaveBeenCalledTimes(callCount)
+  it('cold-start simulation: 3 cold-starts × 10 requests produce exactly 1 alert', async () => {
+    // Each vi.resetModules() + re-import simulates a Vercel cold-start.
+    // kvStore (shared module-level Map) persists across resets, simulating the DB.
+    // _sendAlertFn is a shared reference so calls from all module instances are counted.
+    let totalAlerts = 0
+
+    for (let coldStart = 0; coldStart < 3; coldStart++) {
+      vi.resetModules()
+      const { POST: freshPOST } = await import('@/app/api/device-diagnostic/route')
+
+      for (let i = 0; i < 10; i++) {
+        await freshPOST(makeRequest('ResMed-ColdStart'))
+      }
+
+      totalAlerts += _sendAlertFn.mock.calls.length
+      _sendAlertFn.mockClear()
+    }
+
+    expect(totalAlerts).toBe(1)
   })
 })
 
 describe('device-diagnostic route — validation and error boundaries', () => {
   beforeEach(() => {
-    __resetForTests()
-    mockSendAlert.mockClear()
+    kvStore.clear()
+    _insertFn = vi.fn().mockResolvedValue({ error: null })
+    _sendAlertFn = vi.fn().mockResolvedValue(true)
     vi.mocked(Sentry.captureException).mockClear()
     vi.mocked(Sentry.captureMessage).mockClear()
   })
@@ -191,9 +232,22 @@ describe('device-diagnostic route — validation and error boundaries', () => {
   it('captures Sentry exception but still returns 200 when Supabase insert errors', async () => {
     const { getSupabaseAdmin } = await import('@/lib/supabase/server')
     vi.mocked(getSupabaseAdmin).mockReturnValueOnce({
-      from: vi.fn().mockReturnValue({
-        insert: vi.fn().mockResolvedValue({ error: { message: 'DB constraint violation' } }),
-      }),
+      from: (table: string) => {
+        if (table === 'kv_alert_dedup') {
+          return {
+            select: () => ({
+              eq: (_col: string, key: string) => ({
+                single: () => Promise.resolve({ data: kvStore.get(key) ?? null, error: null }),
+              }),
+            }),
+            upsert: (row: KvRow) => {
+              kvStore.set(row.key, row)
+              return Promise.resolve({ error: null })
+            },
+          }
+        }
+        return { insert: vi.fn().mockResolvedValue({ error: { message: 'DB constraint violation' } }) }
+      },
     } as unknown as ReturnType<typeof getSupabaseAdmin>)
     const res = await POST(makeRequest('ResMed-AirSense10'))
     expect(res.status).toBe(200)

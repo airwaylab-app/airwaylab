@@ -30,11 +30,11 @@ test.describe('Demo Mode Flow', () => {
     await expect(page.getByText('Upload Your Data')).toBeVisible();
   });
 
-  // ── Demo loads via "Try sample data" button ─────────────────
-  test('"Try sample data" button loads demo', async ({ page }) => {
+  // ── Demo loads via demo CTA button ──────────────────────────
+  test('demo CTA button loads demo', async ({ page }) => {
     await page.goto('/analyze');
 
-    await page.getByText('Try sample data').click();
+    await page.getByText('See a demo analysis — no file needed →').click();
 
     // Wait for dashboard tabs
     await expect(

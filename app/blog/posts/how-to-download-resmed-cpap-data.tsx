@@ -428,7 +428,7 @@ export default function HowToDownloadResMedCPAPData() {
               How do I download data from my ResMed AirSense 10?
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Power off the machine, remove the SD card from the right side panel, insert it into
+              Power off the machine, remove the SD card from the left side, behind a small cover panel, insert it into
               your computer, and open the DATALOG folder. The .edf files inside contain your full
               therapy data. Analysis tools like OSCAR and AirwayLab can read these files directly.
             </p>
