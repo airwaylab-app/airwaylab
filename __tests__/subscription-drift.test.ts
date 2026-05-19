@@ -3,7 +3,8 @@
  *
  * Covers: syncRole called for downgrade_missed users with a discord_id,
  * discord_role_events row written with correct action on success/failure,
- * Sentry level is 'info' when auto-corrected and 'warning' when fix fails.
+ * Sentry level is 'info' when auto-corrected and 'warning' when fix fails,
+ * Stripe API fallback for webhook-blind profiles (AIR-1851).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -33,7 +34,20 @@ vi.mock('@/lib/discord-webhook', () => ({
   COLORS: { amber: 0xf59e0b },
 }));
 
-// Supabase mock — tracks insert calls
+// Stripe mock — must use function (not arrow) since Stripe is called with `new`
+const mockSubscriptionsList = vi.fn();
+vi.mock('stripe', () => {
+  const MockStripe = function MockStripe() {
+    return {
+      subscriptions: {
+        list: (...args: unknown[]) => mockSubscriptionsList(...args),
+      },
+    };
+  };
+  return { default: MockStripe };
+});
+
+// Supabase mock — tracks insert/upsert calls
 const insertCalls: Array<{ table: string; data: unknown }> = [];
 
 const mockFrom = vi.fn();
@@ -53,28 +67,19 @@ function makeRequest(secret = 'test-secret'): NextRequest {
 }
 
 /**
- * Build a from-mock that uses method-chain discrimination to handle all query patterns:
- *   1. .select().in('tier', [...])                → paid profiles (returns [profile])
- *   2. .select().eq('tier','community').not()...  → community profiles with subs (returns [])
- *   3. .select().eq('tier','community').not().is() → webhook-blind profiles (returns [])
- *   4. .update().eq('id', ...)                    → fix update (returns { error: null })
- *
- * The profiles chain tracks call order to distinguish the two community queries:
- * - first .not() call → communityWithSubs (returns data: [])
- * - second .not() call → webhookBlind (returns data: [])
+ * Build a profiles chain that handles all query patterns:
+ *   1. .select().in('tier', [...])                    -> paid profiles
+ *   2. .select().eq('tier','community').not()         -> community with subs
+ *   3. .select().eq().not('stripe_customer_id').is()  -> webhook-blind profiles
+ *   4. .update().eq('id', ...)                        -> fix update
  */
 function buildProfilesChain(profile: Record<string, unknown>): Record<string, unknown> {
   const chain: Record<string, unknown> = {};
   chain['select'] = vi.fn().mockImplementation(() => chain);
   chain['in'] = vi.fn().mockResolvedValue({ data: [profile], error: null });
   chain['eq'] = vi.fn().mockImplementation(() => chain);
-  // Discriminate by field: communityWithSubs uses .not('subscriptions',...) → resolves directly.
-  // webhookBlind uses .not('stripe_customer_id',...).is(...) → returns chain so .is() can follow.
-  chain['not'] = vi.fn().mockImplementation((field: string) => {
-    if (field === 'stripe_customer_id') return chain; // webhookBlind — needs .is() next
-    return Promise.resolve({ data: [], error: null }); // communityWithSubs — terminal call
-  });
-  chain['is'] = vi.fn().mockResolvedValue({ data: [], error: null }); // webhookBlind result: no blind profiles
+  chain['not'] = vi.fn().mockResolvedValue({ data: [], error: null });
+  chain['is'] = vi.fn().mockResolvedValue({ data: [], error: null });
   chain['update'] = vi.fn().mockImplementation(() => ({
     eq: vi.fn().mockResolvedValue({ error: null }),
   }));
@@ -93,6 +98,10 @@ function buildFromImpl(
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        upsert: vi.fn().mockImplementation((data: unknown) => {
+          insertCalls.push({ table, data });
+          return Promise.resolve({ error: null });
+        }),
       };
     }
     if (table === 'discord_role_events') {
@@ -194,9 +203,11 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
     vi.resetModules();
     insertCalls.length = 0;
     process.env.CRON_SECRET = 'test-secret';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
     mockIsDiscordConfigured.mockReturnValue(true);
     mockSyncRole.mockResolvedValue({ ok: true });
     mockSendAlert.mockResolvedValue(undefined);
+    mockSubscriptionsList.mockResolvedValue({ data: [] });
   });
 
   it('calls syncRole for a downgrade_missed user who has a discord_id', async () => {
@@ -291,6 +302,9 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
     vi.resetModules();
     insertCalls.length = 0;
     process.env.CRON_SECRET = 'test-secret';
+    // Ensure Stripe is not configured so we hit the webhook_never_ran path, not stripe_recovered.
+    // STRIPE_SECRET_KEY can leak from earlier describe blocks since vi.clearAllMocks() doesn't reset env.
+    delete process.env.STRIPE_SECRET_KEY;
     mockIsDiscordConfigured.mockReturnValue(false);
     mockSyncRole.mockResolvedValue(true);
     mockSendAlert.mockResolvedValue(undefined);
@@ -310,7 +324,7 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
 
     expect(body.webhook_never_ran).toBe(1);
     expect(mockCaptureSentryMessage).toHaveBeenCalledWith(
-      'Subscription webhook never ran — manual review required',
+      'Subscription webhook never ran — Stripe not configured, manual review required',
       expect.objectContaining({
         tags: expect.objectContaining({ drift_type: 'webhook_never_ran' }),
         extra: expect.objectContaining({ user_id: 'user-blind' }),
@@ -360,6 +374,160 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
     );
   });
 });
+
+function buildStripeTestFromImpl(
+  webhookBlindProfile: Record<string, unknown>
+): (table: string) => Record<string, unknown> {
+  return (table: string) => {
+    if (table === 'profiles') {
+      const chain: Record<string, unknown> = {};
+      chain['select'] = vi.fn().mockImplementation(() => chain);
+      chain['in'] = vi.fn().mockResolvedValue({ data: [], error: null });
+      chain['eq'] = vi.fn().mockImplementation(() => chain);
+      chain['not'] = vi.fn().mockImplementation((field: string) => {
+        if (field === 'stripe_customer_id') return chain;
+        return Promise.resolve({ data: [], error: null });
+      });
+      chain['is'] = vi.fn().mockResolvedValue({ data: [webhookBlindProfile], error: null });
+      chain['update'] = vi.fn().mockImplementation(() => ({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }));
+      return chain;
+    }
+    if (table === 'subscriptions') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        upsert: vi.fn().mockImplementation((data: unknown) => {
+          insertCalls.push({ table, data });
+          return Promise.resolve({ error: null });
+        }),
+      };
+    }
+    return {};
+  };
+}
+
+// ── Tests: Stripe API fallback (AIR-1851) ────────────────────────
+
+describe('subscription-drift cron — Stripe API fallback for webhook-blind profiles', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    insertCalls.length = 0;
+    process.env.CRON_SECRET = 'test-secret';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+    process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID = 'price_sup_mo';
+    process.env.NEXT_PUBLIC_STRIPE_SUPPORTER_YEARLY_PRICE_ID = 'price_sup_yr';
+    process.env.NEXT_PUBLIC_STRIPE_CHAMPION_MONTHLY_PRICE_ID = 'price_champ_mo';
+    process.env.NEXT_PUBLIC_STRIPE_CHAMPION_YEARLY_PRICE_ID = 'price_champ_yr';
+    mockIsDiscordConfigured.mockReturnValue(false);
+    mockSendAlert.mockResolvedValue(undefined);
+  });
+
+  it('inserts subscription row and upgrades profile when Stripe has active subscription', async () => {
+    const webhookBlindProfile = { id: 'user-blind', stripe_customer_id: 'cus_test_123', subscriptions: null };
+
+    mockSubscriptionsList.mockResolvedValue({
+      data: [{
+        id: 'sub_recovered_1',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [{
+            price: { id: 'price_sup_mo' },
+            current_period_start: 1700000000,
+            current_period_end: 1702592000,
+          }],
+        },
+      }],
+    });
+
+    mockFrom.mockImplementation(buildStripeTestFromImpl(webhookBlindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.stripe_recovered).toBe(1);
+    expect(body.fixed).toBe(1);
+
+    const subInsert = insertCalls.find((c) => c.table === 'subscriptions');
+    expect(subInsert?.data).toMatchObject({
+      user_id: 'user-blind',
+      stripe_subscription_id: 'sub_recovered_1',
+      tier: 'supporter',
+      status: 'active',
+    });
+  });
+
+  it('emits Sentry warning when stripe_recovered mismatch is corrected', async () => {
+    const webhookBlindProfile = { id: 'user-sentry', stripe_customer_id: 'cus_sentry_456', subscriptions: null };
+
+    mockSubscriptionsList.mockResolvedValue({
+      data: [{
+        id: 'sub_sentry_1',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [{ price: { id: 'price_champ_mo' }, current_period_start: 1700000000, current_period_end: 1702592000 }],
+        },
+      }],
+    });
+
+    mockFrom.mockImplementation(buildStripeTestFromImpl(webhookBlindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    expect(mockCaptureSentryMessage).toHaveBeenCalledWith(
+      'Stripe-active subscription recovered — webhook was never processed',
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ drift_type: 'stripe_recovered' }),
+        extra: expect.objectContaining({
+          user_id: 'user-sentry',
+          stripe_subscription_id: 'sub_sentry_1',
+          tier: 'champion',
+        }),
+      })
+    );
+  });
+
+  it('skips profile when Stripe returns no active subscription', async () => {
+    const webhookBlindProfile = { id: 'user-no-sub', stripe_customer_id: 'cus_no_sub', subscriptions: null };
+
+    mockSubscriptionsList.mockResolvedValue({ data: [] });
+    mockFrom.mockImplementation(buildStripeTestFromImpl(webhookBlindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.stripe_recovered).toBe(0);
+    expect(body.fixed).toBe(0);
+    expect(insertCalls.filter((c) => c.table === 'subscriptions')).toHaveLength(0);
+  });
+
+  it('returns webhook_never_ran=1 and skips auto-fix when Stripe is not configured', async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    const webhookBlindProfile = { id: 'user-no-stripe', stripe_customer_id: 'cus_no_stripe', subscriptions: null };
+
+    mockFrom.mockImplementation(buildStripeTestFromImpl(webhookBlindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.webhook_never_ran).toBe(1);
+    expect(body.fixed).toBe(0);
+    expect(mockSubscriptionsList).not.toHaveBeenCalled();
+  });
+});
+
+// ── Tests: aggregate Sentry error ────────────────────────────────
 
 describe('subscription-drift cron — aggregate Sentry error', () => {
   beforeEach(() => {

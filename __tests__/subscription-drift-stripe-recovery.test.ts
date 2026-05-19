@@ -152,10 +152,11 @@ describe('subscription-drift cron — Stripe API recovery for webhook_never_ran'
     expect(mockSubscriptionsUpsert).toHaveBeenCalledTimes(1);
     expect(mockProfilesUpdate).toHaveBeenCalledTimes(1);
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'Stripe subscription recovered via API in drift cron',
+      'Stripe-active subscription recovered — webhook was never processed',
       expect.objectContaining({
+        level: 'warning',
         tags: expect.objectContaining({ drift_type: 'stripe_recovered' }),
-        extra: expect.objectContaining({ user_id: 'user-blind', stripe_customer_id: 'cus_abc123' }),
+        extra: expect.objectContaining({ user_id: 'user-blind', stripe_customer_id: 'cus_abc123', stripe_subscription_id: 'sub_abc123' }),
       })
     );
   });
