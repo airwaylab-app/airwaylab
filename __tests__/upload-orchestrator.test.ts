@@ -150,6 +150,10 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('Cloud sync is not available. Please sign in again.')).toBe('auth');
   });
 
+  it('classifies auth errors from checkExisting 401', () => {
+    expect(classifyUploadError('Cloud sync requires an active session. Please sign in again.')).toBe('auth');
+  });
+
   it('classifies consent errors (not enabled)', () => {
     expect(classifyUploadError('Cloud sync is not enabled. Enable it from your dashboard to back up your files.')).toBe('consent');
   });
@@ -175,7 +179,7 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('')).toBe('unknown');
   });
 
-  it('is case-insensitive', () => {
+  it('is case-insensitive for all categories', () => {
     expect(classifyUploadError('CLOUD SYNC REQUIRES AN ACTIVE SESSION. PLEASE SIGN IN AGAIN.')).toBe('auth');
     expect(classifyUploadError('HASH FAILED for file 1: error')).toBe('hash_worker');
     expect(classifyUploadError('FAILED TO FETCH')).toBe('network');
