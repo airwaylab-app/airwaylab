@@ -107,6 +107,7 @@ function AnalyzePageInner() {
   const [persistedData, setPersistedData] = useState<{
     nights: NightResult[];
     therapyChangeDate: string | null;
+    savedAt?: number;
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxFilesRef = useRef<File[]>([]);
@@ -539,15 +540,16 @@ function AnalyzePageInner() {
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
-    // Bypass window filter for demo mode, fresh uploads (state.nights), and non-finite/zero windows.
-    // Only persisted history (previous sessions) is subject to the tier window.
-    if (isDemo || state.nights.length > 0 || !isFinite(windowDays) || windowDays <= 0) return raw;
+    // Bypass window filter for: demo, fresh uploads, recent restored sessions (same-day reload),
+    // and non-finite/zero windows. Old persisted history is subject to the tier window.
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore || !isFinite(windowDays) || windowDays <= 0) return raw;
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - windowDays);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     return raw.filter((n) => n.dateStr >= cutoffStr);
-  }, [isDemo, state.nights, persistedData?.nights, tier]);
+  }, [isDemo, state.nights, persistedData?.nights, persistedData?.savedAt, tier]);
 
   const hiddenNightCount = useMemo<number>(() => {
     if (isDemo) return 0;
@@ -566,14 +568,14 @@ function AnalyzePageInner() {
   // Tier-gated history window: only nights within the calendar window are visible.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
-    // Demo mode and fresh uploads bypass the window — sample data and just-uploaded
-    // SD card data should always be visible regardless of tier window.
-    if (isDemo || state.nights.length > 0) return nights;
+    // Bypass for: demo, fresh uploads, and recent restored sessions (same-day reload).
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore) return nights;
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
     return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  }, [nights, tier, isDemo, state.nights.length]);
+  }, [nights, tier, isDemo, state.nights.length, persistedData?.savedAt]);
 
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
@@ -733,6 +735,7 @@ function AnalyzePageInner() {
       {status === 'idle' && !isDemo && (
         !persistedData ? (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
@@ -744,15 +747,13 @@ function AnalyzePageInner() {
                 How to get your ResMed data
               </Link>
             </p>
-
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
       )}
@@ -888,16 +889,20 @@ function AnalyzePageInner() {
               <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Storage limit reached</span>
-                  {' '}&mdash; {persistenceWarning}
+                  {' '}&mdash; {hasCloudSyncConsent()
+                    ? `Viewing your ${nights.length} most recent night${nights.length !== 1 ? 's' : ''}. All your data is safely backed up.`
+                    : persistenceWarning}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                  onClick={handleClearLocalData}
-                >
-                  Clear saved data
-                </Button>
+                {!hasCloudSyncConsent() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                    onClick={handleClearLocalData}
+                  >
+                    Clear saved data
+                  </Button>
+                )}
               </div>
             </div>
           )}

@@ -359,6 +359,10 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
   });
 
   // --- Read data records ---
+  const readerBySignalIndex = new Map<number, ChannelReader>(
+    readers.map((r) => [r.signalIndex, r])
+  );
+
   let dataOffset = header.headerBytes;
 
   for (let rec = 0; rec < actualNumRecords; rec++) {
@@ -368,7 +372,7 @@ export function parsePLD(buffer: ArrayBuffer, _filePath: string): PLDData | null
       const samplesInRecord = signals[sig]!.numSamples;
 
       // Check if this signal is one we're reading
-      const reader = readers.find((r) => r.signalIndex === sig);
+      const reader = readerBySignalIndex.get(sig);
       if (reader) {
         for (let s = 0; s < samplesInRecord; s++) {
           const digitalValue = view.getInt16(recordPtr + s * 2, true);
