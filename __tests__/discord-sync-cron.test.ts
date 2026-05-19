@@ -103,7 +103,7 @@ describe('discord-sync cron', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = 'test-secret';
-    mockSyncRole.mockResolvedValue(true);
+    mockSyncRole.mockResolvedValue({ ok: true });
     mockSendAlert.mockResolvedValue(undefined);
   });
 
