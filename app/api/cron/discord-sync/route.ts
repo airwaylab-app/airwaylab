@@ -9,9 +9,11 @@
  * but never manually click "Connect" on their account page.
  *
  * Persistent-failure backoff: after DISCORD_SYNC_ERROR_THRESHOLD consecutive
- * Discord API errors the row is excluded from the query. This prevents
+ * Discord API errors the row is excluded from normal queries. This prevents
  * permanently-failing usernames from generating unbounded Sentry noise.
- * An operator can reset a user by zeroing discord_sync_error_count in the DB.
+ * Users are retried automatically after DISCORD_SYNC_RECOVERY_WINDOW_MS so
+ * that a transient bot-permission outage self-heals without manual SQL resets.
+ * An operator can also manually reset by zeroing discord_sync_error_count.
  *
  * Protected by CRON_SECRET.
  */
@@ -30,6 +32,9 @@ export const dynamic = 'force-dynamic';
 
 /** Stop retrying after this many consecutive Discord API errors. */
 const DISCORD_SYNC_ERROR_THRESHOLD = 5;
+
+/** Re-admit threshold-exceeded users for a retry attempt after this window. */
+const DISCORD_SYNC_RECOVERY_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -52,15 +57,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Find paid users with a saved username but no discord_id who haven't
-    // exceeded the consecutive-error threshold.
+    // Find paid users with a saved username but no discord_id. Include users
+    // either below the error threshold OR above it with a stale last_error
+    // (recovery window) so that transient bot-permission outages self-heal
+    // without manual SQL resets.
+
+    const recoveryBefore = new Date(Date.now() - DISCORD_SYNC_RECOVERY_WINDOW_MS).toISOString();
     const { data: unlinked, error: queryError } = await supabase
       .from('profiles')
       .select('id, discord_username, tier, discord_sync_error_count')
       .not('discord_username', 'is', null)
       .is('discord_id', null)
       .in('tier', ['supporter', 'champion'])
-      .lt('discord_sync_error_count', DISCORD_SYNC_ERROR_THRESHOLD);
+      .or(`discord_sync_error_count.lt.${DISCORD_SYNC_ERROR_THRESHOLD},discord_sync_last_error.lt.${recoveryBefore}`);
 
     if (queryError) {
       console.error('[discord-sync] Query failed:', queryError);

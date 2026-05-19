@@ -3,7 +3,8 @@
  *
  * Covers: auth guard, persistent-failure backoff (error count increment,
  * threshold exclusion), success path (counter reset), not-found path,
- * Sentry emission rules (first + threshold only), and ops alert.
+ * Sentry emission rules (first + threshold only), ops alert, and
+ * recovery-window self-healing (threshold-exceeded users retried after 24h).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -39,7 +40,7 @@ type MockBuilder = {
   not: ReturnType<typeof vi.fn>;
   is: ReturnType<typeof vi.fn>;
   in: ReturnType<typeof vi.fn>;
-  lt: ReturnType<typeof vi.fn>;
+  or: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   neq: ReturnType<typeof vi.fn>;
   maybeSingle: ReturnType<typeof vi.fn>;
@@ -56,14 +57,13 @@ function makeBuilder(result: { data: unknown; error: unknown }): MockBuilder {
     not: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
-    lt: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
-  // The last awaited call on the chain resolves to result
-  // The `lt` filter is the final link before await in the query path.
-  b.lt.mockResolvedValue(result);
+  // The `.or()` filter is the final link before await in the query path.
+  b.or.mockResolvedValue(result);
   b.eq.mockResolvedValue({ error: null });
   return b;
 }
@@ -139,16 +139,18 @@ describe('discord-sync cron', () => {
     );
   });
 
-  it('excludes users at the error threshold from the query', async () => {
-    // The cron filters lt('discord_sync_error_count', 5) — this is verified
-    // by checking the lt() call receives the threshold value.
+  it('uses an OR filter combining error threshold and recovery window', async () => {
+    // The cron uses .or() so threshold-exceeded users with a stale last_error
+    // are re-admitted for a recovery attempt after the outage resolves.
     const builder = makeBuilder({ data: [], error: null });
     mockFrom.mockReturnValue(builder);
 
     const { GET } = await import('@/app/api/cron/discord-sync/route');
     await GET(makeRequest());
 
-    expect(builder.lt).toHaveBeenCalledWith('discord_sync_error_count', 5);
+    expect(builder.or).toHaveBeenCalledWith(
+      expect.stringMatching(/discord_sync_error_count\.lt\.5,discord_sync_last_error\.lt\./)
+    );
   });
 
   it('fires Sentry only on first error, not intermediate retries', async () => {
@@ -199,13 +201,13 @@ describe('discord-sync cron', () => {
       if (table === 'profiles') {
         profilesCallCount++;
         if (profilesCallCount === 1) {
-          // Initial query chain: select → not → is → in → lt (resolves to profile list)
+          // Initial query chain: select → not → is → in → or (resolves to profile list)
           return {
             select: vi.fn().mockReturnThis(),
             not: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
-            lt: vi.fn().mockResolvedValue({ data: [p], error: null }),
+            or: vi.fn().mockResolvedValue({ data: [p], error: null }),
           };
         }
         if (profilesCallCount === 2) {
@@ -239,6 +241,64 @@ describe('discord-sync cron', () => {
     const { GET } = await import('@/app/api/cron/discord-sync/route');
     await GET(makeRequest());
 
+    expect(updateData).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ discord_sync_error_count: 0, discord_sync_last_error: null }),
+      ])
+    );
+  });
+
+  it('resets error count to 0 when a threshold-exceeded user succeeds (recovery path)', async () => {
+    // Simulates a user that hit >= 5 errors during a bot-permission outage.
+    // When permissions recover and the user is re-admitted via the recovery
+    // window OR condition, a successful response must reset their counter.
+    const p = profile({ discord_sync_error_count: 7 });
+
+    let profilesCallCount = 0;
+    const updateData: Array<Record<string, unknown>> = [];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        profilesCallCount++;
+        if (profilesCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            not: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            in: vi.fn().mockReturnThis(),
+            or: vi.fn().mockResolvedValue({ data: [p], error: null }),
+          };
+        }
+        if (profilesCallCount === 2) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+          };
+        }
+        return {
+          update: vi.fn().mockImplementation((data: Record<string, unknown>) => {
+            updateData.push(data);
+            return { eq: vi.fn().mockResolvedValue({ error: null }) };
+          }),
+        };
+      }
+      if (table === 'discord_role_events') {
+        return { insert: vi.fn().mockResolvedValue({ error: null }) };
+      }
+      if (table === 'discord_pending_roles') {
+        return { delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) };
+      }
+      return makeBuilder({ data: [], error: null });
+    });
+
+    mockSearchGuildMember.mockResolvedValue({ status: 'found', discordId: 'disc-456' });
+
+    const { GET } = await import('@/app/api/cron/discord-sync/route');
+    await GET(makeRequest());
+
+    // The auto-link update must reset the counter to 0 regardless of prior count
     expect(updateData).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ discord_sync_error_count: 0, discord_sync_last_error: null }),
