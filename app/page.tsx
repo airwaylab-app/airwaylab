@@ -167,7 +167,7 @@ const landingFaqData = [
   {
     question: 'What PAP machines does AirwayLab support?',
     answer:
-      'AirwayLab currently supports ResMed AirSense 10, AirCurve 10, and partially AirSense 11. These machines store detailed flow waveform data in EDF format on the SD card. Philips Respironics and other manufacturers use different data formats and are not currently supported.',
+      'AirwayLab supports ResMed AirSense 10, AirSense 11 AutoSet, AirSense 11 Elite, and AirCurve 10 series machines. These machines store detailed flow waveform data in EDF format on the SD card. Philips Respironics and other manufacturers use different data formats and are not currently supported.',
   },
   {
     question: 'Is my sleep data private?',

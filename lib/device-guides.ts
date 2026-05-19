@@ -82,7 +82,7 @@ export const DEVICE_GUIDES: DeviceGuide[] = [
     fullName: 'ResMed AirSense 11',
     manufacturer: 'ResMed',
     type: 'Auto',
-    supportLevel: 'partial',
+    supportLevel: 'full',
     sdCardLocation: 'Right side of the machine, behind a flip-open door (same position as AirSense 10)',
     sdCardType: 'Standard SD card. Note: some AirSense 11 models ship without an SD card — you may need to purchase one separately.',
     datalogPath: 'DATALOG folder on the SD card root',
@@ -99,30 +99,22 @@ export const DEVICE_GUIDES: DeviceGuide[] = [
       'Insert the SD card into your computer.',
       'Go to https://airwaylab.app/analyze and click "Upload Your SD Card."',
       'Select the SD card or DATALOG folder. AirwayLab detects the AirSense 11 format automatically.',
-      'Results may show partial data for some metrics. This is expected — see the note below.',
+      'Results show full flow limitation analysis including Glasgow Index, WAT, and NED scores.',
     ],
     tips: [
-      'AirSense 11 support is partial. The core engines (Glasgow Index, WAT, NED) work with AirSense 11 flow data, but some machine settings extraction may be incomplete due to changed signal names in STR.edf.',
-      'If you see "Unknown" for pressure settings in your results, this is an AirSense 11 compatibility limitation, not a data problem.',
-      'The AirSense 11 uses the same SD card slot and EDF format family as the AirSense 10, so the upload process is identical.',
-      'ResMed\'s myAir app works differently on AirSense 11 (cellular upload). The SD card data is more detailed than what myAir shows.',
+      'AirSense 11 AutoSet and AirSense 11 Elite are both fully supported for CPAP/APAP flow limitation analysis (Glasgow Index, WAT, NED).',
+      'Settings extraction (pressure, mode) works via the standard STR.edf signals.',
+      'The AirSense 11 uses the same SD card slot and DATALOG folder structure as the AirSense 10.',
+      "ResMed's myAir app uses cellular upload. The SD card data is more detailed than what myAir shows.",
     ],
     troubleshooting: [
       {
-        question: 'AirwayLab shows "partially supported device"',
-        answer: 'This is expected for AirSense 11. The flow waveform data is parsed correctly, but some metadata fields use different signal names than AirSense 10. Flow limitation analysis (Glasgow, WAT, NED) still works. Settings extraction may be incomplete.',
-      },
-      {
-        question: 'My AirSense 11 didn\'t come with an SD card',
-        answer: 'Some AirSense 11 models ship without a card. Buy any standard SD card (2GB or larger, FAT32 formatted), insert it, and the machine will start recording detailed data from the next session. Data is not retroactive — only nights after the card is inserted are recorded.',
-      },
-      {
-        question: 'Pressure settings show as "Unknown"',
-        answer: 'AirSense 11 uses different signal names in its settings file. AirwayLab may not extract all settings correctly. This doesn\'t affect the flow limitation analysis — only the settings display in the dashboard.',
+        question: "My AirSense 11 didn't come with an SD card",
+        answer: "Some AirSense 11 models ship without a card. Buy any standard SD card (2GB or larger, FAT32 formatted), insert it, and the machine will start recording detailed data from the next session. Data is not retroactive — only nights after the card is inserted are recorded.",
       },
     ],
     metaDescription:
-      'How to upload ResMed AirSense 11 data to AirwayLab. Partial support for flow limitation analysis. Free, browser-based guide with troubleshooting.',
+      'How to upload ResMed AirSense 11 AutoSet and Elite data to AirwayLab. Full support for CPAP/APAP flow limitation analysis. Free, browser-based guide.',
   },
   {
     slug: 'aircurve-10',
