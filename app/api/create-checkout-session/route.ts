@@ -10,6 +10,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 const CheckoutSchema = z.object({
   priceId: z.string({ error: 'Missing priceId' }).min(1, 'Missing priceId').max(200),
+  source: z.string().max(50).optional(),
 });
 
 // M5: Whitelist of allowed price IDs
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
     return NextResponse.json({ error: firstError }, { status: 400 });
   }
-  const { priceId } = parsed.data;
+  const { priceId, source } = parsed.data;
 
   // M5: Validate priceId against allowed list
   const allowedPrices = getAllowedPriceIds();
@@ -143,6 +144,9 @@ export async function POST(request: NextRequest) {
     // M3: Use env var for origin, fallback to hardcoded domain
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://airwaylab.app';
 
+    const sessionMeta: Record<string, string> = { supabase_user_id: user.id };
+    if (source) sessionMeta.source = source;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -150,9 +154,9 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/analyze?checkout=success`,
       cancel_url: `${appUrl}/pricing`,
       subscription_data: {
-        metadata: { supabase_user_id: user.id },
+        metadata: sessionMeta,
       },
-      metadata: { supabase_user_id: user.id },
+      metadata: sessionMeta,
     });
 
     return NextResponse.json({ url: session.url });
