@@ -144,24 +144,21 @@ export async function GET(request: NextRequest) {
         }).eq('id', profile.id);
 
         // Assign role
-        const syncResult = await syncRole(result.discordId, profile.tier);
+        const syncOk = await syncRole(result.discordId, profile.tier);
 
-        // Audit log — record outcome including failure details for diagnostics
+        // Audit log — record outcome for diagnostics
         await supabase.from('discord_role_events').insert({
           user_id: profile.id,
           discord_id: result.discordId,
           role_id: profile.tier,
-          action: syncResult.ok ? 'assign' : 'assign_failed',
+          action: syncOk ? 'assign' : 'assign_failed',
           reason: 'cron_auto_resolve',
-          http_status: syncResult.httpStatus ?? null,
-          error_message: syncResult.errorBody?.slice(0, 500) ?? null,
         });
 
-        if (!syncResult.ok) {
+        if (!syncOk) {
           errors++;
           console.error(
-            `[discord-sync] Role assign failed for ${profile.discord_username} ` +
-            `(HTTP ${syncResult.httpStatus}): ${syncResult.errorBody}`
+            `[discord-sync] Role assign failed for ${profile.discord_username}`
           );
           // Revert the discord_id write — user is linked in DB but has no role,
           // which is worse than being unlinked (cron would otherwise stop retrying).
