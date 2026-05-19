@@ -222,18 +222,47 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 <span className="text-[10px] text-muted-foreground">Mode</span>
                 <p className="text-xs font-medium">{n.settings.papMode}</p>
               </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">EPAP</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">IPAP</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">PS</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
-              </div>
+              {(() => {
+                const papMode = (n.settings.papMode ?? '').toUpperCase();
+                const isCPAP = papMode === 'CPAP';
+                const isAPAP = papMode.includes('APAP') || papMode === 'AUTOSET';
+                const isASV = papMode === 'ASV' || papMode === 'ASVAUTO';
+                if (isCPAP) {
+                  return (
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Pressure</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+                    </div>
+                  );
+                }
+                if (isAPAP) {
+                  return (
+                    <div className="col-span-2 sm:col-span-2">
+                      <span className="text-[10px] text-muted-foreground">Min / Max</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}–{n.settings.ipap || '—'}</p>
+                    </div>
+                  );
+                }
+                if (isASV) {
+                  return null;
+                }
+                return (
+                  <>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">EPAP</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">IPAP</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">PS</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
+                    </div>
+                  </>
+                );
+              })()}
               <div>
                 <span className="text-[10px] text-muted-foreground">Rise Time</span>
                 <p className="font-mono text-xs font-medium tabular-nums">{n.settings.riseTime !== null ? n.settings.riseTime : '—'}</p>
@@ -458,6 +487,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         isDemo={isDemo}
         isNewUser={isNewUser}
         onOpenAuth={onOpenAuth}
+        isSharedView={isSharedView}
       />
 
       {/* Community Comparison — shows how your results compare */}
@@ -713,7 +743,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       )}
 
       {/* Upgrade prompt for community users — contextual to their data */}
-      {!isPaid && (() => {
+      {!isSharedView && !isPaid && (() => {
         const ifl = computeIFLRisk(n);
         const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk!);
         const msg = iflTier === 'good'
