@@ -38,6 +38,26 @@ export function isTransientServerError(errorMessage: string): boolean {
 }
 
 /**
+ * Error categories for top-level upload pipeline failures (cloud_upload_failed).
+ * Distinct from cloud_upload_partial_failure which covers per-file failures
+ * that are caught and retried within uploadFiles().
+ */
+export type UploadErrorCategory = 'auth' | 'consent' | 'hash_worker' | 'network' | 'unknown';
+
+/**
+ * Classify a top-level upload pipeline error for Sentry fingerprinting.
+ * Enables grouping cloud_upload_failed events by failure type rather than
+ * by raw error message, so each category surfaces as one actionable issue.
+ */
+export function classifyUploadError(error: string): UploadErrorCategory {
+  if (/sign in again/i.test(error)) return 'auth';
+  if (/not enabled|not available/i.test(error)) return 'consent';
+  if (/hash (failed|worker)/i.test(error)) return 'hash_worker';
+  if (/failed to fetch|networkerror|network timeout/i.test(error)) return 'network';
+  return 'unknown';
+}
+
+/**
  * Determine Sentry severity level for partial upload failures.
  * Escalates to 'error' when all files failed OR more than 5 files failed,
  * so that Sentry alerts trigger before floods accumulate unnoticed.
@@ -243,10 +263,12 @@ class UploadOrchestrator {
       this.releasePageExit();
       const error = err instanceof Error ? err.message : String(err);
       if (error !== 'Cancelled') {
+        const errorCategory = classifyUploadError(error);
         console.error('[upload-orchestrator] Upload failed:', error);
         Sentry.captureMessage('cloud_upload_failed', {
           level: 'error',
-          tags: { stage: this.state.status },
+          fingerprint: ['cloud_upload_failed', errorCategory],
+          tags: { stage: this.state.status, errorCategory },
           extra: { error, fileCount: nonEmptyFiles.length },
         });
       }

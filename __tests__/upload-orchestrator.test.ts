@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles } from '@/lib/storage/upload-orchestrator';
+import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles, classifyUploadError } from '@/lib/storage/upload-orchestrator';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -138,5 +138,46 @@ describe('filterUploadableFiles', () => {
     const { uploadable, emptyCount } = filterUploadableFiles(files);
     expect(uploadable).toHaveLength(2);
     expect(emptyCount).toBe(3);
+  });
+});
+
+describe('classifyUploadError', () => {
+  it('classifies auth errors from preflight 401', () => {
+    expect(classifyUploadError('Cloud sync requires an active session. Please sign in again.')).toBe('auth');
+  });
+
+  it('classifies auth errors from preflight 403', () => {
+    expect(classifyUploadError('Cloud sync is not available. Please sign in again.')).toBe('auth');
+  });
+
+  it('classifies consent errors (not enabled)', () => {
+    expect(classifyUploadError('Cloud sync is not enabled. Enable it from your dashboard to back up your files.')).toBe('consent');
+  });
+
+  it('classifies consent errors (not available without sign-in language)', () => {
+    expect(classifyUploadError('Cloud sync is not available on your current plan.')).toBe('consent');
+  });
+
+  it('classifies hash worker errors', () => {
+    expect(classifyUploadError('Hash failed for file 3: out of memory')).toBe('hash_worker');
+    expect(classifyUploadError('Hash worker failed')).toBe('hash_worker');
+  });
+
+  it('classifies network errors', () => {
+    expect(classifyUploadError('Failed to fetch')).toBe('network');
+    expect(classifyUploadError('NetworkError when attempting to fetch resource.')).toBe('network');
+    expect(classifyUploadError('Network timeout')).toBe('network');
+  });
+
+  it('returns unknown for unrecognised errors', () => {
+    expect(classifyUploadError('Could not enable cloud storage. Please try again or check Account Settings.')).toBe('unknown');
+    expect(classifyUploadError('Unexpected error')).toBe('unknown');
+    expect(classifyUploadError('')).toBe('unknown');
+  });
+
+  it('is case-insensitive', () => {
+    expect(classifyUploadError('CLOUD SYNC REQUIRES AN ACTIVE SESSION. PLEASE SIGN IN AGAIN.')).toBe('auth');
+    expect(classifyUploadError('HASH FAILED for file 1: error')).toBe('hash_worker');
+    expect(classifyUploadError('FAILED TO FETCH')).toBe('network');
   });
 });
