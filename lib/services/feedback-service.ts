@@ -4,6 +4,9 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { supabaseQuery } from './supabase-helpers'
 import { sendEmail } from '@/lib/email/send'
 import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook'
+import { payingUserContactAckEmail } from '@/lib/email/transactional'
+import { checkAndUpdateDedup } from '@/app/api/device-diagnostic/_dedup'
+import * as Sentry from '@sentry/nextjs'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -24,6 +27,57 @@ const TYPE_LABELS: Record<string, string> = {
   bug: 'Bug report',
   support: 'Support request',
   feedback: 'Feedback',
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+async function maybeSendContactAck(
+  input: FeedbackInput,
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+): Promise<void> {
+  if (!input.email) return
+
+  const meta = (input.metadata ?? {}) as Record<string, unknown>
+  const category = typeof meta.category === 'string' ? meta.category : undefined
+  const isBillingCategory = category === 'billing'
+
+  let isPayingUser = false
+  if (!isBillingCategory) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', input.email)
+      .single()
+
+    if (profile) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle()
+      isPayingUser = !!sub
+    }
+  }
+
+  if (!isBillingCategory && !isPayingUser) return
+
+  const now = new Date()
+  const { shouldFire } = await checkAndUpdateDedup(
+    supabase,
+    `contact_ack:${input.email}`,
+    now,
+    30 * 60 * 1000,
+  )
+  if (!shouldFire) return
+
+  const name = typeof meta.display_name === 'string' ? meta.display_name : null
+  const template = payingUserContactAckEmail(name)
+  await sendEmail({
+    to: input.email,
+    ...template,
+    metadata: { emailType: 'contact_ack_paying' },
+  })
 }
 
 // ── Service function ─────────────────────────────────────────
@@ -113,6 +167,10 @@ export function submitFeedback(
       email: input.email?.trim() ?? undefined,
       feedbackId,
     })])
+
+    void maybeSendContactAck(input, supabase).catch((err) => {
+      Sentry.captureException(err, { tags: { fn: 'maybeSendContactAck' } })
+    })
 
     return { ok: true as const }
   })

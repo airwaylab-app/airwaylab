@@ -177,3 +177,22 @@ export function remindDesktopEmail(
     `),
   }
 }
+
+// ── Paying-user contact acknowledgement ──────────────────────
+
+export function payingUserContactAckEmail(
+  name: string | null
+): { subject: string; html: string } {
+  const greeting = name ? `Hi ${name},` : 'Hi,'
+
+  return {
+    subject: `We received your message — someone from AirwayLab will follow up shortly`,
+    html: transactionalLayout(`
+      ${heading('Message received')}
+      ${paragraph(greeting)}
+      ${paragraph('Thanks for reaching out. We have received your message and a member of the AirwayLab team will respond within the hour.')}
+      ${paragraph('If your message is about billing or account access, this is our highest-priority queue and we aim to resolve it quickly.')}
+      ${paragraph('AirwayLab Team')}
+    `, `You're receiving this because you contacted AirwayLab. This is an automated acknowledgement — a team member will reply personally.`),
+  }
+}
