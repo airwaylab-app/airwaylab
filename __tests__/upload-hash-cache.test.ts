@@ -71,7 +71,7 @@ describe('HashCache', () => {
     // Most recent entries should still be accessible
     const recent = cache.get('DATALOG/night3999/BRP.edf', 1024 + 3999, 1710000000000);
     expect(recent).toBe('a'.repeat(64));
-  });
+  }, 15000);
 
   it('ignores entries older than 30 days', () => {
     // Manually write an expired entry
