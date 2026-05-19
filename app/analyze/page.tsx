@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
+import { syncAnalysisToCloud } from '@/lib/storage/nights-sync';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -251,6 +252,14 @@ function AnalyzePageInner() {
 
     // Store aggregate analysis data
     storeAnalysisData(currentNights).catch(() => { /* logged in client */ });
+
+    // Sync full analysis results to cloud (non-fatal)
+    if (userRef.current) {
+      syncAnalysisToCloud(currentNights).catch(err => {
+        Sentry.captureException(err, { extra: { context: 'analysis_cloud_sync' } });
+        // Non-fatal: local results still available
+      });
+    }
   }, [user, isDemo, state.nights, persistedData?.nights]);
 
   // Show GitHub star prompt after 30s in demo mode (once per session)
