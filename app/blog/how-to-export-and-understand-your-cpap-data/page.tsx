@@ -74,26 +74,42 @@ const faqJsonLd = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: 'How do I export data from my ResMed CPAP machine?',
+      name: 'How do I get my CPAP data onto my computer?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Power off your ResMed machine, remove the SD card from the side panel (AirSense 10/11) or under the humidifier chamber (S9), insert it into a card reader, and open the EDF files in an analysis tool like OSCAR or AirwayLab. No account or cloud service is required.',
+        text: 'Power off your machine, remove the SD card from its slot, and insert it into a computer using an SD card reader. Open OSCAR or AirwayLab to read the data. ResMed files are .edf; Philips files use .001 or Encore Pro format. The import process in either tool takes under a minute.',
       },
     },
     {
       '@type': 'Question',
-      name: 'What does flow limitation mean in CPAP data?',
+      name: 'What is the difference between AHI and flow limitation?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Flow limitation is partial narrowing of the upper airway during sleep that restricts airflow without triggering a full apnoea or hypopnoea event. It appears as a flat-topped inspiratory waveform rather than a normal rounded peak. It can persist even when AHI is low.',
+        text: 'AHI counts discrete breathing events that cross a defined threshold of length and airflow reduction. Flow limitation captures something different: the partial breath-peak flattening that can occur without registering as a scored event. Both are data points your clinician may want to review together.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Can I read my CPAP data without uploading it to the cloud?',
+      name: 'Can I analyse my data without installing software?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes. Your machine stores detailed data on its SD card. Tools like AirwayLab process this data entirely in your browser — nothing is uploaded and your data never leaves your device.',
+        text: 'Yes. AirwayLab runs entirely in your browser — no download, no account. Load your SD card data via the file picker and view trend charts and nightly summaries right away.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Is my data private when I use AirwayLab?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Standard analysis in AirwayLab runs locally in your browser using Web Workers. Nothing is transmitted. If you use optional AI-assisted features, the tool asks for explicit consent before any data leaves your device.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Which machines does AirwayLab support?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve series via SD card. For other manufacturers — Philips, Fisher & Paykel — OSCAR offers broader compatibility at this time.',
       },
     },
   ],
