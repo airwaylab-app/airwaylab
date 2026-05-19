@@ -382,8 +382,8 @@ export default function OSCARAlternativesWebCPAP2026() {
               },
               {
                 step: '2',
-                label: 'Flag unusual nights',
-                desc: 'Note any nights where metrics look unusual, or where you had poor sleep quality.',
+                label: 'Flag nights for closer review',
+                desc: 'Note any nights where metrics differ from your baseline, or where you had poor sleep quality.',
               },
               {
                 step: '3',
