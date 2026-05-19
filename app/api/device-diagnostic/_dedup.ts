@@ -16,12 +16,10 @@ interface KvRow {
  * and is shared across function instances.
  */
 export async function checkAndUpdateDedup(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   key: string,
   now: Date,
 ): Promise<{ shouldFire: boolean; suppressedCount: number }> {
-  if (!supabase) return { shouldFire: true, suppressedCount: 1 }
-
   const { data: existing } = await supabase
     .from('kv_alert_dedup')
     .select('last_fired_at, suppressed_count')
