@@ -1234,6 +1234,37 @@ export const blogPosts: BlogPost[] = [
     tags: ['ESS', 'Fatigue', 'UARS', 'Research'],
     ogDescription:
       'The Epworth Sleepiness Scale conflates sleepiness and fatigue. If your main symptom is exhaustion rather than drowsiness, the ESS may miss your problem entirely.',
+    faqItems: [
+      {
+        question: 'What is a normal Epworth Sleepiness Scale score?',
+        answer:
+          'A score of 0–9 is in the normal range. A score of 10 or above is in the excessive sleepiness range. Your sleep physician can put your score in context with your other symptoms and test results.',
+      },
+      {
+        question: 'What does an ESS score of 10 mean?',
+        answer:
+          'A score of 10 sits at the boundary between normal and mild-to-moderate excessive sleepiness. It is one data point — not a diagnosis. Discuss with your sleep physician what it means alongside your other symptoms.',
+      },
+      {
+        question: 'What does an ESS score of 16 or above mean?',
+        answer:
+          'A score of 16–24 is in the severe excessive sleepiness range. This is a signal to discuss further evaluation with your sleep specialist or GP.',
+      },
+      {
+        question: 'Can I have sleep apnea with a low Epworth score?',
+        answer:
+          'Yes. A low ESS does not rule out sleep-disordered breathing. The ESS measures subjective sleepiness — but many people whose primary complaint is fatigue (rather than the urge to doze off) score low on the ESS even when their breathing data shows significant flow limitation or RERAs. A sleep study or objective data review gives a more complete picture.',
+      },
+      {
+        question: 'What is the difference between the ESS and STOP-BANG?',
+        answer:
+          'The ESS measures how sleepy you feel during the day. STOP-BANG assesses risk factors for obstructive sleep apnea (snoring, BMI, neck size, age, etc.). They measure different things and are often used together in a clinical assessment.',
+      },
+      {
+        question: 'How many questions does the Epworth Sleepiness Scale have?',
+        answer: 'The ESS has 8 questions. Each is rated 0–3, giving a maximum score of 24.',
+      },
+    ],
   },
   {
     slug: 'what-is-cns-sensitization',
