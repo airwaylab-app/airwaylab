@@ -141,15 +141,15 @@ export async function GET(request: NextRequest) {
 
           // Revoke Discord role if user has one linked
           if (profile.discord_id && isDiscordConfigured()) {
-            const discordOk = await syncRole(profile.discord_id, 'community');
+            const syncResult = await syncRole(profile.discord_id, 'community');
             await supabase.from('discord_role_events').insert({
               user_id: profile.id,
               discord_id: profile.discord_id,
               role_id: 'community',
-              action: discordOk ? 'revoke' : 'revoke_failed',
+              action: syncResult.ok ? 'revoke' : 'revoke_failed',
               reason: 'drift_cron_cleanup',
             });
-            if (!discordOk) {
+            if (!syncResult.ok) {
               Sentry.captureMessage('Discord role revocation failed in drift cron', {
                 level: 'warning',
                 tags: { route: 'cron-subscription-drift', action: 'discord-remove-role-failed' },

@@ -128,27 +128,20 @@ export type SyncRoleResult = { ok: boolean; httpStatus?: number; errorBody?: str
 
 /**
  * Sync a user's Discord roles to match their subscription tier.
- * Removes all paid roles first (capturing a Sentry warning per failed DELETE),
- * then adds the correct one. Returns false if any removal or addition fails.
+ * Removes all paid roles first, then adds the correct one.
  */
-export async function syncRole(discordId: string, tier: string): Promise<boolean> {
-  if (!isDiscordConfigured()) return false;
+export async function syncRole(discordId: string, tier: string): Promise<SyncRoleResult> {
+  if (!isDiscordConfigured()) return { ok: false };
 
   try {
     const allPaidRoles = getAllPaidRoleIds();
     const targetRoleId = getTierRoleId(tier);
 
-    // Remove all paid roles — track failures individually and warn via Sentry
-    let removeAllOk = true;
+    // Remove all paid roles — log failures but don't abort (best-effort cleanup)
     for (const roleId of allPaidRoles) {
       const result = await removeMemberRole(discordId, roleId);
       if (!result.ok && result.httpStatus !== 404) {
-        removeAllOk = false;
-        Sentry.captureMessage('Discord role removal failed', {
-          level: 'warning',
-          tags: { action: 'discord-remove-role-failed' },
-          extra: { discordId, roleId, httpStatus: result.httpStatus, errorBody: result.errorBody?.slice(0, 500) },
-        });
+        console.error(`[discord] removeMemberRole failed (${result.httpStatus}): ${result.errorBody}`);
       }
     }
 
@@ -162,26 +155,26 @@ export async function syncRole(discordId: string, tier: string): Promise<boolean
           tags: { action: 'discord-sync-role', httpStatus: String(result.httpStatus) },
           extra: { discordId, tier, errorBody: result.errorBody?.slice(0, 500) },
         });
-        return false;
+        return { ok: false, httpStatus: result.httpStatus, errorBody: result.errorBody };
       }
-      return removeAllOk;
+      return { ok: true, httpStatus: result.httpStatus };
     }
 
-    return removeAllOk;
+    return { ok: true };
   } catch (err) {
     console.error('[discord] syncRole failed:', err);
     Sentry.captureException(err, {
       tags: { action: 'discord-sync-role' },
       extra: { discordId, tier },
     });
-    return false;
+    return { ok: false };
   }
 }
 
 /**
  * Remove all paid roles from a user (on subscription cancellation).
  */
-export async function revokeAllPaidRoles(discordId: string): Promise<boolean> {
+export async function revokeAllPaidRoles(discordId: string): Promise<SyncRoleResult> {
   return syncRole(discordId, 'community');
 }
 
