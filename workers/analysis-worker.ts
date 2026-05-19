@@ -134,15 +134,29 @@ async function processFiles(
   let dailySettings: Record<string, MachineSettings> = {};
   let deviceModel = 'Unknown';
 
+  const decoder = new TextDecoder('utf-8');
+
   let identificationText: string | null = null;
   if (idFileInfo) {
     const idFile = files.find((f) => f.path.endsWith(idFileInfo.name));
     if (idFile) {
-      const decoder = new TextDecoder('utf-8');
       identificationText = decoder.decode(idFile.buffer);
-      deviceModel = parseIdentification(identificationText);
     }
   }
+
+  // AirSense 11 fallback: read SETTINGS/CurrentSettings.json when Identification.tgt is absent
+  // or when the primary file did not yield a device model. Passed as second arg so
+  // parseIdentification() only uses it when the primary source returns 'Unknown'.
+  let currentSettingsText: string | undefined;
+  const currentSettingsFile = files.find((f) => {
+    const p = f.path.toLowerCase();
+    return p.endsWith('settings/currentsettings.json');
+  });
+  if (currentSettingsFile) {
+    currentSettingsText = decoder.decode(currentSettingsFile.buffer);
+  }
+
+  deviceModel = parseIdentification(identificationText ?? '', currentSettingsText);
 
   let strSignalLabels: string[] = [];
   let dailySummary: Record<string, import('../lib/types').MachineSummaryStats> = {};

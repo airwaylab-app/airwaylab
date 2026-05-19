@@ -3,7 +3,7 @@
  *
  * Coverage focus:
  *  - sendAlert: fail-open guarantee (never throws), missing URL → false,
- *    HTTP error → false, success → true, Sentry called on fetch failure
+ *    HTTP error → false, success → true, Sentry NOT called on fetch failure
  *  - formatMonitorEmbed: color/title logic (critical > warning > ok)
  *  - formatRevenueEmbed: title and color per event type
  *  - sendOpsAlert: delegates to sendAlert('ops', ...)
@@ -74,15 +74,12 @@ describe('sendAlert', () => {
     await expect(sendAlert('ops', 'hello')).resolves.toBe(false);
   });
 
-  it('calls Sentry.captureException when fetch throws', async () => {
+  it('does not forward errors to Sentry when fetch throws (fail-open, console.error only)', async () => {
     process.env.DISCORD_OPS_WEBHOOK_URL = WEBHOOK_URL;
     const err = new Error('timeout');
     vi.spyOn(global, 'fetch').mockRejectedValue(err);
     await sendAlert('ops', 'hello');
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      err,
-      expect.objectContaining({ tags: expect.objectContaining({ action: 'discord-webhook', channel: 'ops' }) })
-    );
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
   it('POSTs JSON body with content field', async () => {

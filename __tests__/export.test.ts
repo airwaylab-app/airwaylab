@@ -74,6 +74,34 @@ describe('exportJSON', () => {
     expect(parsed[0].ned).toBeDefined();
     expect(parsed[0].dateStr).toBeDefined();
   });
+
+  it('strips per-breath Float32Arrays to prevent RangeError on large datasets', () => {
+    // Simulate nights with per-breath data including Float32Arrays (inspFlow)
+    const nightsWithBreaths = SAMPLE_NIGHTS.map((n) => ({
+      ...n,
+      ned: {
+        ...n.ned,
+        breaths: [
+          {
+            inspStart: 0, inspEnd: 75, expStart: 75, expEnd: 150,
+            inspFlow: new Float32Array([1.0, 0.9, 0.8]),
+            qPeak: 1.0, qMid: 0.9, ti: 3.0, tPeakTi: 0.3,
+            ned: 10, fi: 0.9, isMShape: false, isEarlyPeakFL: false,
+          },
+        ],
+        reras: [{ startBreathIdx: 0, endBreathIdx: 5, breathCount: 6, nedSlope: 0.5, hasRecovery: true, hasSigh: false, maxNED: 30, startSec: 0, durationSec: 18 }],
+      },
+      oximetryTrace: { trace: new Float32Array([98, 97, 96]), durationSeconds: 3 } as unknown as null,
+    }));
+    const json = exportJSON(nightsWithBreaths);
+    const parsed = JSON.parse(json);
+    expect(parsed[0].ned.breaths).toEqual([]);
+    expect(parsed[0].ned.reras).toBeUndefined();
+    expect(parsed[0].oximetryTrace).toBeNull();
+    // Summary NED metrics should still be present
+    expect(parsed[0].ned.nedMean).toBeDefined();
+    expect(parsed[0].ned.reraIndex).toBeDefined();
+  });
 });
 
 describe('downloadFile', () => {
