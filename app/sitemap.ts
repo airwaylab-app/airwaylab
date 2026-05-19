@@ -3,12 +3,20 @@ import { blogPosts } from '@/lib/blog-posts';
 import { GLOSSARY_TERMS } from '@/lib/glossary-data';
 import { DEVICE_GUIDES } from '@/lib/device-guides';
 
+// Google distrusts future lastmod values — clamp to today UTC to avoid
+// invalidating crawl trust signals for scheduled/pre-dated content.
+function clampToToday(date: Date): Date {
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  return date > todayUtc ? todayUtc : date;
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://airwaylab.app';
 
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.date),
+    lastModified: clampToToday(new Date(post.date)),
     changeFrequency: 'monthly' as const,
     priority: 0.8,
   }));
@@ -46,7 +54,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: blogPosts[0] ? new Date(blogPosts[0].date) : lastContentUpdate,
+      lastModified: blogPosts[0] ? clampToToday(new Date(blogPosts[0].date)) : lastContentUpdate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
