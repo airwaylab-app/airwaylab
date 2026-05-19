@@ -291,9 +291,53 @@ export function getSTRSignalLabels(strBuffer: ArrayBuffer): string[] {
 }
 
 /**
- * Parse Identification.tgt or Identification.json for device model.
+ * Extract device model from SETTINGS/CurrentSettings.json (AirSense 11).
+ *
+ * AirSense 11 SD cards lack Identification.tgt and use SETTINGS/CurrentSettings.json
+ * instead. This file's schema differs from Identification.json — it wraps device
+ * identification under a flat FlowGenerator or Device object rather than the nested
+ * IdentificationProfiles structure used by AirCurve 11's Identification.json.
+ *
+ * Observed/expected field paths (in priority order):
+ *   FlowGenerator.ProductName       — e.g. "AirSense11AutoSet"
+ *   FlowGenerator.ModelNumber       — numeric model code, used as fallback
+ *   Device.ProductName              — alternate top-level wrapper seen on some firmware
+ *   Device.ModelNumber              — alternate fallback
+ *   Top-level ModelNumber / ProductName — catch-all for future firmware variants
  */
-export function parseIdentification(text: string): string {
+function parseCurrentSettingsJson(text: string): string {
+  try {
+    const json = JSON.parse(text) as Record<string, unknown>;
+
+    const fg = json['FlowGenerator'];
+    if (fg && typeof fg === 'object') {
+      const fgObj = fg as Record<string, unknown>;
+      if (typeof fgObj['ProductName'] === 'string' && fgObj['ProductName']) return fgObj['ProductName'];
+      if (typeof fgObj['ModelNumber'] === 'string' && fgObj['ModelNumber']) return fgObj['ModelNumber'];
+    }
+
+    const dev = json['Device'];
+    if (dev && typeof dev === 'object') {
+      const devObj = dev as Record<string, unknown>;
+      if (typeof devObj['ProductName'] === 'string' && devObj['ProductName']) return devObj['ProductName'];
+      if (typeof devObj['ModelNumber'] === 'string' && devObj['ModelNumber']) return devObj['ModelNumber'];
+    }
+
+    if (typeof json['ProductName'] === 'string' && json['ProductName']) return json['ProductName'] as string;
+    if (typeof json['ModelNumber'] === 'string' && json['ModelNumber']) return json['ModelNumber'] as string;
+  } catch {
+    // Not valid JSON
+  }
+  return 'Unknown';
+}
+
+/**
+ * Parse Identification.tgt or Identification.json for device model.
+ * @param text Contents of Identification.tgt or Identification.json.
+ * @param currentSettingsJson Optional contents of SETTINGS/CurrentSettings.json
+ *   (AirSense 11 fallback). Used when text is empty or yields 'Unknown'.
+ */
+export function parseIdentification(text: string, currentSettingsJson?: string): string {
   // Try JSON format first
   try {
     const json = JSON.parse(text);
@@ -336,6 +380,12 @@ export function parseIdentification(text: string): string {
   const lc = text.toLowerCase();
   if (lc.includes('aircurve')) return 'AirCurve';
   if (lc.includes('airsense')) return 'AirSense';
+
+  // Primary identification failed — try CurrentSettings.json fallback (AirSense 11)
+  if (currentSettingsJson) {
+    const model = parseCurrentSettingsJson(currentSettingsJson);
+    if (model !== 'Unknown') return model;
+  }
 
   return 'Unknown';
 }

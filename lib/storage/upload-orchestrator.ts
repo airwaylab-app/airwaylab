@@ -38,6 +38,26 @@ export function isTransientServerError(errorMessage: string): boolean {
 }
 
 /**
+ * Error categories for top-level upload pipeline failures (cloud_upload_failed).
+ * Distinct from cloud_upload_partial_failure which covers per-file failures
+ * that are caught and retried within uploadFiles().
+ */
+export type UploadErrorCategory = 'auth' | 'consent' | 'hash_worker' | 'network' | 'unknown';
+
+/**
+ * Classify a top-level upload pipeline error for Sentry fingerprinting.
+ * Enables grouping cloud_upload_failed events by failure type rather than
+ * by raw error message, so each category surfaces as one actionable issue.
+ */
+export function classifyUploadError(error: string): UploadErrorCategory {
+  if (/sign in again/i.test(error)) return 'auth';
+  if (/not enabled|not available/i.test(error)) return 'consent';
+  if (/hash (failed|worker)/i.test(error)) return 'hash_worker';
+  if (/failed to fetch|networkerror|network timeout/i.test(error)) return 'network';
+  return 'unknown';
+}
+
+/**
  * Determine Sentry severity level for partial upload failures.
  * Escalates to 'error' when all files failed OR more than 5 files failed,
  * so that Sentry alerts trigger before floods accumulate unnoticed.
@@ -243,10 +263,12 @@ class UploadOrchestrator {
       this.releasePageExit();
       const error = err instanceof Error ? err.message : String(err);
       if (error !== 'Cancelled') {
+        const errorCategory = classifyUploadError(error);
         console.error('[upload-orchestrator] Upload failed:', error);
         Sentry.captureMessage('cloud_upload_failed', {
           level: 'error',
-          tags: { stage: this.state.status },
+          fingerprint: ['cloud_upload_failed', errorCategory],
+          tags: { stage: this.state.status, errorCategory },
           extra: { error, fileCount: nonEmptyFiles.length },
         });
       }
@@ -649,29 +671,43 @@ class UploadOrchestrator {
       throw new Error(`Upload failed: ${uploadRes.status}`);
     }
 
-    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB
-    const confirmRes = await fetch('/api/files/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ fileId: presignData.fileId }),
-      signal,
-    });
+    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB.
+    // Retry up to 2 times for transient 5xx failures before treating as non-fatal.
+    const CONFIRM_RETRIES = 2;
+    const CONFIRM_RETRY_BASE_MS = 300;
+    let confirmRes: Response | null = null;
+    let confirmAttempts = 0;
 
-    if (!confirmRes.ok) {
-      if (confirmRes.status === 404) {
+    for (let attempt = 0; attempt <= CONFIRM_RETRIES; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, CONFIRM_RETRY_BASE_MS * attempt));
+      }
+      confirmAttempts = attempt + 1;
+      confirmRes = await fetch('/api/files/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fileId: presignData.fileId }),
+        signal,
+      });
+      // Stop retrying on success, 404 (definitive), or non-5xx client errors
+      if (confirmRes.ok || confirmRes.status === 404 || confirmRes.status < 500) break;
+    }
+
+    if (!confirmRes!.ok) {
+      if (confirmRes!.status === 404) {
         // File is not in storage despite the PUT appearing to succeed.
         // Treat as a failed upload — the metadata row was already cleaned up by the confirm route.
-        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes.status})`);
+        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes!.status})`);
       }
-      // Other errors (5xx, network): file may be in storage but unconfirmed.
+      // Other errors (5xx) after retries: file may be in storage but unconfirmed.
       // The stale orphan detection in presign will clean it up on the next attempt.
       Sentry.captureMessage('cloud_upload_confirm_nonfatal_error', {
         level: 'warning',
-        tags: { httpStatus: String(confirmRes.status) },
-        extra: { fileId: presignData.fileId, status: confirmRes.status },
+        tags: { httpStatus: String(confirmRes!.status) },
+        extra: { fileId: presignData.fileId, status: confirmRes!.status, attempts: confirmAttempts },
       });
-      console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
+      console.error('[upload-orchestrator] confirm failed after retries:', confirmRes!.status);
     }
 
     return true;

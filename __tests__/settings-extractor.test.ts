@@ -228,6 +228,95 @@ describe('sensitivityLabel — AirCurve 11 scale', () => {
 });
 
 // ============================================================
+// parseIdentification — SETTINGS/CurrentSettings.json fallback (AIR-1802)
+// AirSense 11 lacks Identification.tgt; device model comes from
+// SETTINGS/CurrentSettings.json via the optional second parameter.
+// ============================================================
+
+describe('parseIdentification — CurrentSettings.json fallback', () => {
+  it('returns model from FlowGenerator.ProductName when primary is empty', () => {
+    const currentSettings = JSON.stringify({
+      FlowGenerator: { ProductName: 'AirSense11AutoSet', SerialNumber: '23253088114' },
+    });
+    expect(parseIdentification('', currentSettings)).toBe('AirSense11AutoSet');
+  });
+
+  it('returns model from FlowGenerator.ModelNumber when ProductName absent', () => {
+    const currentSettings = JSON.stringify({
+      FlowGenerator: { ModelNumber: 'AirSense 11 Elite', SerialNumber: '23253088114' },
+    });
+    expect(parseIdentification('', currentSettings)).toBe('AirSense 11 Elite');
+  });
+
+  it('returns model from Device.ProductName when FlowGenerator absent', () => {
+    const currentSettings = JSON.stringify({
+      Device: { ProductName: 'AirSense 11 AutoSet', SerialNumber: '23253088114' },
+    });
+    expect(parseIdentification('', currentSettings)).toBe('AirSense 11 AutoSet');
+  });
+
+  it('returns model from Device.ModelNumber when ProductName absent', () => {
+    const currentSettings = JSON.stringify({
+      Device: { ModelNumber: 'AirSense 11' },
+    });
+    expect(parseIdentification('', currentSettings)).toBe('AirSense 11');
+  });
+
+  it('returns model from top-level ProductName in CurrentSettings.json', () => {
+    const currentSettings = JSON.stringify({ ProductName: 'AirSense 11 AutoSet' });
+    expect(parseIdentification('', currentSettings)).toBe('AirSense 11 AutoSet');
+  });
+
+  it('uses primary Identification.tgt result even when currentSettingsJson present', () => {
+    const primary = JSON.stringify({ ModelNumber: 'AirCurve 10 VAuto' });
+    const currentSettings = JSON.stringify({
+      FlowGenerator: { ProductName: 'AirSense11AutoSet' },
+    });
+    expect(parseIdentification(primary, currentSettings)).toBe('AirCurve 10 VAuto');
+  });
+
+  it('falls through to currentSettingsJson when primary yields Unknown', () => {
+    const currentSettings = JSON.stringify({
+      FlowGenerator: { ProductName: 'AirSense11AutoSet' },
+    });
+    expect(parseIdentification('random gibberish', currentSettings)).toBe('AirSense11AutoSet');
+  });
+
+  it('returns Unknown when both primary and currentSettingsJson fail', () => {
+    const currentSettings = JSON.stringify({ SomethingElse: 'no model here' });
+    expect(parseIdentification('', currentSettings)).toBe('Unknown');
+  });
+
+  it('returns Unknown when currentSettingsJson is undefined', () => {
+    expect(parseIdentification('')).toBe('Unknown');
+  });
+
+  it('handles invalid currentSettingsJson JSON gracefully', () => {
+    expect(parseIdentification('', '{invalid json')).toBe('Unknown');
+  });
+
+  it('integration: no Identification.tgt, AirSense 11 CurrentSettings.json', () => {
+    // Synthetic file structure matching a real AirSense 11 SD card.
+    // Device has only SETTINGS/CurrentSettings.json, no Identification.tgt.
+    const currentSettings = JSON.stringify({
+      FlowGenerator: {
+        ProductName: 'AirSense11AutoSet',
+        SerialNumber: '23253088114',
+        FirmwareVersion: '3.14.0.38466',
+      },
+      Settings: {
+        Therapy: { CPAP: { Pressure: 9 } },
+      },
+    });
+    // Primary text is empty (no Identification.tgt)
+    const result = parseIdentification('', currentSettings);
+    expect(result).toBe('AirSense11AutoSet');
+    // Verify the result is recognised as AirSense 11 by downstream device detection
+    expect(/airsense[\s_]?11/i.test(result)).toBe(true);
+  });
+});
+
+// ============================================================
 // Helpers — build synthetic STR.edf buffers for extractSettings tests
 // ============================================================
 

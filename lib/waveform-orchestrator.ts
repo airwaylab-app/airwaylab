@@ -175,7 +175,9 @@ class WaveformOrchestrator {
       let error = err instanceof Error ? err.message : String(err);
 
       // User-friendly message for SD card / file read failures
-      if (err instanceof DOMException && err.name === 'NotReadableError') {
+      if (err instanceof DOMException && err.name === 'NotFoundError') {
+        error = 'The SD card was removed or became unavailable. Please reconnect and try again.';
+      } else if (err instanceof DOMException && err.name === 'NotReadableError') {
         error = 'Could not read your SD card files. Please check the card is still connected and try again.';
       }
 

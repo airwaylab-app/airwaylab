@@ -65,15 +65,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Verify file exists in storage
-    const { data: storageFile, error: listError } = await serviceRole.storage
-      .from(STORAGE_BUCKET)
-      .list(fileRow.storage_path.split('/').slice(0, -1).join('/'), {
-        search: fileRow.storage_path.split('/').pop(),
-      });
+    // Verify file exists in storage. Retry up to 2 times for transient list failures.
+    const storageFolder = fileRow.storage_path.split('/').slice(0, -1).join('/');
+    const storageFileName = fileRow.storage_path.split('/').pop();
+    let storageFile: { name: string }[] | null = null;
+    let listError: unknown = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 150 * attempt));
+      }
+      const result = await serviceRole.storage
+        .from(STORAGE_BUCKET)
+        .list(storageFolder, { search: storageFileName });
+      if (!result.error) {
+        storageFile = result.data;
+        listError = null;
+        break;
+      }
+      listError = result.error;
+    }
 
     if (listError) {
-      // Storage list failed — cannot determine file presence; do not delete metadata
+      // Storage list failed after retries — cannot determine file presence; do not delete metadata
       console.error('[files/confirm] Storage list error:', listError);
       captureApiError(listError, { route: 'files/confirm', context: 'storage_list' });
       return NextResponse.json({ error: 'Storage unavailable. Please retry.' }, { status: 503 });
