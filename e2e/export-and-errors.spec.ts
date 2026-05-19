@@ -79,7 +79,7 @@ test.describe('Mobile Viewport', () => {
     await page.goto('/analyze');
 
     await expect(page.getByText('Choose your SD card folder')).toBeVisible();
-    await expect(page.getByText('Try sample data')).toBeVisible();
+    await expect(page.getByText('See a demo analysis — no file needed →')).toBeVisible();
     await expect(page.locator('input[type="file"][webkitdirectory]')).toBeAttached();
   });
 });

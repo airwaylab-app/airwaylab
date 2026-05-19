@@ -117,7 +117,7 @@ describe('FirstRunWelcome', () => {
   it('renders FileUpload and demo CTA on non-iOS', () => {
     render(<FirstRunWelcome onLoadDemo={vi.fn()} onFilesSelected={vi.fn()} />);
     expect(screen.getByTestId('file-upload')).toBeDefined();
-    expect(screen.getByRole('button', { name: /Load 7-night sample dataset/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Load 7-night sample dataset — no file needed/i })).toBeDefined();
   });
 
   it('renders MobileEmailCapture and demo CTA on iOS', async () => {
@@ -131,7 +131,7 @@ describe('FirstRunWelcome', () => {
   it('fires onLoadDemo callback when demo button clicked', async () => {
     const onLoadDemo = vi.fn();
     render(<FirstRunWelcome onLoadDemo={onLoadDemo} onFilesSelected={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Load 7-night sample dataset/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Load 7-night sample dataset — no file needed/i }));
     expect(onLoadDemo).toHaveBeenCalledOnce();
   });
 
