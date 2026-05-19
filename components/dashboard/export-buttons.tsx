@@ -15,6 +15,7 @@ import { openPDFReport } from '@/lib/pdf-report';
 import { useAuth } from '@/lib/auth/auth-context';
 import { canAccess } from '@/lib/auth/feature-gate';
 import { events } from '@/lib/analytics';
+import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from '@/lib/types';
 
 interface Props {
@@ -109,6 +110,7 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
       setTimeout(() => setDownloaded(null), 2000);
     } catch (err) {
       console.error('JSON export failed:', err);
+      Sentry.captureException(err, { extra: { context: 'exportJSON', nightCount: nights.length } });
       setExportError('json');
       setTimeout(() => setExportError(null), 5000);
     }
