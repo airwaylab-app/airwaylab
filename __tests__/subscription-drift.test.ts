@@ -281,3 +281,85 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
     );
   });
 });
+
+describe('subscription-drift cron — aggregate Sentry error', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    insertCalls.length = 0;
+    process.env.CRON_SECRET = 'test-secret';
+    mockIsDiscordConfigured.mockReturnValue(false);
+    mockSyncRole.mockResolvedValue(true);
+    mockSendAlert.mockResolvedValue(undefined);
+  });
+
+  function buildAggChain(paidResults: unknown[]): Record<string, unknown> {
+    const chain: Record<string, unknown> = {};
+    chain['select'] = vi.fn().mockImplementation(() => chain);
+    chain['in'] = vi.fn().mockResolvedValue({ data: paidResults, error: null });
+    chain['eq'] = vi.fn().mockImplementation(() => chain);
+    chain['not'] = vi.fn().mockResolvedValue({ data: [], error: null });
+    chain['update'] = vi.fn().mockImplementation(() => ({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    }));
+    return chain;
+  }
+
+  it('fires one aggregate Sentry error with fingerprint when mismatches are found', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const profile = { id: 'user-agg', tier: 'supporter', email: 'agg@example.com', discord_id: null };
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') return buildAggChain([profile]);
+      if (table === 'subscriptions') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      return {};
+    });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('subscription-drift-cron'),
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: ['subscription-drift-cron-mismatch'],
+        extra: expect.objectContaining({ mismatches: 1 }),
+      })
+    );
+  });
+
+  it('does NOT fire an aggregate Sentry error when there are no mismatches', async () => {
+    const Sentry = await import('@sentry/nextjs');
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') return buildAggChain([]);
+      if (table === 'subscriptions') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      return {};
+    });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.mismatches).toBe(0);
+    const errorCalls = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (args: unknown[]) =>
+        typeof args[1] === 'object' &&
+        args[1] !== null &&
+        (args[1] as Record<string, unknown>)['level'] === 'error'
+    );
+    expect(errorCalls).toHaveLength(0);
+  });
+});
