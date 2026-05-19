@@ -25,6 +25,7 @@ import { OximetryTab } from '@/components/dashboard/oximetry-tab';
 import { TrendsTab } from '@/components/dashboard/trends-tab';
 import { SharedGraphsTab } from '@/components/share/shared-graphs-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { events } from '@/lib/analytics';
 import type { NightResult, MachineSettings } from '@/lib/types';
@@ -186,13 +187,22 @@ export function SharedViewClient({
                 <span className="hidden sm:inline">Oximetry</span>
               </TabsTrigger>
             )}
-            {hasFiles && filePaths.length > 0 && (
-              <TabsTrigger value="graphs" className="gap-1.5">
-                <BarChart className="h-3.5 w-3.5" />
-                <span className="text-[11px] sm:hidden">Gra</span>
-                <span className="hidden sm:inline">Graphs</span>
-              </TabsTrigger>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger render={<span className={`inline-flex${(!hasFiles || !filePaths.length) ? ' cursor-not-allowed' : ''}`} />}>
+                  <TabsTrigger value="graphs" className="gap-1.5" disabled={!hasFiles || !filePaths.length}>
+                    <BarChart className="h-3.5 w-3.5" />
+                    <span className="text-[11px] sm:hidden">Gra</span>
+                    <span className="hidden sm:inline">Graphs</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                {(!hasFiles || !filePaths.length) && (
+                  <TooltipContent side="bottom">
+                    Flow graphs not available — the owner of this share did not include therapy data files.
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             {nights.length > 1 && (
               <TabsTrigger value="trends" className="gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -248,8 +258,8 @@ export function SharedViewClient({
             </TabsContent>
           )}
 
-          {hasFiles && filePaths.length > 0 && (
-            <TabsContent value="graphs" className="mt-6">
+          <TabsContent value="graphs" className="mt-6">
+            {hasFiles && filePaths.length > 0 ? (
               <ErrorBoundary context="Graphs">
                 <SharedGraphsTab
                   shareId={shareId}
@@ -257,8 +267,15 @@ export function SharedViewClient({
                   dateStr={currentNight!.dateStr}
                 />
               </ErrorBoundary>
-            </TabsContent>
-          )}
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
+                <BarChart className="h-8 w-8 opacity-40" />
+                <p className="text-sm">
+                  Flow graphs not available — the owner of this share did not include therapy data files.
+                </p>
+              </div>
+            )}
+          </TabsContent>
 
           {nights.length > 1 && (
             <TabsContent value="trends" className="mt-6">

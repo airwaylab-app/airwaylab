@@ -34,12 +34,12 @@ export default function FreeCPAPDataAnalysisSoftwarePost() {
             Before comparing tools, a quick word on why this matters. Your device&apos;s own display
             typically shows you a nightly AHI number and maybe a therapy score &mdash; but that&apos;s
             a tiny fraction of what&apos;s recorded.{' '}
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               Understanding your CPAP data
             </Link>{' '}
             means you can see patterns across weeks, see patterns like{' '}
             <Link
-              href="/blog/what-is-flow-limitation-cpap"
+              href="/blog/understanding-flow-limitation"
               className="text-primary hover:text-primary/80"
             >
               flow limitation levels
@@ -178,7 +178,7 @@ export default function FreeCPAPDataAnalysisSoftwarePost() {
           <p>
             The free tier is complete, not a preview. You get full AHI breakdown,{' '}
             <Link
-              href="/blog/what-is-flow-limitation-cpap"
+              href="/blog/understanding-flow-limitation"
               className="text-primary hover:text-primary/80"
             >
               flow limitation visualisation
@@ -498,7 +498,7 @@ export default function FreeCPAPDataAnalysisSoftwarePost() {
             Try the free analyser <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/blog/how-to-read-cpap-data"
+            href="/blog/how-to-read-cpap-therapy-report"
             className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             How to read your CPAP data

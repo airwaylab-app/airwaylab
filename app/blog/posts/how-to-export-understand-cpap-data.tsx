@@ -236,7 +236,7 @@ export default function HowToExportUnderstandCPAPData() {
             Once you have your data open in an analysis tool, here&apos;s how to read the main
             signals. For a deeper dive, see our{' '}
             <Link
-              href="/blog/how-to-read-cpap-data"
+              href="/blog/how-to-read-cpap-therapy-report"
               className="text-primary hover:text-primary/80"
             >
               full guide on how to read your CPAP data

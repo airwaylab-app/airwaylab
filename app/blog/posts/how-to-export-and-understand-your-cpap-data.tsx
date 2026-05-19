@@ -7,6 +7,7 @@ import {
   Lightbulb,
   Monitor,
   MessageSquare,
+  HelpCircle,
 } from 'lucide-react';
 
 export default function HowToExportAndUnderstandYourCPAPDataPost() {
@@ -503,6 +504,43 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <HelpCircle className="h-5 w-5 text-purple-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
+        </div>
+        <div className="mt-4 space-y-4">
+          {[
+            {
+              q: 'How do I get my CPAP data onto my computer?',
+              a: 'Power off your machine, remove the SD card from its slot, and insert it into a computer using an SD card reader. Open OSCAR or AirwayLab to read the data. ResMed files are .edf; Philips files use .001 or Encore Pro format. The import process in either tool takes under a minute.',
+            },
+            {
+              q: 'What is the difference between AHI and flow limitation?',
+              a: 'AHI counts discrete breathing events that cross a defined threshold of length and airflow reduction. Flow limitation captures something different: the partial breath-peak flattening that can occur without registering as a scored event. Both are data points your clinician may want to review together.',
+            },
+            {
+              q: 'Can I analyse my data without installing software?',
+              a: 'Yes. AirwayLab runs entirely in your browser — no download, no account. Load your SD card data via the file picker and view trend charts and nightly summaries right away.',
+            },
+            {
+              q: 'Is my data private when I use AirwayLab?',
+              a: 'Standard analysis in AirwayLab runs locally in your browser using Web Workers. Nothing is transmitted. If you use optional AI-assisted features, the tool asks for explicit consent before any data leaves your device.',
+            },
+            {
+              q: 'Which machines does AirwayLab support?',
+              a: 'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve series via SD card. For other manufacturers — Philips, Fisher & Paykel — OSCAR offers broader compatibility at this time.',
+            },
+          ].map(({ q, a }) => (
+            <div key={q} className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">{q}</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Medical disclaimer */}
       <section className="mt-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
@@ -524,7 +562,7 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
             <Link
-              href="/blog/how-to-read-cpap-data"
+              href="/blog/how-to-read-cpap-therapy-report"
               className="text-primary hover:text-primary/80"
             >
               How to Read Your CPAP Data
