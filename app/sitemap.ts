@@ -11,15 +11,26 @@ function clampToToday(date: Date): Date {
   return date > todayUtc ? todayUtc : date;
 }
 
+// Slugs that now 301-redirect to a canonical winner must be excluded from the
+// sitemap so Google doesn't index the loser URL alongside the winner.
+// Wave 1 redirects (AIR-1609 task 3): no pending content merge, ship immediately.
+const REDIRECTED_BLOG_SLUGS = new Set([
+  'oscar-cpap-software-alternatives',
+  'how-to-read-cpap-data',
+  'what-is-flow-limitation-cpap',
+]);
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://airwaylab.app';
 
-  const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: clampToToday(new Date(post.date)),
-    changeFrequency: 'monthly' as const,
-    priority: 0.8,
-  }));
+  const blogEntries: MetadataRoute.Sitemap = blogPosts
+    .filter((post) => !REDIRECTED_BLOG_SLUGS.has(post.slug))
+    .map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: clampToToday(new Date(post.date)),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    }));
 
   const glossaryEntries: MetadataRoute.Sitemap = GLOSSARY_TERMS.map((term) => ({
     url: `${baseUrl}/glossary/${term.slug}`,

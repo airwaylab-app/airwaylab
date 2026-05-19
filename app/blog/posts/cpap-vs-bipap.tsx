@@ -214,7 +214,7 @@ export default function CPAPVsBiPAPPost() {
               Glasgow Index
             </Link>{' '}
             and{' '}
-            <Link href="/blog/what-is-flow-limitation-cpap" className="text-primary hover:text-primary/80">
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
               FL Score
             </Link>{' '}
             analyse these shapes to characterise breath quality — flatness, limitation patterns, and
@@ -350,7 +350,7 @@ export default function CPAPVsBiPAPPost() {
             &mdash; a closer look at how the data fields differ between device modes.
           </p>
           <p>
-            <Link href="/blog/what-is-flow-limitation-cpap" className="text-primary hover:text-primary/80">
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
               What Is Flow Limitation on CPAP?
             </Link>{' '}
             &mdash; the breath-shape analysis that goes beyond AHI.

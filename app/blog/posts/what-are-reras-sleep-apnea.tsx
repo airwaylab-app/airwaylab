@@ -245,7 +245,7 @@ export default function WhatAreRerasSleepApnea() {
           </p>
           <p>
             If you are new to reading CPAP data,{' '}
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               How to Read Your CPAP Data
             </Link>{' '}
             and{' '}
@@ -321,7 +321,7 @@ export default function WhatAreRerasSleepApnea() {
             — the waveform patterns behind RERA-type events.
           </p>
           <p>
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               How to Read Your CPAP Data
             </Link>{' '}
             — a beginner&apos;s guide to the metrics that matter.

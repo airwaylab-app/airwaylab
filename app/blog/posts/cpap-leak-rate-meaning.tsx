@@ -301,7 +301,7 @@ export default function CPAPLeakRateMeaning() {
           <ul className="ml-4 space-y-1">
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+              <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
                 How to read your CPAP data
               </Link>
             </li>
@@ -433,7 +433,7 @@ export default function CPAPLeakRateMeaning() {
             Analyze Your Data <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/blog/how-to-read-cpap-data"
+            href="/blog/how-to-read-cpap-therapy-report"
             className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Read: How to Read Your CPAP Data

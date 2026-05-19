@@ -284,7 +284,7 @@ export default function UnderstandingCPAPPressureSettingsPost() {
             </Link>
             . If you want to understand what AirwayLab is measuring and why,{' '}
             <Link
-              href="/blog/how-to-read-cpap-data"
+              href="/blog/how-to-read-cpap-therapy-report"
               className="text-primary underline underline-offset-2 hover:text-primary/80"
             >
               how to read your CPAP data
