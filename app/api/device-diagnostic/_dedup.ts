@@ -1,10 +1,51 @@
+import { getSupabaseAdmin } from '@/lib/supabase/server'
+
 export const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000
 
-export const deviceModelLastAlertTs = new Map<string, number>()
-export const deviceModelHitCount = new Map<string, number>()
+interface KvRow {
+  last_fired_at: string
+  suppressed_count: number
+}
 
-/** Exported only for unit tests — do not call in production code. */
-export function __resetForTests(): void {
-  deviceModelLastAlertTs.clear()
-  deviceModelHitCount.clear()
+/**
+ * Returns { shouldFire: boolean, suppressedCount: number }.
+ * shouldFire = true means the caller should send the alert.
+ * suppressedCount = number of hits since the last fired alert (including this one).
+ *
+ * Uses an UPSERT on kv_alert_dedup so state survives Vercel cold-starts
+ * and is shared across function instances.
+ */
+export async function checkAndUpdateDedup(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  key: string,
+  now: Date,
+): Promise<{ shouldFire: boolean; suppressedCount: number }> {
+  if (!supabase) return { shouldFire: true, suppressedCount: 1 }
+
+  const { data: existing } = await supabase
+    .from('kv_alert_dedup')
+    .select('last_fired_at, suppressed_count')
+    .eq('key', key)
+    .single<KvRow>()
+
+  const windowStart = new Date(now.getTime() - DEDUP_WINDOW_MS)
+  const lastFiredAt = existing ? new Date(existing.last_fired_at) : null
+  const shouldFire = !lastFiredAt || lastFiredAt < windowStart
+
+  if (shouldFire) {
+    const suppressedCount = (existing?.suppressed_count ?? 0) + 1
+    await supabase.from('kv_alert_dedup').upsert({
+      key,
+      last_fired_at: now.toISOString(),
+      suppressed_count: 0,
+    })
+    return { shouldFire: true, suppressedCount }
+  }
+
+  await supabase.from('kv_alert_dedup').upsert({
+    key,
+    last_fired_at: existing!.last_fired_at,
+    suppressed_count: existing!.suppressed_count + 1,
+  })
+  return { shouldFire: false, suppressedCount: 0 }
 }
