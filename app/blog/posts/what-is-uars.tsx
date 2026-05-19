@@ -502,6 +502,54 @@ export default function WhatIsUARSPost() {
         </div>
       </section>
 
+      {/* AASM 2022 update */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <AlertTriangle className="h-5 w-5 text-amber-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">
+            UARS in 2025: How the 2022 AASM Guidelines Changed the Picture
+          </h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            In 2022, the American Academy of Sleep Medicine updated its hypopnea scoring
+            criteria (the &quot;H3A&quot; rule). The new rule requires a 3% oxygen desaturation
+            or an arousal to score a hypopnea — a lower bar than the previous 4% threshold.
+          </p>
+          <p>
+            The practical effect: many events that were previously scored as RERAs (and led to
+            a UARS label) are now scored as hypopneas under the updated criteria. This means
+            some people who would have received a UARS diagnosis before 2022 are now classified
+            as having mild OSA under current guidelines.
+          </p>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <p className="text-sm font-semibold text-amber-400">What this means for you</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              If you received a UARS diagnosis before 2022, or if a newer study shows mild OSA,
+              the same underlying pattern of flow limitation and RERAs may still be present.
+              Discuss what scoring criteria were used with your sleep specialist — it changes
+              the label, not necessarily the physiology.
+            </p>
+          </div>
+          <p>
+            <strong className="text-foreground">What is the Respiratory Disturbance Index (RDI)?</strong>{' '}
+            The RDI counts apneas, hypopneas, and RERAs per hour — all three event types. A
+            patient with AHI 3 and RERA index 12 has an RDI of 15. UARS is sometimes defined
+            as an RDI ≥ 5 with an AHI below clinical OSA threshold, though definitions vary
+            across sleep centres. Your clinician can clarify which definition applies to your
+            study results.
+          </p>
+        </div>
+      </section>
+
+      {/* YMYL disclosure — verbatim AIR-1611 */}
+      <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+        This article is for educational and informational purposes only. It has not been
+        reviewed by a licensed clinician and is not a substitute for professional medical
+        advice. Consult your sleep specialist or healthcare provider before making any
+        changes to your therapy.
+      </p>
+
       {/* Medical disclaimer */}
       <section className="mt-8">
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">

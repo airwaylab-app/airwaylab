@@ -284,6 +284,102 @@ export default function WhatAreRerasSleepApnea() {
         </div>
       </section>
 
+      {/* RERA-RDI-AHI hierarchy */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Layers className="h-5 w-5 text-blue-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">
+            How RERAs Fit Into Your Sleep Score: The RDI vs AHI Difference
+          </h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            Three numbers often come up in sleep apnea discussions — AHI, RDI, and RERA index.
+            They are related but measure different things:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/30">
+                  <th className="py-2 pr-4 text-left font-semibold text-foreground">Metric</th>
+                  <th className="py-2 pr-4 text-left font-semibold text-foreground">What it counts</th>
+                  <th className="py-2 text-left font-semibold text-foreground">Includes RERAs?</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/20">
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">AHI</td>
+                  <td className="py-2 pr-4">Apneas + hypopneas per hour</td>
+                  <td className="py-2">No</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">RERA index</td>
+                  <td className="py-2 pr-4">RERAs per hour</td>
+                  <td className="py-2">RERAs only</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">RDI</td>
+                  <td className="py-2 pr-4">Apneas + hypopneas + RERAs per hour</td>
+                  <td className="py-2">Yes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Your CPAP machine reports AHI. It does not report RDI. So if your AHI is 1.5 but
+            your RERA index is 8, your RDI could be close to 10 — a number your nightly summary
+            never shows you.
+          </p>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Info className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
+        </div>
+        <div className="mt-4 space-y-4">
+          <div className="rounded-xl border border-border/50 p-5">
+            <p className="text-sm font-semibold text-foreground">Can CPAP detect RERAs?</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Your CPAP machine does not score or report RERAs in its nightly summary. However,
+              the raw flow data recorded on your SD card contains the breath-by-breath waveform
+              where RERA-associated flow limitation patterns are visible. Tools like AirwayLab
+              and OSCAR can display this data so you can see the patterns. Formal RERA scoring
+              requires a polysomnography (PSG) lab study.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-5">
+            <p className="text-sm font-semibold text-foreground">What is the RERA index?</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              The RERA index is the number of Respiratory Effort-Related Arousals per hour of
+              sleep. It is typically measured in a formal polysomnography study. Your CPAP
+              machine does not calculate this number.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-5">
+            <p className="text-sm font-semibold text-foreground">How do RERAs relate to the RDI?</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              RDI (Respiratory Disturbance Index) = AHI + RERA index. It counts all three types
+              of respiratory events: apneas, hypopneas, and RERAs. Because your CPAP does not
+              report RERAs, the RDI it shows (if any) is likely just a renamed AHI. A full RDI
+              requires a lab sleep study.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-5">
+            <p className="text-sm font-semibold text-foreground">Can RERAs cause insomnia?</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              RERAs cause brief arousals from sleep that interrupt sleep architecture without
+              necessarily waking you up fully. Some people describe difficulty staying asleep,
+              light sleep, or unrefreshing sleep rather than classic insomnia. Whether this
+              pattern applies to your situation is something to discuss with your sleep
+              specialist.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">Explore What Your AHI Might Be Missing</h3>
@@ -334,6 +430,14 @@ export default function WhatAreRerasSleepApnea() {
           </p>
         </div>
       </section>
+
+      {/* YMYL disclosure — verbatim AIR-1611 */}
+      <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+        This article is for educational and informational purposes only. It has not been
+        reviewed by a licensed clinician and is not a substitute for professional medical
+        advice. Consult your sleep specialist or healthcare provider before making any
+        changes to your therapy.
+      </p>
 
       {/* Medical disclaimer */}
       <p className="mt-8 text-xs italic text-muted-foreground/60">
