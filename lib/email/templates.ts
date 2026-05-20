@@ -10,6 +10,7 @@
  */
 
 const BASE_URL = 'https://airwaylab.app';
+const DISCORD_INVITE_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL ?? 'https://discord.gg/DK7aN847Mn';
 
 // ── Shared layout ────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ export function dormancyStep2(unsubscribeUrl: string): { subject: string; html: 
       ${heading('Every month of data makes the picture clearer')}
       ${paragraph('Tracking therapy isn\'t all-or-nothing. Even uploading once a month gives you and your clinician something to work with. If you\'ve had a break, that\'s fine -- AirwayLab compares whatever data you have, whenever you\'re ready.')}
       ${paragraph('If you\'ve moved on from tracking, no hard feelings. This is the last email in this sequence, and we won\'t send more unless you upload new data.')}
+      ${paragraph('If you are not sure where to start again, the AirwayLab Discord is worth dropping into — there are users who have been analysing their data for years and are happy to point you in the right direction. <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a>')}
       ${ctaButton('Upload When You\'re Ready', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=dormancy_2`)}
     `, unsubscribeUrl),
   };
@@ -223,6 +225,7 @@ function activationStep1(unsubscribeUrl: string): { subject: string; html: strin
       ${paragraph('Within seconds, you\'ll see scores from four research-grade engines: flow limitation patterns that complement your machine\'s standard reports, breathing regularity, airway resistance, and arousal indicators. These metrics show aspects of your breathing that standard AHI doesn\'t measure.')}
       ${ctaButton('Upload Your SD Card', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=activation_1`)}
       ${paragraph('Having trouble? Reply to this email and we\'ll help you get started.')}
+      ${paragraph('If you are a Supporter or Champion member, you also have access to the AirwayLab Discord — a community of users comparing data notes and voting on what gets built next. Join at <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a> and link your Discord username in <a href="' + BASE_URL + '/account" style="color:#5eead4;text-decoration:underline;">Account settings</a> to get your member role.')}
     `, unsubscribeUrl),
   };
 }
@@ -309,6 +312,16 @@ function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html
       ${paragraph('Every time you upload now, you\'ll get AI-powered insights alongside the standard engine scores. The AI reads your Glasgow Index, FL Score, NED, and oximetry results together -- connecting patterns across engines that the individual scores can\'t show.')}
       ${paragraph('It references your pressure settings and analyses your data in context with your current settings. Upload a night and see the difference.')}
       ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_1`)}
+      ${heading('Your community is waiting')}
+      ${paragraph('You have just unlocked access to the AirwayLab Discord — a Supporter/Champion benefit that does not get mentioned nearly enough.')}
+      ${paragraph('This is a community of people doing what you are doing: parsing their own PAP data, figuring out what the numbers mean, and working to breathe better at night. There is a general channel for day-to-day questions, a research discussion channel for longer threads on RERAs, flow limitation, and treatment-emergent events, and a #premium-lounge that is members-only — where we share what is coming next and you can make direct feature requests.')}
+      ${paragraph('<strong style="color:#fff;">To get in:</strong>')}
+      ${bulletList([
+        'Join the AirwayLab Discord: <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a>',
+        'Head to your <a href="' + BASE_URL + '/account" style="color:#5eead4;text-decoration:underline;">Account settings</a> and enter your Discord username',
+        'Your Supporter/Champion role is assigned automatically — usually within a minute or two',
+      ])}
+      ${paragraph('The sync also runs every 15 minutes, so if your role does not appear right away, give it a moment.')}
     `, unsubscribeUrl),
   };
 }
@@ -321,6 +334,13 @@ function premiumOnboardingStep2(unsubscribeUrl: string): { subject: string; html
       ${paragraph('Most sleep physicians see AHI and compliance hours. You now have flow limitation scores, RERA estimates, breath-by-breath NED analysis, and AI-powered interpretation.')}
       ${paragraph('The PDF report puts all of this in a format your clinician can read in 2 minutes -- metric cards, trend charts, and plain-language explanations. If your clinician needs more than AHI numbers, this report puts the full picture in front of them — flow limitation scores, RERA estimates, and AI-interpreted patterns to review.')}
       ${ctaButton('Generate Your PDF Report', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_2`)}
+      ${heading('What is in the Discord')}
+      ${bulletList([
+        '<strong style="color:#fff;">#general</strong> — questions about your data, what others are seeing, anything goes',
+        '<strong style="color:#fff;">#research-discussion</strong> — longer threads on flow limitation, RERAs, AHI trends, research papers',
+        '<strong style="color:#fff;">#premium-lounge</strong> — Supporter/Champion only; direct feature requests (we read all of them)',
+        '<strong style="color:#fff;">#feature-requests</strong> — vote on what ships next',
+      ])}
     `, unsubscribeUrl),
   };
 }
@@ -429,6 +449,7 @@ export function cpapTipsStep5(unsubscribeUrl: string): { subject: string; html: 
       ${paragraph('AirwayLab can export a session summary with your key metrics and trends. It\'s designed to be readable by a sleep specialist, not just a CPAP enthusiast.')}
       ${paragraph('We\'re a tool for informed conversations -- not a substitute for clinical review. That\'s what we\'re here for.')}
       ${ctaButton('Generate a Session Summary', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=cpap_tips_5`)}
+      ${paragraph('If this raises questions about your data or therapy, the AirwayLab Discord is worth dropping into — there are users who have been analysing their data for years and are happy to point you in the right direction. <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a>')}
       ${paragraph('<em>This content is informational only. It is not medical advice. Discuss any concerns with your prescribing clinician or sleep specialist.</em>')}
     `, unsubscribeUrl),
   };
