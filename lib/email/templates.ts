@@ -555,7 +555,7 @@ export function reEngagementStep3(
 export function winBackCancelledPaying(unsubscribeUrl: string): { subject: string; html: string } {
   return {
     subject: 'Still here if you want to come back',
-    html: layout(`
+    html: reEngagementLayout(`
       ${heading('Your free tools are still here')}
       ${paragraph('Your AirwayLab subscription ended recently. Your account is still here, and all the free analysis features are available whenever you\'re ready.')}
       ${paragraph('Here\'s what you still have access to, no subscription needed:')}
