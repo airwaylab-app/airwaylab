@@ -41,8 +41,12 @@ export async function POST() {
     .maybeSingle();
 
   if (subError) {
+    // Transient DB error: cannot trust whether the user has an active subscription,
+    // so bail out without modifying profiles.tier. A downgrade based on unreliable
+    // data would be worse than a no-op; the cron integrity job re-syncs later.
     console.error('[sync-subscription] Subscription fetch failed:', subError.message);
-    return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
+    Sentry.captureException(subError, { tags: { context: 'sync-subscription', step: 'subscription-fetch' } });
+    return NextResponse.json({ healed: false, reason: 'subscription_fetch_error' });
   }
 
   const expectedTier: Tier =

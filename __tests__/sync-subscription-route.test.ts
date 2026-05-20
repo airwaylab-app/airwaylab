@@ -200,4 +200,34 @@ describe('POST /api/auth/sync-subscription', () => {
     expect(body.from).toBe('community');
     expect(body.to).toBe('champion');
   });
+
+  it('returns healed:false without touching profiles when subscription query returns a transient error', async () => {
+    setupUser();
+
+    const subChain = makeChain();
+    (subChain.maybeSingle as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: null,
+      error: { message: 'connection timeout' },
+    });
+
+    // profiles should never be read or written when subscription fetch errors
+    const profileSingleMock = vi.fn().mockResolvedValue({ data: { tier: 'champion' }, error: null });
+    const profileChain = makeChain();
+    profileChain.single = profileSingleMock;
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') return subChain;
+      if (table === 'profiles') return profileChain;
+      return makeChain();
+    });
+
+    const { POST } = await import('@/app/api/auth/sync-subscription/route');
+    const res = await POST();
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.healed).toBe(false);
+    expect(body.reason).toBe('subscription_fetch_error');
+    expect(profileSingleMock).not.toHaveBeenCalled();
+  });
 });
