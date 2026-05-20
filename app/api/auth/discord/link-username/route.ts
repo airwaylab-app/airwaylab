@@ -17,6 +17,7 @@ import {
   syncRole,
   getTierRoleId,
 } from '@/lib/discord';
+import { validateProfileExists } from '@/lib/auth/validate-profile';
 import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
@@ -52,6 +53,13 @@ export async function POST(request: NextRequest) {
   const serviceRole = getSupabaseServiceRole();
   if (!serviceRole) {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+  }
+
+  // Guard: profile must exist before calling Discord APIs or writing profile data
+  const profileCheck = await validateProfileExists(serviceRole, user.id, { route: 'discord-link-username' });
+  if (!profileCheck.valid) {
+    const status = profileCheck.error === 'db_error' ? 500 : 404;
+    return NextResponse.json({ error: 'Account not found' }, { status });
   }
 
   if (!isDiscordConfigured()) {
@@ -147,11 +155,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's current tier for role assignment
-    const { data: profile } = await serviceRole
+    const { data: profile, error: profileError } = await serviceRole
       .from('profiles')
       .select('tier')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      Sentry.captureException(profileError, {
+        tags: { route: 'discord-link-username', check: 'profile-lookup' },
+        extra: { userId: user.id },
+        level: 'warning',
+      });
+    }
 
     const tier = profile?.tier ?? 'community';
 
