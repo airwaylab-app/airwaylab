@@ -59,8 +59,10 @@ import HowToReadCPAPTherapyReport from '../posts/how-to-read-cpap-therapy-report
 import CPAPVsBiPAP from '../posts/cpap-vs-bipap';
 import OSCARCPAPSoftwareAlternatives from '../posts/oscar-cpap-software-alternatives';
 import CPAPDataReportWhatDoctorSees from '../posts/cpap-data-report-what-doctor-sees';
+import GoodAHIOnCPAP from '../posts/good-ahi-on-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'good-ahi-on-cpap': GoodAHIOnCPAP,
   'cpap-vs-bipap': CPAPVsBiPAP,
   'how-to-read-cpap-therapy-report': HowToReadCPAPTherapyReport,
   'cpap-data-report-what-doctor-sees': CPAPDataReportWhatDoctorSees,
