@@ -155,7 +155,11 @@ export default function UnderstandingFlowLimitationPost() {
             of zero. Research from the Sleep Heart Health Study and others has shown that this
             pattern &mdash; low AHI with significant flow limitation &mdash; is associated with
             daytime sleepiness, unrefreshing sleep, and cognitive difficulties that mirror
-            untreated sleep apnea.
+            untreated sleep apnea.{"' '"}The{"' '"}
+            <Link href="/blog/epworth-sleepiness-scale" className="text-primary hover:text-primary/80">
+              Epworth Sleepiness Scale
+            </Link>{"' '"}
+            is one of the standard tools clinicians use to quantify this symptom burden.
           </p>
           <p>
             This is why cpap flow limitation matters: your machine&apos;s headline number may tell
@@ -298,8 +302,11 @@ export default function UnderstandingFlowLimitationPost() {
                   RERAs are the link between flow limitation and daytime symptoms. Each RERA is a
                   mini-awakening that fragments sleep without leaving a trace in your AHI. A high
                   estimated RERA count alongside elevated Glasgow and NED values paints a picture of
-                  sleep disruption that the AHI completely misses.
-                </p>
+                  sleep disruption that the AHI completely misses.{"' '"}For a deeper look, see{"' '"}
+                <Link href="/blog/what-are-reras-sleep-apnea" className="text-primary hover:text-primary/80">
+                  What Are RERAs?
+                </Link>
+              </p>
               </div>
             </div>
           </div>
