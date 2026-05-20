@@ -81,10 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileError) {
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
-      Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
-        level: 'warning',
-        tags: { context: 'auth-profile-fetch' },
-      });
+      // "Lock was stolen" is transient navigator.locks contention — already retried once, skip Sentry noise
+      if (!profileError.message?.includes('Lock was stolen')) {
+        Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
+          level: 'warning',
+          tags: { context: 'auth-profile-fetch' },
+        });
+      }
       return;
     }
 

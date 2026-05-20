@@ -298,7 +298,11 @@ describe('subscription-drift cron — aggregate Sentry error', () => {
     chain['select'] = vi.fn().mockImplementation(() => chain);
     chain['in'] = vi.fn().mockResolvedValue({ data: paidResults, error: null });
     chain['eq'] = vi.fn().mockImplementation(() => chain);
-    chain['not'] = vi.fn().mockResolvedValue({ data: [], error: null });
+    chain['not'] = vi.fn().mockImplementation((field: string) => {
+      if (field === 'stripe_customer_id') return chain; // webhookBlind — needs .is() next
+      return Promise.resolve({ data: [], error: null }); // communityWithSubs — terminal
+    });
+    chain['is'] = vi.fn().mockResolvedValue({ data: [], error: null }); // no webhook-blind profiles
     chain['update'] = vi.fn().mockImplementation(() => ({
       eq: vi.fn().mockResolvedValue({ error: null }),
     }));
