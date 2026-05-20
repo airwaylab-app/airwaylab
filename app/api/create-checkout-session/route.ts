@@ -10,6 +10,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 const CheckoutSchema = z.object({
   priceId: z.string({ error: 'Missing priceId' }).min(1, 'Missing priceId').max(200),
+  source: z.string().max(50).optional(),
 });
 
 // M5: Whitelist of allowed price IDs
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     const firstError = parsed.error.issues[0]?.message || 'Invalid request data.';
     return NextResponse.json({ error: firstError }, { status: 400 });
   }
-  const { priceId } = parsed.data;
+  const { priceId, source } = parsed.data;
 
   // M5: Validate priceId against allowed list
   const allowedPrices = getAllowedPriceIds();
@@ -121,6 +122,28 @@ export async function POST(request: NextRequest) {
       if (freshProfile?.stripe_customer_id) {
         customerId = freshProfile.stripe_customer_id;
       } else {
+        // AIR-1873: A valid auth session with no profile row (e.g. anonymous user, deleted
+        // account, profile trigger failure) must not create an orphan Stripe customer —
+        // the webhook would silently fail to link the subscription to any real user.
+        if (!freshProfile) {
+          Sentry.captureMessage('Checkout blocked: no profile row for authenticated user', {
+            level: 'error',
+            tags: { route: 'create-checkout-session', check: 'profile-existence-gate' },
+            extra: { userId: user.id },
+          });
+          return NextResponse.json(
+            { error: 'Account setup incomplete. Please sign out, sign back in, and try again.' },
+            { status: 400 }
+          );
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'stripe',
+          message: 'Creating new Stripe customer',
+          level: 'info',
+          data: { userId: user.id },
+        });
+
         const customer = await stripe.customers.create({
           email: user.email,
           metadata: { supabase_user_id: user.id },
@@ -143,6 +166,9 @@ export async function POST(request: NextRequest) {
     // M3: Use env var for origin, fallback to hardcoded domain
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://airwaylab.app';
 
+    const sessionMeta: Record<string, string> = { supabase_user_id: user.id };
+    if (source) sessionMeta.source = source;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -150,9 +176,9 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/analyze?checkout=success`,
       cancel_url: `${appUrl}/pricing`,
       subscription_data: {
-        metadata: { supabase_user_id: user.id },
+        metadata: sessionMeta,
       },
-      metadata: { supabase_user_id: user.id },
+      metadata: sessionMeta,
     });
 
     return NextResponse.json({ url: session.url });

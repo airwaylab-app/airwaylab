@@ -23,7 +23,7 @@ export function DeepInsightTeasers({ night }: Props) {
 
   useEffect(() => {
     if (!tracked.current) {
-      events.deepTeaserShown();
+      events.deepTeaserShown('deep_teaser');
       tracked.current = true;
     }
   }, []);
@@ -108,8 +108,8 @@ export function DeepInsightTeasers({ night }: Props) {
       </div>
 
       <Link
-        href="/pricing"
-        onClick={() => events.deepTeaserCtaClicked()}
+        href="/pricing?source=deep_teaser"
+        onClick={() => events.deepTeaserCtaClicked('deep_teaser')}
       >
         <Button variant="outline" size="sm" className="w-full gap-2 sm:w-auto">
           See supporter benefits

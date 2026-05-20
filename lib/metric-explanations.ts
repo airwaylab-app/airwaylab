@@ -42,6 +42,8 @@ export const METRIC_PLAIN_LANGUAGE: Record<string, string> = {
     'How much your breath size varies within each 5-minute window. Higher values suggest intermittent airway compromise.',
   estimatedRdi:
     'An estimated count of all respiratory disruptions per hour, combining RERAs and hypopnoeas detected from flow data.',
+  spontaneousPct:
+    'The percentage of breaths where inspiration was patient-triggered, as classified by the device. The remainder were triggered by the machine backup rate (Timed%). Both counts include Hypopnea events in the denominator.',
 };
 
 /* ------------------------------------------------------------------ */
