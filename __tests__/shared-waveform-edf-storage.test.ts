@@ -103,6 +103,29 @@ describe('Shared Waveform EDF Storage', () => {
       const file = { fileName: 'big.edf', fileSize: 60 * 1024 * 1024 };
       expect(file.fileSize > MAX_FILE_SIZE).toBe(true);
     });
+
+    it('excludes 0-byte files before the presign request (Sentry #773)', () => {
+      const files = [
+        { name: 'BRP.edf', size: 1024 },
+        { name: 'empty.edf', size: 0 },
+        { name: 'STR.edf', size: 512 },
+      ];
+      const uploadable = files.filter(f => f.size > 0);
+      expect(uploadable).toHaveLength(2);
+      expect(uploadable.map(f => f.name)).toEqual(['BRP.edf', 'STR.edf']);
+    });
+
+    it('returns early (no presign call) when all files are 0-byte', () => {
+      const files = [{ name: 'empty.edf', size: 0 }];
+      const uploadable = files.filter(f => f.size > 0);
+      expect(uploadable.length).toBe(0);
+    });
+
+    it('passes non-empty files through to the presign request unchanged', () => {
+      const files = [{ name: 'BRP.edf', size: 2048 }];
+      const uploadable = files.filter(f => f.size > 0);
+      expect(uploadable).toEqual(files);
+    });
   });
 
   // ── Download URL validation (GET /api/share/files) ────────

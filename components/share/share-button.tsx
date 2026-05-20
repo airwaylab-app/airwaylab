@@ -86,9 +86,10 @@ export const ShareButton = memo(function ShareButton({
   const hasFiles = (sdFiles?.length ?? 0) > 0;
 
   const uploadFilesToShare = useCallback(async (shareId: string, files: File[]) => {
-    if (files.length === 0) return;
+    const uploadable = files.filter(f => f.size > 0);
+    if (uploadable.length === 0) return;
 
-    setFileUpload({ status: 'uploading', uploaded: 0, total: files.length });
+    setFileUpload({ status: 'uploading', uploaded: 0, total: uploadable.length });
 
     try {
       // Get presigned upload URLs
@@ -97,7 +98,7 @@ export const ShareButton = memo(function ShareButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shareId,
-          files: files.map((f) => ({ fileName: f.name, fileSize: f.size })),
+          files: uploadable.map((f) => ({ fileName: f.name, fileSize: f.size })),
         }),
       });
 
@@ -118,7 +119,7 @@ export const ShareButton = memo(function ShareButton({
         const batch = uploadUrls.slice(i, i + batchSize);
         await Promise.all(
           batch.map(async (entry) => {
-            const file = files.find((f) => f.name === entry.fileName);
+            const file = uploadable.find((f) => f.name === entry.fileName);
             if (!file) return;
 
             const uploadRes = await fetch(entry.uploadUrl, {
@@ -146,9 +147,9 @@ export const ShareButton = memo(function ShareButton({
         body: JSON.stringify({ shareId, filePaths: storagePaths }),
       });
 
-      const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+      const totalBytes = uploadable.reduce((sum, f) => sum + f.size, 0);
       events.shareFilesUploaded(storagePaths.length, totalBytes);
-      setFileUpload({ status: 'done', uploaded: storagePaths.length, total: files.length });
+      setFileUpload({ status: 'done', uploaded: storagePaths.length, total: uploadable.length });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'File upload failed';
       console.error('[share-button] file upload failed:', message);

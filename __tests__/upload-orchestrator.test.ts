@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError, getPartialFailureLevel } from '@/lib/storage/upload-orchestrator';
+import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles, classifyUploadError } from '@/lib/storage/upload-orchestrator';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -92,5 +92,96 @@ describe('getPartialFailureLevel', () => {
   it('returns error when uploaded === 0 and failed === 0', () => {
     // Edge case: no files processed at all
     expect(getPartialFailureLevel(0, 0)).toBe('error');
+  });
+});
+
+describe('filterUploadableFiles', () => {
+  it('excludes files with size === 0 from uploadable list', () => {
+    const empty = new File([], 'CSL.edf');
+    const real = new File(['data'], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([empty, real]);
+    expect(uploadable).toHaveLength(1);
+    expect(uploadable[0]).toBe(real);
+    expect(emptyCount).toBe(1);
+  });
+
+  it('returns all files when none are empty', () => {
+    const f1 = new File(['a'], 'DATALOG.edf');
+    const f2 = new File(['b'], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([f1, f2]);
+    expect(uploadable).toHaveLength(2);
+    expect(emptyCount).toBe(0);
+  });
+
+  it('returns empty uploadable list when all files are 0-byte', () => {
+    const e1 = new File([], 'CSL.edf');
+    const e2 = new File([], 'STR.edf');
+    const { uploadable, emptyCount } = filterUploadableFiles([e1, e2]);
+    expect(uploadable).toHaveLength(0);
+    expect(emptyCount).toBe(2);
+  });
+
+  it('returns empty lists for empty input', () => {
+    const { uploadable, emptyCount } = filterUploadableFiles([]);
+    expect(uploadable).toHaveLength(0);
+    expect(emptyCount).toBe(0);
+  });
+
+  it('counts multiple empty files accurately', () => {
+    const files = [
+      new File([], 'a.edf'),
+      new File(['x'], 'b.edf'),
+      new File([], 'c.edf'),
+      new File(['y'], 'd.edf'),
+      new File([], 'e.edf'),
+    ];
+    const { uploadable, emptyCount } = filterUploadableFiles(files);
+    expect(uploadable).toHaveLength(2);
+    expect(emptyCount).toBe(3);
+  });
+});
+
+describe('classifyUploadError', () => {
+  it('classifies auth errors from preflight 401', () => {
+    expect(classifyUploadError('Cloud sync requires an active session. Please sign in again.')).toBe('auth');
+  });
+
+  it('classifies auth errors from preflight 403', () => {
+    expect(classifyUploadError('Cloud sync is not available. Please sign in again.')).toBe('auth');
+  });
+
+  it('classifies auth errors from checkExisting 401', () => {
+    expect(classifyUploadError('Cloud sync requires an active session. Please sign in again.')).toBe('auth');
+  });
+
+  it('classifies consent errors (not enabled)', () => {
+    expect(classifyUploadError('Cloud sync is not enabled. Enable it from your dashboard to back up your files.')).toBe('consent');
+  });
+
+  it('classifies consent errors (not available without sign-in language)', () => {
+    expect(classifyUploadError('Cloud sync is not available on your current plan.')).toBe('consent');
+  });
+
+  it('classifies hash worker errors', () => {
+    expect(classifyUploadError('Hash failed for file 3: out of memory')).toBe('hash_worker');
+    expect(classifyUploadError('Hash worker failed')).toBe('hash_worker');
+  });
+
+  it('classifies network errors', () => {
+    expect(classifyUploadError('Failed to fetch')).toBe('network');
+    expect(classifyUploadError('NetworkError when attempting to fetch resource.')).toBe('network');
+    expect(classifyUploadError('Network timeout')).toBe('network');
+  });
+
+  it('returns unknown for unrecognised errors', () => {
+    expect(classifyUploadError('Could not enable cloud storage. Please try again or check Account Settings.')).toBe('unknown');
+    expect(classifyUploadError('Unexpected error')).toBe('unknown');
+    expect(classifyUploadError('')).toBe('unknown');
+  });
+
+  it('is case-insensitive for all categories', () => {
+    expect(classifyUploadError('CLOUD SYNC REQUIRES AN ACTIVE SESSION. PLEASE SIGN IN AGAIN.')).toBe('auth');
+    expect(classifyUploadError('HASH FAILED for file 1: error')).toBe('hash_worker');
+    expect(classifyUploadError('FAILED TO FETCH')).toBe('network');
   });
 });

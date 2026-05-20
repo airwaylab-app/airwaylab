@@ -73,7 +73,7 @@ function march2026Update(unsubscribeUrl: string, subjectVariant: BroadcastSubjec
       ${paragraph('Every night of data that users contribute is building something I\'ve wanted to exist for a long time: <strong>analysis tools that learn from population-level patterns -- helping researchers and clinicians understand what healthy breathing looks like across thousands of real nights.</strong> The more data we have, the better the analysis gets for everyone.')}
       ${paragraph('The analysis tool you use today is the data foundation for that. More devices, more users, more nights contributed means better algorithms for everyone. That\'s the long game.')}
 
-      ${paragraph('If the free analysis has been useful, <a href="' + PRICING_URL + '" style="color:#5eead4;text-decoration:underline;">Supporter and Champion tiers</a> fund this work. You also get AI insights that explain your specific patterns, cloud backup, PDF clinician reports, and a voice in what gets built next.')}
+      ${paragraph('If the free analysis has been useful, <a href="' + PRICING_URL + '" style="color:#5eead4;text-decoration:underline;">Supporter and Champion tiers</a> fund this work. You also get AI insights that explain your specific patterns, cloud backup, unlimited PDF exports, and a voice in what gets built next.')}
 
       ${subheading('Join the premium community')}
       ${paragraph('Building and maintaining clinical-grade analysis software takes time, and to keep improving AirwayLab we need more supporters. As a way to say thank you and build something great together, we\'ve launched a <a href="' + DISCORD_URL + '" style="color:#5eead4;text-decoration:underline;">premium Discord community</a> for supporters to discuss anything PAP related, share what they\'re seeing in their data, and help shape the roadmap. Champions vote on what gets built next.')}
@@ -141,7 +141,7 @@ export const BROADCAST_TEMPLATES: Record<string, BroadcastTemplate> = {
   },
   analysis_window_announcement: {
     id: 'analysis_window_announcement',
-    description: 'May 2026 history window cap: community tier 7-night limit shipping May 27',
+    description: 'May 2026 history window cap: community tier 14-night limit shipping May 27',
     getTemplate: analysisWindowAnnouncement,
   },
 }

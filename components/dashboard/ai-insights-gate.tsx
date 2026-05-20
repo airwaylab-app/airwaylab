@@ -26,6 +26,7 @@ interface Props {
   isDemo: boolean;
   isNewUser: boolean;
   onOpenAuth?: () => void;
+  isSharedView?: boolean;
 }
 
 /**
@@ -45,6 +46,7 @@ export function AIInsightsGate({
   isDemo,
   isNewUser,
   onOpenAuth,
+  isSharedView = false,
 }: Props) {
   const { user, tier, isPaid } = useAuth();
 
@@ -178,6 +180,20 @@ export function AIInsightsGate({
   }, []);
 
   const handleOpenAuth = onOpenAuth ?? (() => { /* noop if no auth handler */ });
+
+  // Shared view: suppress all upsell/auth surfaces, show only rule-based insights
+  if (isSharedView) {
+    return (
+      <>
+        {ruleBasedInsights.length > 0 && (
+          <InsightsPanel
+            insights={ruleBasedInsights}
+            defaultExpanded={!isNewUser}
+          />
+        )}
+      </>
+    );
+  }
 
   // Anonymous users: rule-based insights + AI preview using aggregate metrics
   if (!user && !isDemo) {

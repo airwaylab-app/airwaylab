@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ const SUPPORTER_FEATURES = [
   '6-10 deep AI insights per analysis (unlimited)',
   '90-day analysis history with AI re-analysis',
   'Cloud sync across devices',
-  'PDF clinician reports',
+  'Unlimited PDF exports',
   'Enhanced export with annotations',
   'Detailed metric explanations',
   'Supporter badge on forum posts',
@@ -87,6 +87,13 @@ const faqJsonLd = {
 
 export default function PricingPage() {
   const { user, tier } = useAuth();
+  const upgradeSource = useRef<string>('pricing_page');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get('source');
+    if (src) upgradeSource.current = src;
+  }, []);
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('yearly');
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -129,17 +136,18 @@ export default function PricingPage() {
     setLoadingPriceId(priceId);
     setCheckoutError(null);
     try {
+      const source = upgradeSource.current;
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, source }),
       });
 
       const data = await res.json();
       if (data.url) {
         const checkoutTier = priceId === PRICES.supporter[billing] ? 'supporter' : 'champion';
-        events.checkoutStarted(checkoutTier, billing);
+        events.checkoutStarted(checkoutTier, billing, source);
         window.location.href = data.url;
       } else {
         setCheckoutError(data.error || 'Could not start checkout. Please try again.');

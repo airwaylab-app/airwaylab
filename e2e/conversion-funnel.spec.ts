@@ -59,16 +59,16 @@ test.describe('Conversion Funnel — Anonymous User', () => {
     await expect(page.locator('[data-slot="tabs-trigger"]').filter({ hasText: /overview/i }))
       .toHaveAttribute('aria-selected', 'true');
 
-    // Locked AI teasers should be visible
-    await expect(page.getByText('AI-Powered Insights')).toBeVisible({ timeout: 5_000 });
+    // AI preview section should be visible (refactored from locked teasers to preview+CTA)
+    await expect(page.getByText('AI Analysis Preview')).toBeVisible({ timeout: 5_000 });
 
-    // Skeleton/locked cards should be present (3 locked placeholders)
+    // Skeleton/locked cards should be present (2 locked placeholders × 4 shimmer elements each)
     const lockedCards = page.locator('.skeleton-shimmer');
     const count = await lockedCards.count();
     expect(count).toBeGreaterThanOrEqual(3);
 
-    // Lock icon should be visible
-    await expect(page.locator('svg.lucide-lock').first()).toBeVisible();
+    // Sparkles icon should be visible (replaced lock icon in refactor)
+    await expect(page.locator('svg.lucide-sparkles').first()).toBeVisible();
   });
 
   // ── CTA button text and visibility ──────────────────────────
@@ -76,8 +76,7 @@ test.describe('Conversion Funnel — Anonymous User', () => {
     await uploadAndWaitForAnalysis(page);
     await dismissNudgeIfVisible(page);
 
-    await expect(page.getByText('Create a free account for AI insights')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('never re-upload your SD card again')).toBeVisible();
+    await expect(page.getByText('Create a free account for full AI insights')).toBeVisible({ timeout: 5_000 });
   });
 
   // ── CTA opens auth modal ──────────────────────────────────
@@ -85,7 +84,7 @@ test.describe('Conversion Funnel — Anonymous User', () => {
     await uploadAndWaitForAnalysis(page);
     await dismissNudgeIfVisible(page);
 
-    await page.getByText('Create a free account for AI insights').click();
+    await page.getByText('Create a free account for full AI insights').click();
 
     // Auth modal should appear
     const modal = page.getByRole('dialog').filter({ hasText: /sign in to airwaylab/i });
@@ -419,9 +418,9 @@ test.describe('Conversion Funnel — Returning User Nudge', () => {
 
     await dismissNudgeIfVisible(page);
 
-    // Locked AI teasers should appear (user is anonymous)
-    await expect(page.getByText('AI-Powered Insights')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('Create a free account for AI insights')).toBeVisible();
+    // AI preview section should appear (user is anonymous)
+    await expect(page.getByText('AI Analysis Preview')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Create a free account for full AI insights')).toBeVisible();
   });
 });
 

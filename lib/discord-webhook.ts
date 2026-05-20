@@ -14,8 +14,6 @@
  * the caller continues without error.
  */
 
-import * as Sentry from '@sentry/nextjs'
-
 // ── Types ────────────────────────────────────────────────────
 
 interface DiscordEmbedField {
@@ -74,11 +72,14 @@ export async function sendAlert(
     if (content) body.content = content
     if (embeds && embeds.length > 0) body.embeds = embeds
 
+    // 3s is ample for Discord; the prior 10s timeout kept void-called
+    // sendAlert() Promises alive until the Vercel function budget expired,
+    // producing unhandled TimeoutError events (JAVASCRIPT-NEXTJS-56).
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(3_000),
     })
 
     if (!res.ok) {
@@ -88,8 +89,10 @@ export async function sendAlert(
 
     return true
   } catch (err) {
+    // Fail-open: Discord alerts are non-critical notifications. Log only; do not
+    // forward to Sentry because fire-and-forget callers would create misleading
+    // error attribution (the active request scope is unrelated to Discord health).
     console.error(`[discord-webhook] ${channel} send failed:`, err instanceof Error ? err.message : 'unknown')
-    Sentry.captureException(err, { tags: { action: 'discord-webhook', channel } })
     return false
   }
 }

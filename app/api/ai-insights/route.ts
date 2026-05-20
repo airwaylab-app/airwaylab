@@ -513,6 +513,7 @@ export async function POST(request: NextRequest) {
     const validTypes = new Set(['positive', 'warning', 'actionable', 'info']);
     const validCategories = new Set(['glasgow', 'wat', 'ned', 'oximetry', 'therapy', 'trend', 'correlation', 'temporal']);
 
+    const preFilterCount = insights.length;
     insights = insights.filter(
       (i) =>
         i &&
@@ -522,6 +523,15 @@ export async function POST(request: NextRequest) {
         typeof i.body === 'string' &&
         validCategories.has(i.category)
     );
+
+    if (insights.length === 0) {
+      Sentry.captureMessage('AI insights: all insights filtered as invalid', {
+        level: 'error',
+        tags: { route: 'ai-insights', error_type: 'ai_response' },
+        extra: { preFilterCount, responsePreview: textBlock.text.slice(0, 200), stopReason: message.stop_reason },
+      });
+      return NextResponse.json({ error: 'AI returned no valid insights. Please try again.' }, { status: 502 });
+    }
 
     // Increment server-side AI usage counter atomically via RPC (with token tracking)
     const inputTokens = message.usage?.input_tokens ?? 0;
@@ -586,6 +596,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.RateLimitError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'rate_limit' },
+        extra: { anthropicStatus: err.status },
         level: 'warning',
       });
       console.error('[ai-insights] Rate limit exceeded after retries');
@@ -598,6 +609,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'auth' },
+        extra: { anthropicStatus: err.status },
         level: 'error',
       });
       console.error('[ai-insights] Auth/permission error:', err instanceof Anthropic.AuthenticationError ? 'authentication' : 'permission');
@@ -635,6 +647,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.NotFoundError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'not_found' },
+        extra: { anthropicStatus: err.status },
         level: 'error',
       });
       console.error('[ai-insights] Model not found');
@@ -648,6 +661,7 @@ export async function POST(request: NextRequest) {
       const isBillingError = err.message?.includes('credit balance');
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: isBillingError ? 'billing' : 'bad_request' },
+        extra: { anthropicStatus: err.status },
         level: isBillingError ? 'fatal' : 'error',
       });
       if (isBillingError) {
@@ -668,6 +682,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof Anthropic.InternalServerError) {
       Sentry.captureException(err, {
         tags: { route: 'ai-insights', error_type: 'server_error' },
+        extra: { anthropicStatus: err.status },
         level: 'warning',
       });
       console.error('[ai-insights] Anthropic internal server error');

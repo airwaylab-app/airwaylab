@@ -17,6 +17,28 @@ const gitSha = (() => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      // Wave 1 duplicate-slug 301s (AIR-1609 task 3, wave 1)
+      // Losers with no pending content merge — redirect immediately.
+      {
+        source: '/blog/oscar-cpap-software-alternatives',
+        destination: '/blog/oscar-alternatives-web-cpap-2026',
+        permanent: true,
+      },
+      {
+        source: '/blog/how-to-read-cpap-data',
+        destination: '/blog/how-to-read-cpap-therapy-report',
+        permanent: true,
+      },
+      {
+        source: '/blog/what-is-flow-limitation-cpap',
+        destination: '/blog/understanding-flow-limitation',
+        permanent: true,
+      },
+    ];
+  },
+
   env: {
     NEXT_PUBLIC_BUILD_ID: new Date().toISOString(),
     NEXT_PUBLIC_GIT_SHA: gitSha,

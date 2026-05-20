@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelSequence, scheduleSequence } from '@/lib/email/sequences';
+import { cancelSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
@@ -72,18 +72,18 @@ async function syncDiscordForUser(
       .maybeSingle();
 
     if (profile?.discord_id) {
-      const syncResult = await syncRole(profile.discord_id, tier);
-      const baseAction = tier === 'community' ? 'revoke' : 'assign';
+      const ok = await syncRole(profile.discord_id, tier);
 
+      // Log the role event — action reflects actual outcome
       await supabase.from('discord_role_events').insert({
         user_id: userId,
         discord_id: profile.discord_id,
         role_id: tier,
-        action: syncResult.ok ? baseAction : `${baseAction}_failed`,
+        action: ok
+          ? (tier === 'community' ? 'revoke' : 'assign')
+          : (tier === 'community' ? 'revoke_failed' : 'assign_failed'),
         reason: `stripe_tier_change_to_${tier}`,
         stripe_event_id: stripeEventId ?? null,
-        http_status: syncResult.httpStatus ?? null,
-        error_message: syncResult.errorBody?.slice(0, 500) ?? null,
       });
     } else {
       // User hasn't linked Discord yet — try to auto-resolve if they saved a username
@@ -103,18 +103,17 @@ async function syncDiscordForUser(
             discord_linked_at: new Date().toISOString(),
           }).eq('id', userId);
 
-          const syncResult = await syncRole(searchResult.discordId, tier);
-          const baseAction = tier === 'community' ? 'revoke' : 'assign';
+          const ok = await syncRole(searchResult.discordId, tier);
 
           await supabase.from('discord_role_events').insert({
             user_id: userId,
             discord_id: searchResult.discordId,
             role_id: tier,
-            action: syncResult.ok ? baseAction : `${baseAction}_failed`,
+            action: ok
+              ? (tier === 'community' ? 'revoke' : 'assign')
+              : (tier === 'community' ? 'revoke_failed' : 'assign_failed'),
             reason: `stripe_auto_resolve_${tier}`,
             stripe_event_id: stripeEventId ?? null,
-            http_status: syncResult.httpStatus ?? null,
-            error_message: syncResult.errorBody?.slice(0, 500) ?? null,
           });
 
           // Clean up any pending roles
@@ -251,6 +250,18 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error('[stripe-webhook] Signature verification failed:', err);
+    Sentry.captureEvent({
+      level: 'error',
+      message: 'Stripe webhook signature verification failed',
+      tags: {
+        route: 'webhooks/stripe',
+        event_type: 'stripe_webhook_sig_failure',
+      },
+      extra: {
+        hasSignatureHeader: !!request.headers.get('stripe-signature'),
+        userAgent: request.headers.get('user-agent'),
+      },
+    });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -288,6 +299,24 @@ export async function POST(request: NextRequest) {
         const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
         const periodEnd = firstItem?.current_period_end;
         const interval = firstItem?.price.recurring?.interval ?? 'unknown';
+
+        // AIR-1873: Guard against phantom supabase_user_id in Stripe metadata.
+        // A profile-less userId produces a silent no-op on the UPDATE below.
+        const { data: profileExists } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!profileExists) {
+          Sentry.captureMessage('Stripe webhook: supabase_user_id in metadata has no matching profile', {
+            level: 'error',
+            tags: { route: 'stripe-webhook', event_type: event.type, check: 'phantom-user-id' },
+            extra: { userId, eventId: event.id, subscriptionId, stripeCustomerId: session.customer },
+          });
+          console.error(`[stripe-webhook] Phantom supabase_user_id=${userId} on event=${event.id} — no profile row found`);
+          break;
+        }
 
         // Critical DB writes — parallel to minimize latency
         const [upsertResult, profileResult] = await Promise.all([
@@ -470,6 +499,9 @@ export async function POST(request: NextRequest) {
 
           // Send cancellation email (non-blocking)
           void sendCancellationNotification(supabase, userId);
+
+          // Schedule win-back email 7 days from now for opted-in users (non-blocking)
+          void scheduleWinBackForUser(supabase, userId);
 
           // Sync Discord role (revoke if downgraded to community)
           void syncDiscordForUser(supabase, userId, newTier, event.id);

@@ -17,6 +17,35 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'oscar-cpap-software-alternatives',
+    title: 'OSCAR CPAP Software Alternatives (And How They Compare)',
+    seoTitle: 'OSCAR CPAP Software Alternatives: AirwayLab, SleepHQ & More | AirwayLab',
+    description:
+      'Looking for OSCAR CPAP software alternatives? We compare AirwayLab, SleepHQ, and ResMed myAir so you can find the right tool for your therapy data.',
+    date: '2026-05-14',
+    readTime: '7 min read',
+    tags: ['OSCAR', 'CPAP Software', 'SleepHQ', 'Comparison', 'Data Privacy'],
+    ogDescription:
+      'Looking for OSCAR CPAP software alternatives? We compare AirwayLab, SleepHQ, and ResMed myAir so you can find the right tool for your therapy data.',
+    faqItems: [
+      {
+        question: 'Is AirwayLab a replacement for OSCAR?',
+        answer:
+          'No — AirwayLab and OSCAR serve different use cases. OSCAR offers deep desktop-based waveform analysis; AirwayLab provides web-based, privacy-first visualisations you can access from any browser. Many users use both.',
+      },
+      {
+        question: 'Does AirwayLab upload my CPAP data to a server?',
+        answer:
+          'No. All processing happens locally in your browser. Your data never leaves your device.',
+      },
+      {
+        question: 'Is AirwayLab free?',
+        answer:
+          'Yes — the free tier covers full analysis and is free and always will be. Premium adds longer history exports and additional trend views.',
+      },
+    ],
+  },
+  {
     slug: 'cpap-vs-bipap',
     title: 'CPAP vs BiPAP: Which Device Do You Need and Why?',
     seoTitle: 'CPAP vs BiPAP: Difference Between CPAP and BiPAP Explained | AirwayLab',
@@ -1205,6 +1234,37 @@ export const blogPosts: BlogPost[] = [
     tags: ['ESS', 'Fatigue', 'UARS', 'Research'],
     ogDescription:
       'The Epworth Sleepiness Scale conflates sleepiness and fatigue. If your main symptom is exhaustion rather than drowsiness, the ESS may miss your problem entirely.',
+    faqItems: [
+      {
+        question: 'What is a normal Epworth Sleepiness Scale score?',
+        answer:
+          'A score of 0–9 is in the normal range. A score of 10 or above is in the excessive sleepiness range. Your sleep physician can put your score in context with your other symptoms and test results.',
+      },
+      {
+        question: 'What does an ESS score of 10 mean?',
+        answer:
+          'A score of 10 sits at the boundary between normal and mild-to-moderate excessive sleepiness. It is one data point — not a diagnosis. Discuss with your sleep physician what it means alongside your other symptoms.',
+      },
+      {
+        question: 'What does an ESS score of 16 or above mean?',
+        answer:
+          'A score of 16–24 is in the severe excessive sleepiness range. This is a signal to discuss further evaluation with your sleep specialist or GP.',
+      },
+      {
+        question: 'Can I have sleep apnea with a low Epworth score?',
+        answer:
+          'Yes. A low ESS does not rule out sleep-disordered breathing. The ESS measures subjective sleepiness — but many people whose primary complaint is fatigue (rather than the urge to doze off) score low on the ESS even when their breathing data shows significant flow limitation or RERAs. A sleep study or objective data review gives a more complete picture.',
+      },
+      {
+        question: 'What is the difference between the ESS and STOP-BANG?',
+        answer:
+          'The ESS measures how sleepy you feel during the day. STOP-BANG assesses risk factors for obstructive sleep apnea (snoring, BMI, neck size, age, etc.). They measure different things and are often used together in a clinical assessment.',
+      },
+      {
+        question: 'How many questions does the Epworth Sleepiness Scale have?',
+        answer: 'The ESS has 8 questions. Each is rated 0–3, giving a maximum score of 24.',
+      },
+    ],
   },
   {
     slug: 'what-is-cns-sensitization',
@@ -1657,6 +1717,56 @@ export const blogPosts: BlogPost[] = [
         question: 'How does AirwayLab show central apnea data?',
         answer:
           'AirwayLab reads CA event data directly from your ResMed EDF files, the same source as OSCAR. The overview dashboard shows your CA count alongside your obstructive and hypopnea breakdown. The trend tab shows CA counts across loaded sessions. All analysis runs in your browser — your data never leaves your device.',
+      },
+    ],
+  },
+  {
+    slug: 'cpap-data-report-what-doctor-sees',
+    title: 'How to Read Your CPAP Data Report (What Your Doctor Sees)',
+    seoTitle:
+      'How to Read Your CPAP Data Report: AHI, Usage, Leak Rate | AirwayLab',
+    description:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate — and what your doctor and insurance company actually look at.',
+    date: '2026-05-18',
+    readTime: '8 min read',
+    tags: ['CPAP Compliance', 'CPAP Data', 'AHI', 'Insurance', 'ResMed'],
+    ogDescription:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate, and event breakdown — and what your doctor and insurance company are actually looking at when they review your therapy report.',
+    faqItems: [
+      {
+        question: 'What is a CPAP compliance report?',
+        answer:
+          "A CPAP compliance report is a summary of your therapy usage data — how often you used the machine, for how long, and key metrics like AHI and leak rate. It's generated from your device's SD card or cloud app data. Your doctor uses it to review therapy progress; your insurance company uses it to verify coverage requirements.",
+      },
+      {
+        question: 'How many hours do I need to use my CPAP to be compliant?',
+        answer:
+          'The US Medicare standard — and the benchmark most private insurers follow — is at least 4 hours of use per night on at least 70% of nights over a 30-day period. If you fall below this threshold, coverage for equipment and supplies may be affected. Your DME supplier can pull your detailed usage record if you need to review your status.',
+      },
+      {
+        question: 'What AHI does my insurance company look at?',
+        answer:
+          'Insurers typically look at your residual AHI — the events recorded while therapy was running — as a favorable data point in compliance reviews. Your clinician can put your specific number in context and explain what it means for your care.',
+      },
+      {
+        question: 'What does "large mask leak" mean on my CPAP report?',
+        answer:
+          'A large mask leak flag means unintentional air escaped around your mask seal beyond the threshold your device uses to flag data-quality concerns. High or persistent leak can reduce the reliability of AHI readings for that session and may prompt your doctor to review mask fit. Your clinician can help assess recurring leak flags in your specific context.',
+      },
+      {
+        question: 'Can I access my own CPAP compliance data?',
+        answer:
+          "Yes. ResMed users can view a summary in the myAir app, or export their SD card for detailed data. Philips DreamStation users can use DreamMapper for cloud summary data, or OSCAR (free, open-source) for full SD card data. AirwayLab reads ResMed SD card data directly in your browser — no upload required.",
+      },
+      {
+        question: 'What is the difference between CPAP compliance and CPAP effectiveness?',
+        answer:
+          'Compliance (for insurance purposes) is largely about usage hours — did you use the machine enough. Clinical effectiveness is a broader judgment that includes AHI trends, leak patterns, and how you actually feel. Compliance is a prerequisite for coverage; effectiveness is what your clinician evaluates at follow-up.',
+      },
+      {
+        question: 'Does AirwayLab show my compliance data?',
+        answer:
+          "Yes. AirwayLab reads your usage hours, AHI, event breakdowns, leak rate, and pressure data from your ResMed SD card and displays it in one dashboard — the same data that goes into your doctor's compliance report. It also runs four additional analysis engines on your raw flow waveform, surfacing metrics like flow limitation scores and RERA-related patterns that don't appear in standard compliance reports. Everything runs in your browser; your data never leaves your device.",
       },
     ],
   },

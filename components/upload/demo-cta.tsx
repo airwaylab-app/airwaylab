@@ -9,25 +9,22 @@ interface DemoCTAProps {
 
 export function DemoCTA({ onLoadDemo }: DemoCTAProps) {
   return (
-    <div className="mt-6 flex flex-col items-center gap-2">
-      <div className="flex items-center gap-3 text-[11px] text-muted-foreground/50">
-        <div className="h-px flex-1 bg-border/50" />
-        <span>or</span>
-        <div className="h-px flex-1 bg-border/50" />
-      </div>
+    <div className="mb-5 flex flex-col items-center gap-4">
       <Button
         variant="outline"
         size="default"
         onClick={onLoadDemo}
-        aria-label="Load 7-night sample dataset"
+        aria-label="Load 7-night sample dataset — no file needed"
         className="gap-2"
       >
         <Play className="h-4 w-4" aria-hidden="true" />
-        Try sample data
+        See a demo analysis — no file needed →
       </Button>
-      <p className="text-[11px] text-muted-foreground/50">
-        7 nights of example BiPAP data - no file needed
-      </p>
+      <div className="flex w-full items-center gap-3 text-[11px] text-muted-foreground/50">
+        <div className="h-px flex-1 bg-border/50" />
+        <span>or upload your own data</span>
+        <div className="h-px flex-1 bg-border/50" />
+      </div>
     </div>
   );
 }

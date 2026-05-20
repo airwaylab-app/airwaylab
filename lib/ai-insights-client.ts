@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import type { Insight } from './insights';
 import type { NightResult, NightNotes } from './types';
 
@@ -66,19 +67,22 @@ interface PerBreathSummary {
   sampleRate: number;
 }
 
+// Zod schema guards the response shape before any downstream consumption.
+// passthrough() preserves extra fields (e.g. `link`, `context` on premium insights).
+const InsightSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  title: z.string(),
+}).passthrough();
+
+const AIResponseSchema = z.object({
+  insights: z.array(InsightSchema).min(1),
+}).passthrough();
+
 function validateInsights(data: unknown): Insight[] | null {
-  if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).insights)) return null;
-
-  const validInsights = ((data as Record<string, unknown>).insights as unknown[]).filter(
-    (i): i is Insight =>
-      !!i &&
-      typeof i === 'object' &&
-      typeof (i as Record<string, unknown>).id === 'string' &&
-      typeof (i as Record<string, unknown>).type === 'string' &&
-      typeof (i as Record<string, unknown>).title === 'string'
-  );
-
-  return validInsights.length > 0 ? validInsights : null;
+  const result = AIResponseSchema.safeParse(data);
+  if (!result.success) return null;
+  return result.data.insights as unknown as Insight[];
 }
 
 /**
@@ -213,7 +217,11 @@ export async function fetchAIInsights(
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       console.error('[ai-insights] Network error (standard mode)');
-      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'network_fetch_failed', mode: 'standard', route: 'ai-insights' },
+      });
+      throw new Error('The AI analysis service is temporarily unavailable. Please try again.');
     }
     throw err;
   } finally {
@@ -302,7 +310,11 @@ export async function fetchDeepAIInsights(
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       console.error('[ai-insights] Network error (deep mode)');
-      throw new Error('Could not reach the AI service. Check your internet connection and try again.');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'network_fetch_failed', mode: 'deep', route: 'ai-insights' },
+      });
+      throw new Error('The AI analysis service is temporarily unavailable. Please try again.');
     }
     throw err;
   } finally {

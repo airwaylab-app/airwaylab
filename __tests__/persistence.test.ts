@@ -297,6 +297,15 @@ describe('persistence', () => {
       expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
 
+    it('returns savedAt timestamp in the result (recent-restore bypass needs it)', () => {
+      const before = Date.now();
+      persistResults(SAMPLE_NIGHTS, null);
+      const after = Date.now();
+      const result = loadPersistedResults();
+      expect(result?.savedAt).toBeGreaterThanOrEqual(before);
+      expect(result?.savedAt).toBeLessThanOrEqual(after);
+    });
+
     it('restores sessionStartTime as a Date after round-trip through localStorage', () => {
       const startTime = new Date('2025-03-15T22:31:00Z');
       const nightWithStartTime = {
@@ -359,18 +368,18 @@ function daysAgo(n: number): string {
 }
 
 describe('filterNightsToTierWindow', () => {
-  it('community tier keeps nights within 7 days and excludes older ones', () => {
+  it('community tier keeps nights within 14 days and excludes older ones', () => {
     const nights = [
       makeDatedNight(daysAgo(1)),
       makeDatedNight(daysAgo(3)),
       makeDatedNight(daysAgo(5)),
-      makeDatedNight(daysAgo(10)),  // outside 7-day window
-      makeDatedNight(daysAgo(30)),  // outside 7-day window
+      makeDatedNight(daysAgo(10)),  // inside 14-day window
+      makeDatedNight(daysAgo(15)),  // outside 14-day window
     ];
     const result = filterNightsToTierWindow(nights, 'community');
-    expect(result).toHaveLength(3);
+    expect(result).toHaveLength(4);
     expect(result.map((n) => n.dateStr)).toEqual(
-      expect.not.arrayContaining([daysAgo(10), daysAgo(30)])
+      expect.not.arrayContaining([daysAgo(15)])
     );
   });
 
@@ -397,7 +406,7 @@ describe('filterNightsToTierWindow', () => {
 
   it('returns empty array when no nights fall within community window', () => {
     const nights = [
-      makeDatedNight(daysAgo(10)),
+      makeDatedNight(daysAgo(15)),
       makeDatedNight(daysAgo(60)),
     ];
     const result = filterNightsToTierWindow(nights, 'community');

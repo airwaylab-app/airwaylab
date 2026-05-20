@@ -12,7 +12,7 @@ interface DriftMismatch {
   profile_tier: string;
   subscription_status: string | null;
   subscription_tier: string | null;
-  drift_type: 'downgrade_missed' | 'upgrade_missed';
+  drift_type: 'downgrade_missed' | 'upgrade_missed' | 'webhook_never_ran';
   fixed: boolean;
 }
 
@@ -37,9 +37,11 @@ function deriveTierFromSubscriptions(
  * profiles.tier and subscriptions.status that can occur when Stripe
  * webhooks partially fail.
  *
- * Two drift types:
- *   - downgrade_missed: profile says supporter/champion, but no active subscription
- *   - upgrade_missed:   active subscription exists, but profile says community
+ * Three drift types:
+ *   - downgrade_missed:   profile says supporter/champion, but no active subscription
+ *   - upgrade_missed:     active subscription exists, but profile says community
+ *   - webhook_never_ran:  community profile has stripe_customer_id but no subscription
+ *                         row at all — webhook was never processed (not auto-fixed)
  *
  * Auto-fixes mismatches and logs each one to Sentry. Sends a Discord
  * ops alert summarising the run if any mismatches were found.
@@ -81,7 +83,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
-    // 2. Get all profiles with community tier that have any subscription
+    // 2. Get all profiles with community tier that have any subscription row.
+    //
+    // NOTE: upgrade_missed detection below requires a subscription row to exist.
+    // If a user's checkout.session.completed webhook was never processed (e.g. the
+    // AIR-1142 signature failure), no row is created and this query is blind to them.
+    // The webhook_never_ran check (step 5) handles that blind spot separately.
     const { data: communityWithSubs, error: communityError } = await supabase
       .from('profiles')
       .select('id, tier, email, subscriptions(id, status, tier)')
@@ -141,15 +148,15 @@ export async function GET(request: NextRequest) {
 
           // Revoke Discord role if user has one linked
           if (profile.discord_id && isDiscordConfigured()) {
-            const discordResult = await syncRole(profile.discord_id, 'community');
+            const discordOk = await syncRole(profile.discord_id, 'community');
             await supabase.from('discord_role_events').insert({
               user_id: profile.id,
               discord_id: profile.discord_id,
               role_id: 'community',
-              action: discordResult.ok ? 'revoke' : 'revoke_failed',
+              action: discordOk ? 'revoke' : 'revoke_failed',
               reason: 'drift_cron_cleanup',
             });
-            if (!discordResult.ok) {
+            if (!discordOk) {
               Sentry.captureMessage('Discord role revocation failed in drift cron', {
                 level: 'warning',
                 tags: { route: 'cron-subscription-drift', action: 'discord-remove-role-failed' },
@@ -272,9 +279,57 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const checked = (paidProfiles?.length ?? 0) + (communityWithSubs?.length ?? 0);
+    // 5. Detect community profiles with stripe_customer_id but no subscription row.
+    //
+    // This is the "webhook_never_ran" blind spot: a user completed Stripe checkout
+    // and received a stripe_customer_id on their profile, but the
+    // checkout.session.completed webhook was never processed (e.g. AIR-1142 signature
+    // failure). Without a subscription row, the upgrade_missed check above cannot
+    // surface them — it filters .not('subscriptions', 'is', null), so users with NO
+    // row at all are invisible. We surface them here for manual review via Sentry.
+    // Do NOT auto-fix: verifying the actual Stripe subscription status requires a
+    // Stripe API call that is out of scope for this detection-only cron.
+    const { data: webhookBlindProfiles, error: webhookBlindError } = await supabase
+      .from('profiles')
+      .select('id, stripe_customer_id, subscriptions(id)')
+      .eq('tier', 'community')
+      .not('stripe_customer_id', 'is', null)
+      .is('subscriptions', null);
 
-    // 5. Send Discord ops alert if any drift was found
+    if (webhookBlindError) {
+      console.error('[subscription-drift] Failed to query webhook-blind profiles:', webhookBlindError);
+      Sentry.captureException(webhookBlindError, { tags: { route: 'cron-subscription-drift' } });
+    } else {
+      for (const profile of webhookBlindProfiles ?? []) {
+        const mismatch: DriftMismatch = {
+          user_id: profile.id,
+          profile_tier: 'community',
+          subscription_status: null,
+          subscription_tier: null,
+          drift_type: 'webhook_never_ran',
+          fixed: false,
+        };
+
+        Sentry.captureMessage('Subscription webhook never ran — manual review required', {
+          level: 'warning',
+          tags: { route: 'cron-subscription-drift', drift_type: 'webhook_never_ran' },
+          extra: {
+            user_id: profile.id,
+            stripe_customer_id: (profile as Record<string, unknown>).stripe_customer_id,
+          },
+        });
+
+        mismatches.push(mismatch);
+      }
+    }
+
+    const webhookNeverRanCount = mismatches.filter((m) => m.drift_type === 'webhook_never_ran').length;
+    const checked =
+      (paidProfiles?.length ?? 0) +
+      (communityWithSubs?.length ?? 0) +
+      (webhookBlindProfiles?.length ?? 0);
+
+    // 6. Send Discord ops alert if any drift was found
     if (mismatches.length > 0) {
       const downgradeMissed = mismatches.filter((m) => m.drift_type === 'downgrade_missed').length;
       const upgradeMissed = mismatches.filter((m) => m.drift_type === 'upgrade_missed').length;
@@ -290,6 +345,7 @@ export async function GET(request: NextRequest) {
             { name: 'Fixed', value: String(fixed), inline: true },
             { name: 'Downgrade missed', value: String(downgradeMissed), inline: true },
             { name: 'Upgrade missed', value: String(upgradeMissed), inline: true },
+            { name: 'Webhook never ran (manual review)', value: String(webhookNeverRanCount), inline: true },
           ],
           footer: { text: 'subscription-drift cron' },
           timestamp: new Date().toISOString(),
@@ -298,7 +354,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.error(
-      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}`
+      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}`
     );
 
     return NextResponse.json({
@@ -306,6 +362,7 @@ export async function GET(request: NextRequest) {
       checked,
       mismatches: mismatches.length,
       fixed,
+      webhook_never_ran: webhookNeverRanCount,
     });
   } catch (err) {
     console.error('[subscription-drift] Cron failed:', err);

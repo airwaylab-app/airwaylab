@@ -28,7 +28,7 @@ describe('validateSDFiles', () => {
     expect(result.valid).toBe(false);
     expect(result.edfCount).toBe(0);
     expect(result.deviceType).toBe('unknown');
-    expect(result.errors[0]).toContain('not recognised');
+    expect(result.errors[0]).toContain('readme.txt');
   });
 
   it('validates basic EDF files successfully', () => {
@@ -155,6 +155,63 @@ describe('validateSDFiles', () => {
     const result = validateSDFiles(files);
     expect(result.valid).toBe(true);
     expect(result.edfCount).toBe(5);
+  });
+});
+
+
+describe('targeted error messages based on selection context', () => {
+  it('shows filename when a single non-EDF file is dropped (unknown device)', () => {
+    const files = [mockFile('config.txt')];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('config.txt');
+    expect(result.errors[0]).toContain('top-level folder');
+  });
+
+  it('shows DATALOG guidance when DATALOG subfolder is selected with no EDF files', () => {
+    const files = [
+      mockFile('config.bin', 500, 'DATALOG/config.bin'),
+      mockFile('notes.txt', 200, 'DATALOG/notes.txt'),
+    ];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('DATALOG');
+    expect(result.errors[0]).toContain('navigate up');
+  });
+
+  it('shows date-folder guidance when a session date subfolder is selected', () => {
+    const files = [
+      mockFile('data.bin', 500, '20250110/data.bin'),
+    ];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('20250110');
+    expect(result.errors[0]).toContain('navigate up');
+  });
+
+  it('shows folder name when unrelated subfolder (e.g. PHOTOS) is selected', () => {
+    const files = [
+      mockFile('photo1.jpg', 500, 'PHOTOS/photo1.jpg'),
+      mockFile('photo2.jpg', 500, 'PHOTOS/photo2.jpg'),
+    ];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('PHOTOS');
+    expect(result.errors[0]).toContain('navigate up');
+  });
+
+  it('validates successfully when Windows drive root selected (DATALOG paths + root-level IDENTIFICATION file)', () => {
+    const files = [
+      mockFile('IDENTIFICATION.TXT', 200),
+      mockFile('20250110_220000_BRP.edf', 100_000, 'DATALOG/20250110/20250110_220000_BRP.edf'),
+      mockFile('STR.edf', 2000, 'DATALOG/STR.edf'),
+      mockFile('other1.edf', 1000, 'DATALOG/20250110/other1.edf'),
+      mockFile('other2.edf', 1000, 'DATALOG/20250110/other2.edf'),
+      mockFile('other3.edf', 1000, 'DATALOG/20250110/other3.edf'),
+    ];
+    const result = validateSDFiles(files);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
 });
 

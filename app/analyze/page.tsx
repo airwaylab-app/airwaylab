@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
+import { syncAnalysisToCloud, fetchNightsFromCloud } from '@/lib/storage/nights-sync';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -42,7 +43,8 @@ import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
 import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
-import { events } from '@/lib/analytics';
+import { events, capturePostHog, setPostHogPersonProps } from '@/lib/analytics';
+import { useTierHistoryWindowDays } from '@/hooks/use-tier-history-window-days';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
 import { contributeWaveformsBackground } from '@/lib/contribute-waveforms';
 import { contributeOximetryTraceBackground } from '@/lib/contribute-oximetry-trace';
@@ -53,7 +55,6 @@ import { PostAnalysisUpgrade } from '@/components/dashboard/post-analysis-upgrad
 import { useNudgeSequencer } from '@/hooks/use-nudge-sequencer';
 import { UploadAgainCta } from '@/components/dashboard/upload-again-cta';
 import { HistoryExpiryWarning } from '@/components/dashboard/history-expiry-warning';
-import { CommunityGateBanner } from '@/components/dashboard/community-gate-banner';
 import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -107,6 +108,7 @@ function AnalyzePageInner() {
   const [persistedData, setPersistedData] = useState<{
     nights: NightResult[];
     therapyChangeDate: string | null;
+    savedAt?: number;
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxFilesRef = useRef<File[]>([]);
@@ -138,6 +140,9 @@ function AnalyzePageInner() {
   useEffect(() => { userRef.current = user; }, [user]);
   const tierRef = useRef(tier);
   useEffect(() => { tierRef.current = tier; }, [tier]);
+  const overrideWindowDays = useTierHistoryWindowDays();
+  const overrideWindowDaysRef = useRef(overrideWindowDays);
+  useEffect(() => { overrideWindowDaysRef.current = overrideWindowDays; }, [overrideWindowDays]);
   const [bannerActivated, setBannerActivated] = useState(false);
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
@@ -230,6 +235,33 @@ function AnalyzePageInner() {
     } catch { /* noop */ }
   }, []);
 
+  // Cloud-first hydration: on auth, fetch stored nights and merge with localStorage
+  useEffect(() => {
+    if (!user || state.status !== 'idle' || isDemo) return;
+
+    fetchNightsFromCloud()
+      .then((cloudNights) => {
+        if (cloudNights.length === 0) return;
+
+        setPersistedData((prev) => {
+          const merged = new Map<string, NightResult>();
+          for (const n of (prev?.nights ?? [])) merged.set(n.dateStr, n);
+          // Cloud wins on date conflict
+          for (const n of cloudNights) merged.set(n.dateStr, n);
+
+          const nights = Array.from(merged.values()).sort((a, b) =>
+            b.dateStr.localeCompare(a.dateStr)
+          );
+          return { nights, therapyChangeDate: prev?.therapyChangeDate ?? null };
+        });
+      })
+      .catch((err) => {
+        // Non-fatal: fall back to localStorage silently
+        Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Fires once on auth; state/isDemo are stable at auth time
+
   // Auto-upload + store analysis data when user authenticates with loaded results
   useEffect(() => {
     if (!user || hasTriggeredAutoUpload.current || isDemo) return;
@@ -247,6 +279,14 @@ function AnalyzePageInner() {
 
     // Store aggregate analysis data
     storeAnalysisData(currentNights).catch(() => { /* logged in client */ });
+
+    // Sync full analysis results to cloud (non-fatal)
+    if (userRef.current) {
+      syncAnalysisToCloud(currentNights).catch(err => {
+        Sentry.captureException(err, { extra: { context: 'analysis_cloud_sync' } });
+        // Non-fatal: local results still available
+      });
+    }
   }, [user, isDemo, state.nights, persistedData?.nights]);
 
   // Show GitHub star prompt after 30s in demo mode (once per session)
@@ -298,6 +338,26 @@ function AnalyzePageInner() {
       // Persist results when analysis completes
       if (newState.status === 'complete' && newState.nights.length > 0) {
         events.analysisComplete(newState.nights.length);
+
+        // PostHog experiment: fire tier_window_hit when community cap excludes nights
+        if ((newState.nightsCappedCount ?? 0) > 0 && tierRef.current === 'community') {
+          const resolvedWindowDays = overrideWindowDaysRef.current ?? getAnalysisWindowDays('community');
+          capturePostHog('tier_window_hit', {
+            cohort: String(overrideWindowDaysRef.current ?? 'control'),
+            nights_total: newState.nights.length,
+            nights_capped: newState.nightsCappedCount ?? 0,
+            tier_window_days: resolvedWindowDays,
+            is_free_user: true,
+          });
+          // Set cap_encountered_at on first encounter only
+          const capKey = 'airwaylab_cap_first_encounter';
+          if (!localStorage.getItem(capKey)) {
+            const encounteredAt = new Date().toISOString();
+            localStorage.setItem(capKey, encounteredAt);
+            setPostHogPersonProps({ cap_encountered_at: encounteredAt });
+          }
+        }
+
         // Orchestrator already calls persistResults internally — don't double-persist.
         // The persistenceWarning from the orchestrator state will surface any issues.
         setPersistedData(null);
@@ -382,7 +442,7 @@ function AnalyzePageInner() {
       if (lifetimeNights > 0) {
         events.returningUserUpload(lifetimeNights);
       }
-      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current);
+      orchestrator.analyze(sdFiles, oxFiles.length > 0 ? oxFiles : undefined, deviceType, bmcSerial, tierRef.current, overrideWindowDaysRef.current);
     },
     [lifetimeNights]
   );
@@ -516,13 +576,16 @@ function AnalyzePageInner() {
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
-    if (isDemo || !isFinite(windowDays) || windowDays <= 0) return raw;
+    // Bypass window filter for: demo, fresh uploads, recent restored sessions (same-day reload),
+    // and non-finite/zero windows. Old persisted history is subject to the tier window.
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore || !isFinite(windowDays) || windowDays <= 0) return raw;
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - windowDays);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     return raw.filter((n) => n.dateStr >= cutoffStr);
-  }, [isDemo, state.nights, persistedData?.nights, tier]);
+  }, [isDemo, state.nights, persistedData?.nights, persistedData?.savedAt, tier]);
 
   const hiddenNightCount = useMemo<number>(() => {
     if (isDemo) return 0;
@@ -541,11 +604,14 @@ function AnalyzePageInner() {
   // Tier-gated history window: only nights within the calendar window are visible.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
+    // Bypass for: demo, fresh uploads, and recent restored sessions (same-day reload).
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore) return nights;
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
     return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  }, [nights, tier]);
+  }, [nights, tier, isDemo, state.nights.length, persistedData?.savedAt]);
 
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
@@ -705,6 +771,7 @@ function AnalyzePageInner() {
       {status === 'idle' && !isDemo && (
         !persistedData ? (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
@@ -716,15 +783,13 @@ function AnalyzePageInner() {
                 How to get your ResMed data
               </Link>
             </p>
-
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
       )}
@@ -860,16 +925,20 @@ function AnalyzePageInner() {
               <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Storage limit reached</span>
-                  {' '}&mdash; {persistenceWarning}
+                  {' '}&mdash; {hasCloudSyncConsent()
+                    ? `Viewing your ${nights.length} most recent night${nights.length !== 1 ? 's' : ''}. All your data is safely backed up.`
+                    : persistenceWarning}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                  onClick={handleClearLocalData}
-                >
-                  Clear saved data
-                </Button>
+                {!hasCloudSyncConsent() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                    onClick={handleClearLocalData}
+                  >
+                    Clear saved data
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1185,7 +1254,6 @@ function AnalyzePageInner() {
               />
             )}
             {!isDemo && <HistoryExpiryWarning nights={nights} hiddenNightCount={hiddenNightCount} />}
-            {!isDemo && <CommunityGateBanner nights={nights} />}
             {!isDemo && activeNudge === 'email-opt-in' && <EmailOptInNudge />}
             <DataContribution
               nights={nights}

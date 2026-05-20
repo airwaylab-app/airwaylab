@@ -51,6 +51,7 @@ class AnalysisOrchestrator {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private boundBeforeUnload: (() => void) | null = null;
   private currentTier: Tier = 'community';
+  private currentOverrideWindowDays?: number;
 
   /** Diagnostic info from settings extraction failure (null when extraction succeeded). */
   settingsDiagnostic: WorkerSettingsDiagnostic | null = null;
@@ -79,9 +80,11 @@ class AnalysisOrchestrator {
     oximetryFiles?: FileList | File[],
     deviceType?: string,
     bmcSerial?: string,
-    tier: Tier = 'community'
+    tier: Tier = 'community',
+    overrideWindowDays?: number
   ): Promise<NightResult[]> {
     this.currentTier = tier;
+    this.currentOverrideWindowDays = overrideWindowDays;
     this.terminate();
     const sdArr = Array.from(sdFiles);
     this.setState({
@@ -278,9 +281,12 @@ class AnalysisOrchestrator {
         }
       }
 
-      // ── Authoritative save of final results (tier-gated window) ──
-      const nightsToSave = filterNightsToTierWindow(merged, tier);
-      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      // ── Authoritative save of final results ──
+      // Save all merged nights regardless of tier window so the session can be
+      // restored on reload. The page applies the tier window on display, but
+      // bypasses it when the session was saved recently (same-day restore).
+      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
+      const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
       persistBreathData(merged);
       persistPLDTraces(merged);
@@ -290,6 +296,7 @@ class AnalysisOrchestrator {
       this.setState({
         status: 'complete',
         nights: merged,
+        nightsCappedCount: merged.length - nightsToSave.length,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -307,7 +314,12 @@ class AnalysisOrchestrator {
         }
       }
       this.clearIncrementalState();
-      const error = err instanceof Error ? err.message : String(err);
+      let error = err instanceof Error ? err.message : String(err);
+      if (err instanceof DOMException && err.name === 'NotReadableError') {
+        error = 'File could not be read — please re-select your SD card files and try again';
+      } else if (err instanceof DOMException && err.name === 'NotFoundError') {
+        error = 'The SD card was removed or became unavailable. Please reconnect and try again.';
+      }
       Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
       this.setState({ status: 'error', error });
       throw err;
@@ -578,15 +590,17 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results (tier-gated window)
+      // Persist updated results — save all nights so reload can restore the session.
+      // The tier window is applied at display time on the page.
       const therapyChangeDate = detectTherapyChange(merged);
-      const nightsToSave = filterNightsToTierWindow(merged, tier);
-      const persistResult = persistResults(nightsToSave, therapyChangeDate);
+      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
+      const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',
         nights: merged,
+        nightsCappedCount: merged.length - nightsToSave.length,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -710,7 +724,7 @@ class AnalysisOrchestrator {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       if (this.incrementalNights.length > 0) {
-        const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier);
+        const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
         persistNightsIncremental(nights);
       }
     }, 2000);
@@ -730,7 +744,7 @@ class AnalysisOrchestrator {
     this.boundBeforeUnload = () => {
       if (this.incrementalNights.length > 0) {
         try {
-          const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier);
+          const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
           persistNightsIncremental(nights);
         } catch {
           // Best effort — page is closing
@@ -767,11 +781,18 @@ class AnalysisOrchestrator {
 
 /**
  * Filter nights to those within the tier's analysis window (pure date-cutoff).
- * Champions get all nights; supporters get 90 days; community gets 7 days.
+ * Champions get all nights; supporters get 90 days; community gets 14 days.
  * `now` is injectable for deterministic testing.
  */
-export function filterNightsToTierWindow(nights: NightResult[], tier: Tier, now = Date.now()): NightResult[] {
-  const windowDays = getAnalysisWindowDays(tier);
+export function filterNightsToTierWindow(
+  nights: NightResult[],
+  tier: Tier,
+  now = Date.now(),
+  overrideWindowDays?: number
+): NightResult[] {
+  const windowDays = (tier === 'community' && overrideWindowDays != null)
+    ? overrideWindowDays
+    : getAnalysisWindowDays(tier);
   if (windowDays === Infinity) return nights;
   const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
   return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);

@@ -551,4 +551,75 @@ describe('analysis-orchestrator worker error handling', () => {
       vi.unstubAllGlobals();
     });
   });
+
+  // ── analyze — NotReadableError during file read ───────────────────────────
+
+  describe('analyze — NotReadableError during file read', () => {
+    it('sets error state with user-friendly message when arrayBuffer() throws NotReadableError', async () => {
+      // Stub Worker so it never gets called — the error is thrown before the worker
+      vi.stubGlobal('Worker', makeThrowingWorkerCtor(new Error('should not reach worker')));
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+      const notReadable = new DOMException('The requested file could not be read', 'NotReadableError');
+      const mockFile = {
+        name: 'BRP.edf',
+        size: 100 * 1024,
+        webkitRelativePath: 'DATALOG/20240101/BRP.edf',
+        arrayBuffer: () => Promise.reject(notReadable),
+        text: () => Promise.reject(notReadable),
+        lastModified: Date.now(),
+        type: '',
+        slice: () => new Blob(),
+        stream: () => { throw new Error('not implemented'); },
+      } as unknown as File;
+
+      try {
+        await orchestrator.analyze([mockFile]);
+      } catch {
+        // analyze re-throws; we inspect state below
+      }
+
+      const state = orchestrator.getState();
+      expect(state.status).toBe('error');
+      expect(state.error).toBe(
+        'File could not be read — please re-select your SD card files and try again'
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it('still calls Sentry.captureException for NotReadableError', async () => {
+      vi.stubGlobal('Worker', makeThrowingWorkerCtor(new Error('should not reach worker')));
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+      const Sentry = await import('@sentry/nextjs');
+
+      const notReadable = new DOMException('The requested file could not be read', 'NotReadableError');
+      const mockFile = {
+        name: 'BRP.edf',
+        size: 100 * 1024,
+        webkitRelativePath: 'DATALOG/20240101/BRP.edf',
+        arrayBuffer: () => Promise.reject(notReadable),
+        text: () => Promise.reject(notReadable),
+        lastModified: Date.now(),
+        type: '',
+        slice: () => new Blob(),
+        stream: () => { throw new Error('not implemented'); },
+      } as unknown as File;
+
+      try {
+        await orchestrator.analyze([mockFile]);
+      } catch {
+        // expected
+      }
+
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        notReadable,
+        expect.objectContaining({ extra: expect.objectContaining({ context: 'analysis-worker' }) })
+      );
+
+      vi.unstubAllGlobals();
+    });
+  });
 });
