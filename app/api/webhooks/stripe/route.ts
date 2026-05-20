@@ -250,6 +250,18 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error('[stripe-webhook] Signature verification failed:', err);
+    Sentry.captureEvent({
+      level: 'error',
+      message: 'Stripe webhook signature verification failed',
+      tags: {
+        route: 'webhooks/stripe',
+        event_type: 'stripe_webhook_sig_failure',
+      },
+      extra: {
+        hasSignatureHeader: !!request.headers.get('stripe-signature'),
+        userAgent: request.headers.get('user-agent'),
+      },
+    });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
