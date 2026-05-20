@@ -91,15 +91,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    Sentry.captureMessage('Unsupported device data submitted', {
-      level: 'info',
-      tags: {
-        route: 'submit-device-data',
-        device_guess: deviceGuess ?? 'unknown',
-        total_files: String(fileStructure.totalFiles),
-      },
-    });
-
     return NextResponse.json({ success: true });
   } catch (err) {
     Sentry.captureException(err, {
