@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Post Discord embed to #platform-health.
     const embed = buildIntegrityEmbed(result);
-    await sendAlert('platform-health', '', [embed]);
+    await sendAlert('ops', '', [embed]);
 
     const hasCritical = CRITICAL_KEYS.some((k) => result[k] > 0);
 
