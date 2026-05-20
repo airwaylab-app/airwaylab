@@ -552,6 +552,21 @@ export function reEngagementStep3(
 
 // ── Sequence 7: Win-back (cancelled paying users) ────────────
 
+// ── Sequence 8: Abandoned checkout (started upgrade, didn't pay) ─────────────
+
+export function abandonedCheckoutStep1(unsubscribeUrl: string): { subject: string; html: string } {
+  const pricingUrl = `${BASE_URL}/pricing?source=abandoned_checkout_recovery`;
+  return {
+    subject: 'Still thinking about Supporter? No rush.',
+    html: reEngagementLayout(`
+      ${paragraph('We noticed your AirwayLab Supporter upgrade didn\'t quite go through. No worries -- your account and all your data are right where you left them.')}
+      ${paragraph('Supporter access includes a few things worth having: PDF reports you can bring to your next clinician appointment, sleep data analysis from Claude, secure cloud backup, and a Discord community of fellow PAP users sharing what they\'ve found useful.')}
+      ${paragraph('No pressure, no deadline. Your upgrade is one click away whenever you\'re ready.')}
+      ${ctaButton('Complete my upgrade', pricingUrl)}
+    `, unsubscribeUrl),
+  };
+}
+
 export function winBackCancelledPaying(unsubscribeUrl: string): { subject: string; html: string } {
   return {
     subject: 'Still here if you want to come back',
@@ -575,7 +590,7 @@ export function winBackCancelledPaying(unsubscribeUrl: string): { subject: strin
 
 // ── Template registry ────────────────────────────────────────
 
-export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding' | 'cpap_tips' | 're_engagement' | 'win_back';
+export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding' | 'cpap_tips' | 're_engagement' | 'win_back' | 'abandoned_checkout';
 
 interface SequenceConfig {
   totalSteps: number;
@@ -668,6 +683,14 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
     delays: [7], // 7 days after subscription ends
     getTemplate: (step, url) => {
       if (step === 1) return winBackCancelledPaying(url);
+      return null;
+    },
+  },
+  abandoned_checkout: {
+    totalSteps: 1,
+    delays: [1], // 24h after checkout.session.expired event
+    getTemplate: (step, url) => {
+      if (step === 1) return abandonedCheckoutStep1(url);
       return null;
     },
   },

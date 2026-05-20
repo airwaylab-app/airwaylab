@@ -460,6 +460,38 @@ export async function scheduleWinBackForUser(
 }
 
 /**
+ * Schedule a single abandoned-checkout recovery email 24h after checkout.session.expired.
+ * Guards: email_opt_in required, no active paying tier, no prior send for this user.
+ */
+export async function scheduleAbandonedCheckoutForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  baseDate: Date = new Date(),
+): Promise<void> {
+  // Dedup: skip if a pending or sent row already exists for this user
+  const { data: existing } = await supabase
+    .from('email_sequences')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('sequence_name', 'abandoned_checkout')
+    .in('status', ['pending', 'sent'])
+    .limit(1);
+  if (existing && existing.length > 0) return;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email_opt_in, tier')
+    .eq('id', userId)
+    .single();
+
+  if (!profile?.email_opt_in) return;
+  // Skip if user already completed an upgrade
+  if (profile.tier === 'supporter' || profile.tier === 'champion') return;
+
+  await scheduleSequence(supabase, userId, 'abandoned_checkout', baseDate);
+}
+
+/**
  * Discover recently-cancelled paying users and schedule win-back emails.
  * Called by the daily cron job to catch historical cancellations missed by webhooks.
  *

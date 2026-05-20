@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
+import { cancelSequence, scheduleAbandonedCheckoutForUser, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
@@ -521,6 +521,29 @@ export async function POST(request: NextRequest) {
             stripeSubscriptionId: subscription.id,
           })
         );
+
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        const expiredSession = event.data.object as Stripe.Checkout.Session;
+        const expiredEmail = expiredSession.customer_details?.email ?? null;
+        const expiredSupabaseUserId = expiredSession.metadata?.supabase_user_id ?? null;
+
+        let expiredUserId: string | null = expiredSupabaseUserId ?? null;
+
+        if (!expiredUserId && expiredEmail) {
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', expiredEmail)
+            .maybeSingle();
+          expiredUserId = profileRow?.id ?? null;
+        }
+
+        if (expiredUserId) {
+          void scheduleAbandonedCheckoutForUser(supabase, expiredUserId, new Date());
+        }
 
         break;
       }
