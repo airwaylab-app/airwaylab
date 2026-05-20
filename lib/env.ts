@@ -85,6 +85,7 @@ export const serverEnv = {
   DISCORD_REVENUE_WEBHOOK_URL: process.env.DISCORD_REVENUE_WEBHOOK_URL ?? undefined,
   DISCORD_USER_SIGNALS_WEBHOOK_URL: process.env.DISCORD_USER_SIGNALS_WEBHOOK_URL ?? undefined,
   DISCORD_GROWTH_WEBHOOK_URL: process.env.DISCORD_GROWTH_WEBHOOK_URL ?? undefined,
+  DISCORD_PLATFORM_HEALTH_WEBHOOK_URL: process.env.DISCORD_PLATFORM_HEALTH_WEBHOOK_URL ?? undefined,
 
   /** Discord webhook URL for #general channel (weekly discussion topics) */
   DISCORD_GENERAL_WEBHOOK_URL: process.env.DISCORD_GENERAL_WEBHOOK_URL ?? undefined,
