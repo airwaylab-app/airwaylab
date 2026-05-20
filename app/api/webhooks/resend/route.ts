@@ -84,6 +84,12 @@ export async function POST(request: NextRequest) {
         await cancelAllPending(supabase, seqRow.user_id)
 
         if (type === 'email.complained') {
+          // Record complained_at on the specific sequence row for circuit-breaker queries
+          await supabase
+            .from('email_sequences')
+            .update({ complained_at: new Date().toISOString() })
+            .eq('resend_id', data.email_id)
+
           await supabase
             .from('profiles')
             .update({ email_opt_in: false })

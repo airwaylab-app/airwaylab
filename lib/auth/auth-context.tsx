@@ -58,22 +58,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
 
-    const { data: profileData, error: profileError } = await supabase
+    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username';
+
+    let profileResult = await supabase
       .from('profiles')
-      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
+      .select(PROFILE_COLS)
       .eq('id', userId)
       .maybeSingle();
 
+    // "Lock was stolen" is transient Supabase navigator.locks contention across tabs -- retry once.
+    // Without the retry the profile stays null, silently downgrading the user's tier to 'community'.
+    if (profileResult.error?.message?.includes('Lock was stolen')) {
+      await new Promise((r) => setTimeout(r, 100));
+      profileResult = await supabase
+        .from('profiles')
+        .select(PROFILE_COLS)
+        .eq('id', userId)
+        .maybeSingle();
+    }
+
+    const { data: profileData, error: profileError } = profileResult;
+
     if (profileError) {
-      // "Lock was stolen" is transient Supabase SSR lock contention -- suppress
-      const isLockError = profileError.message?.includes('Lock was stolen');
-      if (!isLockError) {
-        console.error('[auth-context] Failed to fetch profile:', profileError.message);
-        Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
-          level: 'warning',
-          tags: { context: 'auth-profile-fetch' },
-        });
-      }
+      console.error('[auth-context] Failed to fetch profile:', profileError.message);
+      Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
+        level: 'warning',
+        tags: { context: 'auth-profile-fetch' },
+      });
       return;
     }
 
@@ -101,14 +112,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       discord_id: profileData.discord_id ?? null,
       discord_username: profileData.discord_username ?? null,
     });
-    const { data: subData, error: subError } = await supabase
+
+    const SUB_COLS = 'id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end';
+
+    let subResult = await supabase
       .from('subscriptions')
-      .select('id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end')
+      .select(SUB_COLS)
       .eq('user_id', userId)
       .in('status', ['active', 'trialing', 'past_due'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Same lock contention guard for the subscription query
+    if (subResult.error?.message?.includes('Lock was stolen')) {
+      await new Promise((r) => setTimeout(r, 100));
+      subResult = await supabase
+        .from('subscriptions')
+        .select(SUB_COLS)
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    }
+
+    const { data: subData, error: subError } = subResult;
 
     if (subError) {
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
