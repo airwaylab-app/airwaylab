@@ -156,7 +156,7 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
     insertCalls.length = 0;
     process.env.CRON_SECRET = 'test-secret';
     mockIsDiscordConfigured.mockReturnValue(true);
-    mockSyncRole.mockResolvedValue(true);
+    mockSyncRole.mockResolvedValue({ ok: true });
     mockSendAlert.mockResolvedValue(undefined);
   });
 
@@ -171,7 +171,7 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
   });
 
   it('writes discord_role_events with action=revoke when syncRole succeeds', async () => {
-    mockSyncRole.mockResolvedValue(true);
+    mockSyncRole.mockResolvedValue({ ok: true });
     const profile = { id: 'user-1', tier: 'supporter', email: 'test@example.com', discord_id: 'disc-999' };
     mockFrom.mockImplementation(buildFromImpl(profile));
 
@@ -183,7 +183,7 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
   });
 
   it('writes discord_role_events with action=revoke_failed when syncRole fails', async () => {
-    mockSyncRole.mockResolvedValue(false);
+    mockSyncRole.mockResolvedValue({ ok: false });
     const profile = { id: 'user-1', tier: 'supporter', email: 'test@example.com', discord_id: 'disc-999' };
     mockFrom.mockImplementation(buildFromImpl(profile));
 

@@ -1,8 +1,8 @@
 /**
  * Unit tests for lib/discord.ts
  *
- * Covers: syncRole failure propagation — per-removal Sentry warnings,
- * boolean return value reflecting success/failure of removals and adds.
+ * Covers: syncRole failure propagation — removals are best-effort (console.error,
+ * no Sentry, continue regardless); SyncRoleResult.ok reflects add success only.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -37,15 +37,15 @@ beforeEach(() => {
 });
 
 describe('syncRole', () => {
-  it('returns true when all removeMemberRole calls succeed and no role to add', async () => {
+  it('returns ok:true when all removeMemberRole calls succeed and no role to add', async () => {
     // All DELETE calls succeed (ok: true, status: 204)
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'community');
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
   });
 
-  it('returns false when a removeMemberRole call returns false', async () => {
-    // Make the supporter-role DELETE fail
+  it('returns ok:true for community tier even when a removal fails (best-effort)', async () => {
+    // Removal failures are logged to console but do not flip ok — community gets no add step
     fetchResponses.set(
       'DELETE:https://discord.com/api/v10/guilds/guild-123/members/user-abc/roles/role-supporter',
       { ok: false, status: 429 }
@@ -53,10 +53,10 @@ describe('syncRole', () => {
 
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'community');
-    expect(result).toBe(false);
+    expect(result.ok).toBe(true);
   });
 
-  it('fires a Sentry warning when a removal fails', async () => {
+  it('does NOT fire Sentry when a removal fails (best-effort, console.error only)', async () => {
     fetchResponses.set(
       'DELETE:https://discord.com/api/v10/guilds/guild-123/members/user-abc/roles/role-champion',
       { ok: false, status: 500 }
@@ -66,17 +66,11 @@ describe('syncRole', () => {
     const { syncRole } = await import('@/lib/discord');
     await syncRole('user-abc', 'community');
 
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'Discord role removal failed',
-      expect.objectContaining({
-        level: 'warning',
-        tags: expect.objectContaining({ action: 'discord-remove-role-failed' }),
-      })
-    );
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('returns false overall when removal fails even if role add succeeds', async () => {
-    // Make the supporter DELETE fail
+  it('returns ok:true when add succeeds even if a removal failed (best-effort removal)', async () => {
+    // Removal fails but we continue; champion PUT succeeds — result is ok
     fetchResponses.set(
       'DELETE:https://discord.com/api/v10/guilds/guild-123/members/user-abc/roles/role-supporter',
       { ok: false, status: 429 }
@@ -89,7 +83,7 @@ describe('syncRole', () => {
 
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'champion');
-    expect(result).toBe(false);
+    expect(result.ok).toBe(true);
   });
 
   it('returns false and fires a Sentry error when role add fails', async () => {
@@ -102,7 +96,7 @@ describe('syncRole', () => {
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'supporter');
 
-    expect(result).toBe(false);
+    expect(result.ok).toBe(false);
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
       expect.stringContaining('Discord role assignment failed'),
       expect.objectContaining({
@@ -112,14 +106,14 @@ describe('syncRole', () => {
     );
   });
 
-  it('returns true when all removals and add succeed', async () => {
+  it('returns ok:true when all removals and add succeed', async () => {
     // All calls default to ok — add supporter role
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'supporter');
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
   });
 
-  it('treats 404 removal as success — does not flip removeAllOk or fire Sentry', async () => {
+  it('treats 404 removal as success — does not fire Sentry', async () => {
     // 404 means the member does not hold that role, which is fine during
     // the "remove all paid roles" sweep when a user only has one paid tier.
     fetchResponses.set(
@@ -131,7 +125,7 @@ describe('syncRole', () => {
     const { syncRole } = await import('@/lib/discord');
     const result = await syncRole('user-abc', 'community');
 
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 });
