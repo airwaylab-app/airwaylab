@@ -776,12 +776,19 @@ function AnalyzePageInner() {
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
 
-            {/* Contextual help link */}
+            {/* Contextual help links */}
             <p className="mt-3 text-center text-xs text-muted-foreground/70">
               Not sure how to get your data?{' '}
               <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
                 How to get your ResMed data
               </Link>
+            </p>
+            <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
+              Not sure what to look for? Read about{"' '"}
+              <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
+                what your AHI number means
+              </Link>
+              .
             </p>
           </div>
         ) : (
