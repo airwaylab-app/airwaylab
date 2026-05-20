@@ -259,6 +259,8 @@ describe('POST /api/customer-portal', () => {
     const chainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      // validateProfileExists uses maybeSingle; stripe_customer_id lookup uses single
+      maybeSingle: vi.fn().mockReturnValue({ data: { id: 'user-123' }, error: null }),
       single: vi.fn().mockReturnValue({ data: { stripe_customer_id: null }, error: null }),
     };
     mockFrom.mockReturnValue(chainable);
