@@ -122,6 +122,28 @@ export async function POST(request: NextRequest) {
       if (freshProfile?.stripe_customer_id) {
         customerId = freshProfile.stripe_customer_id;
       } else {
+        // AIR-1873: A valid auth session with no profile row (e.g. anonymous user, deleted
+        // account, profile trigger failure) must not create an orphan Stripe customer —
+        // the webhook would silently fail to link the subscription to any real user.
+        if (!freshProfile) {
+          Sentry.captureMessage('Checkout blocked: no profile row for authenticated user', {
+            level: 'error',
+            tags: { route: 'create-checkout-session', check: 'profile-existence-gate' },
+            extra: { userId: user.id },
+          });
+          return NextResponse.json(
+            { error: 'Account setup incomplete. Please sign out, sign back in, and try again.' },
+            { status: 400 }
+          );
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'stripe',
+          message: 'Creating new Stripe customer',
+          level: 'info',
+          data: { userId: user.id },
+        });
+
         const customer = await stripe.customers.create({
           email: user.email,
           metadata: { supabase_user_id: user.id },

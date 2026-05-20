@@ -6,10 +6,16 @@
  * - Auth callback (opt-in toggle)
  * - Cron job (query pending emails, send, schedule dormancy/activation, sunset)
  * - Unsubscribe route (cancel all pending)
+ * - Stripe webhook (win-back scheduling on subscription.deleted)
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SEQUENCES, type SequenceName } from './templates';
+
+const WIN_BACK_VOLUME_CAP = 200;
+const WIN_BACK_COMPLAINT_RATE_THRESHOLD = 0.003; // 0.3%
+const WIN_BACK_MIN_SENDS_FOR_CIRCUIT_BREAKER = 50;
+const WIN_BACK_LOOKBACK_DAYS = 90;
 
 /**
  * Schedule a full email sequence for a user.
@@ -425,6 +431,135 @@ export async function scheduleReEngagementSequences(
   let scheduled = 0;
   for (const user of candidates) {
     await scheduleSequence(supabase, user.id, 're_engagement');
+    scheduled++;
+  }
+
+  return scheduled;
+}
+
+/**
+ * Schedule a win-back email for a single cancelled paying user.
+ * Called from the Stripe webhook on customer.subscription.deleted.
+ * baseDate defaults to now — the email sends 7 days later.
+ * Skips users who are not email-opted-in or already have a win-back sequence.
+ */
+export async function scheduleWinBackForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  baseDate: Date = new Date(),
+): Promise<void> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email_opt_in')
+    .eq('id', userId)
+    .single();
+
+  if (!profile?.email_opt_in) return;
+
+  await scheduleSequence(supabase, userId, 'win_back', baseDate);
+}
+
+/**
+ * Discover recently-cancelled paying users and schedule win-back emails.
+ * Called by the daily cron job to catch historical cancellations missed by webhooks.
+ *
+ * Enforces:
+ * - Volume cap: max 200 schedules per batch
+ * - Complaint-rate circuit breaker: halts if win-back complaint rate > 0.3%
+ *   (requires >= 50 sends for statistical validity)
+ * - Idempotency: skips users who already have a win-back sequence
+ * - Scope: cancelled paying users only (supporter/champion tier, within last 90 days)
+ */
+export async function scheduleWinBackSequences(
+  supabase: SupabaseClient,
+): Promise<number> {
+  // Complaint-rate circuit breaker
+  const { count: sentCount } = await supabase
+    .from('email_sequences')
+    .select('*', { count: 'exact', head: true })
+    .eq('sequence_name', 'win_back')
+    .eq('status', 'sent');
+
+  if (sentCount && sentCount >= WIN_BACK_MIN_SENDS_FOR_CIRCUIT_BREAKER) {
+    const { count: complaintCount } = await supabase
+      .from('email_sequences')
+      .select('*', { count: 'exact', head: true })
+      .eq('sequence_name', 'win_back')
+      .not('complained_at', 'is', null);
+
+    const complaintRate = (complaintCount ?? 0) / sentCount;
+    if (complaintRate > WIN_BACK_COMPLAINT_RATE_THRESHOLD) {
+      console.error(
+        `[win-back] Circuit breaker: complaint rate ${(complaintRate * 100).toFixed(2)}% exceeds ${WIN_BACK_COMPLAINT_RATE_THRESHOLD * 100}% threshold. Halting.`,
+      );
+      return 0;
+    }
+  }
+
+  // Find users who already have a win_back sequence (idempotency guard)
+  const { data: existingWinBack } = await supabase
+    .from('email_sequences')
+    .select('user_id')
+    .eq('sequence_name', 'win_back');
+
+  const excludeIds = existingWinBack?.map((r) => r.user_id) ?? [];
+
+  // Find users with active subscriptions to exclude (resubscribed users)
+  const { data: activeSubscriptions } = await supabase
+    .from('subscriptions')
+    .select('user_id')
+    .in('status', ['active', 'trialing', 'past_due']);
+
+  const activeUserIds = new Set(activeSubscriptions?.map((s) => s.user_id) ?? []);
+
+  // Find recently-cancelled paying subscriptions within the lookback window
+  const lookbackCutoff = new Date(Date.now() - WIN_BACK_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  let query = supabase
+    .from('subscriptions')
+    .select('user_id, updated_at')
+    .eq('status', 'canceled')
+    .in('tier', ['supporter', 'champion'])
+    .gte('updated_at', lookbackCutoff)
+    .order('updated_at', { ascending: false })
+    .limit(WIN_BACK_VOLUME_CAP * 2); // over-fetch to account for opt-out filtering
+
+  if (excludeIds.length > 0) {
+    query = query.not('user_id', 'in', `(${excludeIds.join(',')})`);
+  }
+
+  const { data: cancelled, error } = await query;
+
+  if (error || !cancelled) {
+    console.error('[win-back] Failed to query cancelled subscriptions:', error?.message);
+    return 0;
+  }
+
+  // Deduplicate by user_id (keep most recent cancellation per user)
+  const seenUsers = new Set<string>();
+  const candidates = cancelled.filter((row) => {
+    if (seenUsers.has(row.user_id)) return false;
+    seenUsers.add(row.user_id);
+    return true;
+  });
+
+  let scheduled = 0;
+  for (const sub of candidates) {
+    if (scheduled >= WIN_BACK_VOLUME_CAP) break;
+
+    // Skip users who have since resubscribed
+    if (activeUserIds.has(sub.user_id)) continue;
+
+    // Verify opt-in (join would be cleaner but keeps the query simple)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email_opt_in')
+      .eq('id', sub.user_id)
+      .single();
+
+    if (!profile?.email_opt_in) continue;
+
+    await scheduleSequence(supabase, sub.user_id, 'win_back', new Date(sub.updated_at));
     scheduled++;
   }
 
