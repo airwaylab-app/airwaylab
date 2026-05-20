@@ -288,6 +288,24 @@ export async function POST(request: NextRequest) {
         const periodEnd = firstItem?.current_period_end;
         const interval = firstItem?.price.recurring?.interval ?? 'unknown';
 
+        // AIR-1873: Guard against phantom supabase_user_id in Stripe metadata.
+        // A profile-less userId produces a silent no-op on the UPDATE below.
+        const { data: profileExists } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!profileExists) {
+          Sentry.captureMessage('Stripe webhook: supabase_user_id in metadata has no matching profile', {
+            level: 'error',
+            tags: { route: 'stripe-webhook', event_type: event.type, check: 'phantom-user-id' },
+            extra: { userId, eventId: event.id, subscriptionId, stripeCustomerId: session.customer },
+          });
+          console.error(`[stripe-webhook] Phantom supabase_user_id=${userId} on event=${event.id} — no profile row found`);
+          break;
+        }
+
         // Critical DB writes — parallel to minimize latency
         const [upsertResult, profileResult] = await Promise.all([
           supabase.from('subscriptions').upsert(
