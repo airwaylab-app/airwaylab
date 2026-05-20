@@ -54,7 +54,7 @@ describe('HashCache', () => {
     expect(result).toBeUndefined();
   });
 
-  it('prunes oldest entries when exceeding size cap', { timeout: 15000 }, () => {
+  it('prunes oldest entries when exceeding size cap', () => {
     // Fill cache with entries that exceed the 500KB cap
     // Each entry key ~50 chars + hash 64 chars + overhead ~30 chars = ~150 bytes
     // 500KB / 150 bytes = ~3400 entries. Write 4000 to trigger pruning.
@@ -71,7 +71,7 @@ describe('HashCache', () => {
     // Most recent entries should still be accessible
     const recent = cache.get('DATALOG/night3999/BRP.edf', 1024 + 3999, 1710000000000);
     expect(recent).toBe('a'.repeat(64));
-  });
+  }, 15000);
 
   it('ignores entries older than 30 days', () => {
     // Manually write an expired entry
