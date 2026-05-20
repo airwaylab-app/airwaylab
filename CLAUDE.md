@@ -248,6 +248,7 @@ After merge, "verified" means ALL of these:
 - [ ] ALL manual QA items checked (partial pass = no merge)
 - [ ] Self-review: no regressions, loading/error/empty states handled
 - [ ] PR contains one concern only
+- [ ] **Data integrity check** (required for `app/api/*`, `lib/auth/*`, `lib/storage/*`, `supabase/migrations/*`, any external-system handler): What happens when the FK parent row is missing or stale? `.single()` errors are destructured and logged. `user.id` is not passed to Stripe/Discord/Resend without `validateProfileExists()` first.
 ```
 
 ## Migration Numbering Convention
