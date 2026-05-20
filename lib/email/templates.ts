@@ -12,6 +12,9 @@
 const BASE_URL = 'https://airwaylab.app';
 const DISCORD_INVITE_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL ?? 'https://discord.gg/DK7aN847Mn';
 
+/** CAN-SPAM §7704(a)(5): physical postal address shown in every commercial email footer. */
+const SENDER_PHYSICAL_ADDRESS = process.env.SENDER_PHYSICAL_ADDRESS ?? '';
+
 // ── Shared layout ────────────────────────────────────────────
 
 function layout(content: string, unsubscribeUrl: string): string {
@@ -41,6 +44,7 @@ function layout(content: string, unsubscribeUrl: string): string {
         You're receiving this because you opted in to email updates on
         <a href="${BASE_URL}" style="color:#5eead4;text-decoration:none;">airwaylab.app</a>.
       </p>
+      ${SENDER_PHYSICAL_ADDRESS ? `<p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">${SENDER_PHYSICAL_ADDRESS}</p>` : ''}
       <p style="font-size:11px;color:#52525b;margin:8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe</a>
         from these emails.
