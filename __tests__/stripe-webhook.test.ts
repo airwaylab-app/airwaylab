@@ -13,6 +13,7 @@ import type { NextRequest } from 'next/server';
 
 // Mock Sentry
 vi.mock('@sentry/nextjs', () => ({
+  captureEvent: vi.fn(),
   captureException: vi.fn(),
   captureMessage: vi.fn(),
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
@@ -207,6 +208,44 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toBe('Invalid signature');
+  });
+
+  // ---------- 3a. Invalid signature triggers Sentry.captureEvent ----------
+  it('calls Sentry.captureEvent with stripe_webhook_sig_failure tag on invalid signature', async () => {
+    const { captureEvent } = await import('@sentry/nextjs');
+    mockWebhooksConstruct.mockImplementation(() => {
+      throw new Error('Invalid signature');
+    });
+
+    const req = makeRequest('{}', { 'stripe-signature': 'bad_sig' });
+    await callRoute(req);
+
+    expect(captureEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'error',
+        message: 'Stripe webhook signature verification failed',
+        tags: expect.objectContaining({
+          event_type: 'stripe_webhook_sig_failure',
+          route: 'webhooks/stripe',
+        }),
+        extra: expect.objectContaining({
+          hasSignatureHeader: true,
+        }),
+      })
+    );
+  });
+
+  // ---------- 3b. Valid signature does NOT trigger Sentry.captureEvent ----------
+  it('does NOT call Sentry.captureEvent when signature is valid', async () => {
+    const { captureEvent } = await import('@sentry/nextjs');
+    const event = makeStripeEvent('customer.created', { id: 'cus_xyz' });
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const req = makeRequest('{}', { 'stripe-signature': 'valid_sig' });
+    await callRoute(req);
+
+    expect(captureEvent).not.toHaveBeenCalled();
   });
 
   // ---------- 4. Idempotency: duplicate event ----------
