@@ -116,7 +116,7 @@ export function HistoryExpiryWarning({ nights, hiddenNightCount }: Props) {
             </div>
             <div className="mt-3">
               <Link
-                href="/pricing"
+                href="/pricing?source=community_window"
                 className="inline-flex items-center gap-1.5 rounded-md bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
                 onClick={() => events.upgradeNudgeClicked('community_window')}
               >
@@ -170,7 +170,7 @@ export function HistoryExpiryWarning({ nights, hiddenNightCount }: Props) {
           </p>
           <div className="mt-3">
             <Link
-              href="/pricing"
+              href="/pricing?source=history_expiry"
               className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-500 transition-colors hover:bg-amber-500/20"
               onClick={() => events.upgradeNudgeClicked('history_expiry')}
             >

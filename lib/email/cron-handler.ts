@@ -2,7 +2,7 @@
  * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Discovers new candidates (activation, re_engagement) -- schedule first so they
+ * 1. Discovers new candidates (activation, re_engagement, win_back) -- schedule first so they
  *    can be sent in the same run, avoiding a 24h delay until the next cron.
  * 2. Queries for all due emails (scheduled_at <= now, status = pending)
  * 3. Sends each via Resend (with AB variant subjects where applicable)
@@ -21,6 +21,7 @@ import {
   scheduleCpapTipsSequences,
   scheduleReEngagementSequences,
   suppressReEngagement,
+  scheduleWinBackSequences,
   applySunsetPolicy,
 } from './sequences';
 import { SEQUENCES } from './templates';
@@ -36,6 +37,7 @@ interface CronResult {
   activationScheduled: number;
   cpapTipsScheduled: number;
   reEngagementScheduled: number;
+  winBackScheduled: number;
   sunsetted: number;
 }
 
@@ -47,6 +49,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     activationScheduled: 0,
     cpapTipsScheduled: 0,
     reEngagementScheduled: 0,
+    winBackScheduled: 0,
     sunsetted: 0,
   };
 
@@ -58,6 +61,7 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   result.activationScheduled = await scheduleActivationSequences(supabase);
   result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
   result.reEngagementScheduled = await scheduleReEngagementSequences(supabase);
+  result.winBackScheduled = await scheduleWinBackSequences(supabase);
 
   // 2. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);

@@ -48,18 +48,28 @@ function makeRequest(secret = 'test-secret'): NextRequest {
 }
 
 /**
- * Build a from-mock that uses method-chain discrimination to handle all three
- * profiles query patterns:
- *   1. .select().in('tier', [...])        → paid profiles (returns [profile])
- *   2. .select().eq('tier','community').not() → community profiles (returns [])
- *   3. .update().eq('id', ...)            → fix update (returns { error: null })
+ * Build a from-mock that uses method-chain discrimination to handle all query patterns:
+ *   1. .select().in('tier', [...])                → paid profiles (returns [profile])
+ *   2. .select().eq('tier','community').not()...  → community profiles with subs (returns [])
+ *   3. .select().eq('tier','community').not().is() → webhook-blind profiles (returns [])
+ *   4. .update().eq('id', ...)                    → fix update (returns { error: null })
+ *
+ * The profiles chain tracks call order to distinguish the two community queries:
+ * - first .not() call → communityWithSubs (returns data: [])
+ * - second .not() call → webhookBlind (returns data: [])
  */
 function buildProfilesChain(profile: Record<string, unknown>): Record<string, unknown> {
   const chain: Record<string, unknown> = {};
   chain['select'] = vi.fn().mockImplementation(() => chain);
   chain['in'] = vi.fn().mockResolvedValue({ data: [profile], error: null });
   chain['eq'] = vi.fn().mockImplementation(() => chain);
-  chain['not'] = vi.fn().mockResolvedValue({ data: [], error: null });
+  // Discriminate by field: communityWithSubs uses .not('subscriptions',...) → resolves directly.
+  // webhookBlind uses .not('stripe_customer_id',...).is(...) → returns chain so .is() can follow.
+  chain['not'] = vi.fn().mockImplementation((field: string) => {
+    if (field === 'stripe_customer_id') return chain; // webhookBlind — needs .is() next
+    return Promise.resolve({ data: [], error: null }); // communityWithSubs — terminal call
+  });
+  chain['is'] = vi.fn().mockResolvedValue({ data: [], error: null }); // webhookBlind result: no blind profiles
   chain['update'] = vi.fn().mockImplementation(() => ({
     eq: vi.fn().mockResolvedValue({ error: null }),
   }));
@@ -72,6 +82,51 @@ function buildFromImpl(
   return (table: string) => {
     if (table === 'profiles') {
       return buildProfilesChain(profile);
+    }
+    if (table === 'subscriptions') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+    }
+    if (table === 'discord_role_events') {
+      return {
+        insert: vi.fn().mockImplementation((data: unknown) => {
+          insertCalls.push({ table, data });
+          return Promise.resolve({ error: null });
+        }),
+      };
+    }
+    return {};
+  };
+}
+
+/**
+ * Build a from-mock for the webhook_never_ran scenario:
+ * - Paid profiles query → returns []
+ * - communityWithSubs query (.not('subscriptions',...)) → resolves directly with []
+ * - webhookBlind query (.not('stripe_customer_id',...).is(...)) → returns [blindProfile]
+ */
+function buildWebhookBlindFromImpl(
+  blindProfile: Record<string, unknown>
+): (table: string) => Record<string, unknown> {
+  return (table: string) => {
+    if (table === 'profiles') {
+      const chain: Record<string, unknown> = {};
+      chain['select'] = vi.fn().mockImplementation(() => chain);
+      chain['in'] = vi.fn().mockResolvedValue({ data: [], error: null }); // no paid profiles
+      chain['eq'] = vi.fn().mockImplementation(() => chain);
+      // Discriminate by field: communityWithSubs → resolves directly; webhookBlind → returns chain
+      chain['not'] = vi.fn().mockImplementation((field: string) => {
+        if (field === 'stripe_customer_id') return chain;
+        return Promise.resolve({ data: [], error: null }); // communityWithSubs empty
+      });
+      chain['is'] = vi.fn().mockResolvedValue({ data: [blindProfile], error: null });
+      chain['update'] = vi.fn().mockImplementation(() => ({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }));
+      return chain;
     }
     if (table === 'subscriptions') {
       return {
@@ -147,5 +202,82 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
     await GET(makeRequest());
 
     expect(mockSyncRole).not.toHaveBeenCalled();
+  });
+});
+
+describe('subscription-drift cron — webhook_never_ran detection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    insertCalls.length = 0;
+    process.env.CRON_SECRET = 'test-secret';
+    mockIsDiscordConfigured.mockReturnValue(false);
+    mockSyncRole.mockResolvedValue(true);
+    mockSendAlert.mockResolvedValue(undefined);
+  });
+
+  it('flags a community profile with stripe_customer_id but no subscription row as webhook_never_ran', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    const blindProfile = {
+      id: 'user-blind',
+      stripe_customer_id: 'cus_abc123',
+      subscriptions: null,
+    };
+    mockFrom.mockImplementation(buildWebhookBlindFromImpl(blindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.webhook_never_ran).toBe(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'Subscription webhook never ran — manual review required',
+      expect.objectContaining({
+        tags: expect.objectContaining({ drift_type: 'webhook_never_ran' }),
+        extra: expect.objectContaining({ user_id: 'user-blind' }),
+      })
+    );
+  });
+
+  it('does NOT auto-fix webhook_never_ran cases', async () => {
+    const blindProfile = {
+      id: 'user-blind',
+      stripe_customer_id: 'cus_abc123',
+      subscriptions: null,
+    };
+    const fromImpl = buildWebhookBlindFromImpl(blindProfile);
+    mockFrom.mockImplementation(fromImpl);
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    // fixed count must be 0 — no auto-fix for webhook_never_ran
+    expect(body.fixed).toBe(0);
+    expect(body.webhook_never_ran).toBe(1);
+  });
+
+  it('includes webhook_never_ran count in Discord ops alert', async () => {
+    const blindProfile = {
+      id: 'user-blind',
+      stripe_customer_id: 'cus_xyz456',
+      subscriptions: null,
+    };
+    mockFrom.mockImplementation(buildWebhookBlindFromImpl(blindProfile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      'ops',
+      '',
+      expect.arrayContaining([
+        expect.objectContaining({
+          fields: expect.arrayContaining([
+            expect.objectContaining({ name: 'Webhook never ran (manual review)', value: '1' }),
+          ]),
+        }),
+      ])
+    );
   });
 });
