@@ -33,6 +33,7 @@ vi.mock('@/lib/email/sequences', () => ({
   cancelSequence: vi.fn().mockResolvedValue(undefined),
   scheduleSequence: vi.fn().mockResolvedValue(undefined),
   scheduleWinBackForUser: vi.fn().mockResolvedValue(undefined),
+  scheduleAbandonedCheckoutSequence: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/lib/email/send', () => ({
@@ -1194,6 +1195,122 @@ describe('POST /api/webhooks/stripe', () => {
       (call: unknown[]) => call[0] === 'subscriptions'
     );
     expect(subCalls).toHaveLength(0);
+  });
+
+  // ---------- checkout.session.expired: abandoned-checkout recovery ----------
+
+  it('checkout.session.expired: schedules abandoned_checkout sequence via supabase_user_id in metadata', async () => {
+    const { scheduleAbandonedCheckoutSequence } = await import('@/lib/email/sequences');
+    const session = {
+      metadata: { supabase_user_id: 'user-uuid-ac1' },
+      customer_details: { email: null },
+      customer: null,
+    };
+    const event = makeStripeEvent('checkout.session.expired', session);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(scheduleAbandonedCheckoutSequence).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-ac1',
+      expect.any(Date)
+    );
+  });
+
+  it('checkout.session.expired: resolves userId via customer_details.email when metadata absent', async () => {
+    const { scheduleAbandonedCheckoutSequence } = await import('@/lib/email/sequences');
+    const session = {
+      metadata: {},
+      customer_details: { email: 'found@example.com' },
+      customer: null,
+    };
+    const event = makeStripeEvent('checkout.session.expired', session);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-ac2' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(scheduleAbandonedCheckoutSequence).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-ac2',
+      expect.any(Date)
+    );
+  });
+
+  it('checkout.session.expired: skips scheduling when userId cannot be resolved', async () => {
+    const { scheduleAbandonedCheckoutSequence } = await import('@/lib/email/sequences');
+    const session = {
+      metadata: {},
+      customer_details: { email: null },
+      customer: null,
+    };
+    const event = makeStripeEvent('checkout.session.expired', session);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(scheduleAbandonedCheckoutSequence).not.toHaveBeenCalled();
+  });
+
+  it('checkout.session.expired: consent filter — calls scheduleAbandonedCheckoutSequence which returns false when email_opt_in is false (AIR-932)', async () => {
+    // The consent guard (email_opt_in check) lives inside scheduleAbandonedCheckoutSequence.
+    // The webhook handler always calls through when userId is resolved; the function itself
+    // short-circuits for opted-out users and returns false.
+    const { scheduleAbandonedCheckoutSequence } = await import('@/lib/email/sequences');
+    const mockedFn = vi.mocked(scheduleAbandonedCheckoutSequence);
+    mockedFn.mockResolvedValueOnce(false);
+
+    const session = {
+      metadata: { supabase_user_id: 'user-uuid-optout' },
+      customer_details: { email: null },
+      customer: null,
+    };
+    const event = makeStripeEvent('checkout.session.expired', session);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    expect(scheduleAbandonedCheckoutSequence).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-optout',
+      expect.any(Date)
+    );
+  });
+
+  it('checkout.session.expired: idempotent — duplicate event ID returns early without scheduling', async () => {
+    const { scheduleAbandonedCheckoutSequence } = await import('@/lib/email/sequences');
+    const session = {
+      metadata: { supabase_user_id: 'user-uuid-ac3' },
+      customer_details: { email: null },
+      customer: null,
+    };
+    const event = makeStripeEvent('checkout.session.expired', session, 'evt_dup_ac');
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    // Idempotency insert returns duplicate key error — handler returns early
+    mockFrom.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: 'duplicate key value violates unique constraint' } })
+    );
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.duplicate).toBe(true);
+    expect(scheduleAbandonedCheckoutSequence).not.toHaveBeenCalled();
   });
 
   // ---------- 29. Unhandled event type returns 200 ----------

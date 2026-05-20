@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelSequence, scheduleAbandonedCheckoutForUser, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
+import { cancelSequence, scheduleAbandonedCheckoutSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/email/sequences';
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
@@ -542,7 +542,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (expiredUserId) {
-          void scheduleAbandonedCheckoutForUser(supabase, expiredUserId, new Date());
+          void scheduleAbandonedCheckoutSequence(supabase, expiredUserId, new Date());
         }
 
         break;
@@ -578,6 +578,7 @@ export async function POST(request: NextRequest) {
 
         break;
       }
+
     }
   } catch (err) {
     // Compensating action: remove idempotency record so Stripe can retry

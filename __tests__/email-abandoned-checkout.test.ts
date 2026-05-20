@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { abandonedCheckoutStep1, SEQUENCES } from '@/lib/email/templates';
-import { scheduleAbandonedCheckoutForUser } from '@/lib/email/sequences';
+import { scheduleAbandonedCheckoutSequence } from '@/lib/email/sequences';
 
 const UNSUB_URL = 'https://airwaylab.app/unsubscribe?token=test-token';
 
@@ -81,7 +81,7 @@ describe('SEQUENCES registry: abandoned_checkout', () => {
   });
 });
 
-// ── scheduleAbandonedCheckoutForUser: consent + safety guards (AIR-932) ──────
+// ── scheduleAbandonedCheckoutSequence: consent + safety guards (AIR-932) ──────
 
 type ProfileData = { email_opt_in: boolean; tier: string };
 
@@ -118,32 +118,32 @@ function makeSupabase(
   };
 }
 
-describe('scheduleAbandonedCheckoutForUser — consent filter (AIR-932)', () => {
+describe('scheduleAbandonedCheckoutSequence — consent filter (AIR-932)', () => {
   it('reads email_opt_in from profiles table before scheduling', async () => {
     const supabase = makeSupabase({ email_opt_in: true, tier: 'community' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase.from).toHaveBeenCalledWith('profiles');
   });
 
   it('does NOT schedule if email_opt_in = false', async () => {
     const supabase = makeSupabase({ email_opt_in: false, tier: 'community' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).not.toHaveBeenCalled();
   });
 
   it('does NOT schedule if user is already a supporter', async () => {
     const supabase = makeSupabase({ email_opt_in: true, tier: 'supporter' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).not.toHaveBeenCalled();
   });
 
   it('does NOT schedule if user is already a champion', async () => {
     const supabase = makeSupabase({ email_opt_in: true, tier: 'champion' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).not.toHaveBeenCalled();
   });
 
@@ -153,21 +153,21 @@ describe('scheduleAbandonedCheckoutForUser — consent filter (AIR-932)', () => 
       [{ id: 'existing-row-id' }],
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).not.toHaveBeenCalled();
   });
 
   it('does NOT schedule if profile is null (user not found)', async () => {
     const supabase = makeSupabase(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).not.toHaveBeenCalled();
   });
 
   it('schedules when opted-in, community tier, and no prior row', async () => {
     const supabase = makeSupabase({ email_opt_in: true, tier: 'community' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await scheduleAbandonedCheckoutForUser(supabase as any, 'user-123');
+    await scheduleAbandonedCheckoutSequence(supabase as any, 'user-123');
     expect(supabase._upsertMock).toHaveBeenCalled();
   });
 });

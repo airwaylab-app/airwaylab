@@ -460,15 +460,20 @@ export async function scheduleWinBackForUser(
 }
 
 /**
- * Schedule a single abandoned-checkout recovery email 24h after checkout.session.expired.
- * Guards: email_opt_in required, no active paying tier, no prior send for this user.
+ * Schedule an abandoned-checkout recovery email for a user.
+ * Called from the Stripe webhook on checkout.session.expired.
+ * Returns true if the sequence was scheduled, false if skipped.
+ *
+ * Guards:
+ * - Skips if user already has a pending/sent abandoned_checkout row (dedup)
+ * - Skips if email_opt_in is false (consent filter, AIR-932)
+ * - Skips if user already has an active subscription (supporter/champion tier)
  */
-export async function scheduleAbandonedCheckoutForUser(
+export async function scheduleAbandonedCheckoutSequence(
   supabase: SupabaseClient,
   userId: string,
   baseDate: Date = new Date(),
-): Promise<void> {
-  // Dedup: skip if a pending or sent row already exists for this user
+): Promise<boolean> {
   const { data: existing } = await supabase
     .from('email_sequences')
     .select('id')
@@ -476,19 +481,20 @@ export async function scheduleAbandonedCheckoutForUser(
     .eq('sequence_name', 'abandoned_checkout')
     .in('status', ['pending', 'sent'])
     .limit(1);
-  if (existing && existing.length > 0) return;
+
+  if (existing && existing.length > 0) return false;
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email_opt_in, tier')
+    .select('tier, email_opt_in')
     .eq('id', userId)
     .single();
 
-  if (!profile?.email_opt_in) return;
-  // Skip if user already completed an upgrade
-  if (profile.tier === 'supporter' || profile.tier === 'champion') return;
+  if (!profile || !profile.email_opt_in) return false;
+  if (profile.tier === 'supporter' || profile.tier === 'champion') return false;
 
   await scheduleSequence(supabase, userId, 'abandoned_checkout', baseDate);
+  return true;
 }
 
 /**
