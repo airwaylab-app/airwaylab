@@ -90,21 +90,24 @@ export class HashCache {
   }
 
   private pruneToSizeCap(): void {
-    // Check actual serialised size
     const serialise = (): string =>
       JSON.stringify({ entries: Object.fromEntries(this.entries) });
 
-    let json = serialise();
-    if (json.length <= MAX_SIZE_BYTES) return;
+    if (serialise().length <= MAX_SIZE_BYTES) return;
 
-    // Sort entries by timestamp ascending (oldest first)
+    // Sort oldest-first, then delete until a single re-serialisation confirms we're under cap
     const sorted = Array.from(this.entries.entries()).sort((a, b) => a[1].ts - b[1].ts);
-
-    // Remove oldest entries until under cap
     for (const [key] of sorted) {
       this.entries.delete(key);
-      json = serialise();
-      if (json.length <= MAX_SIZE_BYTES) break;
+      // Re-check every 50 deletions to amortise serialisation cost
+      if (this.entries.size % 50 === 0 && serialise().length <= MAX_SIZE_BYTES) break;
+    }
+    // Final check to handle remainder below the 50-step boundary
+    if (serialise().length > MAX_SIZE_BYTES) {
+      for (const [key] of Array.from(this.entries.entries()).sort((a, b) => a[1].ts - b[1].ts)) {
+        this.entries.delete(key);
+        if (serialise().length <= MAX_SIZE_BYTES) break;
+      }
     }
   }
 }

@@ -80,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: profileData, error: profileError } = profileResult;
 
     if (profileError) {
+      // Suppress Sentry for transient lock contention — it self-heals on next auth state change
+      if (profileError.message?.includes('Lock was stolen')) return;
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
       Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
         level: 'warning',
