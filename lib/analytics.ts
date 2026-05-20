@@ -76,9 +76,9 @@ export const events = {
   pricingViewed: () => trackEvent('Pricing Viewed'),
 
   /** User clicked checkout (before Stripe redirect) */
-  checkoutStarted: (tier: string, interval: string) => {
-    trackEvent('Checkout Started', { tier, interval });
-    capturePostHog('Checkout Started', { tier, interval });
+  checkoutStarted: (tier: string, interval: string, source: string) => {
+    trackEvent('Checkout Started', { tier, interval, source });
+    capturePostHog('Checkout Started', { tier, interval, source });
   },
 
   /** Auth modal opened */
@@ -93,7 +93,10 @@ export const events = {
     trackEvent('AI Insight Requested', { tier }),
 
   /** AI upsell CTA shown to free user */
-  aiUpsellShown: () => trackEvent('AI Upsell Shown'),
+  aiUpsellShown: (source: string) => {
+    trackEvent('AI Upsell Shown', { source });
+    capturePostHog('AI Upsell Shown', { source });
+  },
 
   // ── Product engagement ───────────────────────────────────
   /** User switched dashboard tab */
@@ -231,12 +234,16 @@ export const events = {
     trackEvent('AI Credits Exhausted'),
 
   /** Upgrade teaser cards shown to free user after AI insights */
-  deepTeaserShown: () =>
-    trackEvent('Deep Teaser Shown'),
+  deepTeaserShown: (source: string) => {
+    trackEvent('Deep Teaser Shown', { source });
+    capturePostHog('Deep Teaser Shown', { source });
+  },
 
   /** Free user clicks upgrade CTA on deep teaser */
-  deepTeaserCtaClicked: () =>
-    trackEvent('Deep Teaser CTA Clicked'),
+  deepTeaserCtaClicked: (source: string) => {
+    trackEvent('Deep Teaser CTA Clicked', { source });
+    capturePostHog('Deep Teaser CTA Clicked', { source });
+  },
 
   /** User clicks "Delete my data" in account settings */
   dataDeletionRequested: (fileCount: number, nightCount: number) =>

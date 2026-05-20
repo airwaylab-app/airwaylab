@@ -550,9 +550,32 @@ export function reEngagementStep3(
   };
 }
 
+// ── Sequence 7: Win-back (cancelled paying users) ────────────
+
+export function winBackCancelledPaying(unsubscribeUrl: string): { subject: string; html: string } {
+  return {
+    subject: 'Still here if you want to come back',
+    html: layout(`
+      ${heading('Your free tools are still here')}
+      ${paragraph('Your AirwayLab subscription ended recently. Your account is still here, and all the free analysis features are available whenever you\'re ready.')}
+      ${paragraph('Here\'s what you still have access to, no subscription needed:')}
+      ${bulletList([
+        'Four analysis engines running entirely in your browser',
+        'Flow limitation scoring, breath-shape analysis, and RERA estimates',
+        'Trend charts and session-to-session comparison',
+        'CSV, PDF, and forum-formatted exports for your clinician',
+      ])}
+      ${paragraph('If you\'d like to bring AI-powered insights back, you can reactivate from your account page.')}
+      ${ctaButton('Come Back to AirwayLab', `${BASE_URL}/pricing?utm_source=email&utm_medium=win_back&utm_campaign=win_back`)}
+      ${paragraph(`If you're done for now — that's completely fine. Your data stays in your browser and you're always welcome back later. <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe here</a> to stop these emails.`)}
+      ${paragraph('<em>AirwayLab is not a medical device. This email contains no health data. Your clinician can help interpret your results in the context of your care.</em>')}
+    `, unsubscribeUrl),
+  };
+}
+
 // ── Template registry ────────────────────────────────────────
 
-export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding' | 'cpap_tips' | 're_engagement';
+export type SequenceName = 'post_upload' | 'dormancy' | 'feature_education' | 'activation' | 'premium_onboarding' | 'cpap_tips' | 're_engagement' | 'win_back';
 
 interface SequenceConfig {
   totalSteps: number;
@@ -637,6 +660,14 @@ export const SEQUENCES: Record<SequenceName, SequenceConfig> = {
       if (step === 1) return reEngagementStep1(url, firstName, lastUploadDate);
       if (step === 2) return reEngagementStep2(url, firstName, lastUploadDate);
       if (step === 3) return reEngagementStep3(url, firstName, lastUploadDate);
+      return null;
+    },
+  },
+  win_back: {
+    totalSteps: 1,
+    delays: [7], // 7 days after subscription ends
+    getTemplate: (step, url) => {
+      if (step === 1) return winBackCancelledPaying(url);
       return null;
     },
   },

@@ -32,6 +32,7 @@ vi.mock('next/server', async (importOriginal) => {
 vi.mock('@/lib/email/sequences', () => ({
   cancelSequence: vi.fn().mockResolvedValue(undefined),
   scheduleSequence: vi.fn().mockResolvedValue(undefined),
+  scheduleWinBackForUser: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/email/send', () => ({
@@ -283,7 +284,11 @@ describe('POST /api/webhooks/stripe', () => {
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
       if (!builders[table]) {
-        builders[table] = createQueryBuilder({ data: null, error: null });
+        // AIR-1873: profiles must return a non-null row so the phantom-user guard passes
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
       }
       return builders[table];
     });
@@ -331,6 +336,53 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Verify stripe.subscriptions.retrieve was called
     expect(mockSubscriptionsRetrieve).toHaveBeenCalledWith('sub_test_123');
+  });
+
+  // ---------- 5b. checkout.session.completed: phantom supabase_user_id ----------
+  it('fires Sentry critical alert and skips DB writes when supabase_user_id has no profile (AIR-1873)', async () => {
+    const { captureMessage } = await import('@sentry/nextjs');
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'phantom-uuid-does-not-exist' },
+      subscription: 'sub_phantom_123',
+      customer: 'cus_phantom_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject({
+      metadata: { supabase_user_id: 'phantom-uuid-does-not-exist' },
+    }));
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) {
+        // profiles returns null — simulates no profile row for the phantom UUID
+        const result = table === 'profiles'
+          ? { data: null, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
+      return builders[table];
+    });
+
+    const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
+    const res = await callRoute(req);
+
+    expect(res.status).toBe(200); // Stripe must get 200 so it stops retrying
+    expect((await res.json()).received).toBe(true);
+
+    // Phantom-user Sentry alert must fire
+    expect(captureMessage).toHaveBeenCalledWith(
+      'Stripe webhook: supabase_user_id in metadata has no matching profile',
+      expect.objectContaining({
+        level: 'error',
+        tags: expect.objectContaining({ check: 'phantom-user-id' }),
+      })
+    );
+
+    // Subscription upsert must NOT happen for a phantom user
+    if (builders['subscriptions']) {
+      expect(builders['subscriptions']!.upsert).not.toHaveBeenCalled();
+    }
   });
 
   // ---------- 6. checkout.session.completed: missing userId/subscriptionId ----------
@@ -549,6 +601,10 @@ describe('POST /api/webhooks/stripe', () => {
         // Second call: compensating delete succeeds
         return createQueryBuilder({ data: null, error: null });
       }
+      if (table === 'profiles') {
+        // AIR-1873: phantom guard must pass so the handler reaches subscriptions upsert
+        return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
+      }
       if (table === 'subscription_events') {
         return createQueryBuilder({ data: null, error: null });
       }
@@ -603,6 +659,10 @@ describe('POST /api/webhooks/stripe', () => {
           error: { message: 'Delete also failed' },
         });
       }
+      if (table === 'profiles') {
+        // AIR-1873: phantom guard must pass so the handler reaches subscriptions upsert
+        return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
+      }
       if (table === 'subscription_events') {
         return createQueryBuilder({ data: null, error: null });
       }
@@ -650,7 +710,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -683,7 +748,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -716,7 +786,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -751,7 +826,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -789,7 +869,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -823,7 +908,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -1210,6 +1300,7 @@ describe('POST /api/webhooks/stripe', () => {
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
 
     let stripeEventsCallCount = 0;
+    let profileCallCount = 0;
     mockFrom.mockImplementation((table: string) => {
       if (table === 'stripe_events') {
         stripeEventsCallCount++;
@@ -1223,7 +1314,12 @@ describe('POST /api/webhooks/stripe', () => {
         return createQueryBuilder({ data: null, error: null }); // upsert succeeds
       }
       if (table === 'profiles') {
-        // Profile update fails
+        profileCallCount++;
+        if (profileCallCount === 1) {
+          // AIR-1873: phantom guard check (select) — profile exists so the check passes
+          return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
+        }
+        // Second call: the actual update — fails to trigger compensating action
         return createQueryBuilder({ data: null, error: { message: 'Profile update failed' } });
       }
       return createQueryBuilder({ data: null, error: null });
@@ -1248,7 +1344,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 
@@ -1273,7 +1374,12 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        const result = table === 'profiles'
+          ? { data: { id: 'user-uuid-1' }, error: null }
+          : { data: null, error: null };
+        builders[table] = createQueryBuilder(result);
+      }
       return builders[table];
     });
 

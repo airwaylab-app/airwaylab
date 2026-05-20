@@ -90,7 +90,7 @@ export function PostAnalysisUpgrade({ isComplete, sequencerActive, onDismiss }: 
           </div>
           <div className="mt-3 flex items-center gap-3">
             <Link
-              href="/pricing"
+              href="/pricing?source=post_analysis"
               className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
               onClick={() => events.upgradeNudgeClicked('post_analysis')}
             >
