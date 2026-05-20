@@ -15,6 +15,7 @@ import {
   addMemberToGuild,
   getTierRoleId,
 } from '@/lib/discord';
+import { validateProfileExists } from '@/lib/auth/validate-profile';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 });
@@ -67,6 +68,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);
   }
 
+  // Guard: profile must exist before writing Discord data or calling external APIs
+  const serviceRole = getSupabaseServiceRole();
+  if (!serviceRole) {
+    return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);
+  }
+  const profileCheck = await validateProfileExists(serviceRole, user.id, { route: 'discord-callback' });
+  if (!profileCheck.valid) {
+    return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);
+  }
+
   const clientId = process.env.DISCORD_CLIENT_ID?.trim();
   const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim();
   const redirectUri = process.env.DISCORD_REDIRECT_URI?.trim();
@@ -116,12 +127,6 @@ export async function GET(request: NextRequest) {
       global_name: string | null;
     };
 
-    // Save to profile (service role to bypass RLS for the update)
-    const serviceRole = getSupabaseServiceRole();
-    if (!serviceRole) {
-      return NextResponse.redirect(`${ACCOUNT_URL}?discord=error`);
-    }
-
     // Check if this Discord ID is already linked to another account
     const { data: existing } = await serviceRole
       .from('profiles')
@@ -152,11 +157,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's current tier to determine role
-    const { data: profile } = await serviceRole
+    const { data: profile, error: profileError } = await serviceRole
       .from('profiles')
       .select('tier')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      Sentry.captureException(profileError, {
+        tags: { route: 'discord-callback', check: 'profile-lookup' },
+        extra: { userId: user.id },
+        level: 'warning',
+      });
+    }
 
     const tier = profile?.tier ?? 'community';
     const roleId = getTierRoleId(tier);
