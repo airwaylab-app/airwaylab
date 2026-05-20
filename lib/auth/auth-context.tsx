@@ -145,6 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: subData, error: subError } = subResult;
 
     if (subError) {
+      // Suppress Sentry for lock contention — transient, self-heals on next auth state change
+      if (subError.message?.includes('Lock was stolen')) { setSubscription(null); return; }
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
       Sentry.captureMessage(`Subscription fetch failed: ${subError.message}`, {
         level: 'warning',
