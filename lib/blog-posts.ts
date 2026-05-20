@@ -1633,7 +1633,7 @@ export const blogPosts: BlogPost[] = [
     ],
   },
   {
-    slug: 'good-ahi-on-cpap',
+    slug: 'what-is-a-good-ahi-on-cpap',
     title: 'What Is a Good AHI on CPAP? (And What to Do If Yours Is Still High)',
     seoTitle: 'What Is a Good AHI on CPAP? Residual AHI Explained | AirwayLab',
     description:
