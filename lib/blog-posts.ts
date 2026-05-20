@@ -1720,6 +1720,56 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'cpap-data-report-what-doctor-sees',
+    title: 'How to Read Your CPAP Data Report (What Your Doctor Sees)',
+    seoTitle:
+      'How to Read Your CPAP Data Report: AHI, Usage, Leak Rate | AirwayLab',
+    description:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate — and what your doctor and insurance company actually look at.',
+    date: '2026-05-18',
+    readTime: '8 min read',
+    tags: ['CPAP Compliance', 'CPAP Data', 'AHI', 'Insurance', 'ResMed'],
+    ogDescription:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate, and event breakdown — and what your doctor and insurance company are actually looking at when they review your therapy report.',
+    faqItems: [
+      {
+        question: 'What is a CPAP compliance report?',
+        answer:
+          "A CPAP compliance report is a summary of your therapy usage data — how often you used the machine, for how long, and key metrics like AHI and leak rate. It's generated from your device's SD card or cloud app data. Your doctor uses it to review therapy progress; your insurance company uses it to verify coverage requirements.",
+      },
+      {
+        question: 'How many hours do I need to use my CPAP to be compliant?',
+        answer:
+          'The US Medicare standard — and the benchmark most private insurers follow — is at least 4 hours of use per night on at least 70% of nights over a 30-day period. If you fall below this threshold, coverage for equipment and supplies may be affected. Your DME supplier can pull your detailed usage record if you need to review your status.',
+      },
+      {
+        question: 'What AHI does my insurance company look at?',
+        answer:
+          'Insurers typically look at your residual AHI — the events recorded while therapy was running — as a favorable data point in compliance reviews. Your clinician can put your specific number in context and explain what it means for your care.',
+      },
+      {
+        question: 'What does "large mask leak" mean on my CPAP report?',
+        answer:
+          'A large mask leak flag means unintentional air escaped around your mask seal beyond the threshold your device uses to flag data-quality concerns. High or persistent leak can reduce the reliability of AHI readings for that session and may prompt your doctor to review mask fit. Your clinician can help assess recurring leak flags in your specific context.',
+      },
+      {
+        question: 'Can I access my own CPAP compliance data?',
+        answer:
+          "Yes. ResMed users can view a summary in the myAir app, or export their SD card for detailed data. Philips DreamStation users can use DreamMapper for cloud summary data, or OSCAR (free, open-source) for full SD card data. AirwayLab reads ResMed SD card data directly in your browser — no upload required.",
+      },
+      {
+        question: 'What is the difference between CPAP compliance and CPAP effectiveness?',
+        answer:
+          'Compliance (for insurance purposes) is largely about usage hours — did you use the machine enough. Clinical effectiveness is a broader judgment that includes AHI trends, leak patterns, and how you actually feel. Compliance is a prerequisite for coverage; effectiveness is what your clinician evaluates at follow-up.',
+      },
+      {
+        question: 'Does AirwayLab show my compliance data?',
+        answer:
+          "Yes. AirwayLab reads your usage hours, AHI, event breakdowns, leak rate, and pressure data from your ResMed SD card and displays it in one dashboard — the same data that goes into your doctor's compliance report. It also runs four additional analysis engines on your raw flow waveform, surfacing metrics like flow limitation scores and RERA-related patterns that don't appear in standard compliance reports. Everything runs in your browser; your data never leaves your device.",
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
