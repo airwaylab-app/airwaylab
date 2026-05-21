@@ -305,11 +305,19 @@ export async function POST(request: NextRequest) {
   }
 
   // Server-side AI usage enforcement (C2)
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('tier')
     .eq('id', user.id)
     .single();
+
+  if (profileError) {
+    Sentry.captureException(profileError, {
+      tags: { route: 'ai-insights', check: 'profile-lookup' },
+      extra: { userId: user.id },
+    });
+    return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 500 });
+  }
 
   const userTier = profile?.tier ?? 'community';
 
