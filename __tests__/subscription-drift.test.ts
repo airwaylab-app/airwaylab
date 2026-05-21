@@ -2,16 +2,21 @@
  * Unit tests for app/api/cron/subscription-drift/route.ts
  *
  * Covers: syncRole called for downgrade_missed users with a discord_id,
- * discord_role_events row written with correct action on success/failure.
+ * discord_role_events row written with correct action on success/failure,
+ * Sentry level is 'info' when auto-corrected and 'warning' when fix fails.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
 // ── Mocks ────────────────────────────────────────────────────────
 
+// Named fn so the closure in vi.mock factory survives vi.resetModules()
+const mockCaptureException = vi.fn();
+const mockCaptureSentryMessage = vi.fn();
+
 vi.mock('@sentry/nextjs', () => ({
-  captureException: vi.fn(),
-  captureMessage: vi.fn(),
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+  captureMessage: (...args: unknown[]) => mockCaptureSentryMessage(...args),
 }));
 
 const mockSyncRole = vi.fn();
@@ -147,6 +152,40 @@ function buildWebhookBlindFromImpl(
   };
 }
 
+/**
+ * Build a from-mock where the profiles fix update returns an error,
+ * simulating a failed auto-correction attempt.
+ */
+function buildFromImplWithFixError(
+  profile: Record<string, unknown>
+): (table: string) => Record<string, unknown> {
+  return (table: string) => {
+    if (table === 'profiles') {
+      const chain: Record<string, unknown> = {};
+      chain['select'] = vi.fn().mockImplementation(() => chain);
+      chain['in'] = vi.fn().mockResolvedValue({ data: [profile], error: null });
+      chain['eq'] = vi.fn().mockImplementation(() => chain);
+      chain['not'] = vi.fn().mockImplementation((field: string) => {
+        if (field === 'stripe_customer_id') return chain;
+        return Promise.resolve({ data: [], error: null });
+      });
+      chain['is'] = vi.fn().mockResolvedValue({ data: [], error: null });
+      chain['update'] = vi.fn().mockImplementation(() => ({
+        eq: vi.fn().mockResolvedValue({ error: { message: 'DB error' } }),
+      }));
+      return chain;
+    }
+    if (table === 'subscriptions') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+    }
+    return {};
+  };
+}
+
 // ── Tests ─────────────────────────────────────────────────────────
 
 describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
@@ -205,6 +244,47 @@ describe('subscription-drift cron — Discord sync on downgrade_missed', () => {
   });
 });
 
+describe('subscription-drift cron — Sentry level reflects fix outcome', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    insertCalls.length = 0;
+    process.env.CRON_SECRET = 'test-secret';
+    mockIsDiscordConfigured.mockReturnValue(false);
+    mockSendAlert.mockResolvedValue(undefined);
+  });
+
+  it('emits Sentry info (not warning) when downgrade_missed is auto-corrected', async () => {
+    const profile = { id: 'user-3', tier: 'supporter', email: 'a@example.com', discord_id: null };
+    mockFrom.mockImplementation(buildFromImpl(profile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    const call = mockCaptureSentryMessage.mock.calls.find(
+      (args) => (args[1] as { tags?: Record<string, string> })?.tags?.drift_type === 'downgrade_missed'
+    );
+    expect(call).toBeDefined();
+    expect((call![1] as { level: string }).level).toBe('info');
+    expect((call![1] as { tags: Record<string, string> }).tags.fixed).toBe('true');
+  });
+
+  it('emits Sentry warning when downgrade_missed fix fails', async () => {
+    const profile = { id: 'user-4', tier: 'supporter', email: 'b@example.com', discord_id: null };
+    mockFrom.mockImplementation(buildFromImplWithFixError(profile));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    const call = mockCaptureSentryMessage.mock.calls.find(
+      (args) => (args[1] as { tags?: Record<string, string> })?.tags?.drift_type === 'downgrade_missed'
+    );
+    expect(call).toBeDefined();
+    expect((call![1] as { level: string }).level).toBe('warning');
+    expect((call![1] as { tags: Record<string, string> }).tags.fixed).toBe('false');
+  });
+});
+
 describe('subscription-drift cron — webhook_never_ran detection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -217,7 +297,6 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
   });
 
   it('flags a community profile with stripe_customer_id but no subscription row as webhook_never_ran', async () => {
-    const Sentry = await import('@sentry/nextjs');
     const blindProfile = {
       id: 'user-blind',
       stripe_customer_id: 'cus_abc123',
@@ -230,7 +309,7 @@ describe('subscription-drift cron — webhook_never_ran detection', () => {
     const body = await res.json();
 
     expect(body.webhook_never_ran).toBe(1);
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+    expect(mockCaptureSentryMessage).toHaveBeenCalledWith(
       'Subscription webhook never ran — manual review required',
       expect.objectContaining({
         tags: expect.objectContaining({ drift_type: 'webhook_never_ran' }),
@@ -310,7 +389,6 @@ describe('subscription-drift cron — aggregate Sentry error', () => {
   }
 
   it('fires one aggregate Sentry error with fingerprint when mismatches are found', async () => {
-    const Sentry = await import('@sentry/nextjs');
     const profile = { id: 'user-agg', tier: 'supporter', email: 'agg@example.com', discord_id: null };
 
     mockFrom.mockImplementation((table: string) => {
@@ -328,7 +406,7 @@ describe('subscription-drift cron — aggregate Sentry error', () => {
     const { GET } = await import('@/app/api/cron/subscription-drift/route');
     await GET(makeRequest());
 
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+    expect(mockCaptureSentryMessage).toHaveBeenCalledWith(
       expect.stringContaining('subscription-drift-cron'),
       expect.objectContaining({
         level: 'error',
@@ -339,8 +417,6 @@ describe('subscription-drift cron — aggregate Sentry error', () => {
   });
 
   it('does NOT fire an aggregate Sentry error when there are no mismatches', async () => {
-    const Sentry = await import('@sentry/nextjs');
-
     mockFrom.mockImplementation((table: string) => {
       if (table === 'profiles') return buildAggChain([]);
       if (table === 'subscriptions') {
@@ -358,7 +434,7 @@ describe('subscription-drift cron — aggregate Sentry error', () => {
     const body = await res.json();
 
     expect(body.mismatches).toBe(0);
-    const errorCalls = (Sentry.captureMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+    const errorCalls = mockCaptureSentryMessage.mock.calls.filter(
       (args: unknown[]) =>
         typeof args[1] === 'object' &&
         args[1] !== null &&
