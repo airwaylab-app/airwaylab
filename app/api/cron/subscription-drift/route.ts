@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
         }
 
         Sentry.captureMessage('Subscription tier drift detected', {
-          level: 'warning',
+          level: 'info',
           tags: { route: 'cron-subscription-drift', drift_type: 'downgrade_missed' },
           extra: {
             user_id: profile.id,
@@ -231,7 +231,7 @@ export async function GET(request: NextRequest) {
         }
 
         Sentry.captureMessage('Subscription tier drift detected', {
-          level: 'warning',
+          level: 'info',
           tags: { route: 'cron-subscription-drift', drift_type: 'tier_mismatch' },
           extra: {
             user_id: profile.id,
@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
         }
 
         Sentry.captureMessage('Subscription tier drift detected', {
-          level: 'warning',
+          level: 'info',
           tags: { route: 'cron-subscription-drift', drift_type: 'upgrade_missed' },
           extra: {
             user_id: profile.id,
@@ -448,6 +448,12 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       ]);
+
+      Sentry.captureMessage(`subscription-drift-cron: ${mismatches.length} mismatch(es) found`, {
+        level: 'error',
+        fingerprint: ['subscription-drift-cron-mismatch'],
+        extra: { checked, mismatches: mismatches.length, fixed, runTimestamp: new Date().toISOString() },
+      });
     }
 
     console.error(
