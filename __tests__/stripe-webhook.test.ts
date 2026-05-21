@@ -1498,7 +1498,7 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Flush to clean up
     for (const fn of afterCallbacks) await fn();
-=======
+  });
 
   // ---------- 37. subscription.deleted: persists cancel reason + feedback ----------
   it('persists cancel_reason, cancel_feedback, cancel_comment, and cancelled_at on subscription.deleted', async () => {
