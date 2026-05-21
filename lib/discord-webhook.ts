@@ -5,6 +5,7 @@
  * Separate from lib/discord.ts which handles community role management.
  *
  * Channels:
+ *   #critical         — Payment failures, credential expiry <72h, security incidents
  *   #ops-alerts       — Sentry, monitor cron, GitHub, deploys
  *   #revenue          — Stripe payments, cancellations, tier changes
  *   #user-signals     — Feedback, contact forms, provider interest, deletions
@@ -13,7 +14,14 @@
  *
  * Fail-open: if a webhook URL is not configured or the request fails,
  * the caller continues without error.
+ *
+ * Critical alerts (sendCriticalAlert / alertCredentialExpiry / alertSecurityIncident):
+ *   Both Discord AND email are fired independently. Discord failure does not block
+ *   the email attempt, and vice versa. Resend errors are logged to Sentry only.
  */
+
+import * as Sentry from '@sentry/nextjs'
+import { sendEmail } from '@/lib/email/send'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -32,7 +40,7 @@ interface DiscordEmbed {
   timestamp?: string
 }
 
-export type AlertChannel = 'ops' | 'revenue' | 'user-signals' | 'growth' | 'platform-health'
+export type AlertChannel = 'critical' | 'ops' | 'revenue' | 'user-signals' | 'growth' | 'platform-health'
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -47,12 +55,15 @@ export const COLORS = {
 } as const
 
 const CHANNEL_ENV_MAP: Record<AlertChannel, string> = {
+  critical: 'DISCORD_WEBHOOK_CRITICAL',
   ops: 'DISCORD_OPS_WEBHOOK_URL',
   revenue: 'DISCORD_REVENUE_WEBHOOK_URL',
   'user-signals': 'DISCORD_USER_SIGNALS_WEBHOOK_URL',
   growth: 'DISCORD_GROWTH_WEBHOOK_URL',
   'platform-health': 'DISCORD_PLATFORM_HEALTH_WEBHOOK_URL',
 }
+
+const CRITICAL_OPS_EMAIL = 'd.voorhagen@gmail.com'
 
 // ── Core sender ──────────────────────────────────────────────
 
@@ -105,6 +116,99 @@ export async function sendOpsAlert(
   embeds?: DiscordEmbed[]
 ): Promise<boolean> {
   return sendAlert('ops', content, embeds)
+}
+
+// ── Critical alert helpers ───────────────────────────────────
+
+/**
+ * Send a plain-text email fallback to the ops contact.
+ * Called after the Discord push — never throws.
+ * Resend failures are captured to Sentry for ops visibility.
+ */
+async function sendCriticalOpsEmail(subject: string, body: string): Promise<void> {
+  try {
+    const id = await sendEmail({ to: CRITICAL_OPS_EMAIL, subject, text: body })
+    if (id === null) {
+      Sentry.captureMessage('Critical ops email failed to send (Resend returned null)', {
+        level: 'error',
+        tags: { source: 'discord-webhook', subject },
+      })
+    }
+  } catch (err) {
+    Sentry.captureException(err, {
+      level: 'error',
+      tags: { source: 'discord-webhook', action: 'critical_ops_email' },
+    })
+  }
+}
+
+/**
+ * Send a critical-tier alert: Discord #critical + plain-text email to ops.
+ * Discord and email fire independently — neither blocks the other.
+ * Returns true if Discord was delivered, false otherwise.
+ */
+export async function sendCriticalAlert(
+  emailSubject: string,
+  emailBody: string,
+  content: string,
+  embeds?: DiscordEmbed[]
+): Promise<boolean> {
+  const [discordResult] = await Promise.all([
+    sendAlert('critical', content, embeds),
+    sendCriticalOpsEmail(emailSubject, emailBody),
+  ])
+  return discordResult
+}
+
+/**
+ * Alert: credential expiring within 72 hours.
+ * Fires to Discord #critical and emails the ops contact.
+ */
+export async function alertCredentialExpiry(hoursLeft: number, credentialName: string): Promise<boolean> {
+  const subject = `[AirwayLab URGENT] Credential expires in ${hoursLeft}h: ${credentialName}`
+  const body = `AirwayLab credential alert\n\nCredential: ${credentialName}\nExpires in: ${hoursLeft} hours\n\nRenew immediately to avoid service disruption.`
+  const embed: DiscordEmbed = {
+    title: `:rotating_light: Credential Expiring Soon`,
+    description: `**${credentialName}** expires in **${hoursLeft}h**`,
+    color: COLORS.red,
+    footer: { text: 'Credential monitor' },
+    timestamp: new Date().toISOString(),
+  }
+  return sendCriticalAlert(subject, body, '', [embed])
+}
+
+/**
+ * Alert: Stripe payment failed on the board card.
+ * Fires to Discord #critical and emails the ops contact.
+ */
+export async function alertStripePaymentFailed(): Promise<boolean> {
+  const subject = `[AirwayLab URGENT] Stripe payment failed`
+  const body = `AirwayLab critical alert\n\nStripe invoice payment failed. Check the Stripe dashboard immediately — active subscriptions may be at risk.\n\nhttps://dashboard.stripe.com`
+  const embed: DiscordEmbed = {
+    title: `:x: Stripe Payment Failed`,
+    description: 'Invoice payment failed. Check Stripe dashboard.',
+    color: COLORS.red,
+    footer: { text: 'Stripe webhook' },
+    timestamp: new Date().toISOString(),
+  }
+  return sendCriticalAlert(subject, body, '', [embed])
+}
+
+/**
+ * Alert: security incident detected.
+ * Fires to Discord #critical and emails the ops contact.
+ */
+export async function alertSecurityIncident(description: string): Promise<boolean> {
+  const subject = `[AirwayLab URGENT] Security incident: ${description.slice(0, 80)}`
+  const body = `AirwayLab security incident\n\n${description}\n\nTimestamp: ${new Date().toISOString()}`
+  const embed: DiscordEmbed = {
+    title: `:rotating_light: Security Incident`,
+    description: description.slice(0, 500),
+    color: COLORS.red,
+    footer: { text: 'Security monitor' },
+    timestamp: new Date().toISOString(),
+  }
+  return sendCriticalAlert(subject, body, '', [embed])
 }
 
 // ── Embed builders ───────────────────────────────────────────
