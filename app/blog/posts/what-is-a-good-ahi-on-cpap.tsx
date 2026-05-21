@@ -113,8 +113,8 @@ export default function GoodAHIOnCPAP() {
             These classifications come from American Academy of Sleep Medicine (AASM) guidance and
             are most commonly applied in diagnostic contexts. For therapy monitoring,{' '}
             <strong className="text-foreground">
-              many sleep specialists consider a residual AHI below 5 a reasonable treatment
-              benchmark.
+              a residual AHI below 5 is a figure many sleep specialists reference in clinical
+              discussions with patients.
             </strong>{' '}
             Some clinicians aim for below 2, particularly where certain conditions are present, but
             your sleep physician is best placed to establish a specific target for you.
@@ -379,8 +379,8 @@ export default function GoodAHIOnCPAP() {
         </div>
         <ul className="mt-4 ml-4 list-disc space-y-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <li>
-            Many sleep specialists consider a residual AHI below 5 a common treatment benchmark,
-            but your clinician determines what&apos;s appropriate for your situation
+            Many sleep specialists reference a residual AHI below 5 in clinical discussions with
+            patients, but your clinician determines what&apos;s appropriate for your situation
           </li>
           <li>
             Factors that can contribute to elevated residual AHI include mask fit, pressure
