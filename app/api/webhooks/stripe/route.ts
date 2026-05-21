@@ -359,6 +359,14 @@ async function processStripeEvent(
 
       const shouldUpdateProfile = !!userId && ['active', 'trialing'].includes(subscription.status);
 
+      // Capture cancel reason when customer schedules cancellation via portal
+      const cancelDetails = subscription.cancellation_details;
+      const cancelFields = subscription.cancel_at_period_end && cancelDetails ? {
+        cancel_reason: cancelDetails.reason ?? null,
+        cancel_feedback: cancelDetails.feedback ?? null,
+        cancel_comment: cancelDetails.comment ?? null,
+      } : {};
+
       const subUpdatePromise = supabase
         .from('subscriptions')
         .update({
@@ -367,6 +375,7 @@ async function processStripeEvent(
           tier,
           current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
+          ...cancelFields,
         })
         .eq('stripe_subscription_id', subscription.id);
 
@@ -413,11 +422,20 @@ async function processStripeEvent(
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.supabase_user_id;
+      const deletedCancelDetails = subscription.cancellation_details;
 
-      // Mark subscription as canceled
+      // Mark subscription as canceled, capturing churn reason for analysis
       const { error: cancelErr } = await supabase
         .from('subscriptions')
-        .update({ status: 'canceled' })
+        .update({
+          status: 'canceled',
+          cancelled_at: subscription.canceled_at
+            ? new Date(subscription.canceled_at * 1000).toISOString()
+            : new Date().toISOString(),
+          cancel_reason: deletedCancelDetails?.reason ?? null,
+          cancel_feedback: deletedCancelDetails?.feedback ?? null,
+          cancel_comment: deletedCancelDetails?.comment ?? null,
+        })
         .eq('stripe_subscription_id', subscription.id);
       if (cancelErr) {
         console.error('[stripe-webhook] Subscription cancel failed:', cancelErr);

@@ -511,8 +511,10 @@ describe('POST /api/webhooks/stripe', () => {
 
     expect(res.status).toBe(200);
 
-    // Verify subscription marked as canceled
-    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'canceled' });
+    // Verify subscription marked as canceled (may also include cancel detail fields)
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'canceled' })
+    );
 
     // Verify remaining subs check
     expect(builders['subscriptions']!.select).toHaveBeenCalledWith('tier');
@@ -1186,8 +1188,10 @@ describe('POST /api/webhooks/stripe', () => {
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
     expect(res.status).toBe(200);
 
-    // Subscription should still be marked canceled
-    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'canceled' });
+    // Subscription should still be marked canceled (may also include cancel detail fields)
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'canceled' })
+    );
 
     // Profile should NOT be updated (no userId)
     const profileCalls = mockFrom.mock.calls.filter(
@@ -1494,5 +1498,135 @@ describe('POST /api/webhooks/stripe', () => {
 
     // Flush to clean up
     for (const fn of afterCallbacks) await fn();
+  });
+
+  // ---------- 37. subscription.deleted: persists cancel reason + feedback ----------
+  it('persists cancel_reason, cancel_feedback, cancel_comment, and cancelled_at on subscription.deleted', async () => {
+    const subscription = makeSubscriptionObject({
+      canceled_at: 1700001000,
+      cancellation_details: {
+        reason: 'cancellation_requested',
+        feedback: 'too_expensive',
+        comment: 'Too pricey for my budget',
+      },
+    });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions' && !builders[table]) {
+        builders[table] = createQueryBuilder({ data: [], error: null });
+      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'canceled',
+        cancel_reason: 'cancellation_requested',
+        cancel_feedback: 'too_expensive',
+        cancel_comment: 'Too pricey for my budget',
+        cancelled_at: new Date(1700001000 * 1000).toISOString(),
+      })
+    );
+  });
+
+  // ---------- 38. subscription.deleted: handles null cancellation_details ----------
+  it('persists null cancel fields when cancellation_details is absent on subscription.deleted', async () => {
+    const subscription = makeSubscriptionObject({
+      canceled_at: 1700001000,
+      cancellation_details: null,
+    });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions' && !builders[table]) {
+        builders[table] = createQueryBuilder({ data: [], error: null });
+      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'canceled',
+        cancel_reason: null,
+        cancel_feedback: null,
+        cancel_comment: null,
+      })
+    );
+  });
+
+  // ---------- 39. subscription.updated: captures cancel reason when cancel_at_period_end becomes true ----------
+  it('persists cancel_reason and cancel_feedback when cancel_at_period_end is set on subscription.updated', async () => {
+    const subscription = makeSubscriptionObject({
+      cancel_at_period_end: true,
+      cancellation_details: {
+        reason: 'cancellation_requested',
+        feedback: 'missing_features',
+        comment: null,
+      },
+    });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cancel_at_period_end: true,
+        cancel_reason: 'cancellation_requested',
+        cancel_feedback: 'missing_features',
+        cancel_comment: null,
+      })
+    );
+  });
+
+  // ---------- 40. subscription.updated: does NOT write cancel fields when cancel_at_period_end is false ----------
+  it('does NOT include cancel fields when cancel_at_period_end is false on subscription.updated', async () => {
+    const subscription = makeSubscriptionObject({
+      cancel_at_period_end: false,
+      cancellation_details: null,
+    });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    const subBuilder = builders['subscriptions']!;
+    expect(subBuilder).toBeDefined();
+    expect(subBuilder.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ cancel_reason: expect.anything() })
+    );
+    expect(subBuilder.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ cancel_feedback: expect.anything() })
+    );
+    expect(subBuilder.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ cancel_comment: expect.anything() })
+    );
   });
 });
