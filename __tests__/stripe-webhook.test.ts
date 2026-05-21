@@ -5,6 +5,10 @@
  * invoice.payment_failed, idempotency, tier assignment (all 4 price IDs),
  * tier transitions, compensating deletes on failure, missing data,
  * unknown price IDs, MRR computation, and malformed events.
+ *
+ * Design note: event processing is deferred via after() so the HTTP response
+ * is always 200 for valid/idempotent events. Errors in processing are captured
+ * by Sentry and logged; the compensating delete still runs inside after().
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -19,12 +23,15 @@ vi.mock('@sentry/nextjs', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
-// Mock next/server — stub after() to execute synchronously so analytics assertions pass
+// Collect after() callbacks so callRoute can flush them after the response.
+// This simulates the real after() contract: response sent first, callbacks run after.
+const afterCallbacks: Array<() => unknown> = [];
+
 vi.mock('next/server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('next/server')>();
   return {
     ...actual,
-    after: (fn: () => unknown) => { fn(); },
+    after: (fn: () => unknown) => { afterCallbacks.push(fn); },
   };
 });
 
@@ -151,6 +158,7 @@ function makeSubscriptionObject(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  afterCallbacks.length = 0;
   vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test_123');
   vi.stubEnv('NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID', 'price_supp_m');
@@ -159,13 +167,18 @@ beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_STRIPE_CHAMPION_YEARLY_PRICE_ID', 'price_champ_y');
 });
 
-/** Dynamic import with resetModules so each test picks up freshly stubbed
- *  env vars (the route captures STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET
- *  at module scope). */
+/**
+ * Invoke the route handler and flush any deferred after() callbacks before
+ * returning so test assertions can observe their side effects.
+ */
 async function callRoute(req: NextRequest) {
   vi.resetModules();
   const { POST } = await import('@/app/api/webhooks/stripe/route');
-  return POST(req);
+  const res = await POST(req);
+  for (const fn of afterCallbacks) {
+    await fn();
+  }
+  return res;
 }
 
 // ── Tests ──────────
@@ -579,7 +592,9 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   // ---------- 12. Compensating delete on handler error ----------
-  it('deletes stripe_events record when handler throws (compensating action)', async () => {
+  // With after() refactor: HTTP response is always 200; errors are logged to Sentry
+  // and the idempotency record is deleted for manual replay.
+  it('deletes stripe_events record and captures to Sentry when handler throws (compensating action)', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
@@ -621,7 +636,8 @@ describe('POST /api/webhooks/stripe', () => {
     const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
     const res = await callRoute(req);
 
-    expect(res.status).toBe(500);
+    // Route always returns 200 — processing errors are handled inside after()
+    expect(res.status).toBe(200);
 
     // stripe_events should be accessed twice: insert (idempotency) + delete (compensating)
     const stripeEventsCalls = mockFrom.mock.calls.filter(
@@ -634,7 +650,8 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   // ---------- 13. Compensating delete failure ----------
-  it('returns 500 without crashing when both handler and compensating delete fail', async () => {
+  // Both handler and compensating delete fail — verify no crash and full Sentry logging.
+  it('does not crash and logs all errors when both handler and compensating delete fail', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
@@ -679,12 +696,12 @@ describe('POST /api/webhooks/stripe', () => {
     const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
     const res = await callRoute(req);
 
-    // Should still return 500, not crash
-    expect(res.status).toBe(500);
+    // Route always returns 200 — errors are captured in Sentry
+    expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.error).toBe('Webhook handler error');
+    expect(json.received).toBe(true);
 
-    // Sentry captures: upsert error (at throw), delete error (compensating), handler error (catch)
+    // Sentry captures: upsert error (at throw) + delete error + handler error (catch)
     expect(captureException).toHaveBeenCalledTimes(3);
   });
 
@@ -1230,7 +1247,9 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   // ---------- 31. subscription.updated: subscription update DB failure ----------
-  it('returns 500 and compensates when subscription.updated DB update fails', async () => {
+  // Processing errors stay inside after() — HTTP is always 200; Sentry captures the error.
+  it('captures Sentry error and compensates when subscription.updated DB update fails', async () => {
+    const { captureException } = await import('@sentry/nextjs');
     const subscription = makeSubscriptionObject();
     const event = makeStripeEvent('customer.subscription.updated', subscription);
     mockWebhooksConstruct.mockReturnValue(event);
@@ -1252,11 +1271,12 @@ describe('POST /api/webhooks/stripe', () => {
     });
 
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    expect(captureException).toHaveBeenCalled();
   });
 
   // ---------- 32. subscription.deleted: cancel DB failure triggers compensating delete ----------
-  it('returns 500 and compensates when subscription.deleted cancel DB update fails', async () => {
+  it('captures Sentry error and compensates when subscription.deleted cancel DB update fails', async () => {
     const subscription = makeSubscriptionObject();
     const event = makeStripeEvent('customer.subscription.deleted', subscription);
     mockWebhooksConstruct.mockReturnValue(event);
@@ -1278,7 +1298,7 @@ describe('POST /api/webhooks/stripe', () => {
     });
 
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
 
     // Verify compensating delete was attempted
     const stripeEventsCalls = mockFrom.mock.calls.filter(
@@ -1288,7 +1308,7 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   // ---------- 33. checkout.session.completed: profile update failure triggers compensating delete ----------
-  it('returns 500 and compensates when profile update fails on checkout.session.completed', async () => {
+  it('captures Sentry error and compensates when profile update fails on checkout.session.completed', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
@@ -1326,7 +1346,7 @@ describe('POST /api/webhooks/stripe', () => {
     });
 
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
 
     expect(captureException).toHaveBeenCalled();
   });
@@ -1388,5 +1408,36 @@ describe('POST /api/webhooks/stripe', () => {
     expect(builders['profiles']!.update).toHaveBeenCalledWith(
       expect.objectContaining({ stripe_customer_id: 'cus_REAL_789' })
     );
+  });
+
+  // ---------- 36. Deferred processing: response is sent before DB writes ----------
+  // Verifies the core timeout fix: after() is registered before response returns.
+  it('registers deferred processing callback before returning the response', async () => {
+    const checkoutSession = {
+      metadata: { supabase_user_id: 'user-uuid-1' },
+      subscription: 'sub_test_123',
+      customer: 'cus_test_456',
+    };
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    vi.resetModules();
+    const { POST } = await import('@/app/api/webhooks/stripe/route');
+
+    // Call POST without flushing after() callbacks
+    const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
+    const res = await POST(req);
+
+    // Response is 200 and there is a deferred callback pending
+    expect(res.status).toBe(200);
+    expect(afterCallbacks).toHaveLength(1);
+
+    // Flush to clean up
+    for (const fn of afterCallbacks) await fn();
   });
 });
