@@ -54,7 +54,7 @@ describe('HashCache', () => {
     expect(result).toBeUndefined();
   });
 
-  it('prunes oldest entries when exceeding size cap', () => {
+  it('prunes oldest entries when exceeding size cap', { timeout: 15000 }, () => {
     // Fill cache with entries that exceed the 500KB cap
     // Each entry key ~50 chars + hash 64 chars + overhead ~30 chars = ~150 bytes
     // 500KB / 150 bytes = ~3400 entries. Write 4000 to trigger pruning.

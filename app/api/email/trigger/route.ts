@@ -73,11 +73,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has opted in to emails
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('email, email_opt_in')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      Sentry.captureException(profileError, {
+        tags: { route: 'email-trigger', check: 'profile-lookup' },
+        extra: { userId: user.id },
+      });
+      return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 500 });
+    }
 
     if (!profile?.email_opt_in || !profile?.email) {
       return NextResponse.json({ ok: true, skipped: 'not_opted_in' });
