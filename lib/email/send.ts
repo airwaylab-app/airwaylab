@@ -5,8 +5,18 @@
  * delivery is tracked via the Resend webhook -> email_log pipeline.
  */
 
+import * as Sentry from '@sentry/nextjs'
 import { serverEnv } from '@/lib/env'
 import { getSupabaseServiceRole } from '@/lib/supabase/server'
+
+function hashRecipient(email: string): string {
+  const parts = email.split('@')
+  const local = parts[0] ?? ''
+  const domain = parts[1]
+  const localHash = local.slice(0, 4) + '…'
+  // domain is not PII — keep it for triage context
+  return `${localHash}@${domain ?? 'unknown'}`
+}
 
 interface SendEmailParams {
   to: string
@@ -76,6 +86,11 @@ export async function sendEmail({
 
     if (!res.ok) {
       const errBody = await res.text()
+      const err = new Error(`Resend API ${res.status}: ${errBody.slice(0, 200)}`)
+      Sentry.captureException(err, {
+        tags: { subsystem: 'email-send' },
+        extra: { recipient_hash: hashRecipient(to), subject_pattern: subject.slice(0, 40), status: res.status },
+      })
       console.error(`[email-send] Resend API error ${res.status}: ${errBody}`)
       return null
     }
@@ -90,6 +105,10 @@ export async function sendEmail({
 
     return resendId
   } catch (err) {
+    Sentry.captureException(err, {
+      tags: { subsystem: 'email-send' },
+      extra: { recipient_hash: hashRecipient(to), subject_pattern: subject.slice(0, 40) },
+    })
     console.error('[email-send] Failed to send email:', err)
     return null
   }
@@ -115,10 +134,17 @@ async function logEmail(
     })
 
     if (error) {
+      Sentry.captureException(new Error(error.message), {
+        tags: { subsystem: 'email-log-insert' },
+        extra: { email_type: metadata.emailType, resend_id: resendId },
+      })
       console.error('[email-send] email_log insert failed:', error.message)
     }
-  // eslint-disable-next-line airwaylab/no-silent-catch -- Audit log insert is non-critical; the email was already sent. Failure logged for ops visibility.
   } catch (err) {
+    Sentry.captureException(err, {
+      tags: { subsystem: 'email-log-insert' },
+      extra: { email_type: metadata.emailType },
+    })
     console.error('[email-send] email_log insert error:', err)
   }
 }
