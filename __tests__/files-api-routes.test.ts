@@ -547,13 +547,36 @@ describe('POST /api/files/confirm', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    // All 3 attempts fail
+    // All 4 attempts fail with a list error
     const listMock = vi.fn().mockResolvedValue({ data: null, error: { message: 'Storage unavailable' } });
     mockStorageFrom.mockReturnValue({ list: listMock });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
     expect(res.status).toBe(503);
-    expect(listMock).toHaveBeenCalledTimes(3);
+    expect(listMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('returns 200 when storage list returns empty then finds file on retry (eventual consistency)', async () => {
+    setupAuthenticatedUser();
+    const chain = createChain({
+      data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
+      error: null,
+    });
+    chain.update = vi.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    // First call returns empty (propagation delay), second call finds the file
+    const listMock = vi.fn()
+      .mockResolvedValueOnce({ data: [], error: null })
+      .mockResolvedValueOnce({ data: [{ name: 'BRP.edf' }], error: null });
+
+    mockStorageFrom.mockReturnValue({ list: listMock });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.confirmed).toBe(true);
+    expect(listMock).toHaveBeenCalledTimes(2);
   });
 });
 
