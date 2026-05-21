@@ -7,7 +7,7 @@ import { cancelSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
-import { sendAlert, formatRevenueEmbed } from '@/lib/discord-webhook';
+import { sendAlert, formatRevenueEmbed, alertStripePaymentFailed } from '@/lib/discord-webhook';
 
 export const maxDuration = 30;
 
@@ -492,10 +492,8 @@ async function processStripeEvent(
           stripeSubscriptionId: subscriptionId,
         });
 
-        // Discord #revenue alert (non-blocking)
-        void sendAlert('revenue', '', [formatRevenueEmbed({
-          event: 'payment_failed',
-        })]);
+        // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
+        void alertStripePaymentFailed();
       }
 
       break;
