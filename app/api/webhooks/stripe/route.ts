@@ -558,6 +558,19 @@ export async function POST(request: NextRequest) {
     try {
       await processStripeEvent(stripe, supabase, event);
     } catch (err) {
+      // Dead-letter queue: persist failure record before compensating delete for audit trail
+      const { error: dlqErr } = await supabase.from('webhook_dlq').insert({
+        event_id: event.id,
+        event_type: event.type,
+        error_message: err instanceof Error ? err.message : String(err),
+      });
+      if (dlqErr) {
+        console.error('[stripe-webhook] DLQ insert failed:', dlqErr);
+        Sentry.captureException(dlqErr, {
+          tags: { route: 'stripe-webhook', event_type: event.type, action: 'dlq-insert' },
+        });
+      }
+
       // Compensating action: remove idempotency record so manual replay tools can re-process.
       // Stripe already received 200 so it won't retry; this is for operational recovery.
       const { error: deleteErr } = await supabase
