@@ -282,10 +282,9 @@ class AnalysisOrchestrator {
       }
 
       // ── Authoritative save of final results ──
-      // Save all merged nights regardless of tier window so the session can be
-      // restored on reload. The page applies the tier window on display, but
-      // bypasses it when the session was saved recently (same-day restore).
-      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
+      // Persist ALL analyzed nights — tier-gating is display-only (visibleNights in page.tsx).
+      // Filtering here caused permanent data loss: sequential SD-card uploads re-applied the
+      // cutoff to current time, silently dropping nights that aged past the community window.
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
       persistBreathData(merged);
@@ -296,7 +295,7 @@ class AnalysisOrchestrator {
       this.setState({
         status: 'complete',
         nights: merged,
-        nightsCappedCount: merged.length - nightsToSave.length,
+        nightsCappedCount: 0,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -590,17 +589,15 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results — save all nights so reload can restore the session.
-      // The tier window is applied at display time on the page.
+      // Persist updated results (all nights — tier-gating is display-only)
       const therapyChangeDate = detectTherapyChange(merged);
-      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',
         nights: merged,
-        nightsCappedCount: merged.length - nightsToSave.length,
+        nightsCappedCount: 0,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -724,8 +721,7 @@ class AnalysisOrchestrator {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       if (this.incrementalNights.length > 0) {
-        const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
-        persistNightsIncremental(nights);
+        persistNightsIncremental(this.incrementalNights);
       }
     }, 2000);
   }
@@ -744,8 +740,7 @@ class AnalysisOrchestrator {
     this.boundBeforeUnload = () => {
       if (this.incrementalNights.length > 0) {
         try {
-          const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
-          persistNightsIncremental(nights);
+          persistNightsIncremental(this.incrementalNights);
         } catch {
           // Best effort — page is closing
         }
