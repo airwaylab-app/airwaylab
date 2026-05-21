@@ -21,7 +21,7 @@ export default function GoodAHIOnCPAP() {
 
       <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
         &quot;What is a good AHI on CPAP?&quot; is one of the most-searched questions in CPAP
-        communities — and for good reason. AHI is the number your machine tracks most prominently,
+        communities, and for good reason. AHI is the number your machine tracks most prominently,
         and it&apos;s the closest thing to a score that summarises your therapy data at a glance.
         But interpreting it requires context, and that context is what this article covers.
       </p>
@@ -43,16 +43,16 @@ export default function GoodAHIOnCPAP() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            AHI stands for <strong className="text-foreground">Apnea-Hypopnea Index</strong> — the
+            AHI stands for <strong className="text-foreground">Apnea-Hypopnea Index</strong>: the
             count of apneas (complete breathing pauses) and hypopneas (partial obstructions) per
             hour of sleep.
           </p>
           <p>
-            Your AHI before treatment — from your diagnostic sleep study — is what led to your CPAP
-            prescription. Your <strong className="text-foreground">residual AHI</strong>, sometimes
-            called treatment AHI, is the figure recorded by your CPAP machine while you&apos;re on
-            therapy. It reflects how many qualifying events occur per hour even with the machine
-            running.
+            Your AHI before treatment, recorded in your diagnostic sleep study, is what led to your
+            CPAP prescription. Your <strong className="text-foreground">residual AHI</strong>,
+            sometimes called treatment AHI, is the figure recorded by your CPAP machine while
+            you&apos;re on therapy. It reflects how many qualifying events occur per hour even with
+            the machine running.
           </p>
           <p>
             Most CPAP and APAP devices record this automatically. With data from your SD card,
@@ -72,9 +72,8 @@ export default function GoodAHIOnCPAP() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            There is no single universally mandated target — your clinician sets the goal
-            appropriate to your situation. That said, the sleep medicine field uses established
-            thresholds:
+            There is no single universally mandated target. Your clinician sets the goal appropriate
+            to your situation. That said, the sleep medicine field uses established thresholds:
           </p>
 
           <div className="overflow-x-auto">
@@ -117,8 +116,8 @@ export default function GoodAHIOnCPAP() {
               many sleep specialists consider a residual AHI below 5 a reasonable treatment
               benchmark.
             </strong>{' '}
-            Some clinicians aim for below 2 — particularly where certain conditions are present —
-            but your sleep physician is best placed to establish a specific target for you.
+            Some clinicians aim for below 2, particularly where certain conditions are present, but
+            your sleep physician is best placed to establish a specific target for you.
           </p>
           <p>
             On therapy, residual AHI is generally expected to be substantially lower than the AHI
@@ -146,7 +145,7 @@ export default function GoodAHIOnCPAP() {
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             A residual AHI above the typical threshold doesn&apos;t always mean nothing can be
-            done. Several common factors can contribute — and all are worth raising with your
+            done. Several common factors can contribute, and all are worth raising with your
             clinician.
           </p>
 
@@ -166,8 +165,8 @@ export default function GoodAHIOnCPAP() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Fixed-pressure CPAP delivers the same pressure all night. Auto-titrating CPAP
                 (APAP) adjusts within a clinician-set range. If the pressure range isn&apos;t
-                matched to your nightly needs — which can vary with sleep position, nasal
-                congestion, alcohol, or weight changes — some events may not be prevented.
+                matched to your nightly needs (which can vary with sleep position, nasal congestion,
+                alcohol, or weight changes), some events may not be prevented.
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Whether any pressure adjustment is appropriate is a clinical decision. Your sleep
@@ -198,8 +197,8 @@ export default function GoodAHIOnCPAP() {
               <p className="font-semibold text-foreground">Central versus obstructive events</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Not all events counted in your AHI have the same origin. Some residual events may
-                be central in nature — originating in the respiratory control system rather than
-                upper airway obstruction — and respond differently to CPAP therapy. Identifying the
+                be central in nature, originating in the respiratory control system rather than
+                upper airway obstruction, and respond differently to CPAP therapy. Identifying the
                 nature of events requires clinical assessment.
               </p>
             </div>
@@ -228,8 +227,8 @@ export default function GoodAHIOnCPAP() {
           <p>
             AHI counts complete apneas and hypopneas, but it doesn&apos;t capture everything that
             can affect sleep quality.{' '}
-            <strong className="text-foreground">Flow limitations</strong> — partial reductions in
-            airflow that don&apos;t meet the threshold for a hypopnea — and{' '}
+            <strong className="text-foreground">Flow limitations</strong> (partial reductions in
+            airflow that don&apos;t meet the threshold for a hypopnea) and{' '}
             <strong className="text-foreground">RERAs</strong> (Respiratory Effort-Related
             Arousals) can disrupt sleep continuity even when AHI appears low.
           </p>
@@ -272,8 +271,8 @@ export default function GoodAHIOnCPAP() {
               Your residual AHI consistently reads above 5 across multiple weeks of data
             </li>
             <li>
-              You&apos;re still experiencing symptoms — fatigue, unrefreshing sleep, morning
-              headaches — despite apparently normal AHI readings
+              You&apos;re still experiencing symptoms (fatigue, unrefreshing sleep, morning
+              headaches) despite apparently normal AHI readings
             </li>
             <li>Your data shows high leak on most nights</li>
             <li>
@@ -300,8 +299,7 @@ export default function GoodAHIOnCPAP() {
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
             A single night&apos;s AHI is a data point. Tracked across weeks and months, it becomes
-            a pattern — and patterns are what help you and your clinician have informed
-            conversations.
+            a pattern, and patterns are what help you and your clinician have informed conversations.
           </p>
           <p>
             AirwayLab reads your CPAP machine&apos;s SD card data directly in your browser. Your
@@ -319,8 +317,8 @@ export default function GoodAHIOnCPAP() {
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-semibold text-foreground">Leak and AHI correlation</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                See which nights had elevated leak alongside elevated AHI — a useful data point
-                when discussing mask fit with your provider.
+                See which nights had elevated leak alongside elevated AHI, a useful data point when
+                discussing mask fit with your provider.
               </p>
             </div>
             <div className="rounded-xl border border-border/50 p-4">
@@ -333,18 +331,18 @@ export default function GoodAHIOnCPAP() {
               <p className="text-sm font-semibold text-foreground">Flow limitation visualisation</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Where your device supports it, AirwayLab visualises flow limitation patterns
-                alongside AHI — additional data to bring to clinical appointments.
+                alongside AHI, providing additional data to bring to clinical appointments.
               </p>
             </div>
           </div>
           <p>
             This is the data your clinician may ask you to bring to appointments. Having it
-            organised in one place — without uploading it to a cloud server — makes those
+            organised in one place, without uploading it to a cloud server, makes those
             conversations easier.
           </p>
           <p>
             AirwayLab is free and always will be. The source code is GPL-3.0 licensed and publicly
-            auditable. If you&apos;re also using OSCAR, AirwayLab works alongside it — the two
+            auditable. If you&apos;re also using OSCAR, AirwayLab works alongside it. The two
             tools serve different viewing needs and neither replaces the other.
           </p>
         </div>
@@ -354,7 +352,7 @@ export default function GoodAHIOnCPAP() {
       <section className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
         <h3 className="text-lg font-bold">Track Your Nightly AHI from Your CPAP SD Card</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          AirwayLab tracks your nightly AHI automatically from your CPAP SD card — see your trends
+          AirwayLab tracks your nightly AHI automatically from your CPAP SD card. See your trends
           over weeks and months. Free, browser-based, and your data never leaves your device.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
@@ -386,7 +384,7 @@ export default function GoodAHIOnCPAP() {
           </li>
           <li>
             Factors that can contribute to elevated residual AHI include mask fit, pressure
-            delivery, sleep position, and event type — all worth discussing with your provider
+            delivery, sleep position, and event type, all worth discussing with your provider
           </li>
           <li>
             AHI alone doesn&apos;t capture flow limitations and RERAs, which are also relevant to
@@ -413,7 +411,7 @@ export default function GoodAHIOnCPAP() {
           {[
             {
               q: 'What AHI is considered good on CPAP?',
-              a: 'Many sleep specialists use a residual AHI below 5 as a common benchmark for CPAP therapy. The right target for you depends on your individual situation — your sleep physician can advise.',
+              a: 'Many sleep specialists use a residual AHI below 5 as a common benchmark for CPAP therapy. The right target for you depends on your individual situation. Your sleep physician can advise.',
             },
             {
               q: 'Why is my AHI still high on CPAP?',
@@ -425,7 +423,7 @@ export default function GoodAHIOnCPAP() {
             },
             {
               q: 'What is residual AHI?',
-              a: 'Residual AHI is the Apnea-Hypopnea Index recorded by your CPAP device while you\'re on therapy — as distinct from your diagnostic AHI measured during your pre-treatment sleep study.',
+              a: 'Residual AHI is the Apnea-Hypopnea Index recorded by your CPAP device while you\'re on therapy, as distinct from your diagnostic AHI measured during your pre-treatment sleep study.',
             },
             {
               q: 'Can CPAP make AHI worse?',
@@ -448,25 +446,25 @@ export default function GoodAHIOnCPAP() {
             <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
               What Does My CPAP AHI Number Mean?
             </Link>{' '}
-            — a plain-language guide to the metric at the centre of your report.
+            , a plain-language guide to the metric at the centre of your report.
           </p>
           <p>
             <Link href="/blog/low-ahi-still-tired-flow-limitation-reras" className="text-primary hover:text-primary/80">
               Low AHI but Still Tired?
             </Link>{' '}
-            — why flow limitations and RERAs can matter even when AHI looks normal.
+            , covering why flow limitations and RERAs can matter even when AHI looks normal.
           </p>
           <p>
             <Link href="/blog/what-are-reras-sleep-apnea" className="text-primary hover:text-primary/80">
               What Are RERAs?
             </Link>{' '}
-            — the breathing events your compliance report doesn&apos;t count.
+            , the breathing events your compliance report doesn&apos;t count.
           </p>
           <p>
             <Link href="/blog/ahi-vs-rdi-sleep-apnea" className="text-primary hover:text-primary/80">
               AHI vs RDI: What&apos;s the Difference?
             </Link>{' '}
-            — understanding how the two indices are calculated and what each captures.
+            , covering how the two indices are calculated and what each captures.
           </p>
         </div>
       </section>
@@ -475,7 +473,7 @@ export default function GoodAHIOnCPAP() {
       <p className="mt-8 text-xs italic text-muted-foreground/60">
         AirwayLab is a data-visualization tool, not a medical device. The metrics described in this
         article are data recorded by your CPAP device. Nothing on this page constitutes medical
-        advice, diagnosis, or treatment — always discuss your therapy data and any concerns with
+        advice, diagnosis, or treatment. Always discuss your therapy data and any concerns with
         your sleep physician or qualified clinician.
       </p>
     </article>
