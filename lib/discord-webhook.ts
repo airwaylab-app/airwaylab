@@ -5,10 +5,11 @@
  * Separate from lib/discord.ts which handles community role management.
  *
  * Channels:
- *   #ops-alerts     — Sentry, monitor cron, GitHub, deploys
- *   #revenue        — Stripe payments, cancellations, tier changes
- *   #user-signals   — Feedback, contact forms, provider interest, deletions
- *   #growth         — Signups, data contributions, research milestones
+ *   #ops-alerts       — Sentry, monitor cron, GitHub, deploys
+ *   #revenue          — Stripe payments, cancellations, tier changes
+ *   #user-signals     — Feedback, contact forms, provider interest, deletions
+ *   #growth           — Signups, data contributions, research milestones
+ *   #platform-health  — Daily DB integrity checks, data audit results
  *
  * Fail-open: if a webhook URL is not configured or the request fails,
  * the caller continues without error.
@@ -31,7 +32,7 @@ interface DiscordEmbed {
   timestamp?: string
 }
 
-export type AlertChannel = 'ops' | 'revenue' | 'user-signals' | 'growth'
+export type AlertChannel = 'ops' | 'revenue' | 'user-signals' | 'growth' | 'platform-health'
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -50,6 +51,7 @@ const CHANNEL_ENV_MAP: Record<AlertChannel, string> = {
   revenue: 'DISCORD_REVENUE_WEBHOOK_URL',
   'user-signals': 'DISCORD_USER_SIGNALS_WEBHOOK_URL',
   growth: 'DISCORD_GROWTH_WEBHOOK_URL',
+  'platform-health': 'DISCORD_PLATFORM_HEALTH_WEBHOOK_URL',
 }
 
 // ── Core sender ──────────────────────────────────────────────
