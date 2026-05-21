@@ -7,6 +7,9 @@
 
 export const BASE_URL = 'https://airwaylab.app'
 
+/** CAN-SPAM §7704(a)(5): physical postal address shown in every commercial email footer. */
+export const SENDER_PHYSICAL_ADDRESS = process.env.SENDER_PHYSICAL_ADDRESS ?? ''
+
 export function ctaButton(text: string, href: string): string {
   return `<div style="margin:24px 0;">
     <a href="${href}" style="display:inline-block;padding:10px 24px;background-color:#5eead4;color:#0a0a0b;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">
@@ -55,8 +58,9 @@ export function emailShell(content: string): string {
     <!-- Content -->
     ${content}
 
-    <!-- Medical disclaimer -->
+    <!-- Legal footer -->
     <div style="margin-top:32px;padding-top:16px;border-top:1px solid #1e1e21;">
+      ${SENDER_PHYSICAL_ADDRESS ? `<p style="font-size:10px;color:#52525b;line-height:1.5;margin:0 0 6px 0;">${SENDER_PHYSICAL_ADDRESS}</p>` : ''}
       <p style="font-size:10px;color:#52525b;line-height:1.5;margin:0;">
         AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
       </p>

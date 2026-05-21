@@ -80,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: profileData, error: profileError } = profileResult;
 
     if (profileError) {
+      // After retry, "Lock was stolen" is still transient — suppress Sentry to avoid noise.
+      if (profileError.message?.includes('Lock was stolen')) return;
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
       // "Lock was stolen" is transient navigator.locks contention — already retried once, skip Sentry noise
       if (!profileError.message?.includes('Lock was stolen')) {
