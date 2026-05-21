@@ -225,6 +225,284 @@ async function sendCancellationNotification(
   }
 }
 
+/**
+ * Process a verified Stripe event. Called inside after() so it runs after the 200
+ * response is sent to Stripe — prevents the outbound Stripe API call and DB writes
+ * in checkout.session.completed from exceeding the function timeout.
+ */
+async function processStripeEvent(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  event: Stripe.Event
+): Promise<void> {
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.supabase_user_id;
+      const subscriptionId = session.subscription as string;
+
+      if (!userId || !subscriptionId) {
+        // H2: Log silent drops instead of silently breaking
+        console.error(`[stripe-webhook] checkout.session.completed missing data: userId=${userId}, subscriptionId=${subscriptionId}, event=${event.id}`);
+        Sentry.captureMessage('Stripe checkout.session.completed missing userId or subscriptionId', {
+          level: 'warning',
+          extra: { eventId: event.id, userId, subscriptionId },
+        });
+        break;
+      }
+
+      // Fetch the full subscription to get price/tier info
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const firstItem = subscription.items.data[0];
+      const priceId = firstItem?.price.id;
+      const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
+      const periodEnd = firstItem?.current_period_end;
+      const interval = firstItem?.price.recurring?.interval ?? 'unknown';
+
+      // AIR-1873: Guard against phantom supabase_user_id in Stripe metadata.
+      // A profile-less userId produces a silent no-op on the UPDATE below.
+      const { data: profileExists } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!profileExists) {
+        Sentry.captureMessage('Stripe webhook: supabase_user_id in metadata has no matching profile', {
+          level: 'error',
+          tags: { route: 'stripe-webhook', event_type: event.type, check: 'phantom-user-id' },
+          extra: { userId, eventId: event.id, subscriptionId, stripeCustomerId: session.customer },
+        });
+        console.error(`[stripe-webhook] Phantom supabase_user_id=${userId} on event=${event.id} — no profile row found`);
+        break;
+      }
+
+      // Critical DB writes — parallel to minimize latency
+      const [upsertResult, profileResult] = await Promise.all([
+        supabase.from('subscriptions').upsert(
+          {
+            user_id: userId,
+            stripe_subscription_id: subscriptionId,
+            stripe_price_id: priceId || '',
+            status: subscription.status,
+            tier,
+            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          },
+          { onConflict: 'stripe_subscription_id' }
+        ),
+        supabase
+          .from('profiles')
+          .update({ tier, stripe_customer_id: session.customer as string })
+          .eq('id', userId),
+      ]);
+
+      if (upsertResult.error) {
+        console.error('[stripe-webhook] Subscription upsert failed:', upsertResult.error);
+        Sentry.captureException(upsertResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        throw new Error(`Subscription upsert failed: ${upsertResult.error.message}`);
+      }
+      if (profileResult.error) {
+        console.error('[stripe-webhook] Profile update failed:', profileResult.error);
+        Sentry.captureException(profileResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        throw new Error(`Profile update failed: ${profileResult.error.message}`);
+      }
+
+      await logSubscriptionEvent(supabase, {
+        userId,
+        eventType: 'created',
+        tier,
+        interval,
+        stripeSubscriptionId: subscriptionId,
+        mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
+      });
+
+      void Promise.all([
+        cancelSequence(supabase, userId, 'post_upload'),
+        cancelSequence(supabase, userId, 'feature_education'),
+        cancelSequence(supabase, userId, 'dormancy'),
+        cancelSequence(supabase, userId, 'activation'),
+        scheduleSequence(supabase, userId, 'premium_onboarding'),
+      ]).catch((err) => {
+        console.error('[stripe-webhook] Email sequence update failed:', err);
+        Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'email-sequence-update' } });
+      });
+
+      void sendWelcomeNotification(supabase, userId, tier, interval);
+      void syncDiscordForUser(supabase, userId, tier, event.id);
+      void sendAlert('revenue', '', [formatRevenueEmbed({
+        event: 'new_subscription',
+        tier,
+        interval,
+        mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
+      })]);
+
+      break;
+    }
+
+    case 'customer.subscription.updated': {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.supabase_user_id;
+      const updatedItem = subscription.items.data[0];
+      const priceId = updatedItem?.price.id;
+      const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
+      const periodEnd = updatedItem?.current_period_end;
+      const updatedInterval = updatedItem?.price.recurring?.interval ?? 'unknown';
+
+      if (!userId) {
+        console.error(`[stripe-webhook] subscription.updated missing userId, event=${event.id}`);
+        Sentry.captureMessage('Stripe subscription.updated missing userId', {
+          level: 'warning',
+          extra: { eventId: event.id, subscriptionId: subscription.id },
+        });
+      }
+
+      const shouldUpdateProfile = !!userId && ['active', 'trialing'].includes(subscription.status);
+
+      const subUpdatePromise = supabase
+        .from('subscriptions')
+        .update({
+          stripe_price_id: priceId || '',
+          status: subscription.status,
+          tier,
+          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+        })
+        .eq('stripe_subscription_id', subscription.id);
+
+      const profileUpdatePromise = shouldUpdateProfile
+        ? supabase.from('profiles').update({ tier }).eq('id', userId!)
+        : Promise.resolve({ error: null });
+
+      const [subResult, profileResult] = await Promise.all([subUpdatePromise, profileUpdatePromise]);
+
+      if (subResult.error) {
+        console.error('[stripe-webhook] Subscription update failed:', subResult.error);
+        Sentry.captureException(subResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        throw new Error(`Subscription update failed: ${subResult.error.message}`);
+      }
+      if (profileResult.error) {
+        console.error('[stripe-webhook] Profile tier update failed:', profileResult.error);
+        Sentry.captureException(profileResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        throw new Error(`Profile tier update failed: ${profileResult.error.message}`);
+      }
+
+      await logSubscriptionEvent(supabase, {
+        userId,
+        eventType: 'updated',
+        tier,
+        interval: updatedInterval,
+        stripeSubscriptionId: subscription.id,
+        mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+      });
+
+      if (shouldUpdateProfile) {
+        void syncDiscordForUser(supabase, userId!, tier, event.id);
+      }
+
+      void sendAlert('revenue', '', [formatRevenueEmbed({
+        event: 'tier_change',
+        tier,
+        interval: updatedInterval,
+        mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+      })]);
+
+      break;
+    }
+
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.supabase_user_id;
+
+      // Mark subscription as canceled
+      const { error: cancelErr } = await supabase
+        .from('subscriptions')
+        .update({ status: 'canceled' })
+        .eq('stripe_subscription_id', subscription.id);
+      if (cancelErr) {
+        console.error('[stripe-webhook] Subscription cancel failed:', cancelErr);
+        Sentry.captureException(cancelErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+        throw new Error(`Subscription cancel failed: ${cancelErr.message}`);
+      }
+
+      // M8: Only downgrade if no other active subscriptions remain
+      if (userId) {
+        const { data: activeSubs } = await supabase
+          .from('subscriptions')
+          .select('tier')
+          .eq('user_id', userId)
+          .in('status', ['active', 'trialing'])
+          .limit(1);
+
+        const newTier = (!activeSubs || activeSubs.length === 0)
+          ? 'community'
+          : activeSubs[0]!.tier as string;
+
+        const { error: downgradeErr } = await supabase
+          .from('profiles')
+          .update({ tier: newTier })
+          .eq('id', userId);
+        if (downgradeErr) {
+          console.error('[stripe-webhook] Profile downgrade failed:', downgradeErr);
+          Sentry.captureException(downgradeErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
+          throw new Error(`Profile downgrade failed: ${downgradeErr.message}`);
+        }
+
+        // Send cancellation email (non-blocking)
+        void sendCancellationNotification(supabase, userId);
+
+        // Schedule win-back email 7 days from now for opted-in users (non-blocking)
+        void scheduleWinBackForUser(supabase, userId);
+
+        // Sync Discord role (revoke if downgraded to community)
+        void syncDiscordForUser(supabase, userId, newTier, event.id);
+
+        // Discord #revenue alert (non-blocking)
+        void sendAlert('revenue', '', [formatRevenueEmbed({
+          event: 'cancellation',
+          tier: newTier,
+        })]);
+      }
+
+      await logSubscriptionEvent(supabase, {
+        userId,
+        eventType: 'cancelled',
+        stripeSubscriptionId: subscription.id,
+      });
+
+      break;
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subDetails = invoice.parent?.subscription_details;
+      const subscriptionId = typeof subDetails?.subscription === 'string'
+        ? subDetails.subscription
+        : subDetails?.subscription?.id;
+
+      if (subscriptionId) {
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'past_due' })
+          .eq('stripe_subscription_id', subscriptionId);
+
+        await logSubscriptionEvent(supabase, {
+          userId: undefined,
+          eventType: 'past_due',
+          stripeSubscriptionId: subscriptionId,
+        });
+
+        // Discord #revenue alert (non-blocking)
+        void sendAlert('revenue', '', [formatRevenueEmbed({
+          event: 'payment_failed',
+        })]);
+      }
+
+      break;
+    }
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!stripeSecretKey || !webhookSecret) {
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
@@ -235,7 +513,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   }
 
-  // Verify webhook signature
+  // Verify webhook signature — must happen synchronously before body is consumed
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
@@ -265,7 +543,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Idempotency check (H1) — skip if already processed
+  // Idempotency check — must happen synchronously to prevent duplicate processing
   const { error: insertError } = await supabase
     .from('stripe_events')
     .insert({ event_id: event.id, event_type: event.type });
@@ -275,305 +553,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true });
   }
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.supabase_user_id;
-        const subscriptionId = session.subscription as string;
-
-        if (!userId || !subscriptionId) {
-          // H2: Log silent drops instead of silently breaking
-          console.error(`[stripe-webhook] checkout.session.completed missing data: userId=${userId}, subscriptionId=${subscriptionId}, event=${event.id}`);
-          Sentry.captureMessage('Stripe checkout.session.completed missing userId or subscriptionId', {
-            level: 'warning',
-            extra: { eventId: event.id, userId, subscriptionId },
-          });
-          break;
-        }
-
-        // Fetch the full subscription to get price/tier info
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const firstItem = subscription.items.data[0];
-        const priceId = firstItem?.price.id;
-        const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
-        const periodEnd = firstItem?.current_period_end;
-        const interval = firstItem?.price.recurring?.interval ?? 'unknown';
-
-        // AIR-1873: Guard against phantom supabase_user_id in Stripe metadata.
-        // A profile-less userId produces a silent no-op on the UPDATE below.
-        const { data: profileExists } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (!profileExists) {
-          Sentry.captureMessage('Stripe webhook: supabase_user_id in metadata has no matching profile', {
-            level: 'error',
-            tags: { route: 'stripe-webhook', event_type: event.type, check: 'phantom-user-id' },
-            extra: { userId, eventId: event.id, subscriptionId, stripeCustomerId: session.customer },
-          });
-          console.error(`[stripe-webhook] Phantom supabase_user_id=${userId} on event=${event.id} — no profile row found`);
-          break;
-        }
-
-        // Critical DB writes — parallel to minimize latency
-        const [upsertResult, profileResult] = await Promise.all([
-          supabase.from('subscriptions').upsert(
-            {
-              user_id: userId,
-              stripe_subscription_id: subscriptionId,
-              stripe_price_id: priceId || '',
-              status: subscription.status,
-              tier,
-              current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-              cancel_at_period_end: subscription.cancel_at_period_end,
-            },
-            { onConflict: 'stripe_subscription_id' }
-          ),
-          supabase
-            .from('profiles')
-            .update({ tier, stripe_customer_id: session.customer as string })
-            .eq('id', userId),
-        ]);
-
-        if (upsertResult.error) {
-          console.error('[stripe-webhook] Subscription upsert failed:', upsertResult.error);
-          Sentry.captureException(upsertResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
-          throw new Error(`Subscription upsert failed: ${upsertResult.error.message}`);
-        }
-        if (profileResult.error) {
-          console.error('[stripe-webhook] Profile update failed:', profileResult.error);
-          Sentry.captureException(profileResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
-          throw new Error(`Profile update failed: ${profileResult.error.message}`);
-        }
-
-        // Defer analytics — non-critical, runs after response is sent
-        after(() =>
-          logSubscriptionEvent(supabase, {
-            userId,
-            eventType: 'created',
-            tier,
-            interval,
-            stripeSubscriptionId: subscriptionId,
-            mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
-          })
-        );
-
-        // Fire-and-forget side effects (already non-blocking)
-        void Promise.all([
-          cancelSequence(supabase, userId, 'post_upload'),
-          cancelSequence(supabase, userId, 'feature_education'),
-          cancelSequence(supabase, userId, 'dormancy'),
-          cancelSequence(supabase, userId, 'activation'),
-          scheduleSequence(supabase, userId, 'premium_onboarding'),
-        ]).catch((err) => {
-          console.error('[stripe-webhook] Email sequence update failed:', err);
-          Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'email-sequence-update' } });
+  // Defer all event processing after the 200 response is sent. This prevents
+  // the outbound Stripe API call (checkout.session.completed) and DB writes
+  // from exceeding the function timeout under latency spikes (JAVASCRIPT-NEXTJS-56).
+  after(async () => {
+    try {
+      await processStripeEvent(stripe, supabase, event);
+    } catch (err) {
+      // Compensating action: remove idempotency record so manual replay tools can re-process.
+      // Stripe already received 200 so it won't retry; this is for operational recovery.
+      const { error: deleteErr } = await supabase
+        .from('stripe_events')
+        .delete()
+        .eq('event_id', event.id);
+      if (deleteErr) {
+        console.error('[stripe-webhook] Failed to remove idempotency record:', deleteErr);
+        Sentry.captureException(deleteErr, {
+          level: 'error',
+          tags: { route: 'stripe-webhook', event_type: event.type, action: 'compensating-delete' },
         });
-
-        void sendWelcomeNotification(supabase, userId, tier, interval);
-        void syncDiscordForUser(supabase, userId, tier, event.id);
-        void sendAlert('revenue', '', [formatRevenueEmbed({
-          event: 'new_subscription',
-          tier,
-          interval,
-          mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
-        })]);
-
-        break;
       }
 
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.supabase_user_id;
-        const updatedItem = subscription.items.data[0];
-        const priceId = updatedItem?.price.id;
-        const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
-        const periodEnd = updatedItem?.current_period_end;
-        const updatedInterval = updatedItem?.price.recurring?.interval ?? 'unknown';
-
-        if (!userId) {
-          console.error(`[stripe-webhook] subscription.updated missing userId, event=${event.id}`);
-          Sentry.captureMessage('Stripe subscription.updated missing userId', {
-            level: 'warning',
-            extra: { eventId: event.id, subscriptionId: subscription.id },
-          });
-        }
-
-        const shouldUpdateProfile = !!userId && ['active', 'trialing'].includes(subscription.status);
-
-        // Critical DB writes — parallel where possible
-        const subUpdatePromise = supabase
-          .from('subscriptions')
-          .update({
-            stripe_price_id: priceId || '',
-            status: subscription.status,
-            tier,
-            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-          })
-          .eq('stripe_subscription_id', subscription.id);
-
-        const profileUpdatePromise = shouldUpdateProfile
-          ? supabase.from('profiles').update({ tier }).eq('id', userId!)
-          : Promise.resolve({ error: null });
-
-        const [subResult, profileResult] = await Promise.all([subUpdatePromise, profileUpdatePromise]);
-
-        if (subResult.error) {
-          console.error('[stripe-webhook] Subscription update failed:', subResult.error);
-          Sentry.captureException(subResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
-          throw new Error(`Subscription update failed: ${subResult.error.message}`);
-        }
-        if (profileResult.error) {
-          console.error('[stripe-webhook] Profile tier update failed:', profileResult.error);
-          Sentry.captureException(profileResult.error, { tags: { route: 'stripe-webhook', event_type: event.type } });
-          throw new Error(`Profile tier update failed: ${profileResult.error.message}`);
-        }
-
-        // Defer analytics — non-critical, runs after response is sent
-        after(() =>
-          logSubscriptionEvent(supabase, {
-            userId,
-            eventType: 'updated',
-            tier,
-            interval: updatedInterval,
-            stripeSubscriptionId: subscription.id,
-            mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
-          })
-        );
-
-        if (shouldUpdateProfile) {
-          void syncDiscordForUser(supabase, userId!, tier, event.id);
-        }
-
-        void sendAlert('revenue', '', [formatRevenueEmbed({
-          event: 'tier_change',
-          tier,
-          interval: updatedInterval,
-          mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
-        })]);
-
-        break;
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.supabase_user_id;
-
-        // Mark subscription as canceled
-        const { error: cancelErr } = await supabase
-          .from('subscriptions')
-          .update({ status: 'canceled' })
-          .eq('stripe_subscription_id', subscription.id);
-        if (cancelErr) {
-          console.error('[stripe-webhook] Subscription cancel failed:', cancelErr);
-          Sentry.captureException(cancelErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
-          throw new Error(`Subscription cancel failed: ${cancelErr.message}`);
-        }
-
-        // M8: Only downgrade if no other active subscriptions remain
-        if (userId) {
-          const { data: activeSubs } = await supabase
-            .from('subscriptions')
-            .select('tier')
-            .eq('user_id', userId)
-            .in('status', ['active', 'trialing'])
-            .limit(1);
-
-          const newTier = (!activeSubs || activeSubs.length === 0)
-            ? 'community'
-            : activeSubs[0]!.tier as string;
-
-          const { error: downgradeErr } = await supabase
-            .from('profiles')
-            .update({ tier: newTier })
-            .eq('id', userId);
-          if (downgradeErr) {
-            console.error('[stripe-webhook] Profile downgrade failed:', downgradeErr);
-            Sentry.captureException(downgradeErr, { tags: { route: 'stripe-webhook', event_type: event.type } });
-            throw new Error(`Profile downgrade failed: ${downgradeErr.message}`);
-          }
-
-          // Send cancellation email (non-blocking)
-          void sendCancellationNotification(supabase, userId);
-
-          // Schedule win-back email 7 days from now for opted-in users (non-blocking)
-          void scheduleWinBackForUser(supabase, userId);
-
-          // Sync Discord role (revoke if downgraded to community)
-          void syncDiscordForUser(supabase, userId, newTier, event.id);
-
-          // Discord #revenue alert (non-blocking)
-          void sendAlert('revenue', '', [formatRevenueEmbed({
-            event: 'cancellation',
-            tier: newTier,
-          })]);
-        }
-
-        // Defer analytics — non-critical, runs after response is sent
-        after(() =>
-          logSubscriptionEvent(supabase, {
-            userId,
-            eventType: 'cancelled',
-            stripeSubscriptionId: subscription.id,
-          })
-        );
-
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        const subDetails = invoice.parent?.subscription_details;
-        const subscriptionId = typeof subDetails?.subscription === 'string'
-          ? subDetails.subscription
-          : subDetails?.subscription?.id;
-
-        if (subscriptionId) {
-          await supabase
-            .from('subscriptions')
-            .update({ status: 'past_due' })
-            .eq('stripe_subscription_id', subscriptionId);
-
-          // Defer analytics — non-critical, runs after response is sent
-          after(() =>
-            logSubscriptionEvent(supabase, {
-              userId: undefined,
-              eventType: 'past_due',
-              stripeSubscriptionId: subscriptionId,
-            })
-          );
-
-          // Discord #revenue alert (non-blocking)
-          void sendAlert('revenue', '', [formatRevenueEmbed({
-            event: 'payment_failed',
-          })]);
-        }
-
-        break;
-      }
+      Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
+      console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
     }
-  } catch (err) {
-    // Compensating action: remove idempotency record so Stripe can retry
-    const { error: deleteErr } = await supabase
-      .from('stripe_events')
-      .delete()
-      .eq('event_id', event.id);
-    if (deleteErr) {
-      console.error('[stripe-webhook] Failed to remove idempotency record:', deleteErr);
-      Sentry.captureException(deleteErr, {
-        level: 'error',
-        tags: { route: 'stripe-webhook', event_type: event.type, action: 'compensating-delete' },
-      });
-    }
-
-    Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
-    console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
-    return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });
-  }
+  });
 
   return NextResponse.json({ received: true });
 }
