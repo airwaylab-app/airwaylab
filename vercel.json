@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/feedback-processor",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/db-integrity-check",
+      "schedule": "0 7 * * *"
     }
   ]
 }
