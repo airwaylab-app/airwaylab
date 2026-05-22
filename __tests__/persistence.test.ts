@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights, persistNightsIncremental } from '@/lib/persistence';
 import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 import type { NightResult } from '@/lib/types';
@@ -352,6 +352,86 @@ describe('persistence', () => {
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
     });
+  });
+});
+
+// ── persistNightsIncremental — multi-SD-card regression (AIR-1990) ─────────
+// When user uploads SD Card 1 then SD Card 2 on separate sessions,
+// SD Card 1's nights must survive across page refreshes. The bug was that
+// filterNightsToTierWindow was applied at persist time, which re-applied a
+// rolling date cutoff and permanently dropped nights from the first upload.
+
+describe('persistNightsIncremental', () => {
+  beforeEach(() => storage.clear());
+
+  it('merges new nights with existing cached nights (multi-SD-card scenario)', () => {
+    const sdCard1Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(10), date: new Date(daysAgo(10)) } as NightResult;
+    const sdCard2Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
+
+    // Simulate: SD Card 1 analysis complete → all nights saved (no tier filter at persist)
+    persistResults([sdCard1Night], null);
+
+    // Simulate: page refresh → user uploads SD Card 2 → incremental persist
+    persistNightsIncremental([sdCard2Night]);
+
+    const loaded = loadPersistedResults();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.nights).toHaveLength(2);
+    const dates = loaded!.nights.map((n) => n.dateStr);
+    expect(dates).toContain(sdCard1Night.dateStr);
+    expect(dates).toContain(sdCard2Night.dateStr);
+  });
+
+  it('does not lose SD Card 1 nights when SD Card 2 night is more recent', () => {
+    // Regression: before fix, if SD Card 1 had nights outside the 7-day community window,
+    // a new analysis run would call filterNightsToTierWindow and drop them permanently.
+    const oldNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(20), date: new Date(daysAgo(20)) } as NightResult;
+    const recentNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
+
+    persistResults([oldNight, recentNight], null);
+
+    const loaded = loadPersistedResults();
+    expect(loaded!.nights).toHaveLength(2);
+    expect(loaded!.nights.map((n) => n.dateStr)).toContain(oldNight.dateStr);
+  });
+
+  // Single-SD-card regression (AIR-1990 narrowed): Zachary reports that even
+  // with one SD card, every page refresh drops all-but-the-most-recent night.
+  // Root cause: filterNightsToTierWindow was applied at persist time — community
+  // tier (7-day window) dropped all nights older than 7 days. After tier correction
+  // to champion, localStorage already had only 1 night so nothing could be restored.
+  it('single SD card: all nights survive persist regardless of how old they are', () => {
+    const nights = [
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult,
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(14), date: new Date(daysAgo(14)) } as NightResult,
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(30), date: new Date(daysAgo(30)) } as NightResult,
+    ];
+
+    // Simulate the authoritative save that the orchestrator performs after analysis
+    persistResults(nights, null);
+
+    // Simulate page refresh: reload from localStorage
+    const loaded = loadPersistedResults();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.nights).toHaveLength(3);
+    const dates = loaded!.nights.map((n) => n.dateStr);
+    expect(dates).toContain(daysAgo(1));
+    expect(dates).toContain(daysAgo(14));
+    expect(dates).toContain(daysAgo(30));
+  });
+
+  it('deduplicates by dateStr when the same night appears in both SD cards', () => {
+    const sharedDate = daysAgo(5);
+    const v1 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 1 } as NightResult;
+    const v2 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 2 } as NightResult;
+
+    persistResults([v1], null);
+    persistNightsIncremental([v2]);
+
+    const loaded = loadPersistedResults();
+    expect(loaded!.nights).toHaveLength(1);
+    // v2 (newer analysis) should win
+    expect(loaded!.nights[0]!.sessionCount).toBe(2);
   });
 });
 
