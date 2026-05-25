@@ -52,6 +52,7 @@ vi.mock('@/lib/discord', () => ({
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(undefined),
   formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockFrom = vi.fn();

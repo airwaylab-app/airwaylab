@@ -145,6 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: subData, error: subError } = subResult;
 
     if (subError) {
+      // Suppress Sentry for lock contention — transient, self-heals on next auth state change
+      if (subError.message?.includes('Lock was stolen')) { setSubscription(null); return; }
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
       Sentry.captureMessage(`Subscription fetch failed: ${subError.message}`, {
         level: 'warning',
@@ -168,6 +170,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } else {
       setSubscription(null);
+    }
+
+    // Login-time drift check: heal profile.tier toward subscription truth
+    const validTierValues: Tier[] = ['community', 'supporter', 'champion'];
+    const expectedTier: Tier =
+      subData && ['active', 'trialing', 'past_due'].includes(subData.status) && validTierValues.includes(subData.tier as Tier)
+        ? (subData.tier as Tier)
+        : 'community';
+
+    if (profileTier !== expectedTier) {
+      // Optimistic update — correct locally without blocking the login flow
+      setProfile((prev) => (prev ? { ...prev, tier: expectedTier } : prev));
+      // Fire-and-forget sync to persist the correction server-side.
+      const syncPromise = fetch('/api/auth/sync-subscription', { method: 'POST', credentials: 'same-origin' });
+      // eslint-disable-next-line airwaylab/no-silent-catch -- fire-and-forget: non-critical; optimistic update already applied and cron job re-syncs on failure
+      syncPromise.catch((err: unknown) => {
+        console.error('[auth-context] login-sync: fire-and-forget failed:', err);
+      });
     }
   }, [supabase]);
 

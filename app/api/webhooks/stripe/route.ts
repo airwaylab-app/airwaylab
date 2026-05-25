@@ -7,7 +7,7 @@ import { cancelSequence, scheduleSequence, scheduleWinBackForUser } from '@/lib/
 import { sendEmail } from '@/lib/email/send';
 import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
-import { sendAlert, formatRevenueEmbed } from '@/lib/discord-webhook';
+import { sendAlert, formatRevenueEmbed, alertStripePaymentFailed } from '@/lib/discord-webhook';
 
 export const maxDuration = 30;
 
@@ -359,6 +359,14 @@ async function processStripeEvent(
 
       const shouldUpdateProfile = !!userId && ['active', 'trialing'].includes(subscription.status);
 
+      // Capture cancel reason when customer schedules cancellation via portal
+      const cancelDetails = subscription.cancellation_details;
+      const cancelFields = subscription.cancel_at_period_end && cancelDetails ? {
+        cancel_reason: cancelDetails.reason ?? null,
+        cancel_feedback: cancelDetails.feedback ?? null,
+        cancel_comment: cancelDetails.comment ?? null,
+      } : {};
+
       const subUpdatePromise = supabase
         .from('subscriptions')
         .update({
@@ -367,6 +375,7 @@ async function processStripeEvent(
           tier,
           current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
+          ...cancelFields,
         })
         .eq('stripe_subscription_id', subscription.id);
 
@@ -413,11 +422,20 @@ async function processStripeEvent(
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.supabase_user_id;
+      const deletedCancelDetails = subscription.cancellation_details;
 
-      // Mark subscription as canceled
+      // Mark subscription as canceled, capturing churn reason for analysis
       const { error: cancelErr } = await supabase
         .from('subscriptions')
-        .update({ status: 'canceled' })
+        .update({
+          status: 'canceled',
+          cancelled_at: subscription.canceled_at
+            ? new Date(subscription.canceled_at * 1000).toISOString()
+            : new Date().toISOString(),
+          cancel_reason: deletedCancelDetails?.reason ?? null,
+          cancel_feedback: deletedCancelDetails?.feedback ?? null,
+          cancel_comment: deletedCancelDetails?.comment ?? null,
+        })
         .eq('stripe_subscription_id', subscription.id);
       if (cancelErr) {
         console.error('[stripe-webhook] Subscription cancel failed:', cancelErr);
@@ -492,10 +510,8 @@ async function processStripeEvent(
           stripeSubscriptionId: subscriptionId,
         });
 
-        // Discord #revenue alert (non-blocking)
-        void sendAlert('revenue', '', [formatRevenueEmbed({
-          event: 'payment_failed',
-        })]);
+        // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
+        void alertStripePaymentFailed();
       }
 
       break;
@@ -560,6 +576,19 @@ export async function POST(request: NextRequest) {
     try {
       await processStripeEvent(stripe, supabase, event);
     } catch (err) {
+      // Dead-letter queue: persist failure record before compensating delete for audit trail
+      const { error: dlqErr } = await supabase.from('webhook_dlq').insert({
+        event_id: event.id,
+        event_type: event.type,
+        error_message: err instanceof Error ? err.message : String(err),
+      });
+      if (dlqErr) {
+        console.error('[stripe-webhook] DLQ insert failed:', dlqErr);
+        Sentry.captureException(dlqErr, {
+          tags: { route: 'stripe-webhook', event_type: event.type, action: 'dlq-insert' },
+        });
+      }
+
       // Compensating action: remove idempotency record so manual replay tools can re-process.
       // Stripe already received 200 so it won't retry; this is for operational recovery.
       const { error: deleteErr } = await supabase

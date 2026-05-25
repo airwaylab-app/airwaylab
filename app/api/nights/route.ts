@@ -3,7 +3,6 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
-import { validateOrigin } from '@/lib/csrf';
 
 // 120 fetches/hour per user — generous for page loads and background refreshes
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 120 });
@@ -17,10 +16,6 @@ const querySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    if (!validateOrigin(request)) {
-      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
-    }
-
     const ip = getRateLimitKey(request);
     if (await rateLimiter.isLimited(ip)) {
       console.error('[nights] 429 rate limited', { ip });

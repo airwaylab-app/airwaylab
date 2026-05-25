@@ -234,9 +234,12 @@ async function processFiles(
     } catch (err) {
       const filename = brp.path.split('/').pop() || brp.path;
       const detail = err instanceof Error ? err.message : String(err);
+      // Use a dedicated checkpoint for missing flow signals so Sentry can group
+      // this device/firmware pattern separately from generic parse failures.
+      const isNoFlowSignal = detail.startsWith('No flow signal found');
       const warning: WorkerWarning = {
         type: 'WARNING',
-        checkpoint: 'parse_file_failed',
+        checkpoint: isNoFlowSignal ? 'no_flow_signal' : 'parse_file_failed',
         detail: `Failed to parse ${filename}: ${detail}`,
         tags: { file: filename, error: detail },
       };

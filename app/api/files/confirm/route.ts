@@ -65,25 +65,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Verify file exists in storage. Retry up to 2 times for transient list failures.
+    // Verify file exists in storage. Retry on both list errors and empty results.
+    // Supabase Storage can be eventually consistent after a signed PUT — the object
+    // may not appear in a listing immediately after the upload completes, causing a
+    // false-absent result that deletes the metadata row and surfaces as a client-side
+    // cloud_upload_partial_failure event. Retrying with progressive delays handles
+    // both transient list errors and propagation-delay empty results.
     const storageFolder = fileRow.storage_path.split('/').slice(0, -1).join('/');
     const storageFileName = fileRow.storage_path.split('/').pop();
     let storageFile: { name: string }[] | null = null;
     let listError: unknown = null;
+    const LIST_DELAYS_MS = [0, 150, 300, 450];
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < LIST_DELAYS_MS.length; attempt++) {
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 150 * attempt));
+        await new Promise((r) => setTimeout(r, LIST_DELAYS_MS[attempt]!));
       }
       const result = await serviceRole.storage
         .from(STORAGE_BUCKET)
         .list(storageFolder, { search: storageFileName });
-      if (!result.error) {
+      if (result.error) {
+        listError = result.error;
+        continue;
+      }
+      listError = null;
+      if (result.data && result.data.length > 0) {
         storageFile = result.data;
-        listError = null;
         break;
       }
-      listError = result.error;
+      // List succeeded but returned empty — possible propagation delay; retry
     }
 
     if (listError) {

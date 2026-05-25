@@ -109,13 +109,15 @@ describe('GET /api/nights', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when origin invalid', async () => {
-    mockValidateOrigin.mockReturnValue(false);
+  it('returns 200 when Origin header is absent (regression: AIR-1870)', async () => {
+    // GET requests from same-origin JS fetch routinely omit the Origin header.
+    // validateOrigin() must NOT gate GET endpoints — auth cookie is the guard.
+    mockSelectResult = { data: [], error: null };
 
     const { GET } = await import('@/app/api/nights/route');
-    const res = await GET(makeRequest());
+    const res = await GET(makeRequest()); // makeRequest sets headers.get → null
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   it('returns 429 when rate limited', async () => {

@@ -308,4 +308,17 @@ describe('EDF Parser — Flow Signal Detection (AIR-1364)', () => {
     });
     expect(() => parseEDF(buffer, 'test/BRP.edf')).toThrow(/"PressureX"/);
   });
+
+  it('error message starts with "No flow signal found" — worker checkpoint routing depends on this prefix', () => {
+    // The worker uses detail.startsWith('No flow signal found') to route to the
+    // no_flow_signal Sentry checkpoint. Verify the parser error begins with that prefix.
+    const buffer = buildEDFBuffer({
+      numDataRecords: 5,
+      samplesPerRecord: 25,
+      signalLabel: 'UnknownChan',
+      physicalMin: 0,
+      physicalMax: 30,
+    });
+    expect(() => parseEDF(buffer, 'test/BRP.edf')).toThrow(/^No flow signal found/);
+  });
 });

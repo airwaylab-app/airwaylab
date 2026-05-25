@@ -58,6 +58,11 @@ export async function POST(request: NextRequest) {
   const parsed = ResendEventSchema.safeParse(body)
 
   if (!parsed.success) {
+    Sentry.captureMessage('Resend webhook: invalid payload', {
+      level: 'warning',
+      tags: { route: 'resend-webhook' },
+      extra: { error: parsed.error.message },
+    })
     console.error('[resend-webhook] Invalid payload:', parsed.error.message)
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   }
@@ -66,6 +71,10 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabaseServiceRole()
   if (!supabase) {
+    Sentry.captureMessage('Resend webhook: database not configured', {
+      level: 'error',
+      tags: { route: 'resend-webhook', subsystem: 'email-send' },
+    })
     return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
   }
 
