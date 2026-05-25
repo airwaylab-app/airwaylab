@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import type { StorageError } from '@supabase/storage-js';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -115,11 +114,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
     }
 
-    // Upload to Supabase Storage — retry up to 2 extra times on transient errors.
-    // Pass body as ArrayBuffer (standard Web API type) so fetch() sets Content-Length
-    // correctly across all Node.js/Vercel environments.
+    // Upload to Supabase Storage — retry up to 2 extra times on transient errors
     const storagePath = `${contributionId}/${nightDate}.flow${isCompressed ? '.gz' : '.bin'}`;
-    let storageError: StorageError | null = null;
+    let storageError: { message?: string } | null = null;
     const STORAGE_MAX_ATTEMPTS = 3;
     for (let attempt = 0; attempt < STORAGE_MAX_ATTEMPTS; attempt++) {
       if (attempt > 0) {
@@ -127,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
       const { error } = await supabase.storage
         .from('research-waveforms')
-        .upload(storagePath, body, {
+        .upload(storagePath, Buffer.from(body), {
           contentType: 'application/octet-stream',
           upsert: false,
         });
@@ -143,15 +140,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true, duplicate: true });
       }
       const transient = isTransientStorageError(storageError.message ?? '');
-      const httpStatus = (storageError as { status?: number }).status;
-      console.error('[contribute-waveforms] Storage error:', storageError.message, { httpStatus });
-      Sentry.captureException(storageError, {
-        tags: {
-          route: 'contribute-waveforms',
-          transient: String(transient),
-          storage_http_status: String(httpStatus ?? 'unknown'),
-        },
-      });
+      console.error('[contribute-waveforms] Storage error:', storageError.message);
+      Sentry.captureException(storageError, { tags: { route: 'contribute-waveforms', transient: String(transient) } });
       return NextResponse.json(
         { error: transient ? 'Storage temporarily unavailable.' : 'Storage error.' },
         { status: transient ? 503 : 500 }

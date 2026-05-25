@@ -99,8 +99,6 @@ describe('contribute-waveforms API route', () => {
     expect(mockUpload).toHaveBeenCalledTimes(1);
     const uploadArgs = mockUpload.mock.calls[0];
     expect(uploadArgs![0]).toBe('test-contribution-id/2025-01-15.flow.gz');
-    // Body must be ArrayBuffer, not Buffer — ensures Content-Length is set correctly by fetch()
-    expect(uploadArgs![1]).toBeInstanceOf(ArrayBuffer);
 
     // Verify DB insert was called with correct metadata
     expect(mockInsert).toHaveBeenCalledTimes(1);
@@ -300,32 +298,5 @@ describe('contribute-waveforms API route', () => {
       expect.objectContaining({ message: 'Bad Gateway' }),
       expect.objectContaining({ tags: expect.objectContaining({ transient: 'true' }) })
     );
-  });
-
-  it('captures Bad Request (400) storage errors with http status tag', async () => {
-    const Sentry = await import('@sentry/nextjs');
-    const { POST } = await import('@/app/api/contribute-waveforms/route');
-
-    // Simulate the JAVASCRIPT-NEXTJS-1D StorageApiError: Bad Request scenario —
-    // Supabase Storage returns 400 with non-JSON body, message comes from statusText
-    mockUpload.mockResolvedValue({
-      error: { message: 'Bad Request', status: 400, statusCode: '400' },
-    });
-
-    const request = makeRequest();
-    const response = await POST(request as never);
-
-    expect(response.status).toBe(500);
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Bad Request' }),
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          transient: 'false',
-          storage_http_status: '400',
-        }),
-      })
-    );
-    // Should not retry — 400 is not transient
-    expect(mockUpload).toHaveBeenCalledTimes(1);
   });
 });
