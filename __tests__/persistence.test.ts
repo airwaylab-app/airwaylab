@@ -226,6 +226,64 @@ describe('persistence', () => {
       expect(extra!.singleNightSections).toBeDefined();
       expect(typeof extra!.totalNights).toBe('number');
     });
+
+    it('strips _compactBreaths dynamically attached by orchestrator (AIR-2060 regression)', () => {
+      // Simulate what restoreBreathData() does: attach _compactBreaths to the night object.
+      // For a user with a high respiratory rate (16 br/min × 12h = 11,520 breaths), this
+      // can exceed the 2 MB char limit and cause total-failure serialisation.
+      const compactBreaths = Array.from({ length: 11_520 }, (_, i) => ({
+        ned: 0.45,
+        fi: 0.72,
+        isMShape: false,
+        tPeakTi: 0.38,
+        qPeak: 0.31,
+        ti: 0.52,
+        inspStartSec: i * 3.125,
+        expEndSec: i * 3.125 + 2.5,
+      }));
+      const nightWithIdbData = Object.assign({ ...SAMPLE_NIGHTS[0]! }, {
+        _compactBreaths: compactBreaths,
+      });
+
+      vi.mocked(Sentry.captureMessage).mockClear();
+      const result = persistResults([nightWithIdbData] as unknown as typeof SAMPLE_NIGHTS, null);
+
+      // Should save successfully — _compactBreaths must be stripped before size check
+      expect(result.saved).toBe(true);
+      expect(result.nightsSaved).toBe(1);
+
+      // Verify _compactBreaths is absent from the serialised payload
+      const saved = storage.get('airwaylab_results');
+      expect(saved).toBeDefined();
+      const parsed = JSON.parse(saved!);
+      expect(parsed.nights[0]._compactBreaths).toBeUndefined();
+
+      // Verify total-failure Sentry event was NOT fired
+      const totalFailureCalls = vi.mocked(Sentry.captureMessage).mock.calls.filter(
+        (c) => c[0] === 'Persistence: total failure — cannot save any nights'
+      );
+      expect(totalFailureCalls).toHaveLength(0);
+    });
+
+    it('strips _pldTrace dynamically attached by orchestrator', () => {
+      const pldTrace = {
+        dateStr: SAMPLE_NIGHTS[0]!.dateStr,
+        samplingRate: 0.5,
+        durationSeconds: 28800,
+        sampleCount: 14400,
+        leak: new Array(14400).fill(5.2),
+        storedAt: Date.now(),
+        engineVersion: 'test',
+      };
+      const nightWithPld = Object.assign({ ...SAMPLE_NIGHTS[0]! }, { _pldTrace: pldTrace });
+
+      const result = persistResults([nightWithPld] as unknown as typeof SAMPLE_NIGHTS, null);
+      expect(result.saved).toBe(true);
+
+      const saved = storage.get('airwaylab_results');
+      const parsed = JSON.parse(saved!);
+      expect(parsed.nights[0]._pldTrace).toBeUndefined();
+    });
   });
 
   describe('loadPersistedResults', () => {
