@@ -457,8 +457,8 @@ export default function AboutPage() {
             Yes. All core analysis runs entirely in your browser using Web
             Workers &mdash; your sleep data stays on your device by default.
             No cookies are used. We use PostHog for privacy-safe, cookie-free
-            page-view analytics that collect zero personal data. PostHog is
-            EU-hosted and GDPR-compliant. Optional
+            page-view analytics that collect zero personal data and are
+            GDPR-compliant. Optional
             features like AI-powered insights or cloud storage require your
             explicit consent before any data is sent to a server, and raw
             waveform data is never transmitted. The source code is open for
@@ -658,8 +658,8 @@ export default function AboutPage() {
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
               No cookies, no fingerprinting. Optional privacy-safe analytics
-              (PostHog) collect zero personal data. PostHog is EU-hosted and
-              GDPR-compliant. AirwayLab does not know who you are.
+              (PostHog, GDPR-compliant) collect zero personal data. AirwayLab
+              does not know who you are.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
