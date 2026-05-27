@@ -15,6 +15,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       person_profiles: 'identified_only',
       capture_pageview: false,
       capture_pageleave: true,
+      ip: false,           // disables $ip capture — required by privacy policy claim
+      respect_dnt: true,   // honours browser DNT — required by privacy policy claim
     });
   }, []);
 
