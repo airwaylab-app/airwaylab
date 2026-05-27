@@ -1,0 +1,25 @@
+name: Auto-approve PR via airwaylab-bot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login != 'airwaylab-bot'
+    steps:
+      - name: Approve PR as airwaylab-bot
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          gh pr review "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --approve \
+            --body "Approved by airwaylab-bot. Author: ${PR_AUTHOR} != reviewer: airwaylab-bot. Audit: run ${RUN_ID}, sha ${COMMIT_SHA}."
