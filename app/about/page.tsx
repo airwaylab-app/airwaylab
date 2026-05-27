@@ -51,7 +51,7 @@ const faqData = [
   {
     question: 'Is my data safe?',
     answer:
-      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data stays on your device by default. No cookies are used. We use Plausible for privacy-first, cookie-free page-view analytics that collect zero personal data. Optional features like AI-powered insights, cloud storage, or data contribution require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
+      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data stays on your device by default. No cookies are used. We use PostHog for privacy-safe, cookie-free page-view analytics that collect zero personal data and are GDPR-compliant. Optional features like AI-powered insights, cloud storage, or data contribution require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
   },
   {
     question: 'What pulse oximeters are supported?',
@@ -456,8 +456,9 @@ export default function AboutPage() {
           <FAQItem question="Is my data safe?">
             Yes. All core analysis runs entirely in your browser using Web
             Workers &mdash; your sleep data stays on your device by default.
-            No cookies are used. We use Plausible for privacy-first, cookie-free
-            page-view analytics that collect zero personal data. Optional
+            No cookies are used. We use PostHog for privacy-safe, cookie-free
+            page-view analytics that collect zero personal data. PostHog is
+            EU-hosted and GDPR-compliant. Optional
             features like AI-powered insights or cloud storage require your
             explicit consent before any data is sent to a server, and raw
             waveform data is never transmitted. The source code is open for
@@ -656,9 +657,9 @@ export default function AboutPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
-              No cookies, no fingerprinting. Optional privacy-first analytics
-              (Plausible) collect zero personal data. AirwayLab does not know
-              who you are.
+              No cookies, no fingerprinting. Optional privacy-safe analytics
+              (PostHog) collect zero personal data. PostHog is EU-hosted and
+              GDPR-compliant. AirwayLab does not know who you are.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
