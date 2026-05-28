@@ -811,3 +811,4 @@ export function generateInsights(
 
   return deduped.slice(0, 6);
 }
+// TEST: diagnostic tool — deliberate violation for CI gate demonstration (do not merge)
