@@ -38,6 +38,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI prompt input sanitization** — User-controlled night notes are now sanitized before reaching the Claude API prompt. Strips control characters, zero-width chars, and URLs. Detects and blocks prompt injection patterns with Sentry monitoring. (ai-prompt-input-sanitization)
 - **Persistent rate limiting** — Rate limiting now persists across Vercel cold starts via Upstash Redis. Falls back to in-memory when not configured. Fails open on Redis errors with Sentry logging. (persistent-rate-limiting)
 
+## [1.2.3] - 2026-04-30
+
+### Added
+
+- **Analyze page actionability** — Metric detail accordions let you expand any result in-line for more context. AI insights now run automatically after upload. An anonymous preview shows what a real analysis report looks like before you sign in.
+- **Mobile file picker** — iOS and Android users can now select SD card backup files directly from their device, without needing a desktop computer.
+- **First-run welcome screen** — A short welcome prompt greets new users on first analysis with a link to join the community forum.
+- **Processing time estimate** — The analysis progress bar now shows a rough time estimate so you know what to expect.
+- **Historical trend analysis** — The Trends tab now shows multi-session patterns over time, including night-to-night changes in your key metrics.
+- **CPAP tips drip email sequence** — 5-email series sent on days 3, 7, 12, 18, and 25 after signup with practical tips for reading your data.
+- **Extended activation nurture emails** — Activation sequence extended from 3 to 5 emails.
+- **Dormancy re-engagement cadence** — Re-engagement now sends 3 emails at 14, 28, and 45 days of inactivity, up from 2 emails.
+- **New blog articles** — 14 new guides published through April: What Are RERAs, What Is Flow Limitation on CPAP, How to Read OSCAR CPAP Charts, CPAP Leak Rate Explained, What Does Leak Rate Mean, How to Analyse Your CPAP Data at Home, CPAP Compliance Tracking FAQ, How to Export and Understand Your CPAP Data, Understanding Your CPAP Data, Low AHI But Still Tired, Understanding Your CPAP Pressure Settings, What Is UARS, BiPAP vs CPAP Data, and What Is Central Apnea.
+- **Four metrics pillar post** — "The Four Metrics AirwayLab Measures" reference article covering AHI, Glasgow Index, IFL Risk, and FL Score.
+- **Glossary pages** — Individual pages for Glasgow Index, WAT, NED, and FL Score with full definitions and cross-links.
+- **ResMed SD card guides** — Three device-specific guides for getting SD card data off AirSense and AirCurve devices.
+- **FAQ schema on blog posts** — Machine-readable FAQ markup added to blog articles to improve how they appear in search results.
+- **Internal blog cross-links** — Blog posts and glossary pages now cross-link throughout the site.
+- **Post-purchase activation banner** — A confirmation prompt appears on the analyze page after checkout with links to getting-started resources.
+
+### Changed
+
+- **Data highlights panel** — "Clinician questions" renamed to "Data highlights" with more direct language describing what your data shows.
+
+### Fixed
+
+- **AirCurve 11 device identification** — AirCurve 11 VAuto was misclassified as iVAPS; now correctly identified.
+- **O2Ring CSV upload** — O2Ring oximeter CSV files are now recognised during upload validation.
+- **AI insights reliability** — Fixed 413 payload errors on large sessions and added timeout retry logic; credit exhaustion now shows a clear alert instead of silently failing.
+- **Mobile tab navigation** — Analyze tabs no longer overflow off-screen on small devices.
+- **Mobile display polish** — Multiple display and interaction fixes on iOS and Android (M-03 through M-09).
+- **Tier selection through login** — Chosen pricing tier is now correctly preserved when you click "subscribe" before signing in.
+- **Upload deduplication** — Retry logic no longer submits duplicate waveform contributions on repeated attempts.
+
 ## [1.2.2] - 2026-04-03
 
 ### Added
