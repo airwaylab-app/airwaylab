@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
+import { events } from '@/lib/analytics';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
@@ -203,19 +204,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // If we just came back from a magic link redirect (auth=success param),
-      // but getSession() didn't find a session yet, retry with getUser()
-      // which reads the cookie set by the auth callback route.
-      if (!initialSession && typeof window !== 'undefined') {
+      // Handle return from magic-link auth callback (auth=success param).
+      // Runs regardless of whether getSession() already found a session so that
+      // URL cleanup and the Signup Completed event fire even when the cookie
+      // arrives before this useEffect (fast cookie propagation path).
+      if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         if (params.has('auth')) {
-          const { data: { user: freshUser } } = await supabase.auth.getUser();
-          if (freshUser) {
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            initialSession = freshSession;
+          const isNewSignup = params.has('new_signup');
+
+          if (!initialSession) {
+            // Session not in cookie yet — retry via getUser()
+            const { data: { user: freshUser } } = await supabase.auth.getUser();
+            if (freshUser) {
+              const { data: { session: freshSession } } = await supabase.auth.getSession();
+              initialSession = freshSession;
+            }
           }
-          // Clean up the URL param without triggering a navigation
+
+          // Fire Signup Completed for new accounts (flag set by server auth callback)
+          if (isNewSignup && initialSession) {
+            events.signupCompleted('magic_link');
+          }
+
+          // Clean up auth callback params without triggering a navigation
           params.delete('auth');
+          params.delete('new_signup');
           const cleanUrl = params.toString()
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;
