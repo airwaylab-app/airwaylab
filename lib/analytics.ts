@@ -30,7 +30,15 @@ export function capturePostHog(
   import('posthog-js').then(({ default: posthog }) => {
     if (posthog.__loaded) {
       posthog.capture(event, props);
+      return;
     }
+    // PostHog provider initialises in a useEffect — on auth-callback paths the
+    // capture can fire before that useEffect runs. Retry once after a short delay.
+    setTimeout(() => {
+      import('posthog-js').then(({ default: ph }) => {
+        if (ph.__loaded) ph.capture(event, props);
+      }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
+    }, 3000);
   }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
 }
 

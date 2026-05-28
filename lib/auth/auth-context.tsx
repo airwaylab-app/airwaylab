@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
+import { events } from '@/lib/analytics';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
@@ -223,16 +224,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // If we just came back from a magic link redirect (auth=success param),
-      // but getSession() didn't find a session yet, retry with getUser()
-      // which reads the cookie set by the auth callback route.
-      if (!initialSession && typeof window !== 'undefined') {
+      // Handle auth=success redirect from the magic link callback route.
+      // Always runs when the param is present — cleans up URL and fires analytics
+      // for new signups regardless of whether getSession() already found the session.
+      if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         if (params.has('auth')) {
-          const { data: { user: freshUser } } = await supabase.auth.getUser();
-          if (freshUser) {
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            initialSession = freshSession;
+          // Fallback: if getSession() didn't pick up the freshly-set cookie yet,
+          // retry via getUser() which reads it directly.
+          if (!initialSession) {
+            const { data: { user: freshUser } } = await supabase.auth.getUser();
+            if (freshUser) {
+              const { data: { session: freshSession } } = await supabase.auth.getSession();
+              initialSession = freshSession;
+            }
           }
           // Clean up the URL param without triggering a navigation
           params.delete('auth');
@@ -240,6 +245,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;
           window.history.replaceState({}, '', cleanUrl);
+          // Fire Signup Completed for new accounts (created within last 2 minutes).
+          // This is the canonical call site — the event was previously never fired.
+          const authUser = initialSession?.user;
+          if (authUser?.created_at) {
+            const ageMs = Date.now() - new Date(authUser.created_at).getTime();
+            if (ageMs < 120_000) {
+              events.signupCompleted('magic_link');
+            }
+          }
         }
       }
 
