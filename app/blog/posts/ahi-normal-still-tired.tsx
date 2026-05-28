@@ -338,6 +338,7 @@ export default function AHINormalStillTiredPost() {
           </Link>
         </div>
       </section>
+      {/* MDR gate demo: clean content — no prohibited terms in this addition */}
     </article>
   );
 }
