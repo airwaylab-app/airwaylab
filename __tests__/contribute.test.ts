@@ -174,6 +174,23 @@ describe('contributeNights', () => {
     );
   });
 
+  it('throws with HTTP status when server returns valid JSON without a string error field', async () => {
+    // Vercel function-invocation failures return JSON where `error` is an object
+    // (e.g. {"error":{"code":"FUNCTION_INVOCATION_TIMEOUT"}}) or missing entirely.
+    // The client falls back to String(status) = "500" in both cases.
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('{"error":{"code":"FUNCTION_INVOCATION_TIMEOUT"}}'),
+      headers: { get: () => 'application/json' },
+    });
+
+    const nights = makeNights(1);
+    await expect(contributeNights(nights)).rejects.toThrow(
+      'Contribution failed (batch 1): 500'
+    );
+  });
+
   it('throws with HTTP status when server returns empty body', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

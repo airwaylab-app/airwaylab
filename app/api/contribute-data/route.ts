@@ -320,16 +320,50 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (supabase) {
-      const { error } = await supabase.from('data_contributions').insert({
-        contribution_id: contributionId,
-        night_count: anonymised.length,
-        nights: anonymised,
-        has_oximetry: anonymised.some((n) => n.oximetry !== null),
-        device_model: anonymised[0]?.settings.deviceModel || 'Unknown',
-        pap_mode: anonymised[0]?.settings.papMode || 'Unknown',
-      });
+      // Race the insert against an 8-second timeout to prevent Vercel from killing
+      // the function before we can respond. When the function times out, Vercel returns
+      // its own JSON 500 (where `error` is an object, not a string), which the client
+      // reports as "Contribution failed (batch N): 500" — undiagnosable in Sentry.
+      // Contribution is best-effort: a timeout returns success and logs a warning.
+      const INSERT_TIMEOUT_MS = 8_000;
 
+      const insertResult = await Promise.race([
+        supabase.from('data_contributions').insert({
+          contribution_id: contributionId,
+          night_count: anonymised.length,
+          nights: anonymised,
+          has_oximetry: anonymised.some((n) => n.oximetry !== null),
+          device_model: anonymised[0]?.settings.deviceModel || 'Unknown',
+          pap_mode: anonymised[0]?.settings.papMode || 'Unknown',
+        }),
+        new Promise<'timeout'>((resolve) =>
+          setTimeout(() => resolve('timeout'), INSERT_TIMEOUT_MS)
+        ),
+      ]);
+
+      if (insertResult === 'timeout') {
+        console.error('[contribute-data] Supabase insert timed out — returning success', {
+          nightCount: anonymised.length,
+          contributionId,
+        });
+        Sentry.captureMessage('Supabase insert timed out — contribution data may be lost', {
+          level: 'warning',
+          tags: { route: 'contribute-data', step: 'insert-timeout' },
+          extra: { nightCount: anonymised.length, contributionId },
+        });
+        // Return success so the client doesn't see an opaque 500. Data contribution
+        // is voluntary and the timeout is an infrastructure issue, not a user error.
+        return NextResponse.json({ ok: true, contributionId, nightCount: anonymised.length });
+      }
+
+      const { error } = insertResult;
       if (error) {
+        console.error('[contribute-data] Supabase insert error', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          nightCount: anonymised.length,
+        });
         Sentry.captureException(error, { tags: { route: 'contribute-data', step: 'insert' } });
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
       }
