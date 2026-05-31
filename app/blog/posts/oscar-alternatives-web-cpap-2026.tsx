@@ -1,33 +1,37 @@
 import Link from 'next/link';
 import {
+  AlertTriangle,
   ArrowRight,
+  BarChart3,
   BookOpen,
   Globe,
-  Layers,
+  Lightbulb,
   Lock,
   Monitor,
   Scale,
-  Shield,
-  Workflow,
+  Sparkles,
 } from 'lucide-react';
 
 export default function OSCARAlternativesWebCPAP2026() {
   return (
     <article>
-      {/* Medical disclaimer — top */}
-      <blockquote className="mb-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
-        <strong className="text-amber-400">Medical disclaimer:</strong> AirwayLab, OSCAR, and
-        SleepHQ are data visualisation and analysis tools, not medical devices. The information
-        these tools provide is for personal reference only and is not a substitute for professional
-        clinical advice. Always discuss your therapy data with your prescribing clinician.
-      </blockquote>
+      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">Medical disclaimer:</strong> AirwayLab, OSCAR, and
+          SleepHQ are data visualisation and analysis tools, not medical devices. The information
+          these tools provide is for personal reference only and is not a substitute for
+          professional clinical advice. Always discuss your therapy data with your prescribing
+          clinician.
+        </p>
+      </div>
 
-      <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+      <p className="mt-6 text-base leading-relaxed text-muted-foreground sm:text-lg">
         If you&apos;ve been searching for an OSCAR CPAP alternative in 2026, you&apos;re probably
         in one of two situations. Maybe you&apos;ve heard of OSCAR but want something that
         doesn&apos;t require downloading and installing software. Or maybe you were a DreamMapper
         user — Philips shut the platform down in January 2026, and you need something new.
       </p>
+
       <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
         Either way, there are now three well-regarded free tools in this space:{' '}
         <strong className="text-foreground">OSCAR</strong>,{' '}
@@ -37,10 +41,10 @@ export default function OSCARAlternativesWebCPAP2026() {
         combine them.
       </p>
 
-      {/* Why people look */}
+      {/* Why People Look for OSCAR Alternatives */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Globe className="h-5 w-5 text-muted-foreground" />
+          <Globe className="h-5 w-5 text-blue-400" />
           <h2 className="text-xl font-bold sm:text-2xl">Why People Look for OSCAR Alternatives</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -59,7 +63,7 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
       </section>
 
-      {/* Three tools at a glance */}
+      {/* Three Tools at a Glance — comparison table */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <Scale className="h-5 w-5 text-emerald-400" />
@@ -73,65 +77,65 @@ export default function OSCARAlternativesWebCPAP2026() {
                 <th className="px-4 py-3 text-center font-semibold text-foreground">OSCAR</th>
                 <th className="px-4 py-3 text-center font-semibold text-foreground">SleepHQ</th>
                 <th className="px-4 py-3 text-center font-semibold text-foreground">AirwayLab</th>
-                <th className="px-4 py-3 text-center font-semibold text-primary">OSCAR + AirwayLab</th>
               </tr>
             </thead>
             <tbody className="text-muted-foreground">
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Installation</td>
-                <td className="px-4 py-2.5 text-center">Desktop app</td>
-                <td className="px-4 py-2.5 text-center">Browser / mobile</td>
+                <td className="px-4 py-2.5 text-center">Desktop app (Win/Mac/Linux)</td>
+                <td className="px-4 py-2.5 text-center">Browser / mobile app</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Browser only</td>
-                <td className="px-4 py-2.5 text-center text-primary">Desktop + Browser</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Devices supported</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">ResMed, Philips, F&amp;P, others</td>
-                <td className="px-4 py-2.5 text-center">ResMed (myAir)</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">
+                  ResMed, Philips, F&amp;P, others
+                </td>
+                <td className="px-4 py-2.5 text-center">ResMed (via myAir sync)</td>
                 <td className="px-4 py-2.5 text-center">ResMed SD card</td>
-                <td className="px-4 py-2.5 text-center text-primary">Widest (both)</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Data location</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Local — your device</td>
-                <td className="px-4 py-2.5 text-center">Cloud — SleepHQ servers</td>
+                <td className="px-4 py-2.5 text-center text-amber-400">
+                  Cloud — SleepHQ&apos;s servers
+                </td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Your browser only</td>
-                <td className="px-4 py-2.5 text-center text-primary">Both local</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Automated scoring</td>
                 <td className="px-4 py-2.5 text-center">Summary stats</td>
                 <td className="px-4 py-2.5 text-center">Summary stats</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Glasgow Index, FL Score, NED, oximetry</td>
-                <td className="px-4 py-2.5 text-center text-primary">Composite + waveforms</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">
+                  Glasgow Index, FL Score, NED, oximetry
+                </td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Open source</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">GPL-2.0</td>
-                <td className="px-4 py-2.5 text-center text-muted-foreground/60">Closed source</td>
+                <td className="px-4 py-2.5 text-center text-muted-foreground">Closed source</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">GPL-3.0</td>
-                <td className="px-4 py-2.5 text-center text-primary">Both GPL</td>
               </tr>
               <tr className="border-b border-border/30">
                 <td className="py-2.5 pr-4">Cost</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Free</td>
                 <td className="px-4 py-2.5 text-center">Free + paid tiers</td>
-                <td className="px-4 py-2.5 text-center text-emerald-400">Free (optional premium)</td>
-                <td className="px-4 py-2.5 text-center text-primary">Both free</td>
+                <td className="px-4 py-2.5 text-center text-emerald-400">
+                  Free (optional premium)
+                </td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-4">Best for</td>
-                <td className="px-4 py-2.5 text-center">Waveform review</td>
+                <td className="px-4 py-2.5 text-center">Breath-by-breath waveform review</td>
                 <td className="px-4 py-2.5 text-center">Cloud sync, remote access</td>
                 <td className="px-4 py-2.5 text-center">Automated pattern analysis</td>
-                <td className="px-4 py-2.5 text-center text-primary">Complete picture</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* OSCAR */}
+      {/* OSCAR section */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <Monitor className="h-5 w-5 text-blue-400" />
@@ -141,42 +145,80 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            OSCAR (Open Source CPAP Analysis Reporter) is the most detailed free CPAP analysis tool
+            <a
+              href="https://www.sleepfiles.com/OSCAR/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80"
+            >
+              OSCAR
+            </a>{' '}
+            (Open Source CPAP Analysis Reporter) is the most detailed free CPAP analysis tool
             available. It gives you interactive access to your full flow waveform — you can zoom in
             to individual breaths, scroll through the night, and review events one by one.
           </p>
           <p className="font-medium text-foreground">What OSCAR does well:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'Interactive waveform viewer at full breath resolution — pan, zoom, and event marking',
-              'Wide device support: ResMed, Philips, Fisher & Paykel, and several others',
-              'Session overlays to compare nights side by side',
-              'Detailed event logs: apneas, hypopnoeas, leak, and flow limitation flags',
-              'Large, active community on ApneaBoard with years of tutorials and worked examples',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <span>
+                <strong className="text-foreground">Interactive waveform viewer</strong> at full
+                breath resolution — pan, zoom, and event marking
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <span>
+                <strong className="text-foreground">Wide device support:</strong> ResMed, Philips,
+                Fisher &amp; Paykel, and several others
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <span>
+                <strong className="text-foreground">Session overlays</strong> to compare nights side
+                by side
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <span>
+                <strong className="text-foreground">Detailed event logs:</strong> apneas, hypopneas,
+                leak, and flow limitation flags
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <span>
+                <strong className="text-foreground">Large, active community</strong> on ApneaBoard
+                with years of tutorials and worked examples
+              </span>
+            </li>
           </ul>
           <p className="font-medium text-foreground">Where OSCAR has limitations:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'Requires download and local installation — not available on Chromebooks or tablets',
-              'No automated composite scoring: OSCAR shows data but does not compute a flow limitation score or breath shape index',
-              'Steeper learning curve for users new to PAP data',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5shrink-0 rounded-full bg-amber-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                Requires download and local installation — not available on Chromebooks or tablets
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                No automated composite scoring: you see the data, but OSCAR doesn&apos;t compute a
+                flow limitation score or breath shape index for you
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>Steeper learning curve for users new to PAP data</span>
+            </li>
           </ul>
           <p>
             OSCAR is the right tool when you want to see exactly what happened breath by breath on a
             specific night. If you&apos;re new to reading PAP data, our{' '}
-            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
               guide to CPAP data
             </Link>{' '}
             is a good place to start before opening OSCAR for the first time.
@@ -184,10 +226,10 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
       </section>
 
-      {/* SleepHQ */}
+      {/* SleepHQ section */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Globe className="h-5 w-5 text-sky-400" />
+          <Sparkles className="h-5 w-5 text-purple-400" />
           <h2 className="text-xl font-bold sm:text-2xl">SleepHQ: Cloud Sync for ResMed Users</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -198,44 +240,72 @@ export default function OSCARAlternativesWebCPAP2026() {
           </p>
           <p className="font-medium text-foreground">What SleepHQ does well:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'Automatic sync from myAir — no SD card handling required',
-              'Clean, accessible interface that is genuinely easy for new users',
-              'Remote access: view your data on any device, share a link with your clinician',
-              'Solid summary charts for nightly trends',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+              <span>
+                <strong className="text-foreground">Automatic sync from myAir</strong> — no SD card
+                handling required
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+              <span>
+                <strong className="text-foreground">Clean, accessible interface</strong> that&apos;s
+                genuinely easy for new users
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+              <span>
+                <strong className="text-foreground">Remote access:</strong> view your data on any
+                device, share a link with your clinician
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+              <span>
+                <strong className="text-foreground">Solid summary charts</strong> for nightly trends
+              </span>
+            </li>
           </ul>
           <p className="font-medium text-foreground">Where SleepHQ has limitations:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'Cloud-hosted: your therapy data lives on SleepHQ\'s servers',
-              'Primarily supports ResMed; limited coverage for other manufacturers',
-              'myAir sync gives you what ResMed\'s app reports, not the full SD card dataset',
-              'Some features sit behind a paid subscription',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                Cloud-hosted: your therapy data lives on SleepHQ&apos;s servers — worth considering
+                if privacy matters to you
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                Primarily supports ResMed; limited coverage for other manufacturers
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                myAir sync gives you what ResMed&apos;s app reports, not the full SD card dataset
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>Some features sit behind a paid subscription</span>
+            </li>
           </ul>
           <p>
             SleepHQ is the path of least resistance if you&apos;re on ResMed and want the simplest
-            possible setup. The automatic sync removes friction for users who don&apos;t want to
-            manage SD cards.
+            possible setup. The automatic sync genuinely removes friction for users who don&apos;t
+            want to manage SD cards.
           </p>
         </div>
       </section>
 
-      {/* AirwayLab */}
+      {/* AirwayLab section */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Layers className="h-5 w-5 text-emerald-400" />
+          <Globe className="h-5 w-5 text-emerald-400" />
           <h2 className="text-xl font-bold sm:text-2xl">
             AirwayLab: Browser-Based, No Installation Required
           </h2>
@@ -249,62 +319,89 @@ export default function OSCARAlternativesWebCPAP2026() {
           </p>
           <p className="font-medium text-foreground">What AirwayLab does well:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'No installation: works on any device with a modern browser, including Chromebooks',
-              'Privacy-first: your data never leaves your browser for core analysis',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span>
+                <strong className="text-foreground">No installation:</strong> works on any device
+                with a modern browser, including Chromebooks
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span>
+                <strong className="text-foreground">Privacy-first:</strong> your data never leaves
+                your browser for core analysis
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span>
+                <strong className="text-foreground">Automated composite scoring</strong> from four
+                analysis engines: Glasgow Index (breath shape across 9 components), FL Score
+                (percentage of flow-limited breaths), NED (per-breath airway narrowing), and
+                oximetry framework (17-metric SpO₂/HR analysis)
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span>
+                <strong className="text-foreground">Night-over-night trend tracking</strong> with a
+                traffic-light system
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span>
+                <strong className="text-foreground">Open source (GPL-3.0)</strong> — the analysis
+                code is publicly verifiable
+              </span>
+            </li>
           </ul>
-          <p>Automated composite scoring from four analysis engines:</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              { label: 'Glasgow Index', desc: 'Breath shape scored across 9 components (0–8 scale)' },
-              { label: 'FL Score', desc: 'Percentage of flow-limited breaths per night' },
-              { label: 'NED', desc: 'Per-breath airway narrowing characterisation' },
-              { label: 'Oximetry framework', desc: '17-metric SpO₂/HR analysis with compatible Viatom oximeter' },
-            ].map(({ label, desc }) => (
-              <div key={label} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                <p className="text-sm font-semibold text-emerald-400">{label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-              </div>
-            ))}
-          </div>
           <p className="font-medium text-foreground">Where AirwayLab has limitations:</p>
           <ul className="ml-4 space-y-2">
-            {[
-              'ResMed SD card only — no myAir sync, no Philips or Fisher & Paykel support yet',
-              'No interactive waveform viewer — for breath-by-breath review, OSCAR is the right tool',
-              'Requires an SD card in the machine (AirSense 11 models without an SD card slot are not supported)',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <span>{item}</span>
-              </li>
-            ))}
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                ResMed SD card only — no myAir sync, no Philips or Fisher &amp; Paykel support yet
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                No interactive waveform viewer — for breath-by-breath review, OSCAR is still the
+                right tool
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              <span>
+                Requires an SD card in the machine (AirSense 11 models without an SD card slot
+                aren&apos;t supported)
+              </span>
+            </li>
           </ul>
           <p>
             Many users run AirwayLab and OSCAR side by side: AirwayLab for the automated overnight
-            scores, OSCAR when they want to drill into a specific night. See{' '}
+            scores, OSCAR when they want to drill into a specific night that caught their attention.
+            See{' '}
             <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
               how AirwayLab compares to OSCAR in detail
             </Link>
             .
           </p>
-          <p className="text-xs text-muted-foreground/70 italic">
-            AirwayLab&apos;s core analysis is entirely local. Optional AI-powered insights require
-            explicit consent before any data is sent.
-          </p>
+          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+            <p className="text-xs text-muted-foreground">
+              AirwayLab&apos;s core analysis is entirely local. Optional AI-powered insights require
+              explicit consent before any data is sent.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* DreamMapper */}
+      {/* DreamMapper section */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Shield className="h-5 w-5 text-amber-400" />
+          <AlertTriangle className="h-5 w-5 text-amber-400" />
           <h2 className="text-xl font-bold sm:text-2xl">
             DreamMapper Users: Your Options After the Shutdown
           </h2>
@@ -314,11 +411,11 @@ export default function OSCARAlternativesWebCPAP2026() {
             If you were using DreamMapper with a Philips CPAP machine and lost access when the
             platform closed in January 2026, your path forward depends on your device.
           </p>
-          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+          <div className="rounded-xl border border-border/50 p-4">
             <p className="text-sm font-semibold text-foreground">
               For Philips DreamStation and System One users
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               OSCAR supports DreamStation and System One EDF files. Install OSCAR, insert your SD
               card, and your data should load. OSCAR gives you considerably more detail than
               DreamMapper provided — event-level review, waveform access, and trend history going
@@ -334,9 +431,9 @@ export default function OSCARAlternativesWebCPAP2026() {
               before assuming your specific model is supported.
             </p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+          <div className="rounded-xl border border-border/50 p-4">
             <p className="text-sm font-semibold text-foreground">AirwayLab note</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               AirwayLab currently supports ResMed devices only. If you&apos;re switching to a
               ResMed machine (or already have one), AirwayLab will work with it. If you&apos;re
               staying on Philips, OSCAR is your best free option.
@@ -350,158 +447,173 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
       </section>
 
-      {/* Using OSCAR and AirwayLab Together */}
+      {/* Using OSCAR and AirwayLab Together — folded from oscar-alternative */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Workflow className="h-5 w-5 text-primary" />
+          <BarChart3 className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold sm:text-2xl">Using OSCAR and AirwayLab Together</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            Framing OSCAR and AirwayLab as competitors misses what makes them most useful. They
-            approach the same data differently, and many users get the most complete picture by
-            using both.
+            OSCAR and AirwayLab are not alternatives to each other — they complement each other
+            well. A practical workflow many users follow:
           </p>
-          <p>
-            OSCAR is built for manual waveform inspection — once you have data imported you can
-            zoom into any window, examine individual breaths, and correlate events with timestamps
-            across months of history.
-          </p>
-          <p>
-            AirwayLab runs automated scoring algorithms across every breath and surfaces composite
-            metrics — FL Score, Glasgow Index, Regularity, Periodicity — that are harder to derive
-            from manual inspection. It runs in your browser, so nothing needs to be installed.
-          </p>
-          <p className="font-medium text-foreground">A practical combined workflow:</p>
           <div className="space-y-3">
-            {[
-              {
-                step: '1',
-                label: 'Open AirwayLab',
-                desc: 'Get a composite-metrics overview of recent nights — FL Score, Glasgow Index, overall patterns across sessions.',
-              },
-              {
-                step: '2',
-                label: 'Flag nights for closer review',
-                desc: 'Note any nights where metrics differ from your baseline, or where you had poor sleep quality.',
-              },
-              {
-                step: '3',
-                label: 'Open those nights in OSCAR',
-                desc: 'Inspect waveforms at breath level and review the event timeline for flagged sessions.',
-              },
-              {
-                step: '4',
-                label: 'Return to AirwayLab',
-                desc: 'Check whether patterns hold consistently across multiple nights over weeks.',
-              },
-            ].map(({ step, label, desc }) => (
-              <div key={step} className="flex gap-4 rounded-xl border border-border/50 p-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                  {step}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>
-                </div>
-              </div>
-            ))}
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                1. Start with AirwayLab for the overview
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Upload your SD card and get your Glasgow Index, FL Score, RERA estimate, and
+                nightly trend summary. These composite metrics tell you at a glance whether flow
+                limitation is present and whether it is worsening over time.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                2. Use OSCAR to investigate the detail
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                If AirwayLab flags elevated flow limitation in the second half of the night, open
+                that session in OSCAR and zoom into the waveforms. OSCAR&apos;s interactive viewer
+                is the right tool for breath-by-breath inspection of specific events.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                3. Track trends in AirwayLab, verify in OSCAR
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                After a pressure or EPR change, monitor your AirwayLab metrics night over night.
+                If a metric shifts significantly, confirm the change by inspecting representative
+                waveforms in OSCAR — giving you both statistical confidence and visual
+                verification.
+              </p>
+            </div>
           </div>
           <p>
-            Both tools process your data locally. Neither depends on a company&apos;s server staying
-            online. That combination — complementary capabilities, shared privacy ethos, both
-            GPL-licensed — is what makes them worth using alongside each other rather than treating
-            the choice as binary.
+            Each tool gives you a different view of the same underlying SD card data. Using both
+            is not redundant — it is thorough.
           </p>
         </div>
       </section>
 
-      {/* Which tool */}
+      {/* Which tool is right for you */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
-          <Lock className="h-5 w-5 text-primary" />
+          <Lightbulb className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold sm:text-2xl">Which Tool Is Right for You?</h2>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-            <p className="text-sm font-semibold text-blue-400">Choose OSCAR if:</p>
-            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>You want breath-by-breath waveform review</li>
-              <li>You use a non-ResMed device (Philips, Fisher &amp; Paykel)</li>
-              <li>You need to share specific event data with your sleep physician</li>
-              <li>You&apos;re comfortable with a desktop application</li>
-            </ul>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+              <p className="text-sm font-semibold text-blue-400">Choose OSCAR if…</p>
+              <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                <li>You want breath-by-breath waveform review</li>
+                <li>You use a non-ResMed device (Philips, Fisher &amp; Paykel, others)</li>
+                <li>You need to share specific event data with your sleep physician</li>
+                <li>You&apos;re comfortable with a desktop application</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+              <p className="text-sm font-semibold text-purple-400">Choose SleepHQ if…</p>
+              <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                <li>You use ResMed and want automatic sync without managing SD cards</li>
+                <li>Remote access and easy clinician sharing matter to you</li>
+                <li>You&apos;re comfortable with cloud storage of your therapy data</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <p className="text-sm font-semibold text-emerald-400">Choose AirwayLab if…</p>
+              <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                <li>You want automated scoring without installing anything</li>
+                <li>You&apos;re on a Chromebook or tablet</li>
+                <li>Data privacy is a priority — analysis stays in your browser</li>
+                <li>You want Glasgow Index, FL Score, and NED computed automatically</li>
+              </ul>
+            </div>
           </div>
-          <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4">
-            <p className="text-sm font-semibold text-sky-400">Choose SleepHQ if:</p>
-            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>You use ResMed and want automatic sync without SD cards</li>
-              <li>Remote access and easy clinician sharing matter to you</li>
-              <li>You&apos;re comfortable with cloud storage of your data</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-            <p className="text-sm font-semibold text-emerald-400">Choose AirwayLab if:</p>
-            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>You want automated scoring without installing anything</li>
-              <li>You&apos;re on a Chromebook or tablet</li>
-              <li>Data privacy is a priority</li>
-              <li>You want Glasgow Index, FL Score, and NED computed automatically</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <p className="text-sm font-semibold text-primary">Choose OSCAR + AirwayLab if:</p>
-            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>You want the most complete picture of your therapy data</li>
-              <li>You want composite metrics alongside breath-level waveform detail</li>
-              <li>You have a ResMed device and want both automated scoring and event review</li>
-              <li>You prefer both tools keeping your data entirely local</li>
-            </ul>
-          </div>
+          <p>
+            <strong className="text-foreground">Use more than one if</strong> you&apos;re working
+            through why your metrics look the way they do. Each tool gives you a different view of
+            the same underlying data, and they genuinely complement each other.
+          </p>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Your clinician can help interpret what any of these tools show in the context of your full
-          therapy history.
-        </p>
       </section>
 
-      {/* Medical disclaimer — bottom */}
-      <blockquote className="mt-10 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
-        The information provided by CPAP analysis software — including AirwayLab, OSCAR, and
-        SleepHQ — is for personal reference only. It is not a substitute for clinical advice,
-        diagnosis, or treatment. Your sleep physician can help you interpret your therapy data in
-        the context of your diagnosis and treatment plan.
-      </blockquote>
+      {/* Open source and longevity */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <Lock className="h-5 w-5 text-emerald-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">Open Source and Longevity</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            OSCAR is licensed under GPL-2.0. AirwayLab is licensed under GPL-3.0. Both licences
+            require the source code to remain public and prevent the software from being closed down
+            or repurposed without community consent. SleepHQ is closed source.
+          </p>
+          <p>
+            For long-term users who rely on their analysis tools year over year, open source
+            matters. The DreamMapper shutdown demonstrated what happens when a closed commercial
+            platform discontinues — years of data access can disappear overnight. Open-source tools
+            can be forked, maintained by the community, and audited independently.
+          </p>
+        </div>
+      </section>
 
-      {/* References */}
+      {/* Learn more */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <BookOpen className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-bold sm:text-2xl">Further Reading</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">Learn More</h2>
         </div>
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
-              Guide to CPAP data
-            </Link>{' '}
-            &mdash; understanding what the numbers on your device actually mean.
-          </p>
-          <p>
             <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
-              How AirwayLab compares to OSCAR in detail
+              AirwayLab vs OSCAR: What Each Tool Does Best
             </Link>{' '}
-            &mdash; a deeper feature-by-feature breakdown.
+            &mdash; a detailed comparison of AirwayLab and OSCAR, the long-standing open-source
+            desktop app.
           </p>
           <p>
-            <a
-              href="https://www.sleepfiles.com/OSCAR/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/blog/how-to-read-cpap-data"
               className="text-primary hover:text-primary/80"
             >
-              OSCAR official site
-            </a>{' '}
-            &mdash; download OSCAR and access its documentation.
+              How to Read Your CPAP Data
+            </Link>{' '}
+            &mdash; a beginner-friendly guide to understanding AHI, flow limitation, and the metrics
+            that matter.
+          </p>
+          <p>
+            <Link
+              href="/blog/understanding-flow-limitation"
+              className="text-primary hover:text-primary/80"
+            >
+              Understanding Flow Limitation in Your PAP Data
+            </Link>{' '}
+            &mdash; what flow limitation is and why AHI misses it.
+          </p>
+          <p>
+            <Link href="/blog/pap-data-privacy" className="text-primary hover:text-primary/80">
+              Your PAP Data Belongs to You
+            </Link>{' '}
+            &mdash; who can access your CPAP data and how to protect it.
+          </p>
+        </div>
+      </section>
+
+      {/* Bottom medical disclaimer */}
+      <section className="mt-8">
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Medical disclaimer:</strong> The information
+            provided by CPAP analysis software — including AirwayLab, OSCAR, and SleepHQ — is for
+            personal reference only. It is not a substitute for clinical advice, diagnosis, or
+            treatment. Your sleep physician can help you interpret your therapy data in the context
+            of your diagnosis and treatment plan. Always discuss any questions about your therapy
+            with your clinician.
           </p>
         </div>
       </section>
@@ -512,12 +624,12 @@ export default function OSCARAlternativesWebCPAP2026() {
         <p className="mt-2 text-sm text-muted-foreground">
           No installation, no account, no data upload required.
         </p>
-        <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+        <div className="mt-4 flex justify-center">
           <Link
             href="/analyze"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-glow transition-colors hover:bg-primary/90"
           >
-            Analyze Your Data <ArrowRight className="h-4 w-4" />
+            Analyse your data free <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </section>
