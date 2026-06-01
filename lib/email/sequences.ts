@@ -566,6 +566,57 @@ export async function scheduleWinBackSequences(
   return scheduled;
 }
 
+// Days past scheduled_at before a time-relative step is considered stale.
+const STALE_STEP_CUTOFF_DAYS = 14;
+// Only activation and cpap_tips have timing-sensitive content ("Day N tip").
+// re_engagement and win_back remain relevant regardless of delay.
+const STALE_STEP_SEQUENCES: SequenceName[] = ['activation', 'cpap_tips'];
+
+/**
+ * Cancel pending sequence steps that are past their stale window.
+ *
+ * When multiple steps in the same sequence are overdue simultaneously (e.g.
+ * early adopters with all 5 cpap_tips steps past-due), the 50-row getPendingEmails
+ * batch fills with rows from a small number of users. After 1/user/run rate-limiting
+ * only those few users get processed, starving newer users and causing the overdue
+ * count to grow.
+ *
+ * A step is stale after STALE_STEP_CUTOFF_DAYS past its scheduled_at. At that
+ * point the timing context is broken ("Day 10 tip" sent on Day 40 is confusing)
+ * and the batch slot is better used by other pending emails.
+ *
+ * Runs before getPendingEmails on each cron tick to prevent backlog accumulation.
+ */
+export async function cancelStaleSequenceSteps(
+  supabase: SupabaseClient,
+): Promise<number> {
+  const staleCutoff = new Date(
+    Date.now() - STALE_STEP_CUTOFF_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data, error } = await supabase
+    .from('email_sequences')
+    .update({ status: 'cancelled' })
+    .in('sequence_name', STALE_STEP_SEQUENCES)
+    .eq('status', 'pending')
+    .lt('scheduled_at', staleCutoff)
+    .select('id');
+
+  if (error) {
+    console.error('[email-sequences] Failed to cancel stale sequence steps:', error.message);
+    return 0;
+  }
+
+  const count = data?.length ?? 0;
+  if (count > 0) {
+    console.error(
+      `[email-sequences] Cancelled ${count} stale pending steps (>${STALE_STEP_CUTOFF_DAYS}d overdue) in: ${STALE_STEP_SEQUENCES.join(', ')}`,
+    );
+  }
+
+  return count;
+}
+
 /**
  * Mark a user as suppressed from re-engagement emails.
  * Called after the final (step 3) re-engagement email sends.
