@@ -12,7 +12,8 @@
 const BASE_URL = 'https://airwaylab.app';
 
 /** CAN-SPAM §7704(a)(5): physical postal address shown in every commercial email footer. */
-const SENDER_PHYSICAL_ADDRESS = process.env.SENDER_PHYSICAL_ADDRESS ?? '';
+const SENDER_PHYSICAL_ADDRESS =
+  process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab B.V., Helperpark 274-6, 9723 ZA Groningen, Netherlands';
 
 // ── Shared layout ────────────────────────────────────────────
 
@@ -444,7 +445,8 @@ export function cpapTipsStep5(unsubscribeUrl: string): { subject: string; html: 
  * footer to satisfy CAN-SPAM Act requirements (16 CFR Part 316).
  */
 function reEngagementLayout(content: string, unsubscribeUrl: string): string {
-  const physicalAddress = process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab';
+  const physicalAddress =
+    process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab B.V., Helperpark 274-6, 9723 ZA Groningen, Netherlands';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -479,7 +481,7 @@ function reEngagementLayout(content: string, unsubscribeUrl: string): string {
         AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
       </p>
       <p style="font-size:10px;color:#52525b;line-height:1.5;margin:8px 0 0 0;">
-        AirwayLab &middot; ${physicalAddress}
+        ${physicalAddress}
       </p>
     </div>
   </div>
