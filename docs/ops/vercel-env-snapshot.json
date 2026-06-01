@@ -1,0 +1,5 @@
+{
+  "keys": [],
+  "refreshed_at": "2026-06-01T00:00:00Z",
+  "source": "stub — run VERCEL_TOKEN=<token> scripts/check-vercel-env.sh --refresh-snapshot to populate"
+}
