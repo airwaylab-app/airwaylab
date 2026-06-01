@@ -160,4 +160,25 @@ describe('AuthProvider fetchProfile — AIR-1486 regression', () => {
     expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
     expect(vi.mocked(Sentry.captureException)).not.toHaveBeenCalled();
   });
+
+  // AIR-1763: Chrome 116+ / newer GoTrue surfaces a different error string for the same
+  // navigator.locks race — "Lock broken by another request with the 'steal' option."
+  // The previous check (includes('Lock was stolen')) missed this variant, leaking events
+  // to Sentry (JAVASCRIPT-NEXTJS-2M + 5M).
+  it('suppresses Sentry on "steal option" lock contention variant (AIR-1763)', async () => {
+    vi.mocked(getSupabaseBrowser).mockReturnValue(
+      makeSupabaseMock({
+        profileResult: {
+          data: null,
+          error: { message: "Lock broken by another request with the 'steal' option." },
+        },
+      }) as ReturnType<typeof getSupabaseBrowser>
+    );
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>);
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('ready'));
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+    expect(vi.mocked(Sentry.captureException)).not.toHaveBeenCalled();
+  });
 });
