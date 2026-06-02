@@ -330,7 +330,9 @@ async function processStripeEvent(
 
       void sendWelcomeNotification(supabase, userId, tier, interval);
       void syncDiscordForUser(supabase, userId, tier, event.id);
-      void sendAlert('revenue', '', [formatRevenueEmbed({
+      // Awaited so the after() callback stays alive until Discord receives the POST.
+      // sendAlert is fail-open (never throws, returns bool) so this is safe.
+      await sendAlert('revenue', '', [formatRevenueEmbed({
         event: 'new_subscription',
         tier,
         interval,
@@ -409,7 +411,7 @@ async function processStripeEvent(
         void syncDiscordForUser(supabase, userId!, tier, event.id);
       }
 
-      void sendAlert('revenue', '', [formatRevenueEmbed({
+      await sendAlert('revenue', '', [formatRevenueEmbed({
         event: 'tier_change',
         tier,
         interval: updatedInterval,
@@ -475,8 +477,8 @@ async function processStripeEvent(
         // Sync Discord role (revoke if downgraded to community)
         void syncDiscordForUser(supabase, userId, newTier, event.id);
 
-        // Discord #revenue alert (non-blocking)
-        void sendAlert('revenue', '', [formatRevenueEmbed({
+        // Discord #revenue alert
+        await sendAlert('revenue', '', [formatRevenueEmbed({
           event: 'cancellation',
           tier: newTier,
         })]);
