@@ -81,6 +81,45 @@ function makeSupabaseMock({
   };
 }
 
+// Helper for retry tests: the profile maybeSingle mock is shared across from() calls so
+// mockResolvedValueOnce sequences work across the initial query and any retry.
+function makeSupabaseMockWithProfileRetry({
+  profileResults,
+  subResult = { data: null, error: null },
+  userId = 'user-abc',
+}: {
+  profileResults: Array<{ data: unknown; error: unknown }>;
+  subResult?: { data: unknown; error: unknown };
+  userId?: string;
+}) {
+  const maybeSingleMock = vi.fn();
+  profileResults.forEach((r) => maybeSingleMock.mockResolvedValueOnce(r));
+  // Return same chain object on every from('profiles') call so the mock state is preserved.
+  const sharedProfileChain = {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        maybeSingle: maybeSingleMock,
+      }),
+    }),
+  };
+  return {
+    from: vi.fn((table: string) =>
+      table === 'profiles' ? sharedProfileChain : makeSubChain(subResult)
+    ),
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { user: { id: userId } } },
+      }),
+      onAuthStateChange: vi.fn().mockReturnValue({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      }),
+      signInWithOtp: vi.fn(),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+    },
+  };
+}
+
 const SAMPLE_PROFILE = {
   id: 'user-abc',
   email: 'test@example.com',
@@ -180,5 +219,52 @@ describe('AuthProvider fetchProfile — AIR-1486 regression', () => {
     await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('ready'));
     expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
     expect(vi.mocked(Sentry.captureException)).not.toHaveBeenCalled();
+  });
+
+  // AIR-2369: JAVASCRIPT-NEXTJS-6J — NetworkError on profile fetch from transient Supabase
+  // EU connectivity blip. The retry resolves it; Sentry must not fire.
+  it('retries once on NetworkError and sets profile without firing Sentry (AIR-2369)', async () => {
+    vi.mocked(getSupabaseBrowser).mockReturnValue(
+      makeSupabaseMockWithProfileRetry({
+        profileResults: [
+          { data: null, error: { message: 'NetworkError when attempting to fetch resource.' } },
+          { data: SAMPLE_PROFILE, error: null },
+        ],
+      }) as ReturnType<typeof getSupabaseBrowser>
+    );
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>);
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('ready'), {
+      timeout: 3000,
+    });
+    expect(screen.getByTestId('profile-id')).toHaveTextContent('user-abc');
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+    expect(vi.mocked(Sentry.captureException)).not.toHaveBeenCalled();
+  });
+
+  it('fires Sentry with after_retry=true when NetworkError persists after retry (AIR-2369)', async () => {
+    vi.mocked(getSupabaseBrowser).mockReturnValue(
+      makeSupabaseMockWithProfileRetry({
+        profileResults: [
+          { data: null, error: { message: 'NetworkError when attempting to fetch resource.' } },
+          { data: null, error: { message: 'NetworkError when attempting to fetch resource.' } },
+        ],
+      }) as ReturnType<typeof getSupabaseBrowser>
+    );
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>);
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('ready'), {
+      timeout: 3000,
+    });
+    expect(screen.getByTestId('profile-id')).toHaveTextContent('null');
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith(
+      expect.stringContaining('NetworkError'),
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ after_retry: 'true' }),
+      })
+    );
   });
 });
