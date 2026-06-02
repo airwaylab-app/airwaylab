@@ -65,7 +65,7 @@ function makeRequest(overrides: Partial<{
     'content-type': 'application/octet-stream',
     'content-encoding': 'gzip',
     'x-night-date': '2025-01-15',
-    'x-contribution-id': 'test-contribution-id',
+    'x-contribution-id': '11111111-1111-4111-8111-111111111111',
     'x-engine-version': ENGINE_VERSION,
     'x-sampling-rate': '25',
     'x-duration-seconds': '28800',
@@ -125,19 +125,19 @@ describe('contribute-waveforms API route', () => {
     // Verify storage upload was called
     expect(mockUpload).toHaveBeenCalledTimes(1);
     const uploadArgs = mockUpload.mock.calls[0];
-    expect(uploadArgs![0]).toBe('test-contribution-id/2025-01-15.flow.gz');
+    expect(uploadArgs![0]).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz');
 
     // Verify DB insert was called with correct metadata
     expect(mockInsert).toHaveBeenCalledTimes(1);
     const insertData = mockInsert.mock.calls[0]![0];
-    expect(insertData.contribution_id).toBe('test-contribution-id');
+    expect(insertData.contribution_id).toBe('11111111-1111-4111-8111-111111111111');
     expect(insertData.user_id).toBe(TEST_USER_ID);
     expect(insertData.night_date).toBe('2025-01-15');
     expect(insertData.engine_version).toBe(ENGINE_VERSION);
     expect(insertData.sampling_rate).toBe(25);
     expect(insertData.device_model).toBe('AirSense 10');
     expect(insertData.pap_mode).toBe('APAP');
-    expect(insertData.storage_path).toBe('test-contribution-id/2025-01-15.flow.gz');
+    expect(insertData.storage_path).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz');
   });
 
   it('uses .bin extension when not compressed', async () => {
@@ -146,7 +146,7 @@ describe('contribute-waveforms API route', () => {
     const headers = new Headers({
       'content-type': 'application/octet-stream',
       'x-night-date': '2025-01-15',
-      'x-contribution-id': 'test-contribution-id',
+      'x-contribution-id': '11111111-1111-4111-8111-111111111111',
       'x-engine-version': ENGINE_VERSION,
       'x-sampling-rate': '25',
       'x-duration-seconds': '28800',
@@ -167,7 +167,7 @@ describe('contribute-waveforms API route', () => {
     await POST(request as never);
 
     const uploadPath = mockUpload.mock.calls[0]?.[0];
-    expect(uploadPath).toBe('test-contribution-id/2025-01-15.flow.bin');
+    expect(uploadPath).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.bin');
   });
 
   it('rejects request with missing required headers', async () => {
@@ -253,7 +253,7 @@ describe('contribute-waveforms API route', () => {
 
     // Should have attempted to clean up the orphaned storage file
     expect(mockRemove).toHaveBeenCalledTimes(1);
-    expect(mockRemove.mock.calls[0]![0]).toEqual(['test-contribution-id/2025-01-15.flow.gz']);
+    expect(mockRemove.mock.calls[0]![0]).toEqual(['11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz']);
   });
 
   it('rejects invalid JSON in analysis results header', async () => {
