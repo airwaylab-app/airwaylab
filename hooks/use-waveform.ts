@@ -54,8 +54,8 @@ export function useWaveform(
         if (cached || cancelled) return; // Already loaded from IDB
 
         if (sdFiles.length > 0) {
-          // Local files available — extract from them
-          waveformOrchestrator.extract(sdFiles, dateStr).catch((err) => {
+          // Local files available — extract from them, passing NED timestamps for RERA alignment
+          waveformOrchestrator.extract(sdFiles, dateStr, selectedNight.ned.reraTimestamps).catch((err) => {
             console.error('[use-waveform] extraction failed:', err);
             Sentry.captureException(err, { extra: { context: 'waveform-extraction', dateStr } });
           });
@@ -72,7 +72,7 @@ export function useWaveform(
             .then((cloudFiles) => {
               if (cancelled) return;
               if (cloudFiles.length > 0) {
-                return waveformOrchestrator.extract(cloudFiles, dateStr);
+                return waveformOrchestrator.extract(cloudFiles, dateStr, selectedNight.ned.reraTimestamps);
               }
             })
             .then(() => {

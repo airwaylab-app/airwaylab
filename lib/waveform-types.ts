@@ -127,6 +127,8 @@ export interface WaveformWorkerMessage {
   type: 'EXTRACT_WAVEFORM';
   files: { buffer: ArrayBuffer; path: string }[];
   targetDate: string;
+  /** NED-engine RERA timestamps — when provided, replaces the waveform worker's heuristic RERA detection. */
+  reraTimestamps?: import('./types').RERATimestamp[];
 }
 
 /** Response from the waveform worker — returns raw Float32Arrays */

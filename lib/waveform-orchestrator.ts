@@ -78,8 +78,9 @@ class WaveformOrchestrator {
   /**
    * Extract waveform data for a specific night from SD card files.
    * Stores raw Float32Array in IndexedDB after extraction.
+   * Pass reraTimestamps from the NED engine to align graph RERA markers with the analysis count.
    */
-  async extract(files: File[], targetDate: string): Promise<StoredWaveform | null> {
+  async extract(files: File[], targetDate: string, reraTimestamps?: import('./types').RERATimestamp[]): Promise<StoredWaveform | null> {
     // Check in-memory cache first
     const cached = this.cache.get(targetDate);
     if (cached) {
@@ -136,7 +137,7 @@ class WaveformOrchestrator {
       const fileBuffers = await readFiles(filesToRead);
 
       // Run worker — now returns raw Float32Arrays
-      const result = await this.runWorker(fileBuffers, targetDate);
+      const result = await this.runWorker(fileBuffers, targetDate, reraTimestamps);
 
       if (result && result.flow) {
         const stored: StoredWaveform = {
@@ -198,7 +199,8 @@ class WaveformOrchestrator {
 
   private runWorker(
     files: { buffer: ArrayBuffer; path: string }[],
-    targetDate: string
+    targetDate: string,
+    reraTimestamps?: import('./types').RERATimestamp[]
   ): Promise<RawWaveformResult | null> {
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -250,7 +252,7 @@ class WaveformOrchestrator {
       // Transfer ArrayBuffers for zero-copy
       const transferable = files.map((f) => f.buffer);
       this.worker.postMessage(
-        { type: 'EXTRACT_WAVEFORM', files, targetDate },
+        { type: 'EXTRACT_WAVEFORM', files, targetDate, reraTimestamps },
         transferable
       );
     });

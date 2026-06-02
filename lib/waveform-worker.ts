@@ -22,8 +22,8 @@ import type { EDFFile } from './types';
 
 self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
   try {
-    const { files, targetDate } = e.data;
-    const result = extractWaveform(files, targetDate);
+    const { files, targetDate, reraTimestamps } = e.data;
+    const result = extractWaveform(files, targetDate, reraTimestamps);
     if (result) {
       // Transfer Float32Array buffers for zero-copy
       const transferable: ArrayBuffer[] = [result.flow!.buffer as ArrayBuffer];
@@ -66,7 +66,8 @@ self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
 
 function extractWaveform(
   files: { buffer: ArrayBuffer; path: string }[],
-  targetDate: string
+  targetDate: string,
+  nedReraTimestamps?: import('./types').RERATimestamp[]
 ): RawWaveformResult | null {
   // Filter to BRP files only
   const fileList = files.map((f) => ({
@@ -157,8 +158,21 @@ function extractWaveform(
     }
   }
 
-  // Merge machine + algorithm events, sorted by start time
-  const events = [...machineEvents, ...algorithmEvents].sort(
+  // RERA events: prefer NED-engine timestamps (authoritative count) over heuristic detection.
+  // Fall back to algorithm events when NED timestamps are absent (old persisted sessions).
+  const reraEvents: WaveformEvent[] = (nedReraTimestamps && nedReraTimestamps.length > 0)
+    ? nedReraTimestamps.map(r => ({
+        startSec: r.startSec,
+        endSec: r.startSec + r.durationSec,
+        type: 'rera' as const,
+        label: 'RERA candidate',
+      }))
+    : algorithmEvents.filter(ev => ev.type === 'rera');
+
+  const nonReraAlgorithmEvents = algorithmEvents.filter(ev => ev.type !== 'rera');
+
+  // Merge machine + non-RERA algorithm events + resolved RERA events, sorted by start time
+  const events = [...machineEvents, ...nonReraAlgorithmEvents, ...reraEvents].sort(
     (a, b) => a.startSec - b.startSec
   );
 

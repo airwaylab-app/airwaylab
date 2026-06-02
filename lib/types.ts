@@ -232,6 +232,12 @@ export interface RERACandidate {
   durationSec: number;
 }
 
+/** Compact timestamp extracted from a RERACandidate for graph overlay use. */
+export interface RERATimestamp {
+  startSec: number;
+  durationSec: number;
+}
+
 export interface NEDResults {
   breathCount: number;
   /** Per-breath data — populated by engine, stored in IndexedDB, stripped from localStorage */
@@ -252,6 +258,8 @@ export interface NEDResults {
   combinedFLPct: number;
   estimatedArousalIndex: number;
   reras?: RERACandidate[];
+  /** Compact timestamps derived from reras — kept in localStorage, drives graph overlay. */
+  reraTimestamps?: RERATimestamp[];
 
   // Hypopnea aggregate metrics (v0.7.0+)
   hypopneaCount?: number;

@@ -574,6 +574,9 @@ async function processFiles(
         : 0;
     }
 
+    // Compact timestamps for graph overlay — derived from reras before stripping
+    ned.reraTimestamps = ned.reras?.map(r => ({ startSec: r.startSec, durationSec: r.durationSec })) ?? [];
+
     // Recording date from first session
     const recordingDate = group.sessions[0]!.recordingDate;
 
@@ -777,6 +780,9 @@ async function processBMCFiles(
     }
 
     const ned = computeNED(combinedFlow, avgSamplingRate, machineHypopneas.length > 0 ? machineHypopneas : undefined);
+
+    // Compact timestamps for graph overlay — derived from reras before stripping
+    ned.reraTimestamps = ned.reras?.map(r => ({ startSec: r.startSec, durationSec: r.durationSec })) ?? [];
 
     const recordingDate = nightSessions[0]!.recordingDate;
 
