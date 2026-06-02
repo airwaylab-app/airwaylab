@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getSupabaseAdmin, getSupabaseServer } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
@@ -219,6 +219,7 @@ function anonymiseNight(n: NightResult, index: number, nightContext?: NightConte
  CREATE TABLE data_contributions (
    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
    contribution_id TEXT NOT NULL,          -- random per-submission ID
+   user_id UUID REFERENCES profiles(id),   -- authenticated contributor (migration 052)
    night_count INTEGER NOT NULL,
    nights JSONB NOT NULL,                  -- anonymised NightResult[]
    has_oximetry BOOLEAN DEFAULT FALSE,
@@ -243,6 +244,15 @@ export async function POST(request: NextRequest) {
         { error: 'Too many contributions. Please try again later.' },
         { status: 429 }
       );
+    }
+
+    // Authentication — contributions must be tied to a known user (no anonymous writes).
+    const supabaseAuth = await getSupabaseServer();
+    const { data: { user } = { user: null } } = (await supabaseAuth?.auth.getUser()) ?? {
+      data: { user: null },
+    };
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
     // Size guard
@@ -322,6 +332,7 @@ export async function POST(request: NextRequest) {
     if (supabase) {
       const { error } = await supabase.from('data_contributions').insert({
         contribution_id: contributionId,
+        user_id: user.id,
         night_count: anonymised.length,
         nights: anonymised,
         has_oximetry: anonymised.some((n) => n.oximetry !== null),
