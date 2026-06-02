@@ -56,6 +56,19 @@ function isLockContention(message: string | undefined): boolean {
   return message.includes('Lock was stolen') || message.includes("'steal' option");
 }
 
+// Transient network blips (e.g. Supabase EU connectivity hiccup, mobile handoff) surface as
+// "NetworkError when attempting to fetch resource" or "Failed to fetch" in the error message.
+// One retry with 1 s backoff eliminates most false positives without masking real outages.
+function isNetworkError(message: string | undefined): boolean {
+  if (!message) return false;
+  return (
+    message.includes('NetworkError') ||
+    message.includes('Failed to fetch') ||
+    message.includes('Network request failed') ||
+    message.includes('fetch failed')
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -85,6 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select(PROFILE_COLS)
         .eq('id', userId)
         .maybeSingle();
+    } else if (isNetworkError(profileResult.error?.message)) {
+      // Transient network blip (e.g. Supabase EU hiccup) — retry once with 1 s backoff.
+      await new Promise((r) => setTimeout(r, 1000));
+      profileResult = await supabase
+        .from('profiles')
+        .select(PROFILE_COLS)
+        .eq('id', userId)
+        .maybeSingle();
     }
 
     const { data: profileData, error: profileError } = profileResult;
@@ -95,7 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
       Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
         level: 'warning',
-        tags: { context: 'auth-profile-fetch' },
+        tags: {
+          context: 'auth-profile-fetch',
+          // after_retry=true means the single backoff retry also failed — this is a real outage.
+          after_retry: String(isNetworkError(profileError.message)),
+        },
       });
       return;
     }
@@ -139,6 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Same lock contention guard for the subscription query
     if (isLockContention(subResult.error?.message)) {
       await new Promise((r) => setTimeout(r, 100));
+      subResult = await supabase
+        .from('subscriptions')
+        .select(SUB_COLS)
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    } else if (isNetworkError(subResult.error?.message)) {
+      await new Promise((r) => setTimeout(r, 1000));
       subResult = await supabase
         .from('subscriptions')
         .select(SUB_COLS)
