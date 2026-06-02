@@ -4,8 +4,21 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 
+// Allow up to 30s: a full-history hydration for a champion-tier user can return
+// hundreds of analysis_data rows. The Vercel default (10s) was killing the function
+// mid-response on large accounts, producing truncated/aborted payloads.
+export const maxDuration = 30;
+
 // 120 fetches/hour per user — generous for page loads and background refreshes
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 120 });
+
+// Hard cap on rows returned per fetch. The dashboard consumer (app/analyze/page.tsx)
+// needs the full analysis_data blob — it hydrates the restore/merge path and every
+// chart reads deep NightResult fields — so we cannot project to summary columns.
+// Instead we bound the worst-case payload: 365 most-recent nights covers a full year,
+// far exceeding the supporter (90d) and community (14d) windows, and is a sane ceiling
+// for the unbounded champion window. Ordered night_date DESC, so the newest are kept.
+const MAX_NIGHTS_RETURNED = 365;
 
 const querySchema = z.object({
   since: z
@@ -49,6 +62,10 @@ export async function GET(request: NextRequest) {
     if (parsed.data.since) {
       query = query.gte('night_date', parsed.data.since);
     }
+
+    // Bound the payload (see MAX_NIGHTS_RETURNED). Applied after order DESC, so the
+    // most recent nights are always returned.
+    query = query.limit(MAX_NIGHTS_RETURNED);
 
     const { data, error: queryError } = await query;
 
