@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { exportCSV, exportJSON, downloadFile } from '@/lib/export';
+import { exportCSV, exportJSON, exportJSONChunked, JSON_EXPORT_CHUNK_SIZE, downloadFile } from '@/lib/export';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 
 describe('exportCSV', () => {
@@ -101,6 +101,56 @@ describe('exportJSON', () => {
     // Summary NED metrics should still be present
     expect(parsed[0].ned.nedMean).toBeDefined();
     expect(parsed[0].ned.reraIndex).toBeDefined();
+  });
+});
+
+describe('exportJSONChunked', () => {
+  it('returns a single chunk with default filename for small datasets', () => {
+    const chunks = exportJSONChunked(SAMPLE_NIGHTS);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]!.filename).toBe('airwaylab-results.json');
+    expect(() => JSON.parse(chunks[0]!.content)).not.toThrow();
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(exportJSONChunked([])).toEqual([]);
+  });
+
+  it('splits datasets larger than chunkSize into date-ranged files', () => {
+    const manyNights = Array.from({ length: JSON_EXPORT_CHUNK_SIZE + 10 }, (_, i) => ({
+      ...SAMPLE_NIGHTS[0]!,
+      dateStr: `2024-01-${String(i + 1).padStart(2, '0')}`,
+    }));
+    const chunks = exportJSONChunked(manyNights);
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]!.filename).toMatch(/^airwaylab-results-\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.json$/);
+    expect(chunks[1]!.filename).toMatch(/^airwaylab-results-\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.json$/);
+  });
+
+  it('each chunk contains valid JSON with the correct night count', () => {
+    const nightCount = JSON_EXPORT_CHUNK_SIZE + 10;
+    const manyNights = Array.from({ length: nightCount }, (_, i) => ({
+      ...SAMPLE_NIGHTS[0]!,
+      dateStr: `2024-01-${String(i + 1).padStart(2, '0')}`,
+    }));
+    const chunks = exportJSONChunked(manyNights);
+    const parsed0 = JSON.parse(chunks[0]!.content) as unknown[];
+    const parsed1 = JSON.parse(chunks[1]!.content) as unknown[];
+    expect(parsed0).toHaveLength(JSON_EXPORT_CHUNK_SIZE);
+    expect(parsed1).toHaveLength(10);
+  });
+
+  it('does not throw for large datasets (oversized export handled gracefully)', () => {
+    const largeDataset = Array.from({ length: 300 }, (_, i) => ({
+      ...SAMPLE_NIGHTS[0]!,
+      dateStr: `202${Math.floor(i / 365)}-${String(Math.floor((i % 365) / 30) + 1).padStart(2, '0')}-${String((i % 30) + 1).padStart(2, '0')}`,
+    }));
+    expect(() => exportJSONChunked(largeDataset)).not.toThrow();
+    const chunks = exportJSONChunked(largeDataset);
+    expect(chunks.length).toBe(Math.ceil(300 / JSON_EXPORT_CHUNK_SIZE));
+    for (const { content } of chunks) {
+      expect(() => JSON.parse(content)).not.toThrow();
+    }
   });
 });
 

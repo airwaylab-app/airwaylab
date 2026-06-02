@@ -21,6 +21,7 @@ vi.mock('@/lib/analytics', () => ({
 vi.mock('@/lib/export', () => ({
   exportCSV: vi.fn(() => 'csv-content'),
   exportJSON: vi.fn(() => '{}'),
+  exportJSONChunked: vi.fn(() => [{ content: '{}', filename: 'airwaylab-results.json' }]),
   downloadFile: vi.fn(),
 }));
 
@@ -73,6 +74,7 @@ describe('ExportButtons error feedback', () => {
     vi.useFakeTimers();
     vi.mocked(exportLib.exportCSV).mockReset().mockReturnValue('csv-content');
     vi.mocked(exportLib.exportJSON).mockReset().mockReturnValue('{}');
+    vi.mocked(exportLib.exportJSONChunked).mockReset().mockReturnValue([{ content: '{}', filename: 'airwaylab-results.json' }]);
     vi.mocked(exportLib.downloadFile).mockReset();
     vi.mocked(pdfLib.openPDFReport).mockReset();
   });
@@ -111,7 +113,7 @@ describe('ExportButtons error feedback', () => {
   });
 
   it('shows Failed on JSON button when export throws', async () => {
-    vi.mocked(exportLib.exportJSON).mockImplementation(() => { throw new Error('serialization error'); });
+    vi.mocked(exportLib.exportJSONChunked).mockImplementation(() => { throw new Error('serialization error'); });
 
     const { unmount } = await renderExportButtons();
     const jsonBtn = screen.getByRole('button', { name: /export.*json data/i });
@@ -123,7 +125,7 @@ describe('ExportButtons error feedback', () => {
   });
 
   it('auto-dismisses JSON error after 5 seconds', async () => {
-    vi.mocked(exportLib.exportJSON).mockImplementation(() => { throw new Error('serialization error'); });
+    vi.mocked(exportLib.exportJSONChunked).mockImplementation(() => { throw new Error('serialization error'); });
 
     const { unmount } = await renderExportButtons();
     const jsonBtn = screen.getByRole('button', { name: /export.*json data/i });

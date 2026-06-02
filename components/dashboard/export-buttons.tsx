@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Download, MessageSquare, Check, FileText, AlertCircle, Lock } from 'lucide-react';
 import Link from 'next/link';
-import { exportCSV, exportJSON, downloadFile } from '@/lib/export';
+import { exportCSV, exportJSONChunked, downloadFile } from '@/lib/export';
 import { exportForumMultiNight, exportForumSingleNight } from '@/lib/forum-export';
 import { openPDFReport } from '@/lib/pdf-report';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -102,8 +102,10 @@ export const ExportButtons = memo(function ExportButtons({ nights, selectedNight
 
   const handleJSON = useCallback(() => {
     try {
-      const json = exportJSON(nights);
-      downloadFile(json, 'airwaylab-results.json', 'application/json');
+      const chunks = exportJSONChunked(nights);
+      for (const { content, filename } of chunks) {
+        downloadFile(content, filename, 'application/json');
+      }
       events.export('json');
       setDownloaded('json');
       setExportError(null);
