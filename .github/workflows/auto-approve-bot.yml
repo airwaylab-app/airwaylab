@@ -1,0 +1,56 @@
+name: Auto-approve trusted automation PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions: {}
+
+# Security model
+# --------------
+# This workflow rubber-stamps a review on a PR. A review can satisfy a
+# required-review branch-protection rule, so the gate must be tight.
+#
+#   * Self-approval guard: never approve a PR the reviewer identity
+#     (airwaylab-dev) opened.
+#   * Trusted-author allowlist: only known automation identities, or a
+#     PR explicitly opted in with the `auto-approve` label, may be approved.
+#     Arbitrary / external-author PRs are NOT auto-approved.
+#   * Same-repo only: fork PRs (head repo != base repo) are never
+#     auto-approved, even from a bot, since a fork can spoof author metadata
+#     on the head side.
+#
+# Add new trusted automation accounts to the `if:` allowlist below — keep it
+# explicit. Do not relax this to "anyone but airwaylab-dev".
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    # Gate the whole job. All conditions must hold:
+    #   1. Same-repo PR (not a fork).
+    #   2. Reviewer is not approving its own PR (self-approval guard).
+    #   3. Author is a trusted bot OR the PR carries the `auto-approve` label.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'airwaylab-dev' &&
+      (
+        (
+          github.event.pull_request.user.type == 'Bot' &&
+          contains(fromJSON('["renovate[bot]", "dependabot[bot]", "github-actions[bot]"]'), github.event.pull_request.user.login)
+        ) ||
+        contains(github.event.pull_request.labels.*.name, 'auto-approve')
+      )
+    steps:
+      - name: Approve PR as airwaylab-dev
+        env:
+          GH_TOKEN: ${{ secrets.AIRWAYLAB_DEV_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          gh pr review "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --approve \
+            --body "Approved by airwaylab-dev (trusted-automation auto-approve). Author: ${PR_AUTHOR} (type ${PR_AUTHOR_TYPE}). Audit: run ${RUN_ID}, sha ${COMMIT_SHA}."

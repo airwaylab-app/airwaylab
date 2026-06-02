@@ -1,0 +1,127 @@
+name: MDR String Check
+
+# Non-blocking-friendly prohibited-language scan for MDR Rule 11 risk.
+# Scans only ADDED/CHANGED lines (git diff additions) in watched files.
+# See docs/mdr-prohibited-terms.md for approved replacements.
+#
+# NOTE: This is the canonical, hardened version of the check. It supersedes
+# the variant in PR #876 (chore/air-1509-mdr-ci-gate). It widens the regex to
+# catch medical phrasing the original missed (diagnose/diagnosis/diagnostic,
+# "indicates apnea/obstruction/a problem", "may need adjustment") and extends
+# the scanned paths to the LLM system prompts in app/api/ai-insights/ and the
+# email broadcast template.
+
+on:
+  pull_request:
+    paths:
+      - 'app/blog/posts/**/*.tsx'
+      - 'lib/blog-posts.ts'
+      - 'lib/insights.ts'
+      - 'lib/email/templates.ts'
+      - 'lib/email/broadcast.ts'
+      - 'app/api/ai-insights/**'
+      - '__tests__/insights.test.ts'
+  workflow_dispatch:
+
+jobs:
+  mdr-string-check:
+    name: Check for prohibited MDR language
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run MDR prohibited string check
+        env:
+          BASE_BRANCH: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+
+          echo "Scanning added lines in watched files against origin/${BASE_BRANCH}..."
+
+          # Prohibited patterns (case-insensitive extended regex).
+          # Word boundaries on diagnos* keep code identifiers like
+          # "diagnostics" / "self-diagnosing" from tripping the gate while
+          # still catching the bare medical words diagnose/diagnoses/diagnosis/diagnostic.
+          PROHIBITED='rera detection|detects (respiratory|breathing) event|suggests (diagnosis|obstruction|apnea|condition|disorder)|effective treatment|improves outcomes|\bdiagnos(e|es|is|tic)\b|diagnostic tool|indicates? (apnea|obstruction|a problem)|may need adjustment'
+
+          TARGET_PATTERNS=(
+            "^app/blog/posts/.*\.tsx$"
+            "^lib/blog-posts\.ts$"
+            "^lib/insights\.ts$"
+            "^lib/email/templates\.ts$"
+            "^lib/email/broadcast\.ts$"
+            "^app/api/ai-insights/.*$"
+            "^__tests__/insights\.test\.ts$"
+          )
+
+          # Collect changed files that match target patterns
+          CHANGED_FILES=()
+          while IFS= read -r f; do
+            for pat in "${TARGET_PATTERNS[@]}"; do
+              if echo "$f" | grep -qE "$pat"; then
+                CHANGED_FILES+=("$f")
+                break
+              fi
+            done
+          done < <(git diff --name-only "origin/${BASE_BRANCH}...HEAD")
+
+          if [ ${#CHANGED_FILES[@]} -eq 0 ]; then
+            echo "No target files changed. Skipping check."
+            exit 0
+          fi
+
+          echo "Files to scan: ${CHANGED_FILES[*]}"
+
+          VIOLATIONS=0
+
+          for file in "${CHANGED_FILES[@]}"; do
+            IN_HUNK=false
+            CURRENT_LINE=0
+
+            while IFS= read -r diffline; do
+              # Reset hunk state on new file header
+              if [[ "$diffline" =~ ^diff\ --git ]]; then
+                IN_HUNK=false
+
+              # Hunk header: extract new-file start line number
+              elif [[ "$diffline" =~ ^@@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+) ]]; then
+                CURRENT_LINE=$(( ${BASH_REMATCH[2]} - 1 ))
+                IN_HUNK=true
+
+              elif [ "$IN_HUNK" = false ]; then
+                continue  # skip index / --- / +++ headers before first @@
+
+              elif [[ "$diffline" =~ ^--- ]] || [[ "$diffline" =~ ^\+\+\+ ]]; then
+                continue  # file path headers within diff block
+
+              elif [[ "$diffline" =~ ^- ]]; then
+                : # removed line — not in new file, do not count
+
+              elif [[ "$diffline" =~ ^\+ ]]; then
+                CURRENT_LINE=$(( CURRENT_LINE + 1 ))
+                content="${diffline:1}"
+                if echo "$content" | grep -qiE "$PROHIBITED"; then
+                  matched=$(echo "$content" | grep -oiE "$PROHIBITED" | head -1)
+                  echo "::error file=${file},line=${CURRENT_LINE}::Prohibited term '${matched}' — see docs/mdr-prohibited-terms.md for approved replacements"
+                  VIOLATIONS=$(( VIOLATIONS + 1 ))
+                fi
+
+              else
+                # Context line — counts in new file
+                CURRENT_LINE=$(( CURRENT_LINE + 1 ))
+              fi
+
+            done < <(git diff "origin/${BASE_BRANCH}...HEAD" -- "$file")
+          done
+
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo ""
+            echo "::error::Found ${VIOLATIONS} prohibited term(s) in changed lines. See docs/mdr-prohibited-terms.md."
+            exit 1
+          fi
+
+          echo "MDR string check passed — no prohibited language found in changed lines."
