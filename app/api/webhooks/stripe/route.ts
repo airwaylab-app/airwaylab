@@ -573,6 +573,7 @@ export async function POST(request: NextRequest) {
   // the outbound Stripe API call (checkout.session.completed) and DB writes
   // from exceeding the function timeout under latency spikes (JAVASCRIPT-NEXTJS-56).
   after(async () => {
+    console.error('[stripe-webhook] Processing deferred event:', event.id, event.type);
     try {
       await processStripeEvent(stripe, supabase, event);
     } catch (err) {
