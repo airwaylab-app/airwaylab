@@ -132,6 +132,18 @@ Rules:
 
 Respond ONLY with a JSON array of Insight objects. No markdown, no explanation, just the array.`;
 
+// Prompt-injection defense (SEC): every free-text string field that flows into
+// buildUserPrompt is routed through sanitizePromptInput at parse time, so the
+// sanitized value is what reaches the Anthropic prompt. Combined with the strict
+// object schemas below (no .passthrough(): Zod strips any client field not in the
+// allowlist), this guarantees only enumerated, sanitized data enters the prompt.
+const sanitizedString = z
+  .string()
+  .max(200)
+  .transform((s) => sanitizePromptInput(s).text);
+
+const sanitizedStringNullable = sanitizedString.nullable().optional();
+
 // Zod schema for night notes
 const NightNotesSchema = z.object({
   caffeine: z.enum(['none', 'before-noon', 'afternoon', 'evening']).nullable(),
@@ -143,6 +155,182 @@ const NightNotesSchema = z.object({
   note: z.string().max(200).optional(),
   symptomRating: z.number().int().min(1).max(5).nullable().optional(),
 }).optional();
+
+// ── Strict allowlist schemas for the night sub-objects buildUserPrompt sends ──
+// These declare ONLY the fields the prompt actually consumes. Numeric/boolean/enum
+// fields are typed directly; free-text strings (device/mode/mask/cycle/trigger/hash
+// labels) go through sanitizedString. Unknown client keys are dropped by Zod.
+
+const GlasgowSchema = z.object({
+  overall: z.number(),
+  skew: z.number().optional(),
+  spike: z.number().optional(),
+  flatTop: z.number().optional(),
+  topHeavy: z.number().optional(),
+  multiPeak: z.number().optional(),
+  noPause: z.number().optional(),
+  inspirRate: z.number().optional(),
+  multiBreath: z.number().optional(),
+  variableAmp: z.number().optional(),
+});
+
+const WatSchema = z.object({
+  flScore: z.number(),
+  regularityScore: z.number().optional(),
+  periodicityIndex: z.number().optional(),
+});
+
+// NEDResults minus per-breath arrays (breaths/reras are stripped client-side).
+const NedSchema = z.object({
+  breathCount: z.number().optional(),
+  nedMean: z.number(),
+  nedMedian: z.number().optional(),
+  nedP95: z.number().optional(),
+  nedClearFLPct: z.number().optional(),
+  nedBorderlinePct: z.number().optional(),
+  fiMean: z.number().optional(),
+  fiFL85Pct: z.number().optional(),
+  tpeakMean: z.number().optional(),
+  mShapePct: z.number().optional(),
+  reraIndex: z.number().optional(),
+  reraCount: z.number().optional(),
+  h1NedMean: z.number().optional(),
+  h2NedMean: z.number().optional(),
+  combinedFLPct: z.number().optional(),
+  estimatedArousalIndex: z.number().optional(),
+  hypopneaCount: z.number().optional(),
+  hypopneaIndex: z.number().optional(),
+  hypopneaSource: z.enum(['machine', 'algorithm']).optional(),
+  hypopneaNedInvisibleCount: z.number().optional(),
+  hypopneaNedInvisiblePct: z.number().optional(),
+  hypopneaMeanDropPct: z.number().optional(),
+  hypopneaMeanDurationS: z.number().optional(),
+  hypopneaH1Index: z.number().optional(),
+  hypopneaH2Index: z.number().optional(),
+  machineReraCount: z.number().optional(),
+  machineReraIndex: z.number().optional(),
+  briefObstructionCount: z.number().optional(),
+  briefObstructionIndex: z.number().optional(),
+  briefObstructionH1Index: z.number().optional(),
+  briefObstructionH2Index: z.number().optional(),
+  amplitudeCvOverall: z.number().optional(),
+  amplitudeCvMedianEpoch: z.number().optional(),
+  unstableEpochPct: z.number().optional(),
+});
+
+const OximetryH1H2Schema = z.object({
+  hrClin10: z.number(),
+  odi3: z.number(),
+  tBelow94: z.number(),
+});
+
+const OximetrySchema = z.object({
+  odi3: z.number(),
+  odi4: z.number(),
+  tBelow90: z.number(),
+  tBelow94: z.number(),
+  hrClin8: z.number(),
+  hrClin10: z.number(),
+  hrClin12: z.number(),
+  hrClin15: z.number(),
+  hrMean10: z.number(),
+  hrMean15: z.number(),
+  coupled3_6: z.number(),
+  coupled3_10: z.number(),
+  coupledHRRatio: z.number(),
+  spo2Mean: z.number(),
+  spo2Min: z.number(),
+  hrMean: z.number(),
+  hrSD: z.number(),
+  h1: OximetryH1H2Schema,
+  h2: OximetryH1H2Schema,
+  totalSamples: z.number(),
+  retainedSamples: z.number(),
+  doubleTrackingCorrected: z.number(),
+});
+
+// MachineSettings — free-text device/mode/mask/trigger/cycle labels are sanitized.
+// extendedSettings is a record of numeric signals only (no string values).
+const SettingsSchema = z.object({
+  deviceModel: sanitizedString.optional(),
+  epap: z.number().optional(),
+  ipap: z.number().optional(),
+  pressureSupport: z.number().optional(),
+  papMode: sanitizedString.optional(),
+  riseTime: z.number().nullable().optional(),
+  trigger: sanitizedString.optional(),
+  cycle: sanitizedString.optional(),
+  easyBreathe: z.boolean().optional(),
+  rampEnabled: z.boolean().nullable().optional(),
+  rampTime: z.number().nullable().optional(),
+  rampPressure: z.number().nullable().optional(),
+  humidifierLevel: z.number().nullable().optional(),
+  climateControlAuto: z.boolean().nullable().optional(),
+  tubeTempSetting: z.number().nullable().optional(),
+  maskType: sanitizedStringNullable,
+  smartStart: z.boolean().nullable().optional(),
+  tiMax: z.number().nullable().optional(),
+  tiMin: z.number().nullable().optional(),
+  extendedSettings: z.record(z.string(), z.number()).optional(),
+  settingsSource: z.enum(['extracted', 'unavailable']).optional(),
+  reslexLevel: z.number().optional(),
+  autoSensitivity: z.number().optional(),
+  tubeType: sanitizedString.optional(),
+  heatedTubeLevel: z.number().nullable().optional(),
+});
+
+const MachineSummarySchema = z.object({
+  ahi: z.number().nullable(),
+  hi: z.number().nullable(),
+  oai: z.number().nullable(),
+  cai: z.number().nullable(),
+  uai: z.number().nullable(),
+  reraIndex: z.number().nullable(),
+  csrPercentage: z.number().nullable(),
+  leak50: z.number().nullable(),
+  leak70: z.number().nullable(),
+  leak95: z.number().nullable(),
+  leakMax: z.number().nullable(),
+  minVent50: z.number().nullable(),
+  minVent95: z.number().nullable(),
+  respRate50: z.number().nullable(),
+  respRate95: z.number().nullable(),
+  tidVol50: z.number().nullable(),
+  tidVol95: z.number().nullable(),
+  ti50: z.number().nullable(),
+  ti95: z.number().nullable(),
+  ieRatio50: z.number().nullable(),
+  spontCycPct: z.number().nullable(),
+  tgtIpap50: z.number().nullable(),
+  tgtIpap95: z.number().nullable(),
+  tgtEpap50: z.number().nullable(),
+  tgtEpap95: z.number().nullable(),
+  maskPress50: z.number().nullable(),
+  maskPress95: z.number().nullable(),
+  maskPressMax: z.number().nullable(),
+  durationMin: z.number().nullable(),
+  maskOnMin: z.number().nullable(),
+  maskOffMin: z.number().nullable(),
+  maskEvents: z.number().nullable(),
+  spo2_50: z.number().nullable(),
+  spo2_95: z.number().nullable(),
+  faultDevice: z.boolean(),
+  faultAlarm: z.boolean(),
+  faultHumidifier: z.boolean(),
+  faultHeatedTube: z.boolean(),
+  anyFault: z.boolean(),
+  ambHumidity50: z.number().nullable(),
+});
+
+const SettingsFingerprintSchema = z.object({
+  epap: z.number(),
+  ps: z.number(),
+  cycle: sanitizedString,
+  riseTime: z.number(),
+  triggerSensitivity: sanitizedString,
+  tiMax: z.number(),
+  hash: sanitizedString,
+});
 
 // Zod schema for per-breath summary (deep mode)
 const BreathSummarySchema = z.object({
@@ -164,19 +352,27 @@ const PerBreathSummarySchema = z.object({
 // durationHours, sessionCount, and settings are optional because trend-only nights
 // are stripped to scalar fields only (dateStr, glasgow, ned, wat) to stay under
 // the 512KB payload limit. The server only reads these fields from the selected night.
+// Strict night schema: only the fields buildUserPrompt reads. No .passthrough()
+// anywhere, so Zod strips any other client-supplied field before it can reach the
+// prompt. dateStr is sanitized because it is echoed verbatim into the prompt JSON.
+const NightSchema = z.object({
+  dateStr: sanitizedString,
+  durationHours: z.number().optional(),
+  sessionCount: z.number().optional(),
+  settings: SettingsSchema.optional(),
+  glasgow: GlasgowSchema,
+  wat: WatSchema,
+  ned: NedSchema,
+  oximetry: OximetrySchema.nullable().optional(),
+  machineSummary: MachineSummarySchema.nullable().optional(),
+  settingsFingerprint: SettingsFingerprintSchema.nullable().optional(),
+});
+
 const RequestBodySchema = z.object({
-  nights: z.array(z.object({
-    dateStr: z.string(),
-    durationHours: z.number().optional(),
-    sessionCount: z.number().optional(),
-    settings: z.object({}).passthrough().optional(),
-    glasgow: z.object({ overall: z.number() }).passthrough(),
-    wat: z.object({ flScore: z.number() }).passthrough(),
-    ned: z.object({ nedMean: z.number() }).passthrough(),
-    oximetry: z.object({}).passthrough().nullable().optional(),
-  }).passthrough()).min(1).max(1095),
+  nights: z.array(NightSchema).min(1).max(1095),
   selectedNightIndex: z.number().int().min(0),
-  therapyChangeDate: z.string().nullable(),
+  // Echoed verbatim into the prompt — sanitize like any other free-text string.
+  therapyChangeDate: sanitizedString.nullable(),
   nightNotes: NightNotesSchema,
   deep: z.boolean().optional(),
   perBreathSummary: PerBreathSummarySchema,
@@ -190,7 +386,7 @@ function buildUserPrompt(body: RequestBody): string {
   const previous = selectedNightIndex < nights.length - 1 ? nights[selectedNightIndex + 1] : null;
 
   // When settings weren't extracted, tell the model instead of sending zeros
-  const settingsContext = (selected.settings as Record<string, unknown>)?.settingsSource === 'unavailable'
+  const settingsContext = selected.settings?.settingsSource === 'unavailable'
     ? { note: 'Device settings could not be extracted from this SD card. Do not reference pressure values or prescribed settings.' }
     : selected.settings;
 
@@ -320,6 +516,38 @@ export async function POST(request: NextRequest) {
   }
 
   const userTier = profile?.tier ?? 'community';
+
+  // R-B consent gate: AI insights send PHI (night/therapy data) to Anthropic.
+  // The user must have explicitly granted ai_insights consent. This is the
+  // load-bearing gate — without it, no analysis data leaves the device.
+  // Read via the service-role client so the check cannot be bypassed by RLS.
+  {
+    const consentClient = getSupabaseServiceRole();
+    if (!consentClient) {
+      console.error('[ai-insights] Service role not configured -- cannot verify AI consent');
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+    const { data: consentRow, error: consentError } = await consentClient
+      .from('profiles')
+      .select('ai_insights_consent')
+      .eq('id', user.id)
+      .single();
+
+    if (consentError) {
+      Sentry.captureException(consentError, {
+        tags: { route: 'ai-insights', check: 'consent-lookup' },
+        extra: { userId: user.id },
+      });
+      return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 500 });
+    }
+
+    if (consentRow?.ai_insights_consent !== true) {
+      return NextResponse.json(
+        { error: 'AI insights require your consent before any data is sent for analysis. Please enable AI insights consent to continue.' },
+        { status: 403 }
+      );
+    }
+  }
 
   // Rate limiting by user ID -- paid users get 3x the limit (C3)
   const isPaidTierForRateLimit = userTier === 'supporter' || userTier === 'champion';
