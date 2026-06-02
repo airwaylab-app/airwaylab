@@ -8,7 +8,9 @@ import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 const WaveformMetadataSchema = z.object({
   nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid night date format.'),
-  contributionId: z.string().min(1, 'Contribution ID is required.'),
+  // UUID only: contributionId is interpolated into the storage object key
+  // (`${contributionId}/...`), so a value with `/` or `..` would be a path-injection.
+  contributionId: z.string().uuid('Invalid contribution ID.'),
   engineVersion: z.string().min(1, 'Engine version is required.'),
   samplingRate: z.number().positive('Sampling rate must be positive.'),
   durationSeconds: z.number().positive('Duration must be positive.'),
