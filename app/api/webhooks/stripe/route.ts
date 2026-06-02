@@ -328,9 +328,9 @@ async function processStripeEvent(
         Sentry.captureException(err, { tags: { route: 'stripe-webhook', action: 'email-sequence-update' } });
       });
 
-      void sendWelcomeNotification(supabase, userId, tier, interval);
-      void syncDiscordForUser(supabase, userId, tier, event.id);
-      void sendAlert('revenue', '', [formatRevenueEmbed({
+      await sendWelcomeNotification(supabase, userId, tier, interval);
+      await syncDiscordForUser(supabase, userId, tier, event.id);
+      await sendAlert('revenue', '', [formatRevenueEmbed({
         event: 'new_subscription',
         tier,
         interval,
@@ -406,10 +406,10 @@ async function processStripeEvent(
       });
 
       if (shouldUpdateProfile) {
-        void syncDiscordForUser(supabase, userId!, tier, event.id);
+        await syncDiscordForUser(supabase, userId!, tier, event.id);
       }
 
-      void sendAlert('revenue', '', [formatRevenueEmbed({
+      await sendAlert('revenue', '', [formatRevenueEmbed({
         event: 'tier_change',
         tier,
         interval: updatedInterval,
@@ -467,16 +467,16 @@ async function processStripeEvent(
         }
 
         // Send cancellation email (non-blocking)
-        void sendCancellationNotification(supabase, userId);
+        await sendCancellationNotification(supabase, userId);
 
         // Schedule win-back email 7 days from now for opted-in users (non-blocking)
         void scheduleWinBackForUser(supabase, userId);
 
         // Sync Discord role (revoke if downgraded to community)
-        void syncDiscordForUser(supabase, userId, newTier, event.id);
+        await syncDiscordForUser(supabase, userId, newTier, event.id);
 
-        // Discord #revenue alert (non-blocking)
-        void sendAlert('revenue', '', [formatRevenueEmbed({
+        // Discord #revenue alert
+        await sendAlert('revenue', '', [formatRevenueEmbed({
           event: 'cancellation',
           tier: newTier,
         })]);
@@ -510,8 +510,8 @@ async function processStripeEvent(
           stripeSubscriptionId: subscriptionId,
         });
 
-        // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
-        void alertStripePaymentFailed();
+        // Critical alert: Discord #critical + email to ops
+        await alertStripePaymentFailed();
       }
 
       break;
