@@ -9,7 +9,7 @@ import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
 import { sendAlert, formatRevenueEmbed, alertStripePaymentFailed } from '@/lib/discord-webhook';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -17,7 +17,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
-    _stripe = new Stripe(stripeSecretKey!, { apiVersion: '2026-02-25.clover' });
+    _stripe = new Stripe(stripeSecretKey!, { apiVersion: '2026-02-25.clover', timeout: 15000 });
   }
   return _stripe;
 }
@@ -565,7 +565,8 @@ export async function POST(request: NextRequest) {
     .insert({ event_id: event.id, event_type: event.type });
 
   if (insertError) {
-    // Duplicate event — already processed, return 200 to acknowledge
+    // Duplicate event — already processed (or rare DB error — treat conservatively as duplicate)
+    console.error('[stripe-webhook] Duplicate or re-delivered event ignored:', event.id, event.type);
     return NextResponse.json({ received: true, duplicate: true });
   }
 
@@ -573,6 +574,7 @@ export async function POST(request: NextRequest) {
   // the outbound Stripe API call (checkout.session.completed) and DB writes
   // from exceeding the function timeout under latency spikes (JAVASCRIPT-NEXTJS-56).
   after(async () => {
+    console.log('[stripe-webhook] Processing deferred event:', event.id, event.type);
     try {
       await processStripeEvent(stripe, supabase, event);
     } catch (err) {
