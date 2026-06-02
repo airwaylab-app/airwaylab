@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { captureApiError } from '@/lib/sentry-utils';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -79,7 +79,13 @@ export async function POST(request: NextRequest) {
   // grant/withdrawal here so the audit event and the enforced flag stay in sync.
   if (body.consentType === 'ai_insights') {
     const granted = body.action === 'granted';
-    const { error: profileError } = await supabase
+    // profiles UPDATE is service-role-only (migration 055 locks direct authenticated
+    // writes to profiles), so use the service-role client for the flag write.
+    const serviceRole = getSupabaseServiceRole();
+    if (!serviceRole) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+    const { error: profileError } = await serviceRole
       .from('profiles')
       .update({
         ai_insights_consent: granted,
