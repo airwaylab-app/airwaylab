@@ -62,6 +62,7 @@ vi.mock('@/lib/discord', () => ({
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(undefined),
   formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(true),
 }));
 
 // Mock Supabase — builder pattern that supports chaining
@@ -557,6 +558,7 @@ describe('POST /api/webhooks/stripe', () => {
 
   // ---------- 11. invoice.payment_failed ----------
   it('handles invoice.payment_failed -- sets subscription status to past_due', async () => {
+    const { captureEvent } = await import('@sentry/nextjs');
     const invoice = {
       parent: {
         subscription_details: {
@@ -570,7 +572,10 @@ describe('POST /api/webhooks/stripe', () => {
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
       if (!builders[table]) {
-        builders[table] = createQueryBuilder({ data: null, error: null });
+        // subscriptions update returns the updated row so userId can be resolved
+        builders[table] = table === 'subscriptions'
+          ? createQueryBuilder({ data: [{ user_id: 'user-uuid-1' }], error: null })
+          : createQueryBuilder({ data: null, error: null });
       }
       return builders[table];
     });
@@ -584,12 +589,18 @@ describe('POST /api/webhooks/stripe', () => {
     expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
     expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
 
-    // Verify subscription_events log
+    // Verify subscription_events log includes resolved userId
     expect(builders['subscription_events']!.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'past_due',
         stripe_subscription_id: 'sub_test_123',
+        user_id: 'user-uuid-1',
       })
+    );
+
+    // No missing-row warning should fire on the happy path
+    expect(captureEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('missing from DB') })
     );
   });
 
@@ -1214,7 +1225,11 @@ describe('POST /api/webhooks/stripe', () => {
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      if (!builders[table]) {
+        builders[table] = table === 'subscriptions'
+          ? createQueryBuilder({ data: [{ user_id: 'user-uuid-2' }], error: null })
+          : createQueryBuilder({ data: null, error: null });
+      }
       return builders[table];
     });
 
@@ -1223,6 +1238,50 @@ describe('POST /api/webhooks/stripe', () => {
 
     expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
     expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_obj_789');
+  });
+
+  // ---------- 26b. invoice.payment_failed: subscription row missing from DB (AIR-1963) ----------
+  it('captures Sentry warning when subscription row is absent on invoice.payment_failed', async () => {
+    const { captureEvent } = await import('@sentry/nextjs');
+    const invoice = {
+      id: 'inv_missing_row',
+      parent: {
+        subscription_details: {
+          subscription: 'sub_orphan_999',
+        },
+      },
+    };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (!builders[table]) {
+        // subscriptions update returns empty array — row was not found
+        builders[table] = table === 'subscriptions'
+          ? createQueryBuilder({ data: [], error: null })
+          : createQueryBuilder({ data: null, error: null });
+      }
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // update was still attempted
+    expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
+
+    // Sentry warning must fire for the missing-row case
+    expect(captureEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        message: 'invoice.payment_failed: subscription row missing from DB',
+        tags: expect.objectContaining({ action: 'payment-failed-missing-row' }),
+      })
+    );
+
+    // Ops alert must still fire so the team is notified even when the row is absent
+    // (alertStripePaymentFailed is mocked via discord-webhook mock)
   });
 
   // ---------- 27. invoice.payment_failed: no subscription ----------

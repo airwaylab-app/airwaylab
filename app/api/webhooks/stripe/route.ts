@@ -498,21 +498,57 @@ async function processStripeEvent(
         ? subDetails.subscription
         : subDetails?.subscription?.id;
 
-      if (subscriptionId) {
-        await supabase
-          .from('subscriptions')
-          .update({ status: 'past_due' })
-          .eq('stripe_subscription_id', subscriptionId);
-
-        await logSubscriptionEvent(supabase, {
-          userId: undefined,
-          eventType: 'past_due',
-          stripeSubscriptionId: subscriptionId,
+      if (!subscriptionId) {
+        // No subscription ID on the event — still alert ops
+        console.error('[stripe-webhook] invoice.payment_failed: no subscriptionId in event', { invoiceId: invoice.id });
+        Sentry.captureEvent({
+          level: 'warning',
+          message: 'invoice.payment_failed: no subscriptionId in event',
+          tags: { route: 'stripe-webhook', action: 'payment-failed-no-sub-id' },
+          extra: { invoiceId: invoice.id },
         });
-
-        // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
         void alertStripePaymentFailed();
+        break;
       }
+
+      // Update subscription to past_due and return the row so we can (a) detect
+      // missing rows and (b) resolve the userId for the event log — AIR-1963.
+      const { data: updatedRows, error: updateError } = await supabase
+        .from('subscriptions')
+        .update({ status: 'past_due' })
+        .eq('stripe_subscription_id', subscriptionId)
+        .select('user_id');
+
+      if (updateError) {
+        console.error('[stripe-webhook] invoice.payment_failed: update failed:', updateError);
+        Sentry.captureException(updateError, {
+          tags: { route: 'stripe-webhook', action: 'payment-failed-update' },
+          extra: { stripeSubscriptionId: subscriptionId },
+        });
+      } else if (!updatedRows || updatedRows.length === 0) {
+        // Guard: subscription row absent — the past_due status was NOT recorded.
+        // Log to Sentry so the gap can be investigated (e.g. race with checkout or
+        // manual DB intervention). Do NOT throw — Stripe still gets a 200 so it
+        // won't retry; the subscription-drift cron will reconcile the state.
+        console.error('[stripe-webhook] invoice.payment_failed: subscription row missing from DB', { subscriptionId });
+        Sentry.captureEvent({
+          level: 'warning',
+          message: 'invoice.payment_failed: subscription row missing from DB',
+          tags: { route: 'stripe-webhook', action: 'payment-failed-missing-row' },
+          extra: { stripeSubscriptionId: subscriptionId },
+        });
+      }
+
+      const userId = (updatedRows as Array<{ user_id?: string | null }> | null)?.[0]?.user_id ?? undefined;
+
+      await logSubscriptionEvent(supabase, {
+        userId,
+        eventType: 'past_due',
+        stripeSubscriptionId: subscriptionId,
+      });
+
+      // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
+      void alertStripePaymentFailed();
 
       break;
     }
