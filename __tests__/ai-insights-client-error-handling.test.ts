@@ -9,9 +9,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockCaptureException = vi.fn();
+const mockCaptureMessage = vi.fn();
 vi.mock('@sentry/nextjs', () => ({
   captureException: (...args: unknown[]) => mockCaptureException(...args),
-  captureMessage: vi.fn(),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
 }));
 
 // Minimal NightResult shape matching what the client needs
@@ -73,6 +74,25 @@ describe('AI Insights Client Error Handling (AIR-1538)', () => {
       expect.objectContaining({
         level: 'warning',
         tags: expect.objectContaining({ error_type: 'network_fetch_failed', mode: 'deep' }),
+      })
+    );
+  });
+
+  it('captures internal timeout AbortError to Sentry with transient tag (standard mode)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
+      Promise.reject(new DOMException('Aborted', 'AbortError'))
+    ));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI analysis timed out. Please try again.'
+    );
+
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.any(DOMException),
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ error_type: 'client_timeout', transient: 'true', mode: 'standard' }),
       })
     );
   });
