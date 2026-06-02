@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Verify the file belongs to this user
     const { data: fileRow, error: fetchError } = await serviceRole
       .from('user_files')
-      .select('id, storage_path, user_id')
+      .select('id, storage_path, user_id, file_size')
       .eq('id', fileId)
       .single();
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // both transient list errors and propagation-delay empty results.
     const storageFolder = fileRow.storage_path.split('/').slice(0, -1).join('/');
     const storageFileName = fileRow.storage_path.split('/').pop();
-    let storageFile: { name: string }[] | null = null;
+    let storageFile: { name: string; metadata?: { size?: number } | null }[] | null = null;
     let listError: unknown = null;
     const LIST_DELAYS_MS = [0, 150, 300, 450];
 
@@ -113,6 +113,37 @@ export async function POST(request: NextRequest) {
       });
       await serviceRole.from('user_files').delete().eq('id', fileId);
       return NextResponse.json({ error: 'Upload not found in storage. Metadata cleaned up.' }, { status: 404 });
+    }
+
+    // Reconcile actual stored size against the client-declared size.
+    // Signed PUTs let a client declare a small `file_size` to pass the
+    // upload-time Zod/API cap, then push a far larger object. Storage now
+    // carries a bucket-level file_size_limit (migration 052), but we also
+    // reject here when the listed object size exceeds what was declared.
+    // Fail open when size metadata is unavailable (Storage list does not
+    // always populate it, e.g. right after a propagation-delayed PUT).
+    const actualSize = storageFile[0]?.metadata?.size;
+    const declaredSize = fileRow.file_size;
+    if (
+      typeof actualSize === 'number' &&
+      typeof declaredSize === 'number' &&
+      actualSize > declaredSize
+    ) {
+      captureApiError(new Error('Uploaded object exceeds declared file_size'), {
+        route: 'files/confirm',
+        context: 'size_mismatch',
+        fileId,
+        storagePath: fileRow.storage_path,
+        declaredSize: String(declaredSize),
+        actualSize: String(actualSize),
+      });
+      // Remove the oversized object and its metadata row so it is not served.
+      await serviceRole.storage.from(STORAGE_BUCKET).remove([fileRow.storage_path]);
+      await serviceRole.from('user_files').delete().eq('id', fileId);
+      return NextResponse.json(
+        { error: 'Uploaded file is larger than declared. Upload rejected.' },
+        { status: 413 }
+      );
     }
 
     // Mark upload as confirmed — only confirmed rows are returned by check-hashes

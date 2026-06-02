@@ -20,6 +20,10 @@ export function trackEvent(
 /**
  * Fire a PostHog capture event. No-ops when PostHog isn't initialised
  * (e.g. missing NEXT_PUBLIC_POSTHOG_KEY or SSR context).
+ *
+ * When PostHog has not yet called init() (e.g. on the auth-callback redirect
+ * where AuthProvider useEffect runs before PostHogProvider useEffect), retries
+ * every 100 ms for up to 3 s instead of silently dropping the event.
  */
 export function capturePostHog(
   event: string,
@@ -30,7 +34,16 @@ export function capturePostHog(
   import('posthog-js').then(({ default: posthog }) => {
     if (posthog.__loaded) {
       posthog.capture(event, props);
+      return;
     }
+    // PostHog init (PostHogProvider useEffect) may not have fired yet on fresh
+    // page loads. Retry up to 3 s to bridge the SDK init race on auth callback.
+    let attempts = 0;
+    const retry = () => {
+      if (posthog.__loaded) { posthog.capture(event, props); return; }
+      if (++attempts < 30) setTimeout(retry, 100);
+    };
+    setTimeout(retry, 100);
   }).catch(() => { /* analytics failure is non-critical — never block user flow */ });
 }
 
@@ -39,7 +52,14 @@ export function setPostHogPersonProps(props: Record<string, string | number | bo
   import('posthog-js').then(({ default: posthog }) => {
     if (posthog.__loaded) {
       posthog.setPersonProperties(props);
+      return;
     }
+    let attempts = 0;
+    const retry = () => {
+      if (posthog.__loaded) { posthog.setPersonProperties(props); return; }
+      if (++attempts < 30) setTimeout(retry, 100);
+    };
+    setTimeout(retry, 100);
   }).catch(() => { /* analytics failure is non-critical */ });
 }
 

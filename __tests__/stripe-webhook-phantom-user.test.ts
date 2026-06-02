@@ -206,7 +206,8 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
 
     await callRoute(makeWebhookRequest());
 
-    // Import after callRoute so we get the same Sentry instance vi.resetModules() created for the route
+    // Import after callRoute to get the module instance used by the route
+    // (callRoute calls vi.resetModules() which invalidates pre-call mock references)
     const { captureMessage } = await import('@sentry/nextjs');
     expect(captureMessage).toHaveBeenCalledWith(
       'Stripe webhook: supabase_user_id in metadata has no matching profile',
@@ -259,7 +260,8 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
 
     await callRoute(makeWebhookRequest());
 
-    // Import after callRoute so we get the same Sentry instance vi.resetModules() created for the route
+    // Import after callRoute to get the module instance used by the route
+    // (callRoute calls vi.resetModules() which invalidates pre-call mock references)
     const { captureMessage } = await import('@sentry/nextjs');
     expect(captureMessage).toHaveBeenCalledWith(
       expect.any(String),
