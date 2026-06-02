@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 
+import { scrubEvent } from '@/lib/sentry-scrub';
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
@@ -63,7 +65,8 @@ Sentry.init({
       return null;
     }
 
-    return event;
+    // Strip PII (ids set via Sentry.setUser, emails) before anything leaves for Sentry.
+    return scrubEvent(event);
   },
 });
 

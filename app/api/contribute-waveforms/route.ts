@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getSupabaseAdmin, getSupabaseServer } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
 
 const WaveformMetadataSchema = z.object({
   nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid night date format.'),
-  contributionId: z.string().min(1, 'Contribution ID is required.'),
+  // UUID only: contributionId is interpolated into the storage object key
+  // (`${contributionId}/...`), so a value with `/` or `..` would be a path-injection.
+  contributionId: z.string().uuid('Invalid contribution ID.'),
   engineVersion: z.string().min(1, 'Engine version is required.'),
   samplingRate: z.number().positive('Sampling rate must be positive.'),
   durationSeconds: z.number().positive('Duration must be positive.'),
@@ -50,6 +52,15 @@ export async function POST(request: NextRequest) {
         { error: 'Data contribution requires explicit consent.' },
         { status: 403 }
       );
+    }
+
+    // Authentication — contributions must be tied to a known user (no anonymous writes).
+    const supabaseAuth = await getSupabaseServer();
+    const { data: { user } = { user: null } } = (await supabaseAuth?.auth.getUser()) ?? {
+      data: { user: null },
+    };
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
     // Size guard
@@ -151,6 +162,7 @@ export async function POST(request: NextRequest) {
     // Insert metadata row
     const { error: dbError } = await supabase.from('waveform_contributions').insert({
       contribution_id: contributionId,
+      user_id: user.id,
       night_date: nightDate,
       engine_version: engineVersion,
       sampling_rate: samplingRate,
