@@ -74,5 +74,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
   }
 
+  // AI insights is a load-bearing consent gate: the ai-insights route refuses to
+  // send PHI to Anthropic unless profiles.ai_insights_consent is true. Reflect the
+  // grant/withdrawal here so the audit event and the enforced flag stay in sync.
+  if (body.consentType === 'ai_insights') {
+    const granted = body.action === 'granted';
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        ai_insights_consent: granted,
+        ai_insights_consent_at: granted ? new Date().toISOString() : null,
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      console.error('[consent-audit] AI consent flag update failed:', profileError.message);
+      captureApiError(profileError, { route: 'consent-audit' });
+      return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -18,6 +18,7 @@ interface Profile {
   email_opt_in: boolean;
   discord_id: string | null;
   discord_username: string | null;
+  ai_insights_consent: boolean;
 }
 
 interface Subscription {
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
 
-    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username';
+    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username, ai_insights_consent';
 
     let profileResult = await supabase
       .from('profiles')
@@ -116,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email_opt_in: profileData.email_opt_in ?? false,
       discord_id: profileData.discord_id ?? null,
       discord_username: profileData.discord_username ?? null,
+      ai_insights_consent: profileData.ai_insights_consent ?? false,
     });
 
     const SUB_COLS = 'id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end';
