@@ -205,6 +205,29 @@ export function exportJSON(nights: NightResult[]): string {
   return JSON.stringify(safeNights, null, 2);
 }
 
+// 60 nights (~2 months) per chunk. Keeps each JSON string well under V8's string
+// length limit even for users with many optional fields populated (JAVASCRIPT-NEXTJS-7Q).
+export const JSON_EXPORT_CHUNK_SIZE = 60;
+
+export function exportJSONChunked(
+  nights: NightResult[],
+  chunkSize = JSON_EXPORT_CHUNK_SIZE
+): { content: string; filename: string }[] {
+  if (nights.length === 0) return [];
+  const chunks: { content: string; filename: string }[] = [];
+  for (let i = 0; i < nights.length; i += chunkSize) {
+    const chunk = nights.slice(i, i + chunkSize);
+    const first = chunk[0]!.dateStr;
+    const last = chunk[chunk.length - 1]!.dateStr;
+    const filename =
+      nights.length <= chunkSize
+        ? 'airwaylab-results.json'
+        : `airwaylab-results-${first}_${last}.json`;
+    chunks.push({ content: exportJSON(chunk), filename });
+  }
+  return chunks;
+}
+
 export function downloadFile(content: string, filename: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
