@@ -305,7 +305,7 @@ export default function PrivacyPolicyPage() {
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">PostHog</td>
                   <td className="py-2 pr-4">Product analytics &amp; session replay</td>
-                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2 pr-4">EU</td>
                   <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes). No personal data or IPs stored.</td>
                 </tr>
                 <tr>
