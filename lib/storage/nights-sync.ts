@@ -3,6 +3,23 @@ import type { NightResult } from '@/lib/types';
 const BATCH_SIZE = 50;
 
 /**
+ * Restore Date objects on nights that came through JSON serialization.
+ * JSON.parse converts Date → ISO string; this reverses that for the two
+ * Date fields on NightResult (date, sessionStartTime).
+ */
+function restoreDateFields(nights: NightResult[]): NightResult[] {
+  for (const night of nights) {
+    if (night.date && !(night.date instanceof Date)) {
+      night.date = new Date(night.date as unknown as string);
+    }
+    if (night.sessionStartTime !== undefined && !(night.sessionStartTime instanceof Date)) {
+      night.sessionStartTime = new Date(night.sessionStartTime as unknown as string);
+    }
+  }
+  return nights;
+}
+
+/**
  * Fetches the user's stored nights from the cloud (GET /api/nights).
  * Throws on non-OK response so callers can treat it as non-fatal.
  */
@@ -17,7 +34,7 @@ export async function fetchNightsFromCloud(): Promise<NightResult[]> {
   }
 
   const data = (await res.json()) as { nights?: NightResult[] };
-  return data.nights ?? [];
+  return restoreDateFields(data.nights ?? []);
 }
 
 type SyncResult = { synced: number; skipped: number; failed: number };

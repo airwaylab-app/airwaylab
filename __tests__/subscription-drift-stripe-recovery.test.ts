@@ -26,7 +26,20 @@ vi.mock('@/lib/discord', () => ({
 const mockSendAlert = vi.fn();
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: (...args: unknown[]) => mockSendAlert(...args),
-  COLORS: { amber: 0xf59e0b },
+  COLORS: { green: 0x10b981, amber: 0xf59e0b, red: 0xef4444, blue: 0x3b82f6, purple: 0x8b5cf6, teal: 0x14b8a6 },
+  _budget: { date: '', count: 0 },
+  routeAlert: vi.fn().mockResolvedValue(false),
+  sendOpsAlert: vi.fn().mockResolvedValue(false),
+  sendCriticalAlert: vi.fn().mockResolvedValue(false),
+  alertCredentialExpiry: vi.fn().mockResolvedValue(false),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(false),
+  alertSecurityIncident: vi.fn().mockResolvedValue(false),
+  formatMonitorEmbed: vi.fn().mockReturnValue({}),
+  formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  formatUserSignalEmbed: vi.fn().mockReturnValue({}),
+  formatEmailAlertEmbed: vi.fn().mockReturnValue({}),
+  formatBroadcastEmbed: vi.fn().mockReturnValue({}),
+  formatGrowthEmbed: vi.fn().mockReturnValue({}),
 }));
 
 // Stripe mock — controlled per test via mockStripeSubsList
@@ -109,6 +122,17 @@ function buildRecoveryFromImpl(
         eq: vi.fn().mockReturnThis(),
         in: vi.fn().mockResolvedValue({ data: [], error: null }),
         upsert: vi.fn().mockImplementation((..._args: unknown[]) => mockSubscriptionsUpsert()),
+      };
+    }
+    if (table === 'stripe_events') {
+      // ST1 re-drive query: no failed/stale rows in these recovery scenarios.
+      // The query chain is .select().lt(attempts, MAX_ATTEMPTS).or().order().limit().
+      return {
+        select: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
       };
     }
     return {};

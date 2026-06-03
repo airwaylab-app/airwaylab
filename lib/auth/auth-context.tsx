@@ -337,6 +337,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // getSession() reads from local storage without contacting the server.
+      // A stale session with an expired access token would cause fetchNightsFromCloud()
+      // to get a 401 before the browser client has refreshed the token (AIR-2275).
+      // If the session exists but the access token is expired (or expiring within 60s),
+      // call getUser() which validates with the server and triggers a refresh.
+      // Only needed for the expired-token window; skipped for fresh sessions to avoid latency.
+      if (initialSession?.expires_at) {
+        const nowSecs = Math.floor(Date.now() / 1000);
+        const secsUntilExpiry = initialSession.expires_at - nowSecs;
+        if (secsUntilExpiry < 60) {
+          try {
+            const { data: { user: validUser } } = await supabase.auth.getUser();
+            if (!validUser) {
+              // Both access + refresh token expired — clear stale session
+              initialSession = null;
+            } else {
+              // Refresh succeeded; read the updated session back from storage
+              const { data: { session: refreshed } } = await supabase.auth.getSession();
+              initialSession = refreshed;
+            }
+          } catch {
+            // Network failure during validation — keep the session optimistically;
+            // the route handler will return 401 if the token is truly invalid.
+          }
+        }
+      }
+
       // Handle return from magic-link auth callback (auth=success param).
       // Runs regardless of whether getSession() already found a session so that
       // URL cleanup and the Signup Completed event fire even when the cookie
