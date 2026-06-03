@@ -48,12 +48,12 @@ function computeMrrCents(unitAmount: number, interval: string): number {
  *
  * Defence-in-depth against double-counting (BLOCKER 2): even though the atomic
  * claim in runStripeJob already ensures each event is processed once, this write
- * is an UPSERT with ignoreDuplicates against the partial unique index added in
- * migration 058 (stripe_event_id). A re-driven row that somehow re-reached this
+ * is an UPSERT with ignoreDuplicates against the unique index added in
+ * migration 059 (stripe_event_id). A re-driven row that somehow re-reached this
  * path can therefore never insert a second analytics row that would corrupt
  * MRR/churn. The stripe_event_id is the dedup key (one analytics row per Stripe
- * event); it is null for the cron's own non-webhook recovery writes, which the
- * partial index ignores.
+ * event); it is null for the cron's own non-webhook recovery writes, and NULL
+ * keys never conflict in a Postgres unique index, so those rows are unaffected.
  */
 async function logSubscriptionEvent(
   supabase: SupabaseClient,
