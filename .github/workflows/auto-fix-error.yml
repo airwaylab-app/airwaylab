@@ -29,8 +29,10 @@ jobs:
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          BRANCH="fix/sentry-${ISSUE_NUMBER}"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+          # v1 names the branch fix/sentry-issue-<n>-<timestamp>; dedup on that prefix.
+          # (Verify the exact format on the first real run; if it differs, the 5/day
+          # rate-limit below is still the hard bound.)
+          if git ls-remote --heads origin | grep -q "refs/heads/fix/sentry-issue-${ISSUE_NUMBER}-"; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -73,16 +75,37 @@ jobs:
               });
             }
 
+      # v1 takes prompt TEXT, not a path: load the file contents into a step output.
+      - name: Load fix prompt
+        if: |
+          steps.check-branch.outputs.exists == 'false' &&
+          steps.rate-limit.outputs.exceeded == 'false'
+        id: load-prompt
+        run: |
+          {
+            echo 'PROMPT<<CLAUDE_PROMPT_EOF'
+            cat .github/prompts/fix-sentry-error.md
+            echo 'CLAUDE_PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run Claude Code
         if: |
           steps.check-branch.outputs.exists == 'false' &&
           steps.rate-limit.outputs.exceeded == 'false'
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-opus-4-6
-          prompt_file: .github/prompts/fix-sentry-error.md
-          issue_number: ${{ github.event.issue.number }}
+          claude_args: "--model claude-opus-4-8"
+          branch_prefix: "fix/sentry-"
+          base_branch: ${{ github.event.repository.default_branch }}
+          # The action reads the triggering issue from the event; inline the body
+          # so the fix prompt has the Sentry error to work from.
+          prompt: |
+            Sentry issue #${{ github.event.issue.number }}:
+            ${{ github.event.issue.body }}
+
+            ${{ steps.load-prompt.outputs.PROMPT }}
 
       - name: Gate sensitive file changes
         if: |
@@ -91,9 +114,10 @@ jobs:
         id: file-gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          # Use the branch the action actually created (v1 outputs branch_name);
+          # the old hard-coded fix/sentry-<n> no longer matches v1's branch naming.
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
         run: |
-          BRANCH="fix/sentry-${ISSUE_NUMBER}"
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null)
 
           if [ -z "$PR_NUMBER" ]; then
@@ -106,12 +130,12 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
           # Check if PR touches sensitive files (security-critical paths)
-          SENSITIVE_PATTERNS="app/api/ lib/auth/ lib/env.ts lib/supabase/ lib/csrf.ts lib/rate-limit.ts supabase/migrations/ .github/ sentry middleware.ts next.config"
+          SENSITIVE_PATTERNS="app/api/ lib/auth/ lib/env.ts lib/supabase/ lib/csrf.ts lib/rate-limit.ts supabase/migrations/ .github/ sentry middleware.ts next.config lib/parsers/ lib/analyzers/ workers/"
           CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only 2>/dev/null || echo "")
 
           SENSITIVE=false
           for pattern in $SENSITIVE_PATTERNS; do
-            if echo "$CHANGED_FILES" | grep -q "$pattern"; then
+            if echo "$CHANGED_FILES" | grep -qF -- "$pattern"; then
               echo "PR touches sensitive path: $pattern"
               SENSITIVE=true
             fi
@@ -126,7 +150,7 @@ jobs:
             while IFS= read -r f; do
               [ -z "$f" ] && continue
               for p in $SENSITIVE_PATTERNS; do
-                if echo "$f" | grep -q "$p"; then
+                if echo "$f" | grep -qF -- "$p"; then
                   FLAGGED="${FLAGGED}- \`${f}\` (matches \`${p}\`)\n"
                   break
                 fi
