@@ -256,8 +256,14 @@ function AnalyzePageInner() {
         });
       })
       .catch((err) => {
-        // Non-fatal: fall back to localStorage silently
-        Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+        // Non-fatal: fall back to localStorage silently.
+        // 401 means the session has fully expired (both tokens) — not a code bug.
+        // The auth-context will detect this via getUser() and sign the user out.
+        const isExpiredSession =
+          err instanceof Error && err.message.includes(': 401');
+        if (!isExpiredSession) {
+          Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]); // Fires once on auth; state/isDemo are stable at auth time

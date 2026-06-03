@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { syncAnalysisToCloud } from '@/lib/storage/nights-sync';
+import { syncAnalysisToCloud, fetchNightsFromCloud } from '@/lib/storage/nights-sync';
 import type { NightResult } from '@/lib/types';
 
 // ── Mock fetch ──────────────────────────────────────────────────
@@ -161,5 +161,102 @@ describe('syncAnalysisToCloud', () => {
     expect(result.synced).toBe(49);
     expect(result.skipped).toBe(2);
     expect(result.failed).toBe(0);
+  });
+});
+
+// ── fetchNightsFromCloud ────────────────────────────────────────
+
+describe('fetchNightsFromCloud', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function cloudResponse(nights: unknown[]) {
+    return Promise.resolve(
+      new Response(JSON.stringify({ nights }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+  }
+
+  it('restores date field from ISO string to Date object', async () => {
+    // Simulate JSON-serialized night where Date became a string
+    const rawNight = {
+      dateStr: '2026-01-15',
+      date: '2026-01-15T22:30:00.000Z', // string, not Date
+      durationHours: 7,
+      sessionCount: 1,
+      ned: { nedMean: 10, breathCount: 300 },
+      glasgow: { overall: 3 },
+      wat: { flScore: 20, regularityScore: 1, periodicityIndex: 0.04 },
+      oximetry: null,
+      settings: { papMode: 'CPAP', epap: 8 },
+    };
+    mockFetch.mockReturnValueOnce(cloudResponse([rawNight]));
+
+    const nights = await fetchNightsFromCloud();
+
+    expect(nights).toHaveLength(1);
+    expect(nights[0]!.date).toBeInstanceOf(Date);
+    // Calling getTime() must not throw — this was the bug
+    expect(() => nights[0]!.date.getTime()).not.toThrow();
+  });
+
+  it('restores sessionStartTime from ISO string to Date when present', async () => {
+    const rawNight = {
+      dateStr: '2026-01-15',
+      date: '2026-01-15T22:30:00.000Z',
+      sessionStartTime: '2026-01-15T22:35:12.000Z', // string, not Date
+      durationHours: 7,
+      sessionCount: 1,
+      ned: { nedMean: 10, breathCount: 300 },
+      glasgow: { overall: 3 },
+      wat: { flScore: 20, regularityScore: 1, periodicityIndex: 0.04 },
+      oximetry: null,
+      settings: { papMode: 'CPAP', epap: 8 },
+    };
+    mockFetch.mockReturnValueOnce(cloudResponse([rawNight]));
+
+    const nights = await fetchNightsFromCloud();
+
+    expect(nights[0]!.sessionStartTime).toBeInstanceOf(Date);
+    expect(() => nights[0]!.sessionStartTime!.getTime()).not.toThrow();
+  });
+
+  it('leaves sessionStartTime undefined when absent', async () => {
+    const rawNight = {
+      dateStr: '2026-01-15',
+      date: '2026-01-15T22:30:00.000Z',
+      durationHours: 7,
+      sessionCount: 1,
+      ned: { nedMean: 10, breathCount: 300 },
+      glasgow: { overall: 3 },
+      wat: { flScore: 20, regularityScore: 1, periodicityIndex: 0.04 },
+      oximetry: null,
+      settings: { papMode: 'CPAP', epap: 8 },
+    };
+    mockFetch.mockReturnValueOnce(cloudResponse([rawNight]));
+
+    const nights = await fetchNightsFromCloud();
+
+    expect(nights[0]!.sessionStartTime).toBeUndefined();
+  });
+
+  it('returns empty array when response has no nights', async () => {
+    mockFetch.mockReturnValueOnce(
+      Promise.resolve(new Response(JSON.stringify({}), { status: 200 }))
+    );
+
+    const nights = await fetchNightsFromCloud();
+    expect(nights).toEqual([]);
+  });
+
+  it('throws on non-OK response', async () => {
+    mockFetch.mockReturnValueOnce(
+      Promise.resolve(new Response('', { status: 401 }))
+    );
+
+    await expect(fetchNightsFromCloud()).rejects.toThrow('cloud fetch failed: 401');
   });
 });
