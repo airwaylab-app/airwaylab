@@ -9,7 +9,9 @@ import { welcomeEmail, cancellationEmail } from '@/lib/email/transactional';
 import { isDiscordConfigured, syncRole, searchGuildMember } from '@/lib/discord';
 import { sendAlert, formatRevenueEmbed, alertStripePaymentFailed } from '@/lib/discord-webhook';
 
-export const maxDuration = 30;
+// 60s: stripe.subscriptions.retrieve can take 20s under load; after() processing
+// (DB writes + Discord + email) needs the remaining headroom (JAVASCRIPT-NEXTJS-56).
+export const maxDuration = 60;
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -17,7 +19,9 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
-    _stripe = new Stripe(stripeSecretKey!, { apiVersion: '2026-02-25.clover' });
+    // 20s SDK timeout — caps the Stripe API call well within maxDuration,
+    // leaving headroom for DB writes and after() notifications.
+    _stripe = new Stripe(stripeSecretKey!, { apiVersion: '2026-02-25.clover', timeout: 20_000 });
   }
   return _stripe;
 }
