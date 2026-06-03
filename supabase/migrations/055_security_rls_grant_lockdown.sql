@@ -56,8 +56,10 @@ REVOKE SELECT, INSERT, UPDATE, DELETE ON public.shared_analyses FROM anon, authe
 -- ----- M1-3: ml-export RPCs -----------------------------------------------
 -- The proprietary research dataset must be service-role only. The admin
 -- export route (app/api/admin/ml-export) already calls these via the service
--- role behind an ADMIN_API_KEY check, so revoking anon/authenticated is safe.
-REVOKE EXECUTE ON FUNCTION public.export_ml_training_data() FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.ml_dataset_stats() FROM anon, authenticated;
+-- role behind an ADMIN_API_KEY check, so revoking is safe.
+-- NOTE: function EXECUTE defaults to PUBLIC, so REVOKE must include PUBLIC —
+-- revoking only anon/authenticated leaves them executable via the PUBLIC grant.
+REVOKE EXECUTE ON FUNCTION public.export_ml_training_data() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.ml_dataset_stats() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.export_ml_training_data() TO service_role;
 GRANT EXECUTE ON FUNCTION public.ml_dataset_stats() TO service_role;
