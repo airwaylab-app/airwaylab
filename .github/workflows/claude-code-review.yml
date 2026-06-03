@@ -34,9 +34,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      # v1 takes prompt TEXT, not a path: load the file contents into a step output.
+      - name: Load code-review prompt
+        id: prompt
+        run: |
+          {
+            echo 'PROMPT<<CLAUDE_PROMPT_EOF'
+            cat .github/prompts/code-review.md
+            echo 'CLAUDE_PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt_file: .github/prompts/code-review.md
-          review_on_pr: true
+          prompt: ${{ steps.prompt.outputs.PROMPT }}
+          claude_args: "--model claude-opus-4-8"
+          track_progress: true
+          use_sticky_comment: true
