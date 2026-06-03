@@ -6,6 +6,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook';
 import { checkAndUpdateDedup } from './_dedup';
+import { trackSignalCount } from '@/lib/signal-tracker';
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
         })]);
       }
     }
+    void trackSignalCount('unsupported_device', 'Unsupported Device');
 
     return NextResponse.json({ ok: true });
   } catch (err) {
