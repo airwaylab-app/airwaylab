@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { getAnalysisWindowDays } from '@/lib/auth/feature-gate';
 import { storeAnalysisData } from '@/lib/analysis-data-client';
 import { uploadOrchestrator } from '@/lib/storage/upload-orchestrator';
+import { syncAnalysisToCloud, fetchNightsFromCloud } from '@/lib/storage/nights-sync';
 import { DataContribution, type AutoSubmitStatus } from '@/components/dashboard/data-contribution';
 import { NightSelector } from '@/components/common/night-selector';
 import { ExportButtons } from '@/components/dashboard/export-buttons';
@@ -107,6 +108,7 @@ function AnalyzePageInner() {
   const [persistedData, setPersistedData] = useState<{
     nights: NightResult[];
     therapyChangeDate: string | null;
+    savedAt?: number;
   } | null>(null);
   const sdFilesRef = useRef<File[]>([]);
   const oxFilesRef = useRef<File[]>([]);
@@ -233,6 +235,33 @@ function AnalyzePageInner() {
     } catch { /* noop */ }
   }, []);
 
+  // Cloud-first hydration: on auth, fetch stored nights and merge with localStorage
+  useEffect(() => {
+    if (!user || state.status !== 'idle' || isDemo) return;
+
+    fetchNightsFromCloud()
+      .then((cloudNights) => {
+        if (cloudNights.length === 0) return;
+
+        setPersistedData((prev) => {
+          const merged = new Map<string, NightResult>();
+          for (const n of (prev?.nights ?? [])) merged.set(n.dateStr, n);
+          // Cloud wins on date conflict
+          for (const n of cloudNights) merged.set(n.dateStr, n);
+
+          const nights = Array.from(merged.values()).sort((a, b) =>
+            b.dateStr.localeCompare(a.dateStr)
+          );
+          return { nights, therapyChangeDate: prev?.therapyChangeDate ?? null };
+        });
+      })
+      .catch((err) => {
+        // Non-fatal: fall back to localStorage silently
+        Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Fires once on auth; state/isDemo are stable at auth time
+
   // Auto-upload + store analysis data when user authenticates with loaded results
   useEffect(() => {
     if (!user || hasTriggeredAutoUpload.current || isDemo) return;
@@ -250,6 +279,14 @@ function AnalyzePageInner() {
 
     // Store aggregate analysis data
     storeAnalysisData(currentNights).catch(() => { /* logged in client */ });
+
+    // Sync full analysis results to cloud (non-fatal)
+    if (userRef.current) {
+      syncAnalysisToCloud(currentNights).catch(err => {
+        Sentry.captureException(err, { extra: { context: 'analysis_cloud_sync' } });
+        // Non-fatal: local results still available
+      });
+    }
   }, [user, isDemo, state.nights, persistedData?.nights]);
 
   // Show GitHub star prompt after 30s in demo mode (once per session)
@@ -346,20 +383,25 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Contribute data: auto if opted in, show nudge if first time
-        const contributedDates: string[] = JSON.parse(
-          safeGetItem('airwaylab_contributed_dates') || '[]'
-        );
-        const contributedSet = new Set(contributedDates);
-        const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
+        // Contribute data: auto if opted in, show nudge if first time.
+        // Gated behind auth — the contribution endpoints now require a logged-in
+        // user (no anonymous writes). Skip both the auto-submit and the nudge for
+        // logged-out users so they aren't prompted into a request that 401s.
+        if (userRef.current) {
+          const contributedDates: string[] = JSON.parse(
+            safeGetItem('airwaylab_contributed_dates') || '[]'
+          );
+          const contributedSet = new Set(contributedDates);
+          const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
 
-        if (contributeOptInRef.current && newNights.length > 0) {
-          setAutoSubmitCount(newNights.length);
-          submitContribution(newNights);
-        } else if (!contributeOptInRef.current && contributedDates.length === 0) {
-          // Only show nudge if user has never contributed before
-          pendingNightsRef.current = newState.nights;
-          setShowContributeNudge(true);
+          if (contributeOptInRef.current && newNights.length > 0) {
+            setAutoSubmitCount(newNights.length);
+            submitContribution(newNights);
+          } else if (!contributeOptInRef.current && contributedDates.length === 0) {
+            // Only show nudge if user has never contributed before
+            pendingNightsRef.current = newState.nights;
+            setShowContributeNudge(true);
+          }
         }
 
         // Cloud storage: auto-upload raw files if cloud sync enabled
@@ -539,15 +581,16 @@ function AnalyzePageInner() {
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
-    // Bypass window filter for demo mode, fresh uploads (state.nights), and non-finite/zero windows.
-    // Only persisted history (previous sessions) is subject to the tier window.
-    if (isDemo || state.nights.length > 0 || !isFinite(windowDays) || windowDays <= 0) return raw;
+    // Bypass window filter for: demo, fresh uploads, recent restored sessions (same-day reload),
+    // and non-finite/zero windows. Old persisted history is subject to the tier window.
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore || !isFinite(windowDays) || windowDays <= 0) return raw;
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - windowDays);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     return raw.filter((n) => n.dateStr >= cutoffStr);
-  }, [isDemo, state.nights, persistedData?.nights, tier]);
+  }, [isDemo, state.nights, persistedData?.nights, persistedData?.savedAt, tier]);
 
   const hiddenNightCount = useMemo<number>(() => {
     if (isDemo) return 0;
@@ -566,14 +609,14 @@ function AnalyzePageInner() {
   // Tier-gated history window: only nights within the calendar window are visible.
   // Export, contribute, and session-level analytics still use the full `nights` array.
   const visibleNights = useMemo(() => {
-    // Demo mode and fresh uploads bypass the window — sample data and just-uploaded
-    // SD card data should always be visible regardless of tier window.
-    if (isDemo || state.nights.length > 0) return nights;
+    // Bypass for: demo, fresh uploads, and recent restored sessions (same-day reload).
+    const isRecentRestore = !!(persistedData?.savedAt && Date.now() - persistedData.savedAt < 24 * 60 * 60 * 1000);
+    if (isDemo || state.nights.length > 0 || isRecentRestore) return nights;
     const windowDays = getAnalysisWindowDays(tier);
     if (windowDays === Infinity || !windowDays) return nights;
     const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
     return nights.filter((n) => new Date(n.dateStr).getTime() >= cutoff);
-  }, [nights, tier, isDemo, state.nights.length]);
+  }, [nights, tier, isDemo, state.nights.length, persistedData?.savedAt]);
 
   const isComplete =
     isDemo || status === 'complete' || (persistedData !== null && persistedData.nights.length > 0);
@@ -733,26 +776,32 @@ function AnalyzePageInner() {
       {status === 'idle' && !isDemo && (
         !persistedData ? (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
 
-            {/* Contextual help link */}
+            {/* Contextual help links */}
             <p className="mt-3 text-center text-xs text-muted-foreground/70">
               Not sure how to get your data?{' '}
               <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
                 How to get your ResMed data
               </Link>
             </p>
-
-            <DemoCTA onLoadDemo={loadDemo} />
+            <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
+              Not sure what to look for? Read about{"' '"}
+              <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
+                what your AHI number means
+              </Link>
+              .
+            </p>
           </div>
         ) : (
           <div className="mx-auto max-w-lg">
+            <DemoCTA onLoadDemo={loadDemo} />
             <FileUpload onFilesSelected={handleFiles} />
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
-            <DemoCTA onLoadDemo={loadDemo} />
           </div>
         )
       )}
@@ -888,16 +937,20 @@ function AnalyzePageInner() {
               <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Storage limit reached</span>
-                  {' '}&mdash; {persistenceWarning}
+                  {' '}&mdash; {hasCloudSyncConsent()
+                    ? `Viewing your ${nights.length} most recent night${nights.length !== 1 ? 's' : ''}. All your data is safely backed up.`
+                    : persistenceWarning}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                  onClick={handleClearLocalData}
-                >
-                  Clear saved data
-                </Button>
+                {!hasCloudSyncConsent() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                    onClick={handleClearLocalData}
+                  >
+                    Clear saved data
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1219,6 +1272,7 @@ function AnalyzePageInner() {
               isDemo={isDemo}
               autoSubmitStatus={autoSubmitStatus}
               autoSubmitCount={autoSubmitCount}
+              isAuthenticated={!!user}
             />
           </div>
 

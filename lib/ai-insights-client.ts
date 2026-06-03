@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import type { Insight } from './insights';
 import type { NightResult, NightNotes } from './types';
 
@@ -66,19 +67,22 @@ interface PerBreathSummary {
   sampleRate: number;
 }
 
+// Zod schema guards the response shape before any downstream consumption.
+// passthrough() preserves extra fields (e.g. `link`, `context` on premium insights).
+const InsightSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  title: z.string(),
+}).passthrough();
+
+const AIResponseSchema = z.object({
+  insights: z.array(InsightSchema).min(1),
+}).passthrough();
+
 function validateInsights(data: unknown): Insight[] | null {
-  if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).insights)) return null;
-
-  const validInsights = ((data as Record<string, unknown>).insights as unknown[]).filter(
-    (i): i is Insight =>
-      !!i &&
-      typeof i === 'object' &&
-      typeof (i as Record<string, unknown>).id === 'string' &&
-      typeof (i as Record<string, unknown>).type === 'string' &&
-      typeof (i as Record<string, unknown>).title === 'string'
-  );
-
-  return validInsights.length > 0 ? validInsights : null;
+  const result = AIResponseSchema.safeParse(data);
+  if (!result.success) return null;
+  return result.data.insights as unknown as Insight[];
 }
 
 /**
@@ -154,7 +158,7 @@ export async function fetchAIInsights(
   nightNotes?: NightNotes
 ): Promise<AIInsightsResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  const timeout = setTimeout(() => controller.abort(), 63000);
 
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
@@ -208,7 +212,11 @@ export async function fetchAIInsights(
       if (signal?.aborted) {
         throw err; // External abort (unmount / re-generate)
       }
-      console.error('[ai-insights] Request timed out after 55s');
+      console.error('[ai-insights] Request timed out after 63s');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'client_timeout', mode: 'standard', transient: 'true' },
+      });
       throw new Error('AI analysis timed out. Please try again.');
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {

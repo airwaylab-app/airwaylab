@@ -229,7 +229,7 @@ export function openPDFReport(nights: NightResult[]): void {
       Generated ${now} &middot; ${nights.length} night${nights.length !== 1 ? 's' : ''} analysed
     </p>
     <p style="font-size:11px;color:#475569;margin-top:8px;">
-      Traffic lights: \u2705 Good &middot; \u26a0\ufe0f Moderate &middot; \ud83d\udd34 Needs attention
+      Traffic lights: \u2705 Good &middot; \u26a0\ufe0f Moderate &middot; \ud83d\udd34 Above typical
     </p>
   </div>
 

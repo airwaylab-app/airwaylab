@@ -26,6 +26,7 @@ interface Props {
   isDemo: boolean;
   isNewUser: boolean;
   onOpenAuth?: () => void;
+  isSharedView?: boolean;
 }
 
 /**
@@ -45,8 +46,9 @@ export function AIInsightsGate({
   isDemo,
   isNewUser,
   onOpenAuth,
+  isSharedView = false,
 }: Props) {
-  const { user, tier, isPaid } = useAuth();
+  const { user, tier, isPaid, profile, refreshProfile } = useAuth();
 
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -55,7 +57,14 @@ export function AIInsightsGate({
   const [isDeepResult, setIsDeepResult] = useState(false);
   const [isAutoRun, setIsAutoRun] = useState(false);
   const [autoBannerDismissed, setAutoBannerDismissed] = useState(false);
+  const [consentSubmitting, setConsentSubmitting] = useState(false);
+  const pendingGenerateRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // R-B consent gate: AI insights send PHI to Anthropic. The server returns 403
+  // unless ai_insights_consent is granted, so the client must not auto-send (or
+  // let the user manually generate) until consent exists. Demo mode never sends.
+  const hasAiConsent = isDemo || !!profile?.ai_insights_consent;
 
   // Track which night the current insights are for
   const insightsNightRef = useRef<string | null>(null);
@@ -86,6 +95,7 @@ export function AIInsightsGate({
   useEffect(() => {
     if (autoRunFiredRef.current) return;
     if (!user || isPaid || isDemo) return;
+    if (!hasAiConsent) return; // R-B: never auto-send PHI without consent
     if (aiRemaining <= 0) return;
     if (aiInsights !== null || aiLoading) return;
     if (insightsNightRef.current === selectedNight.dateStr) return;
@@ -94,9 +104,12 @@ export function AIInsightsGate({
     // Call via ref so we don't need handleGenerate in deps (avoids declaration-order issues)
     handleGenerateRef.current?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isPaid, isDemo]);
+  }, [user, isPaid, isDemo, hasAiConsent]);
 
   const handleGenerate = useCallback(() => {
+    // R-B: do not send PHI to the AI route without consent. The CTA grants it first.
+    if (!hasAiConsent) return;
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -167,10 +180,44 @@ export function AIInsightsGate({
       });
 
     return () => { controller.abort(); };
-  }, [nights, selectedNight, therapyChangeDate, tier, aiRemaining, isDeepAccess]);
+  }, [nights, selectedNight, therapyChangeDate, tier, aiRemaining, isDeepAccess, hasAiConsent]);
 
   // Keep ref in sync with the latest handleGenerate callback
   handleGenerateRef.current = handleGenerate;
+
+  // R-B: record AI insights consent (audit trail + load-bearing profile flag),
+  // then refresh the profile so hasAiConsent flips true and generation proceeds.
+  const handleGrantConsent = useCallback(async () => {
+    if (consentSubmitting) return;
+    setConsentSubmitting(true);
+    setAiError(null);
+    try {
+      const res = await fetch('/api/consent-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ consentType: 'ai_insights', action: 'granted' }),
+      });
+      if (!res.ok) throw new Error('Could not save your consent. Please try again.');
+      // Generate as soon as the refreshed profile flips hasAiConsent to true.
+      // An effect (below) fires the run once consent is reflected in state, which
+      // avoids the stale-closure race of calling handleGenerate before re-render.
+      pendingGenerateRef.current = true;
+      await refreshProfile();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Could not save your consent. Please try again.');
+    } finally {
+      setConsentSubmitting(false);
+    }
+  }, [consentSubmitting, refreshProfile]);
+
+  // Fire the deferred generation once consent is reflected in the refreshed profile.
+  useEffect(() => {
+    if (!pendingGenerateRef.current) return;
+    if (!hasAiConsent) return;
+    pendingGenerateRef.current = false;
+    handleGenerateRef.current?.();
+  }, [hasAiConsent]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -178,6 +225,20 @@ export function AIInsightsGate({
   }, []);
 
   const handleOpenAuth = onOpenAuth ?? (() => { /* noop if no auth handler */ });
+
+  // Shared view: suppress all upsell/auth surfaces, show only rule-based insights
+  if (isSharedView) {
+    return (
+      <>
+        {ruleBasedInsights.length > 0 && (
+          <InsightsPanel
+            insights={ruleBasedInsights}
+            defaultExpanded={!isNewUser}
+          />
+        )}
+      </>
+    );
+  }
 
   // Anonymous users: rule-based insights + AI preview using aggregate metrics
   if (!user && !isDemo) {
@@ -320,6 +381,27 @@ export function AIInsightsGate({
                   Become a Supporter
                 </Link>{' '}
                 for unlimited deep analysis.
+              </p>
+            </>
+          ) : !hasAiConsent ? (
+            <>
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium text-foreground">Enable AI insights</p>
+              <p className="text-center text-[11px] leading-relaxed text-muted-foreground/80">
+                AI insights send this night&apos;s analysis data to our AI provider (Anthropic)
+                to generate observations. Nothing is sent until you allow it. AI insights are not
+                a medical device and do not provide a diagnosis — always discuss results with your clinician.
+              </p>
+              <Button
+                onClick={handleGrantConsent}
+                disabled={consentSubmitting}
+                className="gap-2"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {consentSubmitting ? 'Enabling…' : 'Allow & generate AI insights'}
+              </Button>
+              <p className="text-[11px] text-muted-foreground/80">
+                You can withdraw consent anytime in settings.
               </p>
             </>
           ) : (

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
+import { events } from '@/lib/analytics';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
@@ -18,6 +19,7 @@ interface Profile {
   email_opt_in: boolean;
   discord_id: string | null;
   discord_username: string | null;
+  ai_insights_consent: boolean;
 }
 
 interface Subscription {
@@ -58,17 +60,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
 
-    const { data: profileData, error: profileError } = await supabase
+    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username, ai_insights_consent';
+
+    let profileResult = await supabase
       .from('profiles')
-      .select('id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username')
+      .select(PROFILE_COLS)
       .eq('id', userId)
       .maybeSingle();
 
+    // "Lock was stolen" is transient Supabase navigator.locks contention across tabs -- retry once.
+    // Without the retry the profile stays null, silently downgrading the user's tier to 'community'.
+    if (profileResult.error?.message?.includes('Lock was stolen')) {
+      await new Promise((r) => setTimeout(r, 100));
+      profileResult = await supabase
+        .from('profiles')
+        .select(PROFILE_COLS)
+        .eq('id', userId)
+        .maybeSingle();
+    }
+
+    const { data: profileData, error: profileError } = profileResult;
+
     if (profileError) {
-      // "Lock was stolen" is transient Supabase SSR lock contention -- suppress
-      const isLockError = profileError.message?.includes('Lock was stolen');
-      if (!isLockError) {
-        console.error('[auth-context] Failed to fetch profile:', profileError.message);
+      // After retry, "Lock was stolen" is still transient — suppress Sentry to avoid noise.
+      if (profileError.message?.includes('Lock was stolen')) return;
+      console.error('[auth-context] Failed to fetch profile:', profileError.message);
+      // "Lock was stolen" is transient navigator.locks contention — already retried once, skip Sentry noise
+      if (!profileError.message?.includes('Lock was stolen')) {
         Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
           level: 'warning',
           tags: { context: 'auth-profile-fetch' },
@@ -100,17 +118,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email_opt_in: profileData.email_opt_in ?? false,
       discord_id: profileData.discord_id ?? null,
       discord_username: profileData.discord_username ?? null,
+      ai_insights_consent: profileData.ai_insights_consent ?? false,
     });
-    const { data: subData, error: subError } = await supabase
+
+    const SUB_COLS = 'id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end';
+
+    let subResult = await supabase
       .from('subscriptions')
-      .select('id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end')
+      .select(SUB_COLS)
       .eq('user_id', userId)
       .in('status', ['active', 'trialing', 'past_due'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
+    // Same lock contention guard for the subscription query
+    if (subResult.error?.message?.includes('Lock was stolen')) {
+      await new Promise((r) => setTimeout(r, 100));
+      subResult = await supabase
+        .from('subscriptions')
+        .select(SUB_COLS)
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    }
+
+    const { data: subData, error: subError } = subResult;
+
     if (subError) {
+      // Suppress Sentry for lock contention — transient, self-heals on next auth state change
+      if (subError.message?.includes('Lock was stolen')) { setSubscription(null); return; }
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
       Sentry.captureMessage(`Subscription fetch failed: ${subError.message}`, {
         level: 'warning',
@@ -134,6 +173,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } else {
       setSubscription(null);
+    }
+
+    // Login-time drift check: heal profile.tier toward subscription truth
+    const validTierValues: Tier[] = ['community', 'supporter', 'champion'];
+    const expectedTier: Tier =
+      subData && ['active', 'trialing', 'past_due'].includes(subData.status) && validTierValues.includes(subData.tier as Tier)
+        ? (subData.tier as Tier)
+        : 'community';
+
+    if (profileTier !== expectedTier) {
+      // Optimistic update — correct locally without blocking the login flow
+      setProfile((prev) => (prev ? { ...prev, tier: expectedTier } : prev));
+      // Fire-and-forget sync to persist the correction server-side.
+      const syncPromise = fetch('/api/auth/sync-subscription', { method: 'POST', credentials: 'same-origin' });
+      // eslint-disable-next-line airwaylab/no-silent-catch -- fire-and-forget: non-critical; optimistic update already applied and cron job re-syncs on failure
+      syncPromise.catch((err: unknown) => {
+        console.error('[auth-context] login-sync: fire-and-forget failed:', err);
+      });
     }
   }, [supabase]);
 
@@ -169,19 +226,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // If we just came back from a magic link redirect (auth=success param),
-      // but getSession() didn't find a session yet, retry with getUser()
-      // which reads the cookie set by the auth callback route.
-      if (!initialSession && typeof window !== 'undefined') {
+      // Handle return from magic-link auth callback (auth=success param).
+      // Runs regardless of whether getSession() already found a session so that
+      // URL cleanup and the Signup Completed event fire even when the cookie
+      // arrives before this useEffect (fast cookie propagation path).
+      if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         if (params.has('auth')) {
-          const { data: { user: freshUser } } = await supabase.auth.getUser();
-          if (freshUser) {
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            initialSession = freshSession;
+          const isNewSignup = params.has('new_signup');
+
+          if (!initialSession) {
+            // Session not in cookie yet — retry via getUser()
+            const { data: { user: freshUser } } = await supabase.auth.getUser();
+            if (freshUser) {
+              const { data: { session: freshSession } } = await supabase.auth.getSession();
+              initialSession = freshSession;
+            }
           }
-          // Clean up the URL param without triggering a navigation
+
+          // Fire Signup Completed for new accounts (flag set by server auth callback)
+          if (isNewSignup && initialSession) {
+            events.signupCompleted('magic_link');
+          }
+
+          // Clean up auth callback params without triggering a navigation
           params.delete('auth');
+          params.delete('new_signup');
           const cleanUrl = params.toString()
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;

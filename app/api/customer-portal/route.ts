@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { stripeRateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
+import { validateProfileExists } from '@/lib/auth/validate-profile';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
@@ -38,12 +39,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Guard: profile must exist before calling Stripe
+  const profileCheck = await validateProfileExists(supabase, user.id, { route: 'customer-portal' });
+  if (!profileCheck.valid) {
+    const status = profileCheck.error === 'db_error' ? 500 : 404;
+    return NextResponse.json({ error: 'Account not found' }, { status });
+  }
+
   // Get Stripe customer ID
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('stripe_customer_id')
     .eq('id', user.id)
     .single();
+
+  if (profileError) {
+    Sentry.captureException(profileError, {
+      tags: { route: 'customer-portal', check: 'profile-lookup' },
+      extra: { userId: user.id },
+    });
+    return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 500 });
+  }
 
   if (!profile?.stripe_customer_id) {
     return NextResponse.json({ error: 'No billing account found' }, { status: 404 });

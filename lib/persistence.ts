@@ -31,19 +31,29 @@ interface PersistedData {
  * the overview dashboard — they're only used during live analysis.
  */
 function stripBulkData(nights: NightResult[]): NightResult[] {
-  return nights.map((n) => ({
-    ...n,
-    // Remove raw flow/breath arrays that take most of the space
-    ned: {
-      ...n.ned,
-      breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
-      reras: undefined, // RERA candidate list not needed for display; can be large for heavy RERA users
-    },
-    oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
-    // CSL episodes accumulate for severe CSR patients; keep aggregate stats, drop the episode list
-    csl: n.csl ? { ...n.csl, episodes: [] } : null,
-    // settingsMetrics is a small summary object — keep it for persistence
-  }));
+  return nights.map((n) => {
+    const stripped: NightResult = {
+      ...n,
+      // Remove raw flow/breath arrays that take most of the space
+      ned: {
+        ...n.ned,
+        breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
+        reras: undefined, // RERA candidate list not needed for display; can be large for heavy RERA users
+      },
+      oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
+      // CSL episodes accumulate for severe CSR patients; keep aggregate stats, drop the episode list
+      csl: n.csl ? { ...n.csl, episodes: [] } : null,
+      // settingsMetrics is a small summary object — keep it for persistence
+    };
+    // Remove IDB-side properties dynamically attached by the orchestrator after
+    // restoreBreathData / restorePLDTraces. These are not part of NightResult's
+    // type but are present on runtime objects. For a user with a high respiratory
+    // rate or long recording, _compactBreaths alone can push a single night past
+    // the per-night size budget and cause total-failure serialisation (AIR-2060).
+    delete (stripped as unknown as Record<string, unknown>)['_compactBreaths'];
+    delete (stripped as unknown as Record<string, unknown>)['_pldTrace'];
+    return stripped;
+  });
 }
 
 /**
@@ -195,6 +205,7 @@ export function persistResults(
 export function loadPersistedResults(): {
   nights: NightResult[];
   therapyChangeDate: string | null;
+  savedAt?: number;
   engineUpgraded?: boolean;
 } | null {
   try {
@@ -302,6 +313,7 @@ export function loadPersistedResults(): {
     return {
       nights: data.nights,
       therapyChangeDate: data.therapyChangeDate,
+      savedAt: data.savedAt,
     };
   } catch {
     return null;

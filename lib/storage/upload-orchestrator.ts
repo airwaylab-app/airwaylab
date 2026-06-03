@@ -38,6 +38,26 @@ export function isTransientServerError(errorMessage: string): boolean {
 }
 
 /**
+ * Error categories for top-level upload pipeline failures (cloud_upload_failed).
+ * Distinct from cloud_upload_partial_failure which covers per-file failures
+ * that are caught and retried within uploadFiles().
+ */
+export type UploadErrorCategory = 'auth' | 'consent' | 'hash_worker' | 'network' | 'unknown';
+
+/**
+ * Classify a top-level upload pipeline error for Sentry fingerprinting.
+ * Enables grouping cloud_upload_failed events by failure type rather than
+ * by raw error message, so each category surfaces as one actionable issue.
+ */
+export function classifyUploadError(error: string): UploadErrorCategory {
+  if (/sign in again/i.test(error)) return 'auth';
+  if (/not enabled|not available/i.test(error)) return 'consent';
+  if (/hash (failed|worker)/i.test(error)) return 'hash_worker';
+  if (/failed to fetch|networkerror|network timeout/i.test(error)) return 'network';
+  return 'unknown';
+}
+
+/**
  * Determine Sentry severity level for partial upload failures.
  * Escalates to 'error' when all files failed OR more than 5 files failed,
  * so that Sentry alerts trigger before floods accumulate unnoticed.
@@ -45,6 +65,16 @@ export function isTransientServerError(errorMessage: string): boolean {
 export function getPartialFailureLevel(uploaded: number, failed: number): 'error' | 'warning' {
   if (uploaded === 0 || failed > 5) return 'error';
   return 'warning';
+}
+
+/**
+ * Split files into uploadable (size > 0) and empty.
+ * 0-byte files are AirSense SD card placeholders (CSL.edf, sometimes STR.edf)
+ * that have no upload value and would fail presign validation.
+ */
+export function filterUploadableFiles(files: File[]): { uploadable: File[]; emptyCount: number } {
+  const uploadable = files.filter(f => f.size > 0);
+  return { uploadable, emptyCount: files.length - uploadable.length };
 }
 
 function getFilePath(file: File): string {
@@ -156,18 +186,22 @@ class UploadOrchestrator {
    * Upload files to cloud storage. Handles hashing, dedup, and upload.
    */
   async upload(files: File[]): Promise<UploadResult> {
-    if (files.length === 0) {
-      return { uploaded: 0, skipped: 0, failed: 0, errors: [] };
+    // Filter empty files before presigning — 0-byte SD card placeholder files (empty CSL.edf etc.) have no upload value
+    const nonEmptyFiles = files.filter(f => f.size > 0);
+    const emptyFileCount = files.length - nonEmptyFiles.length;
+
+    if (nonEmptyFiles.length === 0) {
+      return { uploaded: 0, skipped: emptyFileCount, failed: 0, errors: [] };
     }
 
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
     this.guardPageExit();
 
-    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+    const totalBytes = nonEmptyFiles.reduce((sum, f) => sum + f.size, 0);
     this.setState({
       status: 'hashing',
-      progress: { current: 0, total: files.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
+      progress: { current: 0, total: nonEmptyFiles.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
       result: null,
       error: null,
     });
@@ -181,7 +215,7 @@ class UploadOrchestrator {
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 1: Hash all files
-      const fileHashes = await this.hashFiles(files, signal);
+      const fileHashes = await this.hashFiles(nonEmptyFiles, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 2: Check which files already exist
@@ -190,12 +224,12 @@ class UploadOrchestrator {
         progress: { ...this.state.progress, stage: 'checking' },
       });
 
-      const existingHashes = await this.checkExisting(files, fileHashes, signal);
+      const existingHashes = await this.checkExisting(nonEmptyFiles, fileHashes, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 3: Upload new files
-      const toUpload = files.filter((_, i) => !existingHashes.has(fileHashes[i]!));
-      const skipped = files.length - toUpload.length;
+      const toUpload = nonEmptyFiles.filter((_, i) => !existingHashes.has(fileHashes[i]!));
+      const skipped = nonEmptyFiles.length - toUpload.length;
 
       this.setState({
         status: 'uploading',
@@ -209,12 +243,12 @@ class UploadOrchestrator {
         },
       });
 
-      const result = await this.uploadFiles(toUpload, fileHashes, files, signal);
-      result.skipped = skipped;
+      const result = await this.uploadFiles(toUpload, fileHashes, nonEmptyFiles, signal);
+      result.skipped = skipped + emptyFileCount;
 
       // Report systematic failures to Sentry
       if (result.failed > 0) {
-        this.reportFailures(result, files.length);
+        this.reportFailures(result, nonEmptyFiles.length);
       }
 
       this.releasePageExit();
@@ -229,15 +263,17 @@ class UploadOrchestrator {
       this.releasePageExit();
       const error = err instanceof Error ? err.message : String(err);
       if (error !== 'Cancelled') {
+        const errorCategory = classifyUploadError(error);
         console.error('[upload-orchestrator] Upload failed:', error);
         Sentry.captureMessage('cloud_upload_failed', {
           level: 'error',
-          tags: { stage: this.state.status },
-          extra: { error, fileCount: files.length },
+          fingerprint: ['cloud_upload_failed', errorCategory],
+          tags: { stage: this.state.status, errorCategory },
+          extra: { error, fileCount: nonEmptyFiles.length },
         });
       }
       this.setState({ status: 'error', error });
-      return { uploaded: 0, skipped: 0, failed: files.length, errors: [error] };
+      return { uploaded: 0, skipped: emptyFileCount, failed: nonEmptyFiles.length, errors: [error] };
     }
   }
 
@@ -635,29 +671,43 @@ class UploadOrchestrator {
       throw new Error(`Upload failed: ${uploadRes.status}`);
     }
 
-    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB
-    const confirmRes = await fetch('/api/files/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ fileId: presignData.fileId }),
-      signal,
-    });
+    // Step 3: Confirm upload — marks the file as upload_confirmed in the DB.
+    // Retry up to 2 times for transient 5xx failures before treating as non-fatal.
+    const CONFIRM_RETRIES = 2;
+    const CONFIRM_RETRY_BASE_MS = 300;
+    let confirmRes: Response | null = null;
+    let confirmAttempts = 0;
 
-    if (!confirmRes.ok) {
-      if (confirmRes.status === 404) {
+    for (let attempt = 0; attempt <= CONFIRM_RETRIES; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, CONFIRM_RETRY_BASE_MS * attempt));
+      }
+      confirmAttempts = attempt + 1;
+      confirmRes = await fetch('/api/files/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fileId: presignData.fileId }),
+        signal,
+      });
+      // Stop retrying on success, 404 (definitive), or non-5xx client errors
+      if (confirmRes.ok || confirmRes.status === 404 || confirmRes.status < 500) break;
+    }
+
+    if (!confirmRes!.ok) {
+      if (confirmRes!.status === 404) {
         // File is not in storage despite the PUT appearing to succeed.
         // Treat as a failed upload — the metadata row was already cleaned up by the confirm route.
-        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes.status})`);
+        throw new Error(`Upload not confirmed: file missing from storage (${confirmRes!.status})`);
       }
-      // Other errors (5xx, network): file may be in storage but unconfirmed.
+      // Other errors (5xx) after retries: file may be in storage but unconfirmed.
       // The stale orphan detection in presign will clean it up on the next attempt.
       Sentry.captureMessage('cloud_upload_confirm_nonfatal_error', {
         level: 'warning',
-        tags: { httpStatus: String(confirmRes.status) },
-        extra: { fileId: presignData.fileId, status: confirmRes.status },
+        tags: { httpStatus: String(confirmRes!.status) },
+        extra: { fileId: presignData.fileId, status: confirmRes!.status, attempts: confirmAttempts },
       });
-      console.error('[upload-orchestrator] confirm failed:', confirmRes.status);
+      console.error('[upload-orchestrator] confirm failed after retries:', confirmRes!.status);
     }
 
     return true;

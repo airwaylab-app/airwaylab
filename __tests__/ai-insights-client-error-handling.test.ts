@@ -9,9 +9,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockCaptureException = vi.fn();
+const mockCaptureMessage = vi.fn();
 vi.mock('@sentry/nextjs', () => ({
   captureException: (...args: unknown[]) => mockCaptureException(...args),
-  captureMessage: vi.fn(),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
 }));
 
 // Minimal NightResult shape matching what the client needs
@@ -77,6 +78,25 @@ describe('AI Insights Client Error Handling (AIR-1538)', () => {
     );
   });
 
+  it('captures internal timeout AbortError to Sentry with transient tag (standard mode)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
+      Promise.reject(new DOMException('Aborted', 'AbortError'))
+    ));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI analysis timed out. Please try again.'
+    );
+
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.any(DOMException),
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ error_type: 'client_timeout', transient: 'true', mode: 'standard' }),
+      })
+    );
+  });
+
   it('does not capture to Sentry for external AbortError (unmount)', async () => {
     const externalController = new AbortController();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
@@ -102,6 +122,46 @@ describe('AI Insights Client Error Handling (AIR-1538)', () => {
     const { fetchAIInsights } = await import('@/lib/ai-insights-client');
     await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
       'AI service is temporarily unavailable. Our team has been notified and is working on it.'
+    );
+  });
+
+  // AIR-1647: graceful degradation when API returns empty/malformed response (JAVASCRIPT-NEXTJS-6N + 6P)
+  it('throws user-facing error when API returns empty object {} (JAVASCRIPT-NEXTJS-6N)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
+    );
+  });
+
+  it('throws user-facing error when API returns insights: [] (all filtered server-side)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ insights: [], source: 'ai' }),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
+    );
+  });
+
+  it('throws user-facing error when insights contain objects missing required fields', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ insights: [{ invalid: true }], source: 'ai' }),
+    }));
+
+    const { fetchAIInsights } = await import('@/lib/ai-insights-client');
+    await expect(fetchAIInsights([makeNight() as never], 0, null)).rejects.toThrow(
+      'AI returned an invalid response. Please try again.'
     );
   });
 });

@@ -425,7 +425,7 @@ export default function HowToReadOSCARCPAPChartsPost() {
         <p className="mb-2 text-xs font-semibold text-foreground">Related reading</p>
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/how-to-read-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-read-cpap-therapy-report" className="text-primary hover:text-primary/80">
               How to Read Your CPAP Data
             </Link>{' '}
             — why AHI isn&apos;t the whole story and what metrics to look at next.
@@ -437,7 +437,7 @@ export default function HowToReadOSCARCPAPChartsPost() {
             — what each tool does best and how to use both together.
           </p>
           <p>
-            <Link href="/blog/what-is-flow-limitation-cpap" className="text-primary hover:text-primary/80">
+            <Link href="/blog/understanding-flow-limitation" className="text-primary hover:text-primary/80">
               What Is Flow Limitation on CPAP?
             </Link>{' '}
             — understanding the flattened waveform and what it means.

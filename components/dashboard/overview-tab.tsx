@@ -55,6 +55,7 @@ interface Props {
   onAdjustThreshold?: (metricKey: string) => void;
   isDemo?: boolean;
   isNewUser?: boolean;
+  isSharedView?: boolean;
 }
 
 /** Compute simple mean of the last 7 nights for a given accessor. Returns undefined if <2 nights. */
@@ -66,7 +67,7 @@ function avg7(nights: NightResult[], accessor: (n: NightResult) => number | null
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
-export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, onAdjustThreshold, isDemo = false, isNewUser = false }: Props) {
+export function OverviewTab({ nights, selectedNight, previousNight, therapyChangeDate, onUploadOximetry, onReUpload, onOpenAuth, onAdjustThreshold, isDemo = false, isNewUser = false, isSharedView = false }: Props) {
   const THRESHOLDS = useThresholds();
   const n = selectedNight;
   const p = previousNight;
@@ -163,20 +164,24 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         );
       })()}
 
-      {/* Symptom Rating — how did you sleep? */}
-      <SymptomRating
-        night={n}
-        value={symptomRating}
-        onChange={handleSymptomRatingChange}
-        isContributeConsented={isContributeConsented}
-      />
+      {/* Symptom Rating — owner-only; hidden in shared view */}
+      {!isSharedView && (
+        <SymptomRating
+          night={n}
+          value={symptomRating}
+          onChange={handleSymptomRatingChange}
+          isContributeConsented={isContributeConsented}
+        />
+      )}
 
-      {/* Night Context — structured enum fields (caffeine, position, stress, etc.) */}
-      <NightContextEditor
-        night={n}
-        notes={nightNotes}
-        onNotesChange={handleNotesChange}
-      />
+      {/* Night Context — owner-only; hidden in shared view */}
+      {!isSharedView && (
+        <NightContextEditor
+          night={n}
+          notes={nightNotes}
+          onNotesChange={handleNotesChange}
+        />
+      )}
 
       {/* Start-here guidance for new users — positioned right below hero */}
       {isNewUser && (
@@ -217,18 +222,47 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
                 <span className="text-[10px] text-muted-foreground">Mode</span>
                 <p className="text-xs font-medium">{n.settings.papMode}</p>
               </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">EPAP</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">IPAP</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-muted-foreground">PS</span>
-                <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
-              </div>
+              {(() => {
+                const papMode = (n.settings.papMode ?? '').toUpperCase();
+                const isCPAP = papMode === 'CPAP';
+                const isAPAP = papMode.includes('APAP') || papMode === 'AUTOSET';
+                const isASV = papMode === 'ASV' || papMode === 'ASVAUTO';
+                if (isCPAP) {
+                  return (
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Pressure</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+                    </div>
+                  );
+                }
+                if (isAPAP) {
+                  return (
+                    <div className="col-span-2 sm:col-span-2">
+                      <span className="text-[10px] text-muted-foreground">Min / Max</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}–{n.settings.ipap || '—'}</p>
+                    </div>
+                  );
+                }
+                if (isASV) {
+                  return null;
+                }
+                return (
+                  <>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">EPAP</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.epap || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">IPAP</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.ipap || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">PS</span>
+                      <p className="font-mono text-xs font-medium tabular-nums">{n.settings.pressureSupport || '—'}</p>
+                    </div>
+                  </>
+                );
+              })()}
               <div>
                 <span className="text-[10px] text-muted-foreground">Rise Time</span>
                 <p className="font-mono text-xs font-medium tabular-nums">{n.settings.riseTime !== null ? n.settings.riseTime : '—'}</p>
@@ -453,6 +487,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
         isDemo={isDemo}
         isNewUser={isNewUser}
         onOpenAuth={onOpenAuth}
+        isSharedView={isSharedView}
       />
 
       {/* Community Comparison — shows how your results compare */}
@@ -579,6 +614,23 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
           onClick={() => openMetric('Resp. Disruption Index', (x) => x.ned.estimatedArousalIndex, { unit: '/hr', threshold: THRESHOLDS.eai })}
         />
       </div>
+
+      {/* Bilevel-specific metrics — only shown for AirCurve/BiPAP nights */}
+      {n.spontaneousPct != null && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
+          <MetricCard
+            label="Spontaneous%"
+            value={n.spontaneousPct}
+            unit="%"
+            format="pct"
+            previousValue={p?.spontaneousPct ?? undefined}
+            compact
+            tooltip="Percentage of breaths triggered by the patient (spontaneous) vs the machine backup rate (timed)."
+            plainLanguage={METRIC_PLAIN_LANGUAGE.spontaneousPct}
+          />
+        </div>
+      )}
+
       <MetricExplanation
         text={[
           getEAIExplanation(n.ned.estimatedArousalIndex ?? 0, THRESHOLDS.eai!),
@@ -708,7 +760,7 @@ export function OverviewTab({ nights, selectedNight, previousNight, therapyChang
       )}
 
       {/* Upgrade prompt for community users — contextual to their data */}
-      {!isPaid && (() => {
+      {!isSharedView && !isPaid && (() => {
         const ifl = computeIFLRisk(n);
         const iflTier = getTrafficLight(ifl, THRESHOLDS.iflRisk!);
         const msg = iflTier === 'good'

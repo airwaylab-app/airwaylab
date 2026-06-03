@@ -178,7 +178,7 @@ function makeNight(
     oximetry: null,
     oximetryTrace: null,
     settingsMetrics: null,
-    crossDevice: null, machineSummary: null, settingsFingerprint: null, csl: null, pldSummary: null,
+    crossDevice: null, machineSummary: null, settingsFingerprint: null, csl: null, pldSummary: null, spontaneousPct: null, timedPct: null,
     ...overrides,
   };
 }

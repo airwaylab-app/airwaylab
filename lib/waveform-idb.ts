@@ -1,75 +1,93 @@
 // ============================================================
 // AirwayLab — IndexedDB Waveform Storage
 // Stores full-resolution Float32Array data for instant reload.
+//
+// Owns the canonical DB name / version / schema for ALL four stores.
+// Transaction wiring, the single shared connection, the serialized op
+// queue, and quota guards live in ./idb-core (see that file for the
+// failure modes this split fixes: I1 abort/quota, I2 serialization,
+// I3 expiry-vs-write race, I4 OOM, I6 blocked-upgrade).
 // ============================================================
 
 import type { StoredWaveform } from './waveform-types';
 import { ENGINE_VERSION } from './engine-version';
+import {
+  getDB,
+  runTx,
+  assertQuota,
+  isQuotaError,
+} from './idb-core';
 
-const DB_NAME = 'airwaylab';
-const STORE_NAME = 'waveforms';
-const OXIMETRY_STORE_NAME = 'oximetry-traces';
-const BREATH_DATA_STORE_NAME = 'breath-data';
-const PLD_TRACES_STORE_NAME = 'pld-traces';
-const DB_VERSION = 3;
+export const DB_NAME = 'airwaylab';
+export const WAVEFORM_STORE_NAME = 'waveforms';
+export const OXIMETRY_STORE_NAME = 'oximetry-traces';
+export const BREATH_DATA_STORE_NAME = 'breath-data';
+export const PLD_TRACES_STORE_NAME = 'pld-traces';
+export const DB_VERSION = 3;
+
+// Local alias kept for readability in this file's store ops.
+const STORE_NAME = WAVEFORM_STORE_NAME;
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
+// I4: storeWaveform is the biggest payload and previously had NO size
+// guard. Estimate bytes from the raw Float32Arrays (4 bytes/sample) plus a
+// small fixed overhead for events/stats/metadata, then assertQuota() it
+// like every other store.
+const WAVEFORM_METADATA_OVERHEAD_BYTES = 64 * 1024; // 64 KB slack for events/stats/arrays
+
+function estimateWaveformBytes(waveform: StoredWaveform): number {
+  const flowBytes = waveform.flow.length * 4;
+  const pressureBytes = waveform.pressure ? waveform.pressure.length * 4 : 0;
+  return flowBytes + pressureBytes + WAVEFORM_METADATA_OVERHEAD_BYTES;
+}
+
 /**
- * Open (or create) the IndexedDB database.
- * Exported so oximetry-trace-idb.ts can share the same DB connection.
+ * Apply the DB schema during onupgradeneeded.
+ * Called by idb-core's getDB(). Keeping the schema here (not in idb-core)
+ * preserves the single source of truth for store names + DB_VERSION.
+ * Do NOT change store names or bump DB_VERSION without a migration.
+ */
+export function upgradeSchema(db: IDBDatabase): void {
+  if (!db.objectStoreNames.contains(WAVEFORM_STORE_NAME)) {
+    db.createObjectStore(WAVEFORM_STORE_NAME, { keyPath: 'dateStr' });
+  }
+  if (!db.objectStoreNames.contains(OXIMETRY_STORE_NAME)) {
+    db.createObjectStore(OXIMETRY_STORE_NAME, { keyPath: 'dateStr' });
+  }
+  if (!db.objectStoreNames.contains(BREATH_DATA_STORE_NAME)) {
+    db.createObjectStore(BREATH_DATA_STORE_NAME, { keyPath: 'dateStr' });
+  }
+  if (!db.objectStoreNames.contains(PLD_TRACES_STORE_NAME)) {
+    db.createObjectStore(PLD_TRACES_STORE_NAME, { keyPath: 'dateStr' });
+  }
+}
+
+/**
+ * Open (or get) the shared IndexedDB connection.
+ * Backward-compatible re-export of idb-core's getDB() so older imports keep
+ * working. Connection is memoized; do NOT close it per-op.
  */
 export function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB not available'));
-      return;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'dateStr' });
-      }
-      if (!db.objectStoreNames.contains(OXIMETRY_STORE_NAME)) {
-        db.createObjectStore(OXIMETRY_STORE_NAME, { keyPath: 'dateStr' });
-      }
-      if (!db.objectStoreNames.contains(BREATH_DATA_STORE_NAME)) {
-        db.createObjectStore(BREATH_DATA_STORE_NAME, { keyPath: 'dateStr' });
-      }
-      if (!db.objectStoreNames.contains(PLD_TRACES_STORE_NAME)) {
-        db.createObjectStore(PLD_TRACES_STORE_NAME, { keyPath: 'dateStr' });
-      }
-    };
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  return getDB();
 }
 
 /**
  * Store a waveform in IndexedDB.
  * Overwrites any existing entry for the same date.
+ * Quota failures reject with a typed QuotaError (see idb-core) so the caller
+ * knows the PHI was not persisted instead of it being silently swallowed.
  */
 export async function storeWaveform(waveform: StoredWaveform): Promise<void> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.put(waveform);
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing and quota exceeded.
+    await assertQuota(estimateWaveformBytes(waveform)); // I4
+    await runTx(STORE_NAME, 'readwrite', (tx) =>
+      tx.objectStore(STORE_NAME).put(waveform),
+    );
   } catch (err) {
+    // I1: surface quota failures to the caller (PHI was not saved).
+    if (isQuotaError(err)) throw err;
+    // Other failures (private browsing, IDB unavailable) stay non-fatal;
+    // callers fall back to in-memory.
     console.warn('[waveform-idb] store failed:', err);
   }
 }
@@ -80,43 +98,29 @@ export async function storeWaveform(waveform: StoredWaveform): Promise<void> {
  */
 export async function loadWaveform(dateStr: string): Promise<StoredWaveform | null> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.get(dateStr);
+    const result = await runTx<StoredWaveform | undefined>(
+      STORE_NAME,
+      'readonly',
+      (tx) => tx.objectStore(STORE_NAME).get(dateStr),
+    );
 
-      request.onsuccess = () => {
-        db.close();
-        const result = request.result as StoredWaveform | undefined;
+    if (!result) {
+      return null;
+    }
 
-        if (!result) {
-          resolve(null);
-          return;
-        }
+    // Engine version mismatch → stale data
+    if (result.engineVersion !== ENGINE_VERSION) {
+      deleteWaveform(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
+      return null;
+    }
 
-        // Engine version mismatch → stale data
-        if (result.engineVersion !== ENGINE_VERSION) {
-          deleteWaveform(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
-          resolve(null);
-          return;
-        }
+    // TTL check
+    if (Date.now() - result.storedAt > TTL_MS) {
+      deleteWaveform(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
+      return null;
+    }
 
-        // TTL check
-        if (Date.now() - result.storedAt > TTL_MS) {
-          deleteWaveform(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
-          resolve(null);
-          return;
-        }
-
-        resolve(result);
-      };
-
-      request.onerror = () => {
-        db.close();
-        reject(request.error);
-      };
-    });
+    return result;
   } catch {
     // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
@@ -128,20 +132,9 @@ export async function loadWaveform(dateStr: string): Promise<StoredWaveform | nu
  */
 async function deleteWaveform(dateStr: string): Promise<void> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.delete(dateStr);
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
+    await runTx(STORE_NAME, 'readwrite', (tx) =>
+      tx.objectStore(STORE_NAME).delete(dateStr),
+    );
   } catch {
     // Non-fatal — best-effort cleanup
   }
@@ -150,14 +143,13 @@ async function deleteWaveform(dateStr: string): Promise<void> {
 /**
  * Delete expired entries from a single object store.
  * Entries are expired if they exceed the TTL or have a mismatched engine version.
+ * Runs through the serialized queue, so it enqueues behind any pending write
+ * for the same key (I3 — no longer deletes a freshly-written record).
  */
 async function deleteExpiredFromStore(storeName: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite');
+  await runTx(storeName, 'readwrite', (tx) => {
     const store = tx.objectStore(storeName);
     const request = store.openCursor();
-
     request.onsuccess = () => {
       const cursor = request.result;
       if (cursor) {
@@ -171,15 +163,9 @@ async function deleteExpiredFromStore(storeName: string): Promise<void> {
         cursor.continue();
       }
     };
-
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
+    // runTx wires this request's onerror and the txn completion paths;
+    // the cursor walk drives itself via onsuccess above.
+    return request;
   });
 }
 
@@ -188,7 +174,7 @@ async function deleteExpiredFromStore(storeName: string): Promise<void> {
  */
 export async function deleteExpired(): Promise<void> {
   try {
-    await deleteExpiredFromStore(STORE_NAME);
+    await deleteExpiredFromStore(WAVEFORM_STORE_NAME);
     await deleteExpiredFromStore(OXIMETRY_STORE_NAME);
     await deleteExpiredFromStore(BREATH_DATA_STORE_NAME);
     await deleteExpiredFromStore(PLD_TRACES_STORE_NAME);
@@ -196,4 +182,3 @@ export async function deleteExpired(): Promise<void> {
     // Non-fatal — best-effort cleanup
   }
 }
-

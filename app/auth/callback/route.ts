@@ -98,17 +98,18 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Log new signups (detected if account created within the last 60 seconds)
-  if (user?.created_at) {
-    const createdAt = new Date(user.created_at).getTime();
-    const now = Date.now();
-    if (now - createdAt < 60_000) {
-      console.error('[auth/callback] New signup', { userId: user.id });
-    }
+  // Detect new signups (account created within the last 60 seconds)
+  const isNewSignup = user?.created_at
+    ? Date.now() - new Date(user.created_at).getTime() < 60_000
+    : false;
+
+  if (isNewSignup) {
+    console.error('[auth/callback] New signup', { userId: user?.id });
   }
 
-  // Add auth=success param so the client-side AuthProvider can detect
-  // a fresh login and retry session pickup if needed.
+  // Add auth=success so the client-side AuthProvider can detect a fresh login.
+  // Add new_signup=1 so the client can fire the Signup Completed analytics event.
   const separator = next.includes('?') ? '&' : '?';
-  return NextResponse.redirect(`${origin}${next}${separator}auth=success`);
+  const newSignupParam = isNewSignup ? '&new_signup=1' : '';
+  return NextResponse.redirect(`${origin}${next}${separator}auth=success${newSignupParam}`);
 }

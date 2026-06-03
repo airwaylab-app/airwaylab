@@ -20,6 +20,12 @@ interface Props {
   autoSubmitStatus?: AutoSubmitStatus;
   /** Number of new nights sent by auto-submit (for display) */
   autoSubmitCount?: number;
+  /**
+   * Whether the visitor is signed in. Contribution endpoints now require auth,
+   * so the real contribution UI (manual submit + auto-submit status) is only
+   * shown to authenticated users. The demo teaser still shows to everyone.
+   */
+  isAuthenticated?: boolean;
 }
 
 /**
@@ -35,6 +41,7 @@ export function DataContribution({
   isDemo = false,
   autoSubmitStatus = 'idle',
   autoSubmitCount = 0,
+  isAuthenticated = false,
 }: Props) {
   // Initialize all browser-dependent state to safe defaults to match SSR.
   // Actual values are loaded in the useEffect below to avoid hydration mismatches.
@@ -133,6 +140,11 @@ export function DataContribution({
       </div>
     );
   }
+
+  // Contribution requires authentication. Logged-out users see nothing here —
+  // they aren't prompted into a submit that would 401. (Demo teaser above is
+  // unaffected: it has no submit, only encourages uploading real data.)
+  if (!isAuthenticated) return null;
 
   // ── Opted-in path: show auto-contribution status ──────────
   if (isOptedIn) {
@@ -352,7 +364,7 @@ export function DataContribution({
           </div>
 
           <p className="text-[10px] text-muted-foreground/70">
-            One click · No account needed · Cannot be traced back to you
+            One click · Anonymised before upload · Not shown in your profile
           </p>
         </div>
       </div>

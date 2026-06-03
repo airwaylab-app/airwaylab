@@ -17,6 +17,85 @@ export interface ValidationResult {
   bmcSerial?: string;
 }
 
+// ── Selection context detection ──────────────────────────────────────────────
+// Detects what the user actually selected (file, subfolder, or SD card root)
+// so error messages can be specific and actionable.
+
+type SelectionContextType = 'single-file' | 'subfolder-datalog' | 'subfolder-date' | 'subfolder-other' | 'root';
+
+interface SelectionContext {
+  type: SelectionContextType;
+  selectedName: string;
+}
+
+function detectSelectionContext(files: File[]): SelectionContext {
+  const paths = files.map((f) => (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || '');
+  const relativePaths = paths.filter((p) => p.includes('/'));
+
+  // No relative paths — user dropped a single file or the browser didn't provide paths
+  if (relativePaths.length === 0) {
+    return { type: 'single-file', selectedName: files[0]?.name || '' };
+  }
+
+  const rootName = relativePaths[0]!.split('/')[0] || '';
+
+  // Paths start with DATALOG — could be Windows drive root or user selected DATALOG subfolder.
+  // Distinguish by presence of root-level files (no slash in path): Windows drive root has them.
+  if (rootName.toUpperCase() === 'DATALOG') {
+    const hasRootLevelFiles = paths.some((p) => !p.includes('/') && p.length > 0);
+    if (hasRootLevelFiles) {
+      return { type: 'root', selectedName: rootName };
+    }
+    return { type: 'subfolder-datalog', selectedName: 'DATALOG' };
+  }
+
+  // Root name looks like a ResMed date-session folder (YYYYMMDD or YYYYMMDD_HHMMSS)
+  if (/^\d{8}(_\d{6})?$/.test(rootName)) {
+    return { type: 'subfolder-date', selectedName: rootName };
+  }
+
+  // Check if DATALOG appears anywhere in the paths — if so, user selected the SD card root
+  const hasDatalogInPaths = relativePaths.some(
+    (p) => p.toUpperCase().includes('/DATALOG/') || p.toUpperCase().startsWith('DATALOG/')
+  );
+  if (hasDatalogInPaths) {
+    return { type: 'root', selectedName: rootName };
+  }
+
+  return { type: 'subfolder-other', selectedName: rootName };
+}
+
+function noEdfErrorMessage(ctx: SelectionContext): string {
+  if (ctx.type === 'single-file') {
+    return `You selected a file ("${ctx.selectedName}") — please select the SD card folder, not a single file.`;
+  }
+  if (ctx.type === 'subfolder-datalog') {
+    return 'You selected the "DATALOG" folder — navigate up one level and select the SD card root instead.';
+  }
+  if (ctx.type === 'subfolder-date') {
+    return `You selected a session folder ("${ctx.selectedName}") — navigate up to the SD card root and select that instead.`;
+  }
+  return 'No EDF files found. Make sure you selected the SD card root, not a subfolder.';
+}
+
+function unknownDeviceErrorMessage(ctx: SelectionContext): string {
+  if (ctx.type === 'single-file') {
+    return `You selected a file ("${ctx.selectedName}") — please select the SD card drive (the top-level folder).`;
+  }
+  if (ctx.type === 'subfolder-datalog') {
+    return 'You selected the "DATALOG" folder — navigate up one level and select the SD card root.';
+  }
+  if (ctx.type === 'subfolder-date') {
+    return `You selected "${ctx.selectedName}" — navigate up to the SD card root and select that instead.`;
+  }
+  if (ctx.type === 'subfolder-other') {
+    return `You selected "${ctx.selectedName}" — this doesn't look like a ResMed SD card folder. Expected a DATALOG subfolder — navigate up and select the SD card root.`;
+  }
+  return 'This SD card format is not recognised. AirwayLab currently supports ResMed (AirSense 10/11) and BMC (Luna 2, RESmart G2/G3) devices.';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Validate selected SD card files before analysis.
  * First detects device type, then applies device-specific validation.
@@ -29,6 +108,8 @@ export function validateSDFiles(files: File[]): ValidationResult {
     return { valid: false, edfCount: 0, warnings, errors: ['No files selected.'], deviceType: 'unknown', deviceLabel: 'Unknown' };
   }
 
+  const selectionContext = detectSelectionContext(files);
+
   // Detect device type from file structure
   const fileInfos = files.map((f) => ({
     name: f.name,
@@ -38,7 +119,7 @@ export function validateSDFiles(files: File[]): ValidationResult {
   const detection = detectDeviceType(fileInfos);
 
   if (detection.deviceType === 'resmed') {
-    return validateResMedFiles(files, detection, warnings, errors);
+    return validateResMedFiles(files, detection, warnings, errors, selectionContext);
   }
 
   if (detection.deviceType === 'bmc') {
@@ -46,9 +127,7 @@ export function validateSDFiles(files: File[]): ValidationResult {
   }
 
   // Unknown device
-  errors.push(
-    'This SD card format is not recognised. AirwayLab currently supports ResMed (AirSense 10/11) and BMC (Luna 2, RESmart G2/G3) devices.'
-  );
+  errors.push(unknownDeviceErrorMessage(selectionContext));
   return { valid: false, edfCount: 0, warnings, errors, deviceType: 'unknown', deviceLabel: detection.deviceLabel };
 }
 
@@ -56,7 +135,8 @@ function validateResMedFiles(
   files: File[],
   detection: DeviceDetectionResult,
   warnings: string[],
-  errors: string[]
+  errors: string[],
+  selectionContext: SelectionContext
 ): ValidationResult {
   const edfFiles = files.filter((f) => f.name.toLowerCase().endsWith('.edf'));
   const paths = files.map((f) => {
@@ -75,7 +155,7 @@ function validateResMedFiles(
   });
 
   if (edfFiles.length === 0) {
-    errors.push('No EDF files found. Make sure you selected the SD card itself, not a subfolder.');
+    errors.push(noEdfErrorMessage(selectionContext));
     return { valid: false, edfCount: 0, warnings, errors, deviceType: 'resmed', deviceLabel: 'ResMed' };
   }
 
