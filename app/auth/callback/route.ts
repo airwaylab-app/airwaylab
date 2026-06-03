@@ -102,7 +102,17 @@ export async function GET(request: NextRequest) {
   // Fallback: ensure a profile row exists even if the DB trigger failed.
   // The trigger (handle_new_user) is the primary path; this is the safety net
   // for PKCE cross-context signups, transient DB errors, or trigger misfire.
-  // Uses service role to bypass RLS. ON CONFLICT DO NOTHING makes it idempotent.
+  // Uses service role to bypass RLS.
+  //
+  // CONSENT GUARD: storage_consent is set ONLY when this insert creates a
+  // brand-new profile row. `ignoreDuplicates: true` compiles to
+  // `INSERT ... ON CONFLICT DO NOTHING`, so for an EXISTING profile (e.g. a
+  // returning user re-authenticating) this is a no-op and the stored
+  // storage_consent / storage_consent_at are left untouched. We never silently
+  // (re-)grant consent on re-auth. The `true` here only mirrors the trigger's
+  // signup auto-grant (migration 056 / 027) for the genuine new-row case.
+  // DO NOT switch to `ignoreDuplicates: false` (merge) — that would overwrite
+  // an existing user's revoked consent back to true on every login.
   if (user) {
     const adminClient = getSupabaseServiceRole();
     if (adminClient) {
@@ -112,6 +122,7 @@ export async function GET(request: NextRequest) {
           {
             id: user.id,
             email: user.email ?? '',
+            // Insert-only (see CONSENT GUARD above): never reached for existing rows.
             storage_consent: true,
             storage_consent_at: new Date().toISOString(),
           },

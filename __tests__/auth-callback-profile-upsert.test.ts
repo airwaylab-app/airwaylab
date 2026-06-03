@@ -157,6 +157,24 @@ describe('auth/callback: profile upsert fallback (AIR-1762)', () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
+  it('CONSENT GUARD: upsert is insert-only (ignoreDuplicates:true), never a merge that re-grants consent on re-auth', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ error: null });
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'returning-user', email: 'test@example.com', created_at: new Date().toISOString() } },
+    });
+    mockUpsert.mockResolvedValue({ error: null });
+
+    const { GET } = await import('@/app/auth/callback/route');
+    await GET(makeRequest('http://localhost:3000/auth/callback?code=abc123'));
+
+    // The second arg MUST keep ignoreDuplicates: true so an existing profile's
+    // storage_consent is never overwritten on re-auth (ON CONFLICT DO NOTHING).
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
+    const options = mockUpsert.mock.calls[0]?.[1] as { onConflict?: string; ignoreDuplicates?: boolean };
+    expect(options).toMatchObject({ onConflict: 'id', ignoreDuplicates: true });
+    expect(options.ignoreDuplicates).not.toBe(false);
+  });
+
   it('uses email fallback empty string when user.email is null', async () => {
     mockExchangeCodeForSession.mockResolvedValue({ error: null });
     mockGetUser.mockResolvedValue({

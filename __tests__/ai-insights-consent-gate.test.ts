@@ -1,10 +1,16 @@
+/**
+ * R-B consent gate tests for the AI insights route.
+ *
+ * AI insights send PHI (night/therapy data) to Anthropic. The route must refuse
+ * (403) unless the user's profiles.ai_insights_consent is true, and must proceed
+ * normally when it is true. This is the load-bearing gate that prevents PHI from
+ * leaving the device without explicit consent.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mock external dependencies before importing route ──────────
 
-vi.mock('@/lib/csrf', () => ({
-  validateOrigin: vi.fn(() => true),
-}));
+vi.mock('@/lib/csrf', () => ({ validateOrigin: vi.fn(() => true) }));
 
 vi.mock('@/lib/rate-limit', () => ({
   aiRateLimiter: { isLimited: vi.fn(() => false) },
@@ -18,56 +24,46 @@ vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
 }));
 
-// Shared chainable mock — .single() returns tier (profile lookup) and
-// ai_insights_consent (R-B consent gate, read via service role).
-const mockSupabaseChain = {
+// Profile/consent row is configurable per-test via this mutable holder.
+let consentValue: boolean = true;
+
+const mockSupabaseFrom = vi.fn().mockReturnValue({
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
-  single: vi.fn().mockResolvedValue({ data: { tier: 'supporter', ai_insights_consent: true } }),
+  single: vi.fn().mockImplementation(() =>
+    Promise.resolve({ data: { tier: 'supporter', ai_insights_consent: consentValue } })
+  ),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
   insert: vi.fn().mockReturnThis(),
   then: vi.fn().mockResolvedValue({ error: null }),
-};
+});
+const mockRpc = vi.fn().mockResolvedValue({ data: null });
 
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServer: vi.fn(() => ({
-    from: vi.fn(() => mockSupabaseChain),
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user' } }, error: null }) },
+    from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'consent-user' } }, error: null }) },
   })),
-  // Consent gate requires a service-role client; provide one that grants consent.
   getSupabaseServiceRole: vi.fn(() => ({
-    from: vi.fn(() => mockSupabaseChain),
-    rpc: vi.fn().mockResolvedValue({ data: null }),
+    from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   })),
 }));
 
 vi.mock('@/lib/email/sequences', () => ({
-  // Must resolve a promise — the route does cancelSequence(...).catch(...).
   cancelSequence: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(undefined),
-  COLORS: { amber: 0xf59e0b, red: 0xff0000 },
+  COLORS: { red: 0xff0000, amber: 0xffaa00 },
 }));
 
-// Capture the constructor args passed to Anthropic
-let capturedConstructorArgs: Record<string, unknown> | undefined;
-const mockMessagesCreate = vi.fn().mockResolvedValue({
-  content: [{ type: 'text', text: JSON.stringify([{
-    id: 'ai-1', type: 'positive', title: 'Test', body: 'Test insight', category: 'glasgow',
-  }]) }],
-  stop_reason: 'end_turn',
-  usage: { input_tokens: 100, output_tokens: 50 },
-});
-
+const mockMessagesCreate = vi.fn();
 vi.mock('@anthropic-ai/sdk', async () => {
   const actual = await vi.importActual<typeof import('@anthropic-ai/sdk')>('@anthropic-ai/sdk');
   class MockAnthropic {
     messages = { create: (...args: unknown[]) => mockMessagesCreate(...args) };
-    constructor(args: Record<string, unknown>) {
-      capturedConstructorArgs = args;
-    }
     static AuthenticationError = actual.AuthenticationError;
     static PermissionDeniedError = actual.PermissionDeniedError;
     static BadRequestError = actual.BadRequestError;
@@ -85,10 +81,7 @@ vi.mock('@anthropic-ai/sdk', async () => {
 function makeRequest(body: Record<string, unknown>): Request {
   return new Request('https://airwaylab.app/api/ai-insights', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Origin: 'https://airwaylab.app',
-    },
+    headers: { 'Content-Type': 'application/json', Origin: 'https://airwaylab.app' },
     body: JSON.stringify(body),
   });
 }
@@ -110,40 +103,43 @@ function validBody(): Record<string, unknown> {
   };
 }
 
+function mockSuccessResponse() {
+  mockMessagesCreate.mockResolvedValue({
+    content: [{ type: 'text', text: '[{"id":"ai-1","type":"info","title":"Test","body":"Body.","category":"trend"}]' }],
+    stop_reason: 'end_turn',
+    usage: { input_tokens: 100, output_tokens: 50 },
+  });
+}
+
+async function callRoute(body: Record<string, unknown>) {
+  const { POST } = await import('@/app/api/ai-insights/route');
+  return POST(makeRequest(body) as never);
+}
+
 // ── Tests ─────────────────────────────────────────────────────
 
-describe('AI Insights Timeout Configuration', () => {
+describe('AI Insights — R-B consent gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    capturedConstructorArgs = undefined;
     process.env.ANTHROPIC_API_KEY = 'test-key';
+    consentValue = true;
+    mockSuccessResponse();
   });
 
-  it('exports maxDuration = 60 for Vercel function timeout', async () => {
-    const routeModule = await import('@/app/api/ai-insights/route');
-    expect(routeModule.maxDuration).toBe(60);
-  });
-
-  it('creates Anthropic client with maxRetries: 0 to prevent silent double-timeout', async () => {
-    const { POST } = await import('@/app/api/ai-insights/route');
-    await POST(makeRequest(validBody()) as never);
-    expect(capturedConstructorArgs).toBeDefined();
-    expect(capturedConstructorArgs!.maxRetries).toBe(0);
-  });
-
-  it('creates Anthropic client with timeout: 50000', async () => {
-    const { POST } = await import('@/app/api/ai-insights/route');
-    await POST(makeRequest(validBody()) as never);
-    expect(capturedConstructorArgs).toBeDefined();
-    expect(capturedConstructorArgs!.timeout).toBe(50_000);
-  });
-
-  it('returns successful insights with correct config', async () => {
-    const { POST } = await import('@/app/api/ai-insights/route');
-    const res = await POST(makeRequest(validBody()) as never);
-    expect(res.status).toBe(200);
+  it('returns 403 and never calls Anthropic when consent is not granted', async () => {
+    consentValue = false;
+    const res = await callRoute(validBody());
+    expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.insights).toHaveLength(1);
-    expect(body.insights[0].id).toBe('ai-1');
+    expect(body.error).toMatch(/consent/i);
+    // The load-bearing guarantee: no PHI reached the model.
+    expect(mockMessagesCreate).not.toHaveBeenCalled();
+  });
+
+  it('proceeds to call Anthropic when consent is granted', async () => {
+    consentValue = true;
+    const res = await callRoute(validBody());
+    expect(res.status).toBe(200);
+    expect(mockMessagesCreate).toHaveBeenCalledTimes(1);
   });
 });
