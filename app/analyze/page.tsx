@@ -383,20 +383,25 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Contribute data: auto if opted in, show nudge if first time
-        const contributedDates: string[] = JSON.parse(
-          safeGetItem('airwaylab_contributed_dates') || '[]'
-        );
-        const contributedSet = new Set(contributedDates);
-        const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
+        // Contribute data: auto if opted in, show nudge if first time.
+        // Gated behind auth — the contribution endpoints now require a logged-in
+        // user (no anonymous writes). Skip both the auto-submit and the nudge for
+        // logged-out users so they aren't prompted into a request that 401s.
+        if (userRef.current) {
+          const contributedDates: string[] = JSON.parse(
+            safeGetItem('airwaylab_contributed_dates') || '[]'
+          );
+          const contributedSet = new Set(contributedDates);
+          const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
 
-        if (contributeOptInRef.current && newNights.length > 0) {
-          setAutoSubmitCount(newNights.length);
-          submitContribution(newNights);
-        } else if (!contributeOptInRef.current && contributedDates.length === 0) {
-          // Only show nudge if user has never contributed before
-          pendingNightsRef.current = newState.nights;
-          setShowContributeNudge(true);
+          if (contributeOptInRef.current && newNights.length > 0) {
+            setAutoSubmitCount(newNights.length);
+            submitContribution(newNights);
+          } else if (!contributeOptInRef.current && contributedDates.length === 0) {
+            // Only show nudge if user has never contributed before
+            pendingNightsRef.current = newState.nights;
+            setShowContributeNudge(true);
+          }
         }
 
         // Cloud storage: auto-upload raw files if cloud sync enabled
@@ -1267,6 +1272,7 @@ function AnalyzePageInner() {
               isDemo={isDemo}
               autoSubmitStatus={autoSubmitStatus}
               autoSubmitCount={autoSubmitCount}
+              isAuthenticated={!!user}
             />
           </div>
 
