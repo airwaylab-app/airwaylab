@@ -25,20 +25,30 @@
 -- New job-state columns. Defaults make this safe to apply while the OLD
 -- route is still live: pre-existing rows become 'pending' but are never
 -- re-driven unless the new cron step runs (which only ships with the route).
+--
+-- `dead` is the terminal poison state: a row that failed MAX_ATTEMPTS (5) times
+-- is parked here so the re-drive never touches it again (HIGH 3).
 alter table public.stripe_events
   add column if not exists status text not null default 'pending'
-    check (status in ('pending', 'processing', 'done', 'failed')),
+    check (status in ('pending', 'processing', 'done', 'failed', 'dead')),
   add column if not exists attempts int not null default 0,
   add column if not exists last_error text,
   add column if not exists updated_at timestamptz not null default now();
 
--- Backfill: any row that existed before this migration was, by definition,
--- already fully processed by the OLD route (the old route only kept rows for
--- successfully-processed events; failures were deleted). Mark them 'done' so
--- the re-drive never touches historical events.
+-- Backfill: pre-existing rows from the OLD route were kept only for
+-- successfully-processed events (failures were deleted), so they are `done`.
+--
+-- HIGH 4 — age-gate the backfill. An event that is genuinely in flight at the
+-- exact moment this migration runs would have a fresh `processed_at` and a
+-- `pending` status; stamping it `done` would wrongly suppress its re-drive if it
+-- then fails. Only mark rows whose last processing attempt is older than 5
+-- minutes (comfortably past the 30s webhook maxDuration) — those are safely
+-- historical. A row younger than that is left `pending` for the route/cron to
+-- carry to its real terminal state.
 update public.stripe_events
   set status = 'done'
-  where status = 'pending';
+  where status = 'pending'
+    and processed_at < now() - interval '5 minutes';
 
 -- Re-drive lookup index: the cron scans for failed + stale-processing rows.
 create index if not exists idx_stripe_events_redrive

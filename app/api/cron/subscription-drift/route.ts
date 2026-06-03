@@ -6,15 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { sendAlert, COLORS } from '@/lib/discord-webhook';
 import { syncRole, isDiscordConfigured } from '@/lib/discord';
-import { runStripeJob } from '@/app/api/webhooks/stripe/route';
-
-/**
- * A `processing` row older than this is considered stale: the function that
- * claimed it crashed/timed out mid-flight before reaching done|failed. Stripe's
- * own max processing window is well under this, and our webhook maxDuration is
- * 30s, so 15 min is a safe "definitely abandoned" cutoff.
- */
-const STALE_PROCESSING_MS = 15 * 60 * 1000;
+import { runStripeJob, STALE_PROCESSING_MS, MAX_ATTEMPTS } from '@/app/api/webhooks/stripe/route';
 
 /** Cap re-drives per run so one bad event can't exhaust the cron's runtime. */
 const REDRIVE_BATCH_LIMIT = 25;
@@ -33,12 +25,18 @@ interface RedriveResult {
  *   - status = 'failed'      (processing threw; row was kept, not deleted)
  *   - status = 'processing'  AND updated_at older than STALE_PROCESSING_MS
  *                            (the worker died mid-flight)
+ * and EXCLUDES rows with attempts >= MAX_ATTEMPTS (HIGH 3): a poison event that
+ * always throws is parked in the terminal `dead` state by runStripeJob and must
+ * never re-drive again. `dead` rows are also excluded because they match neither
+ * `failed` nor `processing`.
  *
  * For each, it refetches the full event from Stripe (we only persist the id +
- * type, not the payload) and re-runs runStripeJob, which re-applies the state
- * machine. processStripeEvent is idempotent (upserts on stripe_subscription_id,
- * tier writes are last-write-wins), so reprocessing a partially-applied event is
- * safe. A successful re-drive flips the row to 'done'.
+ * type, not the payload) and re-runs runStripeJob, whose ATOMIC claim flips the
+ * row pending|failed|stale-processing -> processing and tells us if THIS run won
+ * it. processStripeEvent is idempotent (upserts on stripe_subscription_id, tier
+ * writes are last-write-wins) and its non-idempotent side effects only fire when
+ * the claim is won, so reprocessing a partially-applied event is safe. A
+ * successful re-drive flips the row to 'done'.
  */
 async function redriveStripeEvents(
   stripe: Stripe | null,
@@ -50,9 +48,12 @@ async function redriveStripeEvents(
   const staleCutoff = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
 
   // failed rows: always eligible. stale processing rows: only past the cutoff.
+  // attempts >= MAX_ATTEMPTS are excluded so a poison event cannot re-drive
+  // forever (it has been parked `dead` with its own ops alert).
   const { data: rows, error: queryErr } = await supabase
     .from('stripe_events')
     .select('event_id, event_type, status, attempts, updated_at')
+    .lt('attempts', MAX_ATTEMPTS)
     .or(`status.eq.failed,and(status.eq.processing,updated_at.lt.${staleCutoff})`)
     .order('updated_at', { ascending: true })
     .limit(REDRIVE_BATCH_LIMIT);
@@ -84,8 +85,12 @@ async function redriveStripeEvents(
       else result.stillFailed++;
     } catch (err) {
       // retrieve() itself failed (e.g. event aged out of Stripe, network).
-      // runStripeJob never ran, so the row keeps its prior status. Record why.
+      // runStripeJob never ran, so the row keeps its prior status AND its
+      // attempts were not incremented by the claim — do it here. Park as `dead`
+      // at the cap so a permanently-unretrievable event stops re-driving.
       result.stillFailed++;
+      const attemptsNow = attemptsBefore + 1;
+      const terminal = attemptsNow >= MAX_ATTEMPTS;
       console.error(
         `[subscription-drift] re-drive failed for ${(row as { event_id: string }).event_id}:`,
         err
@@ -97,11 +102,30 @@ async function redriveStripeEvents(
       await supabase
         .from('stripe_events')
         .update({
-          status: 'failed',
+          status: terminal ? 'dead' : 'failed',
           last_error: err instanceof Error ? err.message : String(err),
-          attempts: attemptsBefore + 1,
+          attempts: attemptsNow,
         })
         .eq('event_id', (row as { event_id: string }).event_id);
+      if (terminal) {
+        Sentry.captureMessage('Stripe event hit max attempts — parked as dead', {
+          level: 'error',
+          fingerprint: ['stripe-event-dead', (row as { event_id: string }).event_id],
+          tags: { route: 'cron-subscription-drift', action: 'dead-letter' },
+          extra: { event_id: (row as { event_id: string }).event_id, attempts: attemptsNow },
+        });
+        await sendAlert('ops', '', [{
+          title: ':skull: Stripe event parked (dead-letter)',
+          description: `Event \`${(row as { event_id: string }).event_id}\` (${(row as { event_type?: string }).event_type ?? 'unknown'}) could not be retrieved/processed after ${attemptsNow} attempts and will no longer be re-driven. Manual review required.`,
+          color: COLORS.red,
+          fields: [
+            { name: 'Event ID', value: (row as { event_id: string }).event_id, inline: true },
+            { name: 'Attempts', value: String(attemptsNow), inline: true },
+            { name: 'Last error', value: (err instanceof Error ? err.message : String(err)).slice(0, 1000) },
+          ],
+          timestamp: new Date().toISOString(),
+        }]);
+      }
     }
   }
 

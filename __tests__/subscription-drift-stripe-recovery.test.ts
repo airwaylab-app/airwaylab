@@ -113,8 +113,10 @@ function buildRecoveryFromImpl(
     }
     if (table === 'stripe_events') {
       // ST1 re-drive query: no failed/stale rows in these recovery scenarios.
+      // The query chain is .select().lt(attempts, MAX_ATTEMPTS).or().order().limit().
       return {
         select: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
         or: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({ data: [], error: null }),

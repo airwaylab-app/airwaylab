@@ -77,6 +77,7 @@ vi.mock('stripe', () => {
 let redriveRows: Array<Record<string, unknown>> = [];
 const stripeEventsUpdates: Array<Record<string, unknown>> = [];
 let capturedOrFilter = '';
+let capturedLt: { col: string; val: unknown } | null = null;
 
 const mockFrom = vi.fn();
 
@@ -101,30 +102,54 @@ function emptyProfilesChain(): Record<string, unknown> {
 }
 
 /**
- * stripe_events builder. Supports two shapes:
- *   - re-drive SELECT:   .select().or(f).order().limit()  → resolves redriveRows
- *   - status confirm:    .select('status').eq().maybeSingle() → 'done' (success)
- *   - state UPDATE:      .update(patch).eq()  → captured into stripeEventsUpdates
- * The "confirm" select returns 'done' by default; tests override per-row via the
- * row's `__finalStatus` marker on the last captured update.
+ * stripe_events builder. A thenable proxy that supports every shape the cron +
+ * runStripeJob use against this table:
+ *   - re-drive SELECT:  .select(cols).lt(attempts).or(f).order().limit()
+ *                       → resolves redriveRows
+ *   - ATOMIC CLAIM:     .update(patch).eq().or(f).select('event_id')
+ *                       → resolves a winning array (or [] when claimWins=false)
+ *   - state UPDATE:     .update(patch).eq()   → awaited → { error: null }
+ *   - status confirm:   .select('status').eq().maybeSingle() → last update's status
+ * By default the claim WINS; set claimWins=false to simulate a row another worker
+ * already owns (the conditional UPDATE returns no row).
  */
+let claimWins = true;
+
 function stripeEventsBuilder(): Record<string, unknown> {
+  // Tracks the last terminal so the thenable returns the right payload.
+  let pending: 'select_rows' | 'claim' | 'update_eq' | null = null;
+
   const builder: Record<string, unknown> = {};
-  builder['select'] = vi.fn(() => builder);
-  builder['or'] = vi.fn((f: string) => { capturedOrFilter = f; return builder; });
-  builder['order'] = vi.fn(() => builder);
-  builder['limit'] = vi.fn().mockResolvedValue({ data: redriveRows, error: null });
-  builder['eq'] = vi.fn(() => builder);
-  builder['update'] = vi.fn((patch: Record<string, unknown>) => {
-    stripeEventsUpdates.push(patch);
+  const ret = () => builder;
+
+  builder['select'] = vi.fn((cols?: string) => {
+    if (cols === 'event_id') pending = 'claim';
     return builder;
   });
-  // Confirm-status read after runStripeJob: reflect the last update's status so a
-  // successful re-drive reports 'done' and a failed one reports 'failed'.
+  // HIGH 3: the re-drive query excludes attempts >= MAX_ATTEMPTS via .lt().
+  builder['lt'] = vi.fn((col: string, val: unknown) => { capturedLt = { col, val }; return builder; });
+  builder['or'] = vi.fn((f: string) => { capturedOrFilter = f; return builder; });
+  builder['order'] = vi.fn(ret);
+  builder['limit'] = vi.fn(() => { pending = 'select_rows'; return builder; });
+  builder['eq'] = vi.fn(() => { if (pending === null) pending = 'update_eq'; return builder; });
+  builder['update'] = vi.fn((patch: Record<string, unknown>) => {
+    stripeEventsUpdates.push(patch);
+    pending = 'update_eq';
+    return builder;
+  });
   builder['maybeSingle'] = vi.fn().mockImplementation(() => {
+    // Confirm-status read after runStripeJob: reflect the last claim/update.
     const last = stripeEventsUpdates[stripeEventsUpdates.length - 1];
     return Promise.resolve({ data: { status: last?.status ?? 'failed' }, error: null });
   });
+  // Thenable: resolve based on which terminal was last invoked.
+  (builder as { then?: unknown }).then = (resolve: (v: unknown) => void) => {
+    if (pending === 'select_rows') return resolve({ data: redriveRows, error: null });
+    if (pending === 'claim') {
+      return resolve({ data: claimWins ? [{ event_id: 'evt_claimed' }] : [], error: null });
+    }
+    return resolve({ data: null, error: null });
+  };
   return builder;
 }
 
@@ -150,6 +175,8 @@ beforeEach(() => {
   redriveRows = [];
   stripeEventsUpdates.length = 0;
   capturedOrFilter = '';
+  capturedLt = null;
+  claimWins = true;
   process.env.CRON_SECRET = 'test-secret';
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
@@ -219,6 +246,64 @@ describe('subscription-drift cron — ST1 webhook re-drive', () => {
     expect(capturedOrFilter).toContain('status.eq.failed');
     expect(capturedOrFilter).toContain('status.eq.processing');
     expect(capturedOrFilter).toContain('updated_at.lt.');
+  });
+
+  it('excludes attempts >= MAX_ATTEMPTS via a .lt(attempts, 5) filter (HIGH 3)', async () => {
+    redriveRows = [];
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    // Poison events at the cap must never be re-driven.
+    expect(capturedLt).toEqual({ col: 'attempts', val: 5 });
+  });
+
+  it('parks the row dead and alerts ops when retrieve fails at the attempt cap (HIGH 3)', async () => {
+    // attempts=4 → this run is attempt 5, the cap. retrieve fails so runStripeJob
+    // never runs; the cron catch must park the row `dead` and alert once.
+    redriveRows = [
+      { event_id: 'evt_poison', event_type: 'checkout.session.completed', status: 'failed', attempts: 4, updated_at: '2026-01-01T00:00:00Z' },
+    ];
+    mockEventsRetrieve.mockRejectedValue(new Error('gone'));
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    expect(stripeEventsUpdates).toContainEqual(
+      expect.objectContaining({ status: 'dead', attempts: 5 })
+    );
+    expect(stripeEventsUpdates).not.toContainEqual(
+      expect.objectContaining({ status: 'failed', attempts: 5 })
+    );
+    // One dead-letter ops alert + Sentry message.
+    expect(mockSendAlert).toHaveBeenCalledWith('ops', '', expect.any(Array));
+    expect(mockCaptureMessage).toHaveBeenCalledWith(
+      'Stripe event hit max attempts — parked as dead',
+      expect.objectContaining({ tags: expect.objectContaining({ action: 'dead-letter' }) })
+    );
+  });
+
+  it('does not double-process when the atomic claim is lost (another worker owns the row)', async () => {
+    redriveRows = [
+      { event_id: 'evt_contended', event_type: 'customer.subscription.updated', status: 'failed', attempts: 1, updated_at: '2026-01-01T00:00:00Z' },
+    ];
+    mockEventsRetrieve.mockResolvedValue({
+      id: 'evt_contended',
+      type: 'customer.subscription.updated',
+      data: { object: { id: 'sub_x', metadata: {}, items: { data: [] }, status: 'active', cancel_at_period_end: false } },
+    });
+    // Claim loses: the conditional UPDATE returns no row.
+    claimWins = false;
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    // Picked for re-drive, but runStripeJob returned without processing.
+    expect(body.redrive_picked).toBe(1);
+    // Claim attempted (processing) but never advanced to done or failed.
+    expect(stripeEventsUpdates).toContainEqual(expect.objectContaining({ status: 'processing' }));
+    expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'done' }));
+    expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'failed' }));
   });
 
   it('leaves the row failed and increments attempts when stripe.events.retrieve fails', async () => {
