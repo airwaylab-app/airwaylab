@@ -8,6 +8,13 @@ import { events } from '@/lib/analytics';
 
 export type Tier = 'community' | 'supporter' | 'champion';
 
+// Entitlement resolution status, distinct from tier itself.
+// 'resolved'  — the profile fetch succeeded; `tier` reflects the server.
+// 'unknown'   — the profile fetch errored or returned no row; `tier` is a
+//               last-known / subscription fallback, NOT a confirmed downgrade.
+// Gates must treat 'unknown' as "do not downgrade a previously-paid user".
+export type EntitlementStatus = 'resolved' | 'unknown';
+
 interface Profile {
   id: string;
   email: string;
@@ -40,6 +47,7 @@ interface AuthContextValue {
   isLoading: boolean;
   tier: Tier;
   isPaid: boolean;
+  entitlementStatus: EntitlementStatus;
   signIn: (email: string, redirectPath?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -54,8 +62,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Last tier resolved from a SUCCESSFUL profile fetch. Survives transient
+  // fetch failures so a paid user is never silently downgraded to 'community'
+  // (A1). null only before the first successful resolution for this user.
+  const [lastKnownTier, setLastKnownTier] = useState<Tier | null>(null);
+  // 'unknown' while a profile fetch has failed / not yet succeeded; gates must
+  // not treat it as a confirmed downgrade.
+  const [entitlementStatus, setEntitlementStatus] = useState<EntitlementStatus>('unknown');
 
   const supabase = getSupabaseBrowser();
+
+  // Subscription tier lookup used as an entitlement fallback when the profile
+  // fetch fails (A1). Returns the active subscription tier, or null if none /
+  // unreadable. Shares the same navigator.locks transient-error retry.
+  const fetchSubscriptionTier = useCallback(async (userId: string): Promise<Tier | null> => {
+    if (!supabase) return null;
+    const SUB_COLS = 'id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end';
+    const query = () => supabase
+      .from('subscriptions')
+      .select(SUB_COLS)
+      .eq('user_id', userId)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let res = await query();
+    if (res.error?.message?.includes('Lock was stolen')) {
+      await new Promise((r) => setTimeout(r, 100));
+      res = await query();
+    }
+    if (res.error || !res.data) return null;
+
+    const validTiers: Tier[] = ['community', 'supporter', 'champion'];
+    const tier = validTiers.includes(res.data.tier) ? (res.data.tier as Tier) : 'community';
+    setSubscription({
+      id: res.data.id,
+      stripe_subscription_id: res.data.stripe_subscription_id,
+      stripe_price_id: res.data.stripe_price_id,
+      status: res.data.status,
+      tier,
+      current_period_end: res.data.current_period_end,
+      cancel_at_period_end: res.data.cancel_at_period_end,
+    });
+    return tier;
+  }, [supabase]);
 
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
@@ -82,26 +133,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: profileData, error: profileError } = profileResult;
 
     if (profileError) {
-      // After retry, "Lock was stolen" is still transient — suppress Sentry to avoid noise.
-      if (profileError.message?.includes('Lock was stolen')) return;
-      console.error('[auth-context] Failed to fetch profile:', profileError.message);
-      // "Lock was stolen" is transient navigator.locks contention — already retried once, skip Sentry noise
+      // A1: a failed profile fetch must NOT silently downgrade a paid user.
+      // Mark entitlement 'unknown' (not a confirmed downgrade) and keep
+      // lastKnownTier. We do not setProfile(null) here for the same reason.
+      // Then try the subscription row directly — it is the server-side source
+      // of truth for paid access and may be readable even when the profile read
+      // failed, so a previously-unseen paid user is not locked out on cold start.
+      setEntitlementStatus('unknown');
       if (!profileError.message?.includes('Lock was stolen')) {
+        // "Lock was stolen" is transient navigator.locks contention — already
+        // retried once above, so skip Sentry noise for it.
+        console.error('[auth-context] Failed to fetch profile:', profileError.message);
         Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
           level: 'warning',
           tags: { context: 'auth-profile-fetch' },
         });
       }
+      await fetchSubscriptionTier(userId);
       return;
     }
 
     if (!profileData) {
-      // Profile row missing — auth trigger may not have fired for this user
+      // Profile row missing — auth trigger may not have fired for this user.
+      // Treat as unknown (not a confirmed downgrade) so a paid user with a
+      // transiently-missing row keeps their last-known / subscription entitlement.
+      setEntitlementStatus('unknown');
       console.error('[auth-context] No profile row found for user:', userId);
       Sentry.captureMessage('Profile row missing for authenticated user', {
         level: 'warning',
         tags: { context: 'auth-profile-fetch' },
       });
+      await fetchSubscriptionTier(userId);
       return;
     }
 
@@ -120,6 +182,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       discord_username: profileData.discord_username ?? null,
       ai_insights_consent: profileData.ai_insights_consent ?? false,
     });
+    // Successful fetch: entitlement is now confirmed from the server.
+    setLastKnownTier(profileTier);
+    setEntitlementStatus('resolved');
 
     const SUB_COLS = 'id, stripe_subscription_id, stripe_price_id, status, tier, current_period_end, cancel_at_period_end';
 
@@ -185,6 +250,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (profileTier !== expectedTier) {
       // Optimistic update — correct locally without blocking the login flow
       setProfile((prev) => (prev ? { ...prev, tier: expectedTier } : prev));
+      // Keep last-known entitlement aligned with the healed tier.
+      setLastKnownTier(expectedTier);
       // Fire-and-forget sync to persist the correction server-side.
       const syncPromise = fetch('/api/auth/sync-subscription', { method: 'POST', credentials: 'same-origin' });
       // eslint-disable-next-line airwaylab/no-silent-catch -- fire-and-forget: non-critical; optimistic update already applied and cron job re-syncs on failure
@@ -192,7 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('[auth-context] login-sync: fire-and-forget failed:', err);
       });
     }
-  }, [supabase]);
+  }, [supabase, fetchSubscriptionTier]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
@@ -300,6 +367,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           Sentry.setUser(null);
           setProfile(null);
           setSubscription(null);
+          // Logout: drop entitlement so the next user can't inherit a paid tier.
+          setLastKnownTier(null);
+          setEntitlementStatus('unknown');
         }
       }
     );
@@ -360,6 +430,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setProfile(null);
     setSubscription(null);
+    setLastKnownTier(null);
+    setEntitlementStatus('unknown');
   }, [supabase]);
 
   const markWalkthroughComplete = useCallback(async () => {
@@ -381,7 +453,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase, user, profile]);
 
-  const tier: Tier = profile?.tier ?? 'community';
+  // Entitlement derivation (A1).
+  // A profile-fetch FAILURE must never silently downgrade a paid user to
+  // 'community'. We only trust 'community' when the fetch actually resolved.
+  // On 'unknown' (fetch failed / not yet resolved) we fall back, in order, to:
+  //   1. an active subscription row (server truth that survived the profile error),
+  //   2. the last tier we successfully resolved for this user,
+  //   3. 'community' (genuine default for a brand-new / anonymous user with
+  //      no prior resolution and no subscription).
+  let tier: Tier;
+  if (entitlementStatus === 'resolved' && profile) {
+    tier = profile.tier;
+  } else {
+    tier = subscription?.tier ?? lastKnownTier ?? 'community';
+  }
   const isPaid = tier === 'supporter' || tier === 'champion';
 
   return (
@@ -394,6 +479,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         tier,
         isPaid,
+        entitlementStatus,
         signIn,
         signOut,
         refreshProfile,
