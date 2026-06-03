@@ -58,10 +58,16 @@ import DreamMapperShuttingDown from '../posts/dreammapper-shutting-down';
 import HowToReadCPAPTherapyReport from '../posts/how-to-read-cpap-therapy-report';
 import CPAPVsBiPAP from '../posts/cpap-vs-bipap';
 import OSCARCPAPSoftwareAlternatives from '../posts/oscar-cpap-software-alternatives';
+import CPAPDataReportWhatDoctorSees from '../posts/cpap-data-report-what-doctor-sees';
+import { HowToDownloadCPAPDataSdCard } from '../posts/how-to-download-cpap-data-sd-card';
+import WhatIsAGoodAhiOnCpap from '../posts/what-is-a-good-ahi-on-cpap';
 
 const postComponents: Record<string, React.ComponentType> = {
+  'how-to-download-cpap-data-sd-card': HowToDownloadCPAPDataSdCard,
+  'what-is-a-good-ahi-on-cpap': WhatIsAGoodAhiOnCpap,
   'cpap-vs-bipap': CPAPVsBiPAP,
   'how-to-read-cpap-therapy-report': HowToReadCPAPTherapyReport,
+  'cpap-data-report-what-doctor-sees': CPAPDataReportWhatDoctorSees,
   'dreammapper-shutting-down': DreamMapperShuttingDown,
   'what-does-cpap-ahi-mean': WhatDoesCpapAhiMean,
   'how-to-download-resmed-cpap-data': HowToDownloadResMedCPAPData,

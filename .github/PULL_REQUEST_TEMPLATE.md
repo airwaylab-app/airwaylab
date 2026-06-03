@@ -6,11 +6,25 @@
 
 [1-2 sentences: why this change is needed]
 
+## Ticket
+
+Closes AIR-____
+
 ## Testing
 
 - [ ] `npm run check` passes
 - [ ] Manual testing done (if applicable)
 - [ ] New tests added for new behavior
+
+## Protected paths
+
+- [ ] This PR does **not** change logic in `lib/parsers/`, `lib/analyzers/`, or `workers/` — **or** the `clinical-signoff` label is applied (rationale in Risk & rollback).
+
+## Risk & rollback
+
+- **Risk:** low / medium / high
+- **Rollback:** [how to revert if this misbehaves in production]
+- **Data / PHI impact:** none / [describe]
 
 ## MDR Self-Check
 

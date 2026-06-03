@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights, persistNightsIncremental } from '@/lib/persistence';
 import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 import type { NightResult } from '@/lib/types';
@@ -226,6 +226,64 @@ describe('persistence', () => {
       expect(extra!.singleNightSections).toBeDefined();
       expect(typeof extra!.totalNights).toBe('number');
     });
+
+    it('strips _compactBreaths dynamically attached by orchestrator (AIR-2060 regression)', () => {
+      // Simulate what restoreBreathData() does: attach _compactBreaths to the night object.
+      // For a user with a high respiratory rate (16 br/min × 12h = 11,520 breaths), this
+      // can exceed the 2 MB char limit and cause total-failure serialisation.
+      const compactBreaths = Array.from({ length: 11_520 }, (_, i) => ({
+        ned: 0.45,
+        fi: 0.72,
+        isMShape: false,
+        tPeakTi: 0.38,
+        qPeak: 0.31,
+        ti: 0.52,
+        inspStartSec: i * 3.125,
+        expEndSec: i * 3.125 + 2.5,
+      }));
+      const nightWithIdbData = Object.assign({ ...SAMPLE_NIGHTS[0]! }, {
+        _compactBreaths: compactBreaths,
+      });
+
+      vi.mocked(Sentry.captureMessage).mockClear();
+      const result = persistResults([nightWithIdbData] as unknown as typeof SAMPLE_NIGHTS, null);
+
+      // Should save successfully — _compactBreaths must be stripped before size check
+      expect(result.saved).toBe(true);
+      expect(result.nightsSaved).toBe(1);
+
+      // Verify _compactBreaths is absent from the serialised payload
+      const saved = storage.get('airwaylab_results');
+      expect(saved).toBeDefined();
+      const parsed = JSON.parse(saved!);
+      expect(parsed.nights[0]._compactBreaths).toBeUndefined();
+
+      // Verify total-failure Sentry event was NOT fired
+      const totalFailureCalls = vi.mocked(Sentry.captureMessage).mock.calls.filter(
+        (c) => c[0] === 'Persistence: total failure — cannot save any nights'
+      );
+      expect(totalFailureCalls).toHaveLength(0);
+    });
+
+    it('strips _pldTrace dynamically attached by orchestrator', () => {
+      const pldTrace = {
+        dateStr: SAMPLE_NIGHTS[0]!.dateStr,
+        samplingRate: 0.5,
+        durationSeconds: 28800,
+        sampleCount: 14400,
+        leak: new Array(14400).fill(5.2),
+        storedAt: Date.now(),
+        engineVersion: 'test',
+      };
+      const nightWithPld = Object.assign({ ...SAMPLE_NIGHTS[0]! }, { _pldTrace: pldTrace });
+
+      const result = persistResults([nightWithPld] as unknown as typeof SAMPLE_NIGHTS, null);
+      expect(result.saved).toBe(true);
+
+      const saved = storage.get('airwaylab_results');
+      const parsed = JSON.parse(saved!);
+      expect(parsed.nights[0]._pldTrace).toBeUndefined();
+    });
   });
 
   describe('loadPersistedResults', () => {
@@ -352,6 +410,86 @@ describe('persistence', () => {
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
     });
+  });
+});
+
+// ── persistNightsIncremental — multi-SD-card regression (AIR-1990) ─────────
+// When user uploads SD Card 1 then SD Card 2 on separate sessions,
+// SD Card 1's nights must survive across page refreshes. The bug was that
+// filterNightsToTierWindow was applied at persist time, which re-applied a
+// rolling date cutoff and permanently dropped nights from the first upload.
+
+describe('persistNightsIncremental', () => {
+  beforeEach(() => storage.clear());
+
+  it('merges new nights with existing cached nights (multi-SD-card scenario)', () => {
+    const sdCard1Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(10), date: new Date(daysAgo(10)) } as NightResult;
+    const sdCard2Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
+
+    // Simulate: SD Card 1 analysis complete → all nights saved (no tier filter at persist)
+    persistResults([sdCard1Night], null);
+
+    // Simulate: page refresh → user uploads SD Card 2 → incremental persist
+    persistNightsIncremental([sdCard2Night]);
+
+    const loaded = loadPersistedResults();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.nights).toHaveLength(2);
+    const dates = loaded!.nights.map((n) => n.dateStr);
+    expect(dates).toContain(sdCard1Night.dateStr);
+    expect(dates).toContain(sdCard2Night.dateStr);
+  });
+
+  it('does not lose SD Card 1 nights when SD Card 2 night is more recent', () => {
+    // Regression: before fix, if SD Card 1 had nights outside the 7-day community window,
+    // a new analysis run would call filterNightsToTierWindow and drop them permanently.
+    const oldNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(20), date: new Date(daysAgo(20)) } as NightResult;
+    const recentNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
+
+    persistResults([oldNight, recentNight], null);
+
+    const loaded = loadPersistedResults();
+    expect(loaded!.nights).toHaveLength(2);
+    expect(loaded!.nights.map((n) => n.dateStr)).toContain(oldNight.dateStr);
+  });
+
+  // Single-SD-card regression (AIR-1990 narrowed): Zachary reports that even
+  // with one SD card, every page refresh drops all-but-the-most-recent night.
+  // Root cause: filterNightsToTierWindow was applied at persist time — community
+  // tier (7-day window) dropped all nights older than 7 days. After tier correction
+  // to champion, localStorage already had only 1 night so nothing could be restored.
+  it('single SD card: all nights survive persist regardless of how old they are', () => {
+    const nights = [
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult,
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(14), date: new Date(daysAgo(14)) } as NightResult,
+      { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(30), date: new Date(daysAgo(30)) } as NightResult,
+    ];
+
+    // Simulate the authoritative save that the orchestrator performs after analysis
+    persistResults(nights, null);
+
+    // Simulate page refresh: reload from localStorage
+    const loaded = loadPersistedResults();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.nights).toHaveLength(3);
+    const dates = loaded!.nights.map((n) => n.dateStr);
+    expect(dates).toContain(daysAgo(1));
+    expect(dates).toContain(daysAgo(14));
+    expect(dates).toContain(daysAgo(30));
+  });
+
+  it('deduplicates by dateStr when the same night appears in both SD cards', () => {
+    const sharedDate = daysAgo(5);
+    const v1 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 1 } as NightResult;
+    const v2 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 2 } as NightResult;
+
+    persistResults([v1], null);
+    persistNightsIncremental([v2]);
+
+    const loaded = loadPersistedResults();
+    expect(loaded!.nights).toHaveLength(1);
+    // v2 (newer analysis) should win
+    expect(loaded!.nights[0]!.sessionCount).toBe(2);
   });
 });
 

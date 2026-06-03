@@ -21,6 +21,7 @@ import { computeOximetry } from '../lib/analyzers/oximetry-engine';
 import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
 import { computeCrossDevice } from '../lib/analyzers/cross-device-engine';
 import { buildOximetryTrace } from '../lib/oximetry-trace';
+import { computeSpontaneousPct } from '../lib/bilevel-metrics';
 import type {
   WorkerMessage,
   WorkerProgress,
@@ -233,9 +234,12 @@ async function processFiles(
     } catch (err) {
       const filename = brp.path.split('/').pop() || brp.path;
       const detail = err instanceof Error ? err.message : String(err);
+      // Use a dedicated checkpoint for missing flow signals so Sentry can group
+      // this device/firmware pattern separately from generic parse failures.
+      const isNoFlowSignal = detail.startsWith('No flow signal found');
       const warning: WorkerWarning = {
         type: 'WARNING',
-        checkpoint: 'parse_file_failed',
+        checkpoint: isNoFlowSignal ? 'no_flow_signal' : 'parse_file_failed',
         detail: `Failed to parse ${filename}: ${detail}`,
         tags: { file: filename, error: detail },
       };
@@ -501,6 +505,26 @@ async function processFiles(
     // Glasgow Index (duration-weighted across sessions)
     const glasgow = computeNightGlasgow(group.sessions);
 
+    // Bilevel breath classification (Spontaneous/Timed%). AirCurve 10/11 BRP files carry
+    // respEventData (TrigCycEvt channel). CPAP/APAP files have null — computeSpontaneousPct
+    // returns null when no classified breaths are found.
+    const totalRespEventSamples = group.sessions.reduce(
+      (sum, s) => sum + (s.respEventData?.length ?? 0),
+      0
+    );
+    let bilevelMetrics: { spontaneousPct: number; timedPct: number } | null = null;
+    if (totalRespEventSamples > 0) {
+      const combinedRespEvent = new Float32Array(totalRespEventSamples);
+      let respEventOffset = 0;
+      for (const session of group.sessions) {
+        if (session.respEventData) {
+          combinedRespEvent.set(session.respEventData, respEventOffset);
+          respEventOffset += session.respEventData.length;
+        }
+      }
+      bilevelMetrics = computeSpontaneousPct(combinedRespEvent);
+    }
+
     // WAT + NED + Settings: concatenate flow and pressure data from all sessions
     const totalFlowSamples = group.sessions.reduce(
       (sum, s) => sum + s.flowData.length,
@@ -608,6 +632,8 @@ async function processFiles(
       settingsFingerprint: computeFingerprint(settings),
       csl,
       pldSummary,
+      spontaneousPct: bilevelMetrics?.spontaneousPct ?? null,
+      timedPct: bilevelMetrics?.timedPct ?? null,
     });
 
     // Emit incremental result so the orchestrator can persist progress.
@@ -785,6 +811,8 @@ async function processBMCFiles(
       settingsFingerprint: computeFingerprint(nightSettings),
       csl: null,
       pldSummary: null, // PLD is ResMed-specific, not available for BMC
+      spontaneousPct: null, // BMC devices do not carry TrigCycEvt-equivalent data
+      timedPct: null,
     };
     nights.push(night);
 

@@ -2,7 +2,7 @@
  * Email cron handler -- called daily at 03:00 UTC from the cleanup cron job.
  *
  * Processes pending email sequences:
- * 1. Discovers new candidates (activation, re_engagement) -- schedule first so they
+ * 1. Discovers new candidates (activation, re_engagement, win_back) -- schedule first so they
  *    can be sent in the same run, avoiding a 24h delay until the next cron.
  * 2. Queries for all due emails (scheduled_at <= now, status = pending)
  * 3. Sends each via Resend (with AB variant subjects where applicable)
@@ -21,7 +21,9 @@ import {
   scheduleCpapTipsSequences,
   scheduleReEngagementSequences,
   suppressReEngagement,
+  scheduleWinBackSequences,
   applySunsetPolicy,
+  cancelStaleSequenceSteps,
 } from './sequences';
 import { SEQUENCES } from './templates';
 import { getUnsubscribeUrl } from './unsubscribe-token';
@@ -36,7 +38,9 @@ interface CronResult {
   activationScheduled: number;
   cpapTipsScheduled: number;
   reEngagementScheduled: number;
+  winBackScheduled: number;
   sunsetted: number;
+  staleStepsCancelled: number;
 }
 
 export async function processEmailDrips(supabase: SupabaseClient): Promise<CronResult> {
@@ -47,7 +51,9 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     activationScheduled: 0,
     cpapTipsScheduled: 0,
     reEngagementScheduled: 0,
+    winBackScheduled: 0,
     sunsetted: 0,
+    staleStepsCancelled: 0,
   };
 
   // 1. Discover new candidates first -- scheduling before sending ensures
@@ -58,8 +64,16 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
   result.activationScheduled = await scheduleActivationSequences(supabase);
   result.cpapTipsScheduled = await scheduleCpapTipsSequences(supabase);
   result.reEngagementScheduled = await scheduleReEngagementSequences(supabase);
+  result.winBackScheduled = await scheduleWinBackSequences(supabase);
 
-  // 2. Send all pending emails (including freshly scheduled ones from step 1)
+  // 2. Prune stale steps before querying pending emails.
+  //    Multi-step sequences (activation, cpap_tips) can fill the 50-row batch with
+  //    overdue steps from a handful of users, causing the rate-limit (1/user/run)
+  //    to starve newer users and grow the overdue count. Cancelling steps that are
+  //    14+ days past their scheduled_at clears the backlog and keeps the queue healthy.
+  result.staleStepsCancelled = await cancelStaleSequenceSteps(supabase);
+
+  // 3. Send all pending emails (including freshly scheduled ones from step 1)
   const pendingEmails = await getPendingEmails(supabase);
 
   if (pendingEmails.length === 0) {
@@ -129,10 +143,10 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     }
   }
 
-  // 3. Apply sunset policy for persistently unengaged users
+  // 4. Apply sunset policy for persistently unengaged users
   result.sunsetted = await applySunsetPolicy(supabase);
 
-  // 4. Health check: alert if drip system looks broken.
+  // 5. Health check: alert if drip system looks broken.
   //    Use a 25h grace window so rate-limited emails (held for the next daily run)
   //    don't count as "overdue". Only emails that have survived ≥1 full cron cycle
   //    without being sent indicate a real problem.

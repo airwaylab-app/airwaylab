@@ -90,7 +90,7 @@ function makeNight(overrides: {
     machineSummary: null,
     settingsFingerprint: null,
     csl: null,
-    pldSummary: null,
+    pldSummary: null, spontaneousPct: null, timedPct: null,
   };
 }
 

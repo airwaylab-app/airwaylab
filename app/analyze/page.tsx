@@ -383,20 +383,25 @@ function AnalyzePageInner() {
           }),
         }).catch(() => { /* non-critical */ });
 
-        // Contribute data: auto if opted in, show nudge if first time
-        const contributedDates: string[] = JSON.parse(
-          safeGetItem('airwaylab_contributed_dates') || '[]'
-        );
-        const contributedSet = new Set(contributedDates);
-        const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
+        // Contribute data: auto if opted in, show nudge if first time.
+        // Gated behind auth — the contribution endpoints now require a logged-in
+        // user (no anonymous writes). Skip both the auto-submit and the nudge for
+        // logged-out users so they aren't prompted into a request that 401s.
+        if (userRef.current) {
+          const contributedDates: string[] = JSON.parse(
+            safeGetItem('airwaylab_contributed_dates') || '[]'
+          );
+          const contributedSet = new Set(contributedDates);
+          const newNights = newState.nights.filter((n) => !contributedSet.has(n.dateStr));
 
-        if (contributeOptInRef.current && newNights.length > 0) {
-          setAutoSubmitCount(newNights.length);
-          submitContribution(newNights);
-        } else if (!contributeOptInRef.current && contributedDates.length === 0) {
-          // Only show nudge if user has never contributed before
-          pendingNightsRef.current = newState.nights;
-          setShowContributeNudge(true);
+          if (contributeOptInRef.current && newNights.length > 0) {
+            setAutoSubmitCount(newNights.length);
+            submitContribution(newNights);
+          } else if (!contributeOptInRef.current && contributedDates.length === 0) {
+            // Only show nudge if user has never contributed before
+            pendingNightsRef.current = newState.nights;
+            setShowContributeNudge(true);
+          }
         }
 
         // Cloud storage: auto-upload raw files if cloud sync enabled
@@ -776,12 +781,19 @@ function AnalyzePageInner() {
             {/* Mobile reminder — secondary, shown below file picker */}
             <MobileEmailCapture className="mt-4 sm:hidden" />
 
-            {/* Contextual help link */}
+            {/* Contextual help links */}
             <p className="mt-3 text-center text-xs text-muted-foreground/70">
               Not sure how to get your data?{' '}
               <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
                 How to get your ResMed data
               </Link>
+            </p>
+            <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
+              Not sure what to look for? Read about{"' '"}
+              <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
+                what your AHI number means
+              </Link>
+              .
             </p>
           </div>
         ) : (
@@ -1260,6 +1272,7 @@ function AnalyzePageInner() {
               isDemo={isDemo}
               autoSubmitStatus={autoSubmitStatus}
               autoSubmitCount={autoSubmitCount}
+              isAuthenticated={!!user}
             />
           </div>
 

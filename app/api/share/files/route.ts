@@ -205,8 +205,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No files available for this share' }, { status: 404 });
     }
 
-    // Generate signed download URLs for each file
-    const filePaths = share.file_paths as string[];
+    // Generate signed download URLs for each file. Defense-in-depth: only sign
+    // paths under this share's own prefix, even if file_paths was tampered.
+    const sharePrefix = `${shareId}/`;
+    const filePaths = (share.file_paths as string[]).filter(
+      (p) => p.startsWith(sharePrefix) && isSafeFileName(p.slice(sharePrefix.length))
+    );
     const downloadUrls: { fileName: string; downloadUrl: string }[] = [];
 
     for (const storagePath of filePaths) {
@@ -281,6 +285,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { shareId, filePaths } = parsed.data;
+
+    // Every path must live under this share's own prefix, else finalising one
+    // share with another share's paths would let GET sign+leak those files (IDOR).
+    const sharePrefix = `${shareId}/`;
+    for (const p of filePaths) {
+      if (!p.startsWith(sharePrefix) || !isSafeFileName(p.slice(sharePrefix.length))) {
+        return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+      }
+    }
 
     // Verify share exists and belongs to this user
     const { data: share, error: shareError } = await serviceRole

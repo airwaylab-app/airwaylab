@@ -2,7 +2,7 @@
   "github": {
     "silent": true
   },
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app/ components/ lib/ workers/ public/ package.json",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':!*.md' ':!docs' ':!.github'",
   "crons": [
     {
       "path": "/api/cron/cleanup",
@@ -31,6 +31,18 @@
     {
       "path": "/api/cron/feedback-processor",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/db-integrity-check",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/discord-strategy-digest",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/discord-weekly-digest",
+      "schedule": "0 8 * * 1"
     }
   ]
 }

@@ -331,6 +331,14 @@ describe('re-engagement template personalisation', () => {
       expect(html).toContain('utm_source=email');
     }
   });
+
+  it('all three steps include physical mailing address (CAN-SPAM §7704(a)(5))', async () => {
+    const { reEngagementStep1, reEngagementStep2, reEngagementStep3 } = await import('@/lib/email/templates');
+    for (const fn of [reEngagementStep1, reEngagementStep2, reEngagementStep3]) {
+      const { html } = fn(UNSUB_URL, 'Test', '1 January 2026');
+      expect(html).toContain('Helperpark');
+    }
+  });
 });
 
 // ── SEQUENCES registry entry ──────────────────────────────────

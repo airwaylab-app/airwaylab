@@ -29,6 +29,7 @@ vi.mock('@/lib/rate-limit', () => {
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  addBreadcrumb: vi.fn(),
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -207,6 +208,34 @@ describe('POST /api/create-checkout-session', () => {
     expect(res.status).toBe(200);
     expect(mockCustomersCreate).toHaveBeenCalled();
   });
+
+  // AIR-1873: Profile existence gate — phantom sessions must not create orphan Stripe customers
+  it('returns 400 and fires Sentry alert when user has no profile row', async () => {
+    const { captureMessage } = await import('@sentry/nextjs');
+
+    // Both server-client and service-role return null for the profile check
+    const chainable = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockReturnValue({ data: null, error: null }),
+      update: vi.fn().mockReturnThis(),
+    };
+    mockFrom.mockReturnValue(chainable);
+
+    const res = await callRoute({ priceId: 'price_supp_m' });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/Account setup incomplete/);
+
+    // Must fire a Sentry alert so the incident is observable
+    expect(captureMessage).toHaveBeenCalledWith(
+      'Checkout blocked: no profile row for authenticated user',
+      expect.objectContaining({ level: 'error' })
+    );
+
+    // Must NOT create a Stripe customer for a phantom session
+    expect(mockCustomersCreate).not.toHaveBeenCalled();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -230,6 +259,8 @@ describe('POST /api/customer-portal', () => {
     const chainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      // validateProfileExists uses maybeSingle; stripe_customer_id lookup uses single
+      maybeSingle: vi.fn().mockReturnValue({ data: { id: 'user-123' }, error: null }),
       single: vi.fn().mockReturnValue({ data: { stripe_customer_id: null }, error: null }),
     };
     mockFrom.mockReturnValue(chainable);

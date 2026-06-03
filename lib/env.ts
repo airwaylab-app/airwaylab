@@ -85,6 +85,7 @@ export const serverEnv = {
   DISCORD_REVENUE_WEBHOOK_URL: process.env.DISCORD_REVENUE_WEBHOOK_URL ?? undefined,
   DISCORD_USER_SIGNALS_WEBHOOK_URL: process.env.DISCORD_USER_SIGNALS_WEBHOOK_URL ?? undefined,
   DISCORD_GROWTH_WEBHOOK_URL: process.env.DISCORD_GROWTH_WEBHOOK_URL ?? undefined,
+  DISCORD_PLATFORM_HEALTH_WEBHOOK_URL: process.env.DISCORD_PLATFORM_HEALTH_WEBHOOK_URL ?? undefined,
 
   /** Discord webhook URL for #general channel (weekly discussion topics) */
   DISCORD_GENERAL_WEBHOOK_URL: process.env.DISCORD_GENERAL_WEBHOOK_URL ?? undefined,
@@ -100,6 +101,9 @@ export const serverEnv = {
 
   /** Gmail OAuth2 refresh token for feedback processor drafts */
   GMAIL_REFRESH_TOKEN: process.env.GMAIL_REFRESH_TOKEN ?? undefined,
+
+  /** CAN-SPAM §7704(a)(5): valid physical postal address of the sender. Required for all commercial emails. */
+  SENDER_PHYSICAL_ADDRESS: process.env.SENDER_PHYSICAL_ADDRESS ?? undefined,
 } as const;
 
 /**
@@ -140,6 +144,12 @@ export function validateServerEnv() {
   if (serverEnv.STRIPE_SECRET_KEY && !serverEnv.STRIPE_WEBHOOK_SECRET) {
     warnings.push(
       'STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing — Stripe webhooks will fail.'
+    );
+  }
+
+  if (serverEnv.RESEND_API_KEY && !serverEnv.SENDER_PHYSICAL_ADDRESS) {
+    warnings.push(
+      'RESEND_API_KEY is set but SENDER_PHYSICAL_ADDRESS is missing — all commercial emails will be CAN-SPAM non-compliant (15 U.S.C. §7704(a)(5)).'
     );
   }
 

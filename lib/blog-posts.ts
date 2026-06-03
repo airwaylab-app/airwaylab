@@ -17,6 +17,45 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'how-to-download-cpap-data-sd-card',
+    title: 'How to Download Your CPAP Data from an SD Card (ResMed, Philips and More)',
+    seoTitle: 'How to Download CPAP Data from SD Card: ResMed, Philips & More | AirwayLab',
+    description:
+      'Step-by-step guide to removing and reading your CPAP SD card on Windows and Mac, then uploading your therapy records to AirwayLab for night-by-night analysis.',
+    date: '2026-05-14',
+    readTime: '6 min read',
+    tags: ['CPAP', 'SD Card', 'ResMed', 'Philips', 'Getting Started', 'Data Download'],
+    ogDescription:
+      'Step-by-step guide to removing and reading your CPAP SD card on Windows and Mac, then uploading your therapy records to AirwayLab for night-by-night analysis.',
+    faqItems: [
+      {
+        question: 'Can I damage my CPAP machine by removing the SD card?',
+        answer:
+          'Not if you power it off first. The card records during a session and data is written at session end. Powering down before removal is the one step not to skip.',
+      },
+      {
+        question: 'How often should I download my data?',
+        answer:
+          'SD cards on most machines hold at least a year of sessions. Many users download every month or two, or when they want to look at a specific period. There is no technical reason to download more frequently.',
+      },
+      {
+        question: 'My ResMed AirSense 11 does not seem to have an SD card — am I missing something?',
+        answer:
+          'The AirSense 11 has both an SD card slot (same location as the 10) and myAir cloud connectivity. The SD card is present and records the same detailed data as the AirSense 10; it is just less prominently documented in the consumer-facing materials.',
+      },
+      {
+        question: 'Can I upload my CPAP data without removing the SD card?',
+        answer:
+          "On some machines with cloud sync enabled, data uploads automatically to the manufacturer's platform. AirwayLab currently reads from SD card upload or OSCAR import; direct cloud sync is on the roadmap.",
+      },
+      {
+        question: 'What is AHI?',
+        answer:
+          'AHI stands for Apnea-Hypopnea Index — the number of apnea and hypopnea events recorded per hour of sleep. Your machine logs this metric each session. Your sleep physician can help you interpret what your recorded AHI values mean in the context of your therapy.',
+      },
+    ],
+  },
+  {
     slug: 'oscar-cpap-software-alternatives',
     title: 'OSCAR CPAP Software Alternatives (And How They Compare)',
     seoTitle: 'OSCAR CPAP Software Alternatives: AirwayLab, SleepHQ & More | AirwayLab',
@@ -1717,6 +1756,95 @@ export const blogPosts: BlogPost[] = [
         question: 'How does AirwayLab show central apnea data?',
         answer:
           'AirwayLab reads CA event data directly from your ResMed EDF files, the same source as OSCAR. The overview dashboard shows your CA count alongside your obstructive and hypopnea breakdown. The trend tab shows CA counts across loaded sessions. All analysis runs in your browser — your data never leaves your device.',
+      },
+    ],
+  },
+  {
+    slug: 'cpap-data-report-what-doctor-sees',
+    title: 'How to Read Your CPAP Data Report (What Your Doctor Sees)',
+    seoTitle:
+      'How to Read Your CPAP Data Report: AHI, Usage, Leak Rate | AirwayLab',
+    description:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate — and what your doctor and insurance company actually look at.',
+    date: '2026-05-18',
+    readTime: '8 min read',
+    tags: ['CPAP Compliance', 'CPAP Data', 'AHI', 'Insurance', 'ResMed'],
+    ogDescription:
+      'Learn what\'s in a CPAP compliance report — AHI, usage hours, leak rate, and event breakdown — and what your doctor and insurance company are actually looking at when they review your therapy report.',
+    faqItems: [
+      {
+        question: 'What is a CPAP compliance report?',
+        answer:
+          "A CPAP compliance report is a summary of your therapy usage data — how often you used the machine, for how long, and key metrics like AHI and leak rate. It's generated from your device's SD card or cloud app data. Your doctor uses it to review therapy progress; your insurance company uses it to verify coverage requirements.",
+      },
+      {
+        question: 'How many hours do I need to use my CPAP to be compliant?',
+        answer:
+          'The US Medicare standard — and the benchmark most private insurers follow — is at least 4 hours of use per night on at least 70% of nights over a 30-day period. If you fall below this threshold, coverage for equipment and supplies may be affected. Your DME supplier can pull your detailed usage record if you need to review your status.',
+      },
+      {
+        question: 'What AHI does my insurance company look at?',
+        answer:
+          'Insurers typically look at your residual AHI — the events recorded while therapy was running — as a favorable data point in compliance reviews. Your clinician can put your specific number in context and explain what it means for your care.',
+      },
+      {
+        question: 'What does "large mask leak" mean on my CPAP report?',
+        answer:
+          'A large mask leak flag means unintentional air escaped around your mask seal beyond the threshold your device uses to flag data-quality concerns. High or persistent leak can reduce the reliability of AHI readings for that session and may prompt your doctor to review mask fit. Your clinician can help assess recurring leak flags in your specific context.',
+      },
+      {
+        question: 'Can I access my own CPAP compliance data?',
+        answer:
+          "Yes. ResMed users can view a summary in the myAir app, or export their SD card for detailed data. Philips DreamStation users can use DreamMapper for cloud summary data, or OSCAR (free, open-source) for full SD card data. AirwayLab reads ResMed SD card data directly in your browser — no upload required.",
+      },
+      {
+        question: 'What is the difference between CPAP compliance and CPAP effectiveness?',
+        answer:
+          'Compliance (for insurance purposes) is largely about usage hours — did you use the machine enough. Clinical effectiveness is a broader judgment that includes AHI trends, leak patterns, and how you actually feel. Compliance is a prerequisite for coverage; effectiveness is what your clinician evaluates at follow-up.',
+      },
+      {
+        question: 'Does AirwayLab show my compliance data?',
+        answer:
+          "Yes. AirwayLab reads your usage hours, AHI, event breakdowns, leak rate, and pressure data from your ResMed SD card and displays it in one dashboard — the same data that goes into your doctor's compliance report. It also runs four additional analysis engines on your raw flow waveform, surfacing metrics like flow limitation scores and RERA-related patterns that don't appear in standard compliance reports. Everything runs in your browser; your data never leaves your device.",
+      },
+    ],
+  },
+  {
+    slug: 'what-is-a-good-ahi-on-cpap',
+    title: 'What Is a Good AHI on CPAP? (And What to Do If Yours Is Still High)',
+    seoTitle: 'What Is a Good AHI on CPAP? Residual AHI Explained | AirwayLab',
+    description:
+      'Wondering what AHI is good on CPAP therapy? Learn what residual AHI means, what numbers are typical, and what to ask your doctor if yours stays elevated.',
+    date: '2026-06-16',
+    readTime: '9 min read',
+    tags: ['AHI', 'CPAP Therapy', 'Residual AHI', 'Sleep Apnea', 'Flow Limitation'],
+    ogDescription:
+      'Wondering what AHI is good on CPAP therapy? Learn what residual AHI means, what numbers are typical, and what to ask your doctor if yours stays elevated.',
+    faqItems: [
+      {
+        question: 'What AHI is considered good on CPAP?',
+        answer:
+          'Many sleep specialists use a residual AHI below 5 as a common benchmark for CPAP therapy. The right target for you depends on your individual situation — your sleep physician can advise.',
+      },
+      {
+        question: 'Why is my AHI still high on CPAP?',
+        answer:
+          'Common contributing factors include mask leak, pressure settings, sleep position, and the type of events occurring. A clinician can review your full therapy data and advise on next steps.',
+      },
+      {
+        question: 'Is an AHI of 2 good on CPAP?',
+        answer:
+          "An AHI below 5 falls within the range many clinicians consider typical on therapy. Whether it's optimal for your specific situation is something your sleep physician can assess in context.",
+      },
+      {
+        question: 'What is residual AHI?',
+        answer:
+          "Residual AHI is the Apnea-Hypopnea Index recorded by your CPAP device while you're on therapy — as distinct from your diagnostic AHI measured during your pre-treatment sleep study.",
+      },
+      {
+        question: 'Can CPAP make AHI worse?',
+        answer:
+          "In some cases, pressure settings that don't match your needs may result in certain event types. Your sleep physician or respiratory therapist can review your data and determine whether any clinical adjustments are warranted.",
       },
     ],
   },
