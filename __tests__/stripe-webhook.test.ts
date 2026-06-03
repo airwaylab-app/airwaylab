@@ -343,6 +343,43 @@ describe('POST /api/webhooks/stripe', () => {
     expect(captureException).toHaveBeenCalled();
   });
 
+  // ---------- 4b. Schema drift: missing ST1 columns returns 503 before ack ----------
+  it('returns 503 before registering after() when stripe_events job-state columns are missing', async () => {
+    const { captureException } = await import('@sentry/nextjs');
+    const event = makeStripeEvent('checkout.session.completed', {});
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const schemaError = {
+      code: 'PGRST204',
+      message: "Could not find the 'status' column of 'stripe_events' in the schema cache",
+    };
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: schemaError });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'stripe_events') return stripeEventsBuilder;
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
+    const res = await callRoute(req);
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({
+      error: 'Stripe webhook job-state schema is not applied',
+    });
+    expect(stripeEventsBuilder.insert).not.toHaveBeenCalled();
+    expect(afterCallbacks).toHaveLength(0);
+    expect(mockSubscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(captureException).toHaveBeenCalledWith(
+      schemaError,
+      expect.objectContaining({
+        tags: expect.objectContaining({ action: 'job-state-schema-check' }),
+        extra: expect.objectContaining({
+          requiredMigration: '057_stripe_events_job_state.sql',
+        }),
+      })
+    );
+  });
+
   // ---------- 5. checkout.session.completed: happy path ----------
   it('handles checkout.session.completed -- upserts subscription, updates profile, logs event', async () => {
     const checkoutSession = {
@@ -745,10 +782,10 @@ describe('POST /api/webhooks/stripe', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'stripe_events') {
         stripeEventsCallCount++;
-        // The claim is now the claim_stripe_event RPC, not a from('stripe_events')
-        // call, so the stripe_events builder sees only: 1: insert(pending) ok,
-        // 2: update(failed) fails.
-        if (stripeEventsCallCount <= 1) {
+        // The claim is the claim_stripe_event RPC, not a from('stripe_events')
+        // call, so the builder sees: 1: schema guard ok, 2: insert(pending) ok,
+        // 3: update(failed) fails.
+        if (stripeEventsCallCount <= 2) {
           return createQueryBuilder({ data: null, error: null });
         }
         return createQueryBuilder({

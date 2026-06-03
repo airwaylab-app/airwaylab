@@ -37,6 +37,44 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
+function isStripeEventsJobStateSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const err = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
+  const haystack = [err.message, err.details, err.hint]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    err.code === '42703' ||
+    err.code === 'PGRST204' ||
+    (
+      haystack.includes('stripe_events') &&
+      ['status', 'attempts', 'last_error', 'updated_at'].some((column) =>
+        haystack.includes(column)
+      ) &&
+      (haystack.includes('does not exist') || haystack.includes('could not find'))
+    )
+  );
+}
+
+async function ensureStripeEventsJobStateSchema(
+  supabase: SupabaseClient
+): Promise<{ ok: true } | { ok: false; error: unknown }> {
+  const { error } = await supabase
+    .from('stripe_events')
+    .select('status, attempts, last_error, updated_at')
+    .limit(0);
+
+  if (!error) return { ok: true };
+  if (isStripeEventsJobStateSchemaError(error)) return { ok: false, error };
+
+  // Let the existing insert/claim error handling decide retry semantics for
+  // transient database failures. This guard is only for migration drift.
+  return { ok: true };
+}
+
 /** Compute monthly recurring revenue in cents from a unit amount and interval. */
 function computeMrrCents(unitAmount: number, interval: string): number {
   if (interval === 'year') return Math.round(unitAmount / 12);
@@ -592,6 +630,26 @@ export async function POST(request: NextRequest) {
       },
     });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  const schemaCheck = await ensureStripeEventsJobStateSchema(supabase);
+  if (!schemaCheck.ok) {
+    console.error('[stripe-webhook] stripe_events job-state schema missing:', schemaCheck.error);
+    Sentry.captureException(schemaCheck.error, {
+      level: 'error',
+      tags: {
+        route: 'stripe-webhook',
+        event_type: event.type,
+        action: 'job-state-schema-check',
+      },
+      extra: {
+        requiredMigration: '057_stripe_events_job_state.sql',
+      },
+    });
+    return NextResponse.json(
+      { error: 'Stripe webhook job-state schema is not applied' },
+      { status: 503 }
+    );
   }
 
   // Idempotency + job-state record (ST1). Insert the event as `pending`.
