@@ -66,7 +66,7 @@ const faqData = [
   {
     question: 'Can I use both SleepHQ and AirwayLab?',
     answer:
-      'Yes. They read from the same SD card data. SleepHQ gives you mobile convenience and cloud access, while AirwayLab gives you deeper flow limitation analysis and privacy. Some users use SleepHQ for daily quick checks and AirwayLab for detailed analysis when adjusting settings.',
+      'Yes. They read from the same SD card data. SleepHQ gives you mobile convenience and cloud access, while AirwayLab gives you deeper flow limitation analysis and privacy. Some users use SleepHQ for daily quick checks and AirwayLab for detailed pattern analysis when exploring their data in depth.',
   },
   {
     question: 'Does SleepHQ have flow limitation analysis like AirwayLab?',

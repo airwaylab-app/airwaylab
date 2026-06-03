@@ -53,6 +53,18 @@ vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(undefined),
   formatRevenueEmbed: vi.fn().mockReturnValue({}),
   alertStripePaymentFailed: vi.fn().mockResolvedValue(undefined),
+  COLORS: { green: 0x10b981, amber: 0xf59e0b, red: 0xef4444, blue: 0x3b82f6, purple: 0x8b5cf6, teal: 0x14b8a6 },
+  _budget: { date: '', count: 0 },
+  routeAlert: vi.fn().mockResolvedValue(false),
+  sendOpsAlert: vi.fn().mockResolvedValue(false),
+  sendCriticalAlert: vi.fn().mockResolvedValue(false),
+  alertCredentialExpiry: vi.fn().mockResolvedValue(false),
+  alertSecurityIncident: vi.fn().mockResolvedValue(false),
+  formatMonitorEmbed: vi.fn().mockReturnValue({}),
+  formatUserSignalEmbed: vi.fn().mockReturnValue({}),
+  formatEmailAlertEmbed: vi.fn().mockReturnValue({}),
+  formatBroadcastEmbed: vi.fn().mockReturnValue({}),
+  formatGrowthEmbed: vi.fn().mockReturnValue({}),
 }));
 
 const mockFrom = vi.fn();
@@ -82,15 +94,24 @@ vi.mock('stripe', () => {
 
 function createQueryBuilder(terminalResult: { data?: unknown; error?: unknown } = { data: null, error: null }) {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
+  // ST1 atomic claim: runStripeJob ends the claim in `.select('event_id')` and
+  // awaits the affected rows. Report the claim WON (non-empty array) so the
+  // phantom-user guard inside processStripeEvent is actually reached.
+  let claimResult: { data?: unknown; error?: unknown } | null = null;
   const proxy = new Proxy(builder, {
     get(target, prop: string) {
       if (prop === 'then') {
-        return (resolve: (v: unknown) => void) => resolve(terminalResult);
+        const result = claimResult ?? terminalResult;
+        return (resolve: (v: unknown) => void) => resolve(result);
       }
       if (!target[prop]) {
-        target[prop] = vi.fn();
+        target[prop] = vi.fn((...args: unknown[]) => {
+          if (prop === 'select' && args[0] === 'event_id') {
+            claimResult = { data: [{ event_id: 'evt_claimed' }], error: null };
+          }
+          return proxy;
+        });
       }
-      target[prop].mockReturnValue(proxy);
       return target[prop];
     },
   });

@@ -109,6 +109,21 @@ describe('GET /api/nights', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 401 when session token is expired and proxy cannot refresh (regression: AIR-2275)', async () => {
+    // Simulates a user whose refresh token has also expired — proxy.ts cannot
+    // refresh the access token, so getUser() returns null → 401.
+    // The auth-context fix (AIR-2275) clears stale sessions before fetchNightsFromCloud()
+    // fires, preventing these 401s from reaching the server in normal use.
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const { GET } = await import('@/app/api/nights/route');
+    const res = await GET(makeRequest());
+
+    expect(res.status).toBe(401);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('Unauthorized');
+  });
+
   it('returns 200 when Origin header is absent (regression: AIR-1870)', async () => {
     // GET requests from same-origin JS fetch routinely omit the Origin header.
     // validateOrigin() must NOT gate GET endpoints — auth cookie is the guard.
