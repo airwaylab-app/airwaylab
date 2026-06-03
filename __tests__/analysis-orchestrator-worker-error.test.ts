@@ -552,6 +552,77 @@ describe('analysis-orchestrator worker error handling', () => {
     });
   });
 
+  // ── runWorker — copy-before-transfer (Sentry JAVASCRIPT-NEXTJS-6D) ──────────
+  //
+  // ArrayBuffers transferred via postMessage are detached (byteLength → 0) in a
+  // real browser. The orchestrator slices a fresh copy before each postMessage
+  // so the originals in `files` remain valid and can be used for a retry without
+  // throwing DataCloneError.
+
+  describe('runWorker — copy-before-transfer prevents DataCloneError', () => {
+    it('sends ArrayBuffer copies to postMessage, not the original buffer objects', async () => {
+      const { Ctor, instances } = makeSequentialWorkerCtor([
+        { type: 'results', nights: [] },
+      ]);
+      vi.stubGlobal('Worker', Ctor);
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+      const originalBuffer = new ArrayBuffer(100);
+      const files = [{ buffer: originalBuffer, path: 'test.edf' }];
+
+      await (orchestrator as unknown as {
+        runWorker: (files: { buffer: ArrayBuffer; path: string }[]) => Promise<unknown>
+      }).runWorker(files);
+
+      const call = instances[0]!.postMessage.mock.calls[0]!;
+      const msgBuf = (call[0] as { files: { buffer: ArrayBuffer }[] }).files[0]!.buffer;
+
+      // The buffer inside the postMessage message must be a copy, not the original.
+      // This prevents DataCloneError when the original is re-used on a retry.
+      expect(msgBuf).not.toBe(originalBuffer);
+      expect(msgBuf.byteLength).toBe(100);
+
+      vi.unstubAllGlobals();
+    });
+
+    it('original buffers remain non-detached after postMessage (safe for retry)', async () => {
+      // First worker fires an opaque load failure; second succeeds.
+      // If the orchestrator transferred the originals, the retry would throw
+      // DataCloneError: ArrayBuffer at index 0 is already detached.
+      const { Ctor, instances } = makeSequentialWorkerCtor([
+        'onerror-empty',
+        { type: 'results', nights: [] },
+      ]);
+      vi.stubGlobal('Worker', Ctor);
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+      const originalBuffer = new ArrayBuffer(100);
+      const files = [{ buffer: originalBuffer, path: 'test.edf' }];
+
+      const result = await (orchestrator as unknown as {
+        runWorker: (files: { buffer: ArrayBuffer; path: string }[]) => Promise<unknown>
+      }).runWorker(files);
+
+      expect(result).toEqual([]);
+      // Two Workers must have been created (one failed, one succeeded on retry)
+      expect(instances).toHaveLength(2);
+
+      // Both postMessage calls received copies, not the original
+      const firstBuf = (instances[0]!.postMessage.mock.calls[0]![0] as { files: { buffer: ArrayBuffer }[] }).files[0]!.buffer;
+      const secondBuf = (instances[1]!.postMessage.mock.calls[0]![0] as { files: { buffer: ArrayBuffer }[] }).files[0]!.buffer;
+      expect(firstBuf).not.toBe(originalBuffer);
+      expect(secondBuf).not.toBe(originalBuffer);
+
+      // Original buffer is intact — in a real browser this means it was never
+      // transferred (transferred buffers become detached with byteLength 0).
+      expect(originalBuffer.byteLength).toBe(100);
+
+      vi.unstubAllGlobals();
+    });
+  });
+
   // ── analyze — NotReadableError during file read ───────────────────────────
 
   describe('analyze — NotReadableError during file read', () => {

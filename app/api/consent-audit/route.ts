@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { captureApiError } from '@/lib/sentry-utils';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
@@ -72,6 +72,32 @@ export async function POST(request: NextRequest) {
     console.error('[consent-audit] Insert failed:', insertError.message);
     captureApiError(insertError, { route: 'consent-audit' });
     return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
+  }
+
+  // AI insights is a load-bearing consent gate: the ai-insights route refuses to
+  // send PHI to Anthropic unless profiles.ai_insights_consent is true. Reflect the
+  // grant/withdrawal here so the audit event and the enforced flag stay in sync.
+  if (body.consentType === 'ai_insights') {
+    const granted = body.action === 'granted';
+    // profiles UPDATE is service-role-only (migration 055 locks direct authenticated
+    // writes to profiles), so use the service-role client for the flag write.
+    const serviceRole = getSupabaseServiceRole();
+    if (!serviceRole) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+    const { error: profileError } = await serviceRole
+      .from('profiles')
+      .update({
+        ai_insights_consent: granted,
+        ai_insights_consent_at: granted ? new Date().toISOString() : null,
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      console.error('[consent-audit] AI consent flag update failed:', profileError.message);
+      captureApiError(profileError, { route: 'consent-audit' });
+      return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ ok: true });

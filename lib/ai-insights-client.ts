@@ -158,7 +158,7 @@ export async function fetchAIInsights(
   nightNotes?: NightNotes
 ): Promise<AIInsightsResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  const timeout = setTimeout(() => controller.abort(), 63000);
 
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener('abort', onExternalAbort);
@@ -212,7 +212,11 @@ export async function fetchAIInsights(
       if (signal?.aborted) {
         throw err; // External abort (unmount / re-generate)
       }
-      console.error('[ai-insights] Request timed out after 55s');
+      console.error('[ai-insights] Request timed out after 63s');
+      Sentry.captureException(err, {
+        level: 'warning',
+        tags: { error_type: 'client_timeout', mode: 'standard', transient: 'true' },
+      });
       throw new Error('AI analysis timed out. Please try again.');
     }
     if (err instanceof TypeError && err.message === 'Failed to fetch') {

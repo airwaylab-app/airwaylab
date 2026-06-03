@@ -193,6 +193,11 @@ describe('All templates — structural invariants', () => {
     expect(html).toContain('utm_source=email');
     expect(html).toContain('utm_medium=drip');
   });
+
+  it.each(allTemplates)('$name includes physical mailing address (CAN-SPAM §7704(a)(5))', ({ fn }) => {
+    const { html } = fn(UNSUB_URL);
+    expect(html).toContain('Helperpark');
+  });
 });
 
 // ── SEQUENCES registry ─────────────────────────────────────────
