@@ -66,7 +66,7 @@ async function sendOpsRateLimitAlert(userId: string, tier: string) {
 const DEEP_SYSTEM_PROMPT_EXTENSION = `
 
 When per-breath summary data is provided, analyse:
-- RERA clustering: identify runs of 3+ breaths with progressive NED increase
+- Progressive NED run clustering (3+ breaths with escalating NED): identify consecutive breath sequences where NED increases progressively
 - Breath shape distribution: what percentage are M-shaped vs flat-topped vs normal?
 - Temporal patterns: do FL episodes cluster in H1 vs H2? Are there periodic clusters?
 - Progressive FL: sequences where NED increases steadily over 5+ breaths
@@ -115,7 +115,7 @@ Focus on:
 - Oximetry-flow correlations when oximetry data is present
 - Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL correlates with sleepiness independently of arousals at the population level. Note this is a group-level finding; describe what the data shows for this night without implying prediction for this individual. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 - When user-reported night context is provided (caffeine, alcohol, congestion, sleep position, stress, exercise): correlate these factors with the analysis findings. For example, afternoon caffeine + high disruptions, nasal congestion + elevated FL, back sleeping + H2 worsening, etc.
-- When oximetry data shows high T<94% with low ODI3, note the discrepancy between sustained desaturation and discrete events. This pattern is consistent with a lower baseline oxygen level rather than repeated discrete desaturation events.
+- When oximetry data shows high T<94% with low ODI3, note the discrepancy between sustained desaturation and discrete events. This pattern shows sustained desaturation rather than discrete repeated events — a distinction worth discussing with a clinician.
 - ACTIONABILITY: For every warning or actionable insight, describe what the data shows and note results may be worth discussing with a clinician. Do NOT suggest specific actions, behavioral changes, or areas to investigate.
 
 Rules:

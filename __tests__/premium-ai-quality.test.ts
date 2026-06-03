@@ -243,7 +243,7 @@ describe('Premium AI Quality — System Prompt', () => {
     }));
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { system: string };
-    expect(createArgs.system).toContain('RERA clustering');
+    expect(createArgs.system).toContain('Progressive NED run clustering');
     expect(createArgs.system).toContain('6 to 10 data pattern observations');
   });
 });

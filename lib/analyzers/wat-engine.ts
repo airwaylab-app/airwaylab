@@ -8,8 +8,21 @@ import type { WATResults } from '../types';
 
 /**
  * Run the complete WAT analysis on flow data.
+ *
+ * Input-validation guard only: a non-finite or non-positive samplingRate makes
+ * stepSize = Math.floor(5 * samplingRate) evaluate to 0, so the minute-vent loop
+ * never advances and the worker hangs. The EDF parser already validates the
+ * sampling rate at its source (validate-once); this entry guard protects any
+ * direct caller of computeWAT. It does not alter the computed output for any
+ * valid sampling rate.
  */
 export function computeWAT(flowData: Float32Array, samplingRate: number): WATResults {
+  if (!Number.isFinite(samplingRate) || samplingRate <= 0) {
+    throw new RangeError(
+      `computeWAT: samplingRate must be a finite positive number, got ${samplingRate}.`
+    );
+  }
+
   const flScore = analyzeFlowLimitation(flowData, samplingRate);
   const minuteVent = calculateMinuteVent(flowData, samplingRate);
 

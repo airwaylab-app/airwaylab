@@ -6,6 +6,21 @@
 import type { EDFHeader, EDFSignal, EDFFile } from '../types';
 
 /**
+ * Thrown when an EDF file fails structural input validation (e.g. an
+ * under-reported header byte count, or a non-finite/non-positive record
+ * duration or sample count). These guards reject malformed files outright so
+ * header bytes are never silently decoded as flow samples, which would
+ * otherwise produce silently-wrong Glasgow/WAT/NED metrics. Input validation
+ * only: no analysis logic, threshold, or output for any valid file changes.
+ */
+export class EDFValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EDFValidationError';
+  }
+}
+
+/**
  * Parse an EDF file from an ArrayBuffer.
  * Returns header, signal metadata, flow data (Float32Array), optional pressure data,
  * optional resp event data (BiPAP trigger/cycle markers), sampling rate, duration,
@@ -16,6 +31,10 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   const decoder = new TextDecoder('ascii');
 
   // --- Fixed header (256 bytes) ---
+  // Raw recordDuration is validated below before the `|| 1` fallback is applied,
+  // so a genuinely malformed 0/NaN duration is rejected rather than silently
+  // becoming 1 (which would corrupt the derived sampling rate).
+  const rawRecordDuration = parseFloat(readField(buffer, decoder, 244, 8));
   const header: EDFHeader = {
     version: readField(buffer, decoder, 0, 8),
     patientId: readField(buffer, decoder, 8, 80),
@@ -25,9 +44,29 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
     headerBytes: Math.max(0, parseInt(readField(buffer, decoder, 184, 8)) || 0),
     reserved: readField(buffer, decoder, 192, 44),
     numDataRecords: Math.max(0, parseInt(readField(buffer, decoder, 236, 8)) || 0),
-    recordDuration: parseFloat(readField(buffer, decoder, 244, 8)) || 1,
+    recordDuration: rawRecordDuration || 1,
     numSignals: Math.max(0, parseInt(readField(buffer, decoder, 252, 4)) || 0),
   };
+
+  // --- Input-validation guards (reject malformed files; never alter valid output) ---
+  // 1. headerBytes MUST equal the structural size 256 + numSignals*256. An
+  //    under-reported value shifts the data offset so fixed/signal header bytes
+  //    get decoded AS flow samples, silently corrupting Glasgow/WAT/NED.
+  const expectedHeaderBytes = 256 + header.numSignals * 256;
+  if (header.headerBytes !== expectedHeaderBytes) {
+    throw new EDFValidationError(
+      `Invalid EDF header: headerBytes=${header.headerBytes} does not match the expected ` +
+        `${expectedHeaderBytes} for ${header.numSignals} signal(s) (256 + numSignals*256). ` +
+        `File rejected to avoid decoding header bytes as flow samples.`
+    );
+  }
+  // 2. recordDuration MUST be finite and positive; it is the denominator of the
+  //    derived sampling rate (numSamples / recordDuration).
+  if (!Number.isFinite(rawRecordDuration) || rawRecordDuration <= 0) {
+    throw new EDFValidationError(
+      `Invalid EDF header: recordDuration=${rawRecordDuration} must be a finite positive number.`
+    );
+  }
 
   // --- Parse recording date ---
   const dateParts = header.startDate.split('.');
@@ -133,7 +172,27 @@ export function parseEDF(buffer: ArrayBuffer, filePath: string): EDFFile {
   });
 
   const flowSignal = signals[flowIdx]!;
+
+  // 3. The flow signal's per-record sample count MUST be finite and positive.
+  //    It drives the sampling rate and every downstream window/step size; a
+  //    zero/NaN value yields a 0/NaN sampling rate that hangs or NaN-poisons
+  //    the WAT/NED engines.
+  if (!Number.isFinite(flowSignal.numSamples) || flowSignal.numSamples <= 0) {
+    throw new EDFValidationError(
+      `Invalid EDF flow signal: numSamples=${flowSignal.numSamples} must be a finite positive number.`
+    );
+  }
+
   const samplingRate = flowSignal.numSamples / header.recordDuration;
+
+  // 4. The derived sampling rate MUST be finite and positive. Validate-once here
+  //    so every analyzer downstream (WAT stepSize, NED windows) can trust it.
+  if (!Number.isFinite(samplingRate) || samplingRate <= 0) {
+    throw new EDFValidationError(
+      `Invalid EDF sampling rate: ${samplingRate} (numSamples=${flowSignal.numSamples}, ` +
+        `recordDuration=${header.recordDuration}) must be finite and positive.`
+    );
+  }
 
   // --- Validate buffer size ---
   const samplesPerRecord = signals.reduce((sum, s) => sum + s.numSamples, 0);

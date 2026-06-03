@@ -48,6 +48,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Supabase uses navigator.locks internally; two variants surface as AbortErrors:
+//   "Lock was stolen by another request" (older Supabase GoTrue)
+//   "Lock broken by another request with the 'steal' option." (newer GoTrue / Chrome 116+)
+// Both are transient cross-tab races that self-heal — retry once, then suppress Sentry.
+function isLockContention(message: string | undefined): boolean {
+  if (!message) return false;
+  return message.includes('Lock was stolen') || message.includes("'steal' option");
+}
+
+// Transient network blips (e.g. Supabase EU connectivity hiccup, mobile handoff) surface as
+// "NetworkError when attempting to fetch resource" or "Failed to fetch" in the error message.
+// One retry with 1 s backoff eliminates most false positives without masking real outages.
+function isNetworkError(message: string | undefined): boolean {
+  if (!message) return false;
+  return (
+    message.includes('NetworkError') ||
+    message.includes('Failed to fetch') ||
+    message.includes('Network request failed') ||
+    message.includes('fetch failed')
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -68,10 +90,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle();
 
-    // "Lock was stolen" is transient Supabase navigator.locks contention across tabs -- retry once.
+    // Lock contention is transient cross-tab races — retry once before giving up.
     // Without the retry the profile stays null, silently downgrading the user's tier to 'community'.
-    if (profileResult.error?.message?.includes('Lock was stolen')) {
+    if (isLockContention(profileResult.error?.message)) {
       await new Promise((r) => setTimeout(r, 100));
+      profileResult = await supabase
+        .from('profiles')
+        .select(PROFILE_COLS)
+        .eq('id', userId)
+        .maybeSingle();
+    } else if (isNetworkError(profileResult.error?.message)) {
+      // Transient network blip (e.g. Supabase EU hiccup) — retry once with 1 s backoff.
+      await new Promise((r) => setTimeout(r, 1000));
       profileResult = await supabase
         .from('profiles')
         .select(PROFILE_COLS)
@@ -82,16 +112,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: profileData, error: profileError } = profileResult;
 
     if (profileError) {
-      // After retry, "Lock was stolen" is still transient — suppress Sentry to avoid noise.
-      if (profileError.message?.includes('Lock was stolen')) return;
+      // Lock contention is transient — already retried once above; suppress Sentry noise.
+      if (isLockContention(profileError.message)) return;
       console.error('[auth-context] Failed to fetch profile:', profileError.message);
-      // "Lock was stolen" is transient navigator.locks contention — already retried once, skip Sentry noise
-      if (!profileError.message?.includes('Lock was stolen')) {
-        Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
-          level: 'warning',
-          tags: { context: 'auth-profile-fetch' },
-        });
-      }
+      Sentry.captureMessage(`Profile fetch failed: ${profileError.message}`, {
+        level: 'warning',
+        tags: {
+          context: 'auth-profile-fetch',
+          // after_retry=true means the single backoff retry also failed — this is a real outage.
+          after_retry: String(isNetworkError(profileError.message)),
+        },
+      });
       return;
     }
 
@@ -133,8 +164,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     // Same lock contention guard for the subscription query
-    if (subResult.error?.message?.includes('Lock was stolen')) {
+    if (isLockContention(subResult.error?.message)) {
       await new Promise((r) => setTimeout(r, 100));
+      subResult = await supabase
+        .from('subscriptions')
+        .select(SUB_COLS)
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    } else if (isNetworkError(subResult.error?.message)) {
+      await new Promise((r) => setTimeout(r, 1000));
       subResult = await supabase
         .from('subscriptions')
         .select(SUB_COLS)
@@ -149,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (subError) {
       // Suppress Sentry for lock contention — transient, self-heals on next auth state change
-      if (subError.message?.includes('Lock was stolen')) { setSubscription(null); return; }
+      if (isLockContention(subError.message)) { setSubscription(null); return; }
       console.error('[auth-context] Failed to fetch subscription:', subError.message);
       Sentry.captureMessage(`Subscription fetch failed: ${subError.message}`, {
         level: 'warning',
@@ -214,10 +255,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await supabase.auth.getSession();
         initialSession = result.data.session;
       } catch (err) {
-        // "Lock was stolen by another request" is a transient Supabase SSR
-        // error from navigator.locks contention across tabs/concurrent requests.
-        // The token refresh still succeeds via the winning request -- retry once.
-        if (err instanceof Error && err.message.includes('Lock was stolen')) {
+        // Lock contention is a transient cross-tab race from navigator.locks.
+        // The token refresh still succeeds via the winning request — retry once.
+        if (err instanceof Error && isLockContention(err.message)) {
           await new Promise((r) => setTimeout(r, 100));
           const retry = await supabase.auth.getSession();
           initialSession = retry.data.session;
