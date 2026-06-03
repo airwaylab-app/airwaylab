@@ -34,7 +34,8 @@ vi.mock('@sentry/nextjs', () => ({
 const mockSupabaseFrom = vi.fn().mockReturnValue({
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
-  single: vi.fn().mockResolvedValue({ data: { tier: 'supporter' } }),
+  // Returns both tier (profile lookup) and ai_insights_consent (R-B consent gate).
+  single: vi.fn().mockResolvedValue({ data: { tier: 'supporter', ai_insights_consent: true } }),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
 });
 const mockRpc = vi.fn().mockResolvedValue({ data: null });

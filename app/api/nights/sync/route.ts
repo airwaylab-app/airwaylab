@@ -5,6 +5,11 @@ import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 
+// Allow up to 30s. Previously there was no maxDuration, so the Vercel default (10s)
+// could kill the function mid-loop, returning truncated synced/skipped counts that
+// lied to the client about what actually persisted.
+export const maxDuration = 30;
+
 // ~1000 nights/hour per user
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 1000 });
 
@@ -84,29 +89,40 @@ export async function POST(request: NextRequest) {
     // Strip bulk data server-side as defence-in-depth
     const nights = parsed.data.nights.map(stripBulkData);
 
-    // Upsert each night — idempotent on (user_id, night_date)
-    let synced = 0;
-    let skipped = 0;
+    // Build all rows up front and validate before touching the DB. A row is only
+    // valid if it carries a non-empty night_date (the conflict key); reject the whole
+    // batch otherwise rather than silently dropping rows.
+    const rows = nights.map((night) => ({
+      user_id: user.id,
+      night_date: night.dateStr,
+      analysis_data: night,
+    }));
 
-    for (const night of nights) {
-      const nightDate = night.dateStr;
-      const { error } = await serviceRole
-        .from('user_nights')
-        .upsert(
-          { user_id: user.id, night_date: nightDate, analysis_data: night },
-          { onConflict: 'user_id,night_date' }
-        );
-
-      if (error) {
-        Sentry.captureException(error, {
-          tags: { route: 'nights/sync', step: 'upsert' },
-          extra: { nightDate, userId: user.id.slice(0, 8) },
-        });
-        skipped++;
-      } else {
-        synced++;
-      }
+    const invalid = rows.find(
+      (row) => typeof row.night_date !== 'string' || row.night_date.length === 0
+    );
+    if (invalid) {
+      console.error('[nights/sync] 400 row missing night_date');
+      return NextResponse.json({ error: 'Each night requires a dateStr' }, { status: 400 });
     }
+
+    // Single batched upsert — idempotent on (user_id, night_date), atomic for the batch.
+    // On DB error we fail the whole request (500) instead of returning 200 with a
+    // partial/silent loss, so the client's retry covers every row it sent.
+    const { error } = await serviceRole
+      .from('user_nights')
+      .upsert(rows, { onConflict: 'user_id,night_date' });
+
+    if (error) {
+      Sentry.captureException(error, {
+        tags: { route: 'nights/sync', step: 'upsert' },
+        extra: { count: rows.length, userId: user.id.slice(0, 8) },
+      });
+      return NextResponse.json({ error: 'Failed to sync nights' }, { status: 500 });
+    }
+
+    const synced = rows.length;
+    const skipped = 0;
 
     // Anonymised user ID in logs (first 8 chars of UUID)
     const anonymisedId = user.id.slice(0, 8);

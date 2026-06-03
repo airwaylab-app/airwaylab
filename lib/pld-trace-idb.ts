@@ -4,13 +4,20 @@
 // reload. Stores the 5 most valuable channels as number arrays.
 // Mirrors the oximetry-trace-idb pattern: 90-day TTL, engine
 // version invalidation, non-fatal on failure.
+//
+// Transactions, the shared connection, the serialized op queue, and the
+// disk-quota guard come from ./idb-core (fixes I1/I2/I3/I4/I6).
 // ============================================================
 
-import { openDB } from './waveform-idb';
+import { PLD_TRACES_STORE_NAME } from './waveform-idb';
+import { runTx, assertQuota, isQuotaError } from './idb-core';
 import { ENGINE_VERSION } from './engine-version';
 
-const STORE_NAME = 'pld-traces';
+const STORE_NAME = PLD_TRACES_STORE_NAME;
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+// I4: each channel sample is a number (~8 bytes). Up to 5 channels stored.
+const BYTES_PER_SAMPLE = 8;
+const PLD_METADATA_OVERHEAD_BYTES = 4 * 1024;
 
 /**
  * PLD trace data stored in IndexedDB.
@@ -64,19 +71,29 @@ function toNumberArray(data: Float32Array | number[] | undefined): number[] | un
 /**
  * Store a PLD trace in IndexedDB.
  * Overwrites any existing entry for the same date.
+ * Quota failures reject with a typed QuotaError (see idb-core) so the caller
+ * knows the PHI was not persisted instead of it being silently swallowed.
  */
 export async function storePLDTrace(
   dateStr: string,
   pldData: PLDTraceInput
 ): Promise<void> {
   try {
-    const db = await openDB();
     const sampleCount = pldData.leak?.length
       ?? pldData.snore?.length
       ?? pldData.fflIndex?.length
       ?? pldData.therapyPressure?.length
       ?? pldData.respiratoryRate?.length
       ?? 0;
+
+    const channelCount = [
+      pldData.leak,
+      pldData.snore,
+      pldData.fflIndex,
+      pldData.therapyPressure,
+      pldData.respiratoryRate,
+    ].filter((c) => c && c.length > 0).length;
+    await assertQuota(sampleCount * channelCount * BYTES_PER_SAMPLE + PLD_METADATA_OVERHEAD_BYTES); // I4
 
     const stored: StoredPLDTrace = {
       dateStr,
@@ -91,21 +108,13 @@ export async function storePLDTrace(
       storedAt: Date.now(),
       engineVersion: ENGINE_VERSION,
     };
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.put(stored);
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  // eslint-disable-next-line airwaylab/no-silent-catch -- IDB store is non-fatal; callers fall back to in-memory. Expected in private browsing.
+    await runTx(STORE_NAME, 'readwrite', (tx) =>
+      tx.objectStore(STORE_NAME).put(stored),
+    );
   } catch (err) {
+    // I1: surface quota failures to the caller (PHI was not saved).
+    if (isQuotaError(err)) throw err;
+    // Non-quota failures stay non-fatal; callers fall back to in-memory. Expected in private browsing.
     console.warn('[pld-trace-idb] store failed:', err);
   }
 }
@@ -118,43 +127,29 @@ export async function loadPLDTrace(
   dateStr: string
 ): Promise<StoredPLDTrace | null> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.get(dateStr);
+    const result = await runTx<StoredPLDTrace | undefined>(
+      STORE_NAME,
+      'readonly',
+      (tx) => tx.objectStore(STORE_NAME).get(dateStr),
+    );
 
-      request.onsuccess = () => {
-        db.close();
-        const result = request.result as StoredPLDTrace | undefined;
+    if (!result) {
+      return null;
+    }
 
-        if (!result) {
-          resolve(null);
-          return;
-        }
+    // Engine version mismatch -> stale data
+    if (result.engineVersion !== ENGINE_VERSION) {
+      deletePLDTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
+      return null;
+    }
 
-        // Engine version mismatch -> stale data
-        if (result.engineVersion !== ENGINE_VERSION) {
-          deletePLDTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
-          resolve(null);
-          return;
-        }
+    // TTL check
+    if (Date.now() - result.storedAt > TTL_MS) {
+      deletePLDTrace(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
+      return null;
+    }
 
-        // TTL check
-        if (Date.now() - result.storedAt > TTL_MS) {
-          deletePLDTrace(dateStr).catch(() => { /* fire-and-forget expired IDB cleanup */ });
-          resolve(null);
-          return;
-        }
-
-        resolve(result);
-      };
-
-      request.onerror = () => {
-        db.close();
-        reject(request.error);
-      };
-    });
+    return result;
   } catch {
     // IndexedDB unavailable (private browsing, etc.) — non-fatal
     return null;
@@ -166,20 +161,9 @@ export async function loadPLDTrace(
  */
 async function deletePLDTrace(dateStr: string): Promise<void> {
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.delete(dateStr);
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
+    await runTx(STORE_NAME, 'readwrite', (tx) =>
+      tx.objectStore(STORE_NAME).delete(dateStr),
+    );
   } catch {
     // Non-fatal — best-effort cleanup
   }

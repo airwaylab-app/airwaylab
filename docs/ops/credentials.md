@@ -13,10 +13,16 @@ Update this file whenever a credential is rotated.
 | `GMAIL_CLIENT_ID` | Board (Demian) | Vercel env var `GMAIL_CLIENT_ID` | 365 days | unknown§ | 2026-12-02 | active |
 | `GMAIL_CLIENT_SECRET` | Board (Demian) | Vercel env var `GMAIL_CLIENT_SECRET` | 365 days | unknown§ | 2026-12-02 | active |
 | `GMAIL_REFRESH_TOKEN` | Board (Demian) | Vercel env var `GMAIL_REFRESH_TOKEN` | 365 days | unknown§ | 2026-12-02 | active |
+| `DISCORD_REVENUE_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | verify urgently |
+| `DISCORD_OPS_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
+| `DISCORD_WEBHOOK_CRITICAL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
+| `DISCORD_USER_SIGNALS_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
+| `DISCORD_PLATFORM_HEALTH_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
 
 †Estimated from [AIR-927](/AIR/issues/AIR-927) fix date — verify actual expiry in Sentry dashboard and update this row.
 ‡Expiry confirmed via live `GET /rate_limit` header check on 2026-05-11 (`github-authentication-token-expiration: 2026-07-12 14:33:16 UTC`). Doc was previously stale (showed EXPIRED). Updated by [AIR-1358](/AIR/issues/AIR-1358) health check.
 §Gmail OAuth credentials were confirmed present in Vercel as of 2026-05-31 (env snapshot) but creation date is unknown — first documented by [AIR-2344](/AIR/issues/AIR-2344). Next rotation date is set to 2026-12-02 as an initial review anchor; update after first explicit rotation.
+‖Discord webhook URLs have no built-in expiry but are permanently invalidated when the target channel or webhook is deleted in Discord. Status "verify urgently" reflects the regression found in [AIR-2385](/AIR/issues/AIR-2385) / [AIR-2389](/AIR/issues/AIR-2389) (2026-06-02): subscription revenue alerts stopped posting to Discord, root cause traced to DISCORD_REVENUE_WEBHOOK_URL missing or pointing to a deleted webhook. Demian must verify in Vercel dashboard and regenerate from Discord server settings if needed.
 
 ---
 
@@ -79,6 +85,35 @@ assigned to the CTO. The CTO agent picks up the issue and:
    - Assignee: CTO (to triage/escalate to board as needed)
    - Links to rotation instructions in this document
 3. Marks the execution issue `done` with a summary
+
+### Discord Webhook URLs
+
+Discord webhook URLs do not expire on a schedule but are permanently invalidated when the Discord channel or webhook is deleted. There is no API to check validity without sending a test message.
+
+**How to verify a webhook URL:**
+```bash
+curl -s -o /dev/null -w "%{http_code}" \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"content":"[health check — ignore]"}' \
+  "$DISCORD_REVENUE_WEBHOOK_URL"
+# 204 = valid, 404/410 = deleted/invalid
+```
+
+**How to regenerate:**
+1. Discord server → Server Settings → Integrations → Webhooks
+2. Find the webhook for the relevant channel (or create new)
+3. Copy the webhook URL
+4. Update the corresponding Vercel env var (Production + Preview + Development)
+5. Update `Last Rotated` in the table above
+
+**Channel → env var mapping:**
+| Channel | Env var |
+|---------|---------|
+| `#revenue-alerts` | `DISCORD_REVENUE_WEBHOOK_URL` |
+| `#ops-alerts` | `DISCORD_OPS_WEBHOOK_URL` |
+| `#critical` | `DISCORD_WEBHOOK_CRITICAL` |
+| `#user-signals` | `DISCORD_USER_SIGNALS_WEBHOOK_URL` |
+| `#platform-health` | `DISCORD_PLATFORM_HEALTH_WEBHOOK_URL` |
 
 ---
 
