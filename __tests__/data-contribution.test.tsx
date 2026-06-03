@@ -111,6 +111,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="success"
         autoSubmitCount={1}
+        isAuthenticated
       />
     );
 
@@ -126,7 +127,7 @@ describe('DataContribution', () => {
   it('renders manual button when consent is absent', async () => {
     const nights = [makeNight('2025-01-01')];
 
-    render(<DataContribution nights={nights} />);
+    render(<DataContribution nights={nights} isAuthenticated />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
@@ -139,10 +140,35 @@ describe('DataContribution', () => {
 
     const nights = [makeNight('2025-01-01'), makeNight('2025-01-02')];
 
-    render(<DataContribution nights={nights} />);
+    render(<DataContribution nights={nights} isAuthenticated />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /contribute.*anonymously/i })).toBeInTheDocument();
+    });
+  });
+
+  // Contribution endpoints require auth — logged-out users see no contribution UI.
+  it('renders nothing for a logged-out user (real upload, has new data)', async () => {
+    const nights = [makeNight('2025-01-01')];
+
+    const { container } = render(
+      <DataContribution nights={nights} isAuthenticated={false} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /contribute.*anonymously/i })).not.toBeInTheDocument();
+    });
+    expect(container.innerHTML).toBe('');
+  });
+
+  // Demo teaser is still shown to logged-out users (it has no submit, only encourages uploading).
+  it('renders demo teaser for a logged-out user', async () => {
+    const nights = [makeNight('2025-01-01')];
+
+    render(<DataContribution nights={nights} isDemo isAuthenticated={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/help build the largest pap therapy dataset/i)).toBeInTheDocument();
     });
   });
 
@@ -154,7 +180,7 @@ describe('DataContribution', () => {
     const nights = [makeNight('2025-01-01')];
 
     const { container } = render(
-      <DataContribution nights={nights} autoSubmitStatus="idle" />
+      <DataContribution nights={nights} autoSubmitStatus="idle" isAuthenticated />
     );
 
     await waitFor(() => {
@@ -174,6 +200,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="error"
         autoSubmitCount={1}
+        isAuthenticated
       />
     );
 
@@ -188,7 +215,7 @@ describe('DataContribution', () => {
     storage.set('airwaylab_contribute_optin', '1');
     const nights = [makeNight('2025-01-01')];
 
-    render(<DataContribution nights={nights} isDemo />);
+    render(<DataContribution nights={nights} isDemo isAuthenticated />);
 
     await waitFor(() => {
       expect(screen.getByText(/help build the largest pap therapy dataset/i)).toBeInTheDocument();
@@ -207,6 +234,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="sending"
         autoSubmitCount={1}
+        isAuthenticated
       />
     );
 
@@ -228,6 +256,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="error"
         autoSubmitCount={1}
+        isAuthenticated
       />
     );
 
@@ -267,6 +296,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="error"
         autoSubmitCount={1}
+        isAuthenticated
       />
     );
 
@@ -300,6 +330,7 @@ describe('DataContribution', () => {
         nights={nights}
         autoSubmitStatus="success"
         autoSubmitCount={2}
+        isAuthenticated
       />
     );
 

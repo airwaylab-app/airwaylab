@@ -84,6 +84,7 @@ describe('capturePostHog SDK init race', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.useFakeTimers();
+    vi.clearAllTimers();
   });
 
   afterEach(() => {

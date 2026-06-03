@@ -435,6 +435,72 @@ describe('POST /api/files/confirm', () => {
     expect(body.confirmed).toBe(true);
   });
 
+  it('rejects with 413 and cleans up when stored object exceeds declared size', async () => {
+    setupAuthenticatedUser();
+    const { captureApiError } = await import('@/lib/sentry-utils');
+    const deleteMock = vi.fn(() => chain);
+    const chain = createChain({
+      data: {
+        id: validBody.fileId,
+        storage_path: 'user-123/2026-01-01/BRP.edf',
+        user_id: 'user-123',
+        file_size: 1024,
+      },
+      error: null,
+    });
+    chain.delete = deleteMock;
+    mockFrom.mockReturnValue(chain);
+
+    const removeMock = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockStorageFrom.mockReturnValue({
+      // Actual object is far larger than the declared 1024 bytes
+      list: vi.fn().mockResolvedValue({
+        data: [{ name: 'BRP.edf', metadata: { size: 200 * 1024 * 1024 } }],
+        error: null,
+      }),
+      remove: removeMock,
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toContain('larger than declared');
+    // Oversized object and metadata row must both be removed
+    expect(removeMock).toHaveBeenCalledWith(['user-123/2026-01-01/BRP.edf']);
+    expect(deleteMock).toHaveBeenCalled();
+    expect(captureApiError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ context: 'size_mismatch', fileId: validBody.fileId })
+    );
+  });
+
+  it('confirms upload when stored object is within declared size', async () => {
+    setupAuthenticatedUser();
+    const chain = createChain({
+      data: {
+        id: validBody.fileId,
+        storage_path: 'user-123/2026-01-01/BRP.edf',
+        user_id: 'user-123',
+        file_size: 50 * 1024 * 1024,
+      },
+      error: null,
+    });
+    chain.update = vi.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({
+        data: [{ name: 'BRP.edf', metadata: { size: 1024 } }],
+        error: null,
+      }),
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.confirmed).toBe(true);
+  });
+
   it('returns 500 when metadata update fails after storage verification', async () => {
     setupAuthenticatedUser();
     const { captureApiError } = await import('@/lib/sentry-utils');
