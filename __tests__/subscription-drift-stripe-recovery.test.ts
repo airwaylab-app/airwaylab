@@ -111,6 +111,15 @@ function buildRecoveryFromImpl(
         upsert: vi.fn().mockImplementation((..._args: unknown[]) => mockSubscriptionsUpsert()),
       };
     }
+    if (table === 'stripe_events') {
+      // ST1 re-drive query: no failed/stale rows in these recovery scenarios.
+      return {
+        select: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+    }
     return {};
   };
 }

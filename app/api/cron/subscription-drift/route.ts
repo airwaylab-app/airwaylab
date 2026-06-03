@@ -2,9 +2,111 @@ import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import Stripe from 'stripe';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { sendAlert, COLORS } from '@/lib/discord-webhook';
 import { syncRole, isDiscordConfigured } from '@/lib/discord';
+import { runStripeJob } from '@/app/api/webhooks/stripe/route';
+
+/**
+ * A `processing` row older than this is considered stale: the function that
+ * claimed it crashed/timed out mid-flight before reaching done|failed. Stripe's
+ * own max processing window is well under this, and our webhook maxDuration is
+ * 30s, so 15 min is a safe "definitely abandoned" cutoff.
+ */
+const STALE_PROCESSING_MS = 15 * 60 * 1000;
+
+/** Cap re-drives per run so one bad event can't exhaust the cron's runtime. */
+const REDRIVE_BATCH_LIMIT = 25;
+
+interface RedriveResult {
+  picked: number;
+  recovered: number;
+  stillFailed: number;
+}
+
+/**
+ * ST1 re-drive: the webhook returns 200 to Stripe BEFORE processing, so Stripe
+ * never retries a failed event on its own. This step is what actually retries.
+ *
+ * It scans stripe_events for rows the webhook could not complete:
+ *   - status = 'failed'      (processing threw; row was kept, not deleted)
+ *   - status = 'processing'  AND updated_at older than STALE_PROCESSING_MS
+ *                            (the worker died mid-flight)
+ *
+ * For each, it refetches the full event from Stripe (we only persist the id +
+ * type, not the payload) and re-runs runStripeJob, which re-applies the state
+ * machine. processStripeEvent is idempotent (upserts on stripe_subscription_id,
+ * tier writes are last-write-wins), so reprocessing a partially-applied event is
+ * safe. A successful re-drive flips the row to 'done'.
+ */
+async function redriveStripeEvents(
+  stripe: Stripe | null,
+  supabase: SupabaseClient
+): Promise<RedriveResult> {
+  const result: RedriveResult = { picked: 0, recovered: 0, stillFailed: 0 };
+  if (!stripe) return result;
+
+  const staleCutoff = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+
+  // failed rows: always eligible. stale processing rows: only past the cutoff.
+  const { data: rows, error: queryErr } = await supabase
+    .from('stripe_events')
+    .select('event_id, event_type, status, attempts, updated_at')
+    .or(`status.eq.failed,and(status.eq.processing,updated_at.lt.${staleCutoff})`)
+    .order('updated_at', { ascending: true })
+    .limit(REDRIVE_BATCH_LIMIT);
+
+  if (queryErr) {
+    console.error('[subscription-drift] re-drive query failed:', queryErr);
+    Sentry.captureException(queryErr, {
+      tags: { route: 'cron-subscription-drift', action: 'redrive-query' },
+    });
+    return result;
+  }
+
+  for (const row of rows ?? []) {
+    result.picked++;
+    const attemptsBefore = (row as { attempts?: number }).attempts ?? 0;
+    try {
+      // Refetch the event payload from Stripe — we only stored id + type.
+      const event = await stripe.events.retrieve((row as { event_id: string }).event_id);
+      // runStripeJob re-applies the state machine and marks done|failed itself.
+      await runStripeJob(stripe, supabase, event, attemptsBefore);
+
+      // Confirm the terminal state to bucket the run for the ops alert.
+      const { data: after } = await supabase
+        .from('stripe_events')
+        .select('status')
+        .eq('event_id', (row as { event_id: string }).event_id)
+        .maybeSingle();
+      if ((after as { status?: string } | null)?.status === 'done') result.recovered++;
+      else result.stillFailed++;
+    } catch (err) {
+      // retrieve() itself failed (e.g. event aged out of Stripe, network).
+      // runStripeJob never ran, so the row keeps its prior status. Record why.
+      result.stillFailed++;
+      console.error(
+        `[subscription-drift] re-drive failed for ${(row as { event_id: string }).event_id}:`,
+        err
+      );
+      Sentry.captureException(err, {
+        tags: { route: 'cron-subscription-drift', action: 'redrive-event' },
+        extra: { event_id: (row as { event_id: string }).event_id },
+      });
+      await supabase
+        .from('stripe_events')
+        .update({
+          status: 'failed',
+          last_error: err instanceof Error ? err.message : String(err),
+          attempts: attemptsBefore + 1,
+        })
+        .eq('event_id', (row as { event_id: string }).event_id);
+    }
+  }
+
+  return result;
+}
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let _stripe: Stripe | null = null;
@@ -437,15 +539,20 @@ export async function GET(request: NextRequest) {
       (communityWithSubs?.length ?? 0) +
       (webhookBlindProfiles?.length ?? 0);
 
-    // 6. Send Discord ops alert if any drift was found
-    if (mismatches.length > 0) {
+    // 5b. Re-drive Stripe webhook jobs the route could not complete (ST1).
+    // This is the real retry path: Stripe got 200 before processing, so failed
+    // events are only recovered here.
+    const redrive = await redriveStripeEvents(getStripe(), supabase);
+
+    // 6. Send Discord ops alert if any drift OR webhook re-drive activity occurred
+    if (mismatches.length > 0 || redrive.picked > 0) {
       const downgradeMissed = mismatches.filter((m) => m.drift_type === 'downgrade_missed').length;
       const upgradeMissed = mismatches.filter((m) => m.drift_type === 'upgrade_missed').length;
 
       await sendAlert('ops', '', [
         {
           title: ':warning: Subscription Tier Drift Detected',
-          description: `Found ${mismatches.length} profile(s) where tier does not match subscription status. ${fixed} auto-fixed.`,
+          description: `Found ${mismatches.length} profile(s) where tier does not match subscription status. ${fixed} auto-fixed. Re-drove ${redrive.picked} webhook job(s), ${redrive.recovered} recovered.`,
           color: COLORS.amber,
           fields: [
             { name: 'Checked', value: String(checked), inline: true },
@@ -455,6 +562,9 @@ export async function GET(request: NextRequest) {
             { name: 'Upgrade missed', value: String(upgradeMissed), inline: true },
             { name: 'Webhook never ran (manual review)', value: String(webhookNeverRanCount), inline: true },
             { name: 'Stripe auto-recovered', value: String(stripeRecovered), inline: true },
+            { name: 'Webhook jobs re-driven', value: String(redrive.picked), inline: true },
+            { name: 'Webhook jobs recovered', value: String(redrive.recovered), inline: true },
+            { name: 'Webhook jobs still failed', value: String(redrive.stillFailed), inline: true },
           ],
           footer: { text: 'subscription-drift cron' },
           timestamp: new Date().toISOString(),
@@ -469,7 +579,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.error(
-      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, stripe_recovered=${stripeRecovered}`
+      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, stripe_recovered=${stripeRecovered}, redrive_picked=${redrive.picked}, redrive_recovered=${redrive.recovered}, redrive_still_failed=${redrive.stillFailed}`
     );
 
     return NextResponse.json({
@@ -479,6 +589,9 @@ export async function GET(request: NextRequest) {
       fixed,
       webhook_never_ran: webhookNeverRanCount,
       stripe_recovered: stripeRecovered,
+      redrive_picked: redrive.picked,
+      redrive_recovered: redrive.recovered,
+      redrive_still_failed: redrive.stillFailed,
     });
   } catch (err) {
     console.error('[subscription-drift] Cron failed:', err);

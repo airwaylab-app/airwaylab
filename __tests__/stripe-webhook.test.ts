@@ -2,13 +2,17 @@
  * Tests for the Stripe webhook handler (app/api/webhooks/stripe/route.ts).
  *
  * Covers: checkout.session.completed, subscription.updated, subscription.deleted,
- * invoice.payment_failed, idempotency, tier assignment (all 4 price IDs),
- * tier transitions, compensating deletes on failure, missing data,
- * unknown price IDs, MRR computation, and malformed events.
+ * invoice.payment_failed, idempotency (23505 vs other insert errors), the ST1
+ * job-state machine (pending -> processing -> done|failed), tier assignment
+ * (all 4 price IDs), tier transitions, missing data, unknown price IDs, MRR
+ * computation, and malformed events.
  *
- * Design note: event processing is deferred via after() so the HTTP response
- * is always 200 for valid/idempotent events. Errors in processing are captured
- * by Sentry and logged; the compensating delete still runs inside after().
+ * Design note (ST1): the route inserts the event as `pending` synchronously
+ * (idempotency gate), returns 200, then processes inside after(): mark
+ * `processing` -> run -> mark `done`, or on failure mark `failed` with
+ * last_error + attempts. The row is NEVER deleted on failure — the
+ * subscription-drift cron re-drives failed/stale rows, because Stripe already
+ * got 200 and will not retry on its own.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -261,16 +265,16 @@ describe('POST /api/webhooks/stripe', () => {
     expect(captureEvent).not.toHaveBeenCalled();
   });
 
-  // ---------- 4. Idempotency: duplicate event ----------
-  it('returns 200 with duplicate:true when event was already processed', async () => {
+  // ---------- 4. Idempotency: true duplicate (23505) returns 200 ----------
+  it('returns 200 with duplicate:true on a unique-violation (23505) insert error', async () => {
     const event = makeStripeEvent('checkout.session.completed', {});
     mockWebhooksConstruct.mockReturnValue(event);
 
-    // stripe_events insert returns error (duplicate key)
+    // stripe_events insert returns a Postgres unique violation = true duplicate
     mockFrom.mockReturnValue(
       createQueryBuilder({
         data: null,
-        error: { message: 'duplicate key value violates unique constraint' },
+        error: { code: '23505', message: 'duplicate key value violates unique constraint' },
       })
     );
 
@@ -281,6 +285,33 @@ describe('POST /api/webhooks/stripe', () => {
     const json = await res.json();
     expect(json.duplicate).toBe(true);
     expect(json.received).toBe(true);
+  });
+
+  // ---------- 4a. Non-23505 insert error returns 500 so Stripe retries ----------
+  it('returns 500 (not 200, not duplicate) when the idempotency insert fails for a non-duplicate reason', async () => {
+    const { captureException } = await import('@sentry/nextjs');
+    const event = makeStripeEvent('checkout.session.completed', {});
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    // stripe_events insert fails with a non-unique-violation DB error
+    // (e.g. connection failure, code 08006). This must NOT be swallowed as a
+    // duplicate — return 500 so Stripe retries the delivery.
+    mockFrom.mockReturnValue(
+      createQueryBuilder({
+        data: null,
+        error: { code: '08006', message: 'connection failure' },
+      })
+    );
+
+    const req = makeRequest('{}', { 'stripe-signature': 'sig_valid' });
+    const res = await callRoute(req);
+
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.duplicate).toBeUndefined();
+    // Event processing must NOT run when we could not record the event.
+    expect(mockSubscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(captureException).toHaveBeenCalled();
   });
 
   // ---------- 5. checkout.session.completed: happy path ----------
@@ -593,10 +624,11 @@ describe('POST /api/webhooks/stripe', () => {
     );
   });
 
-  // ---------- 12. Compensating delete on handler error ----------
-  // With after() refactor: HTTP response is always 200; errors are logged to Sentry
-  // and the idempotency record is deleted for manual replay.
-  it('deletes stripe_events record and captures to Sentry when handler throws (compensating action)', async () => {
+  // ---------- 12. ST1: failure marks the row `failed` (does NOT delete it) ----------
+  // State machine: insert(pending) -> update(processing) -> [process throws] ->
+  // update(failed + last_error + attempts=1). The row is NEVER deleted, so the
+  // re-drive cron can retry it (Stripe already got 200 and will not retry).
+  it('marks stripe_events failed (status+last_error+attempts), never deletes, on handler error', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
@@ -607,16 +639,11 @@ describe('POST /api/webhooks/stripe', () => {
     mockWebhooksConstruct.mockReturnValue(event);
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
 
-    let stripeEventsCallCount = 0;
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
     mockFrom.mockImplementation((table: string) => {
       if (table === 'stripe_events') {
-        stripeEventsCallCount++;
-        if (stripeEventsCallCount === 1) {
-          // First call: idempotency insert succeeds
-          return createQueryBuilder({ data: null, error: null });
-        }
-        // Second call: compensating delete succeeds
-        return createQueryBuilder({ data: null, error: null });
+        // Single reusable builder so we can inspect insert/update/delete calls.
+        return stripeEventsBuilder;
       }
       if (table === 'profiles') {
         // AIR-1873: phantom guard must pass so the handler reaches subscriptions upsert
@@ -641,19 +668,33 @@ describe('POST /api/webhooks/stripe', () => {
     // Route always returns 200 — processing errors are handled inside after()
     expect(res.status).toBe(200);
 
-    // stripe_events should be accessed twice: insert (idempotency) + delete (compensating)
-    const stripeEventsCalls = mockFrom.mock.calls.filter(
-      (call: unknown[]) => call[0] === 'stripe_events'
+    // Insert claimed the row as `pending`
+    expect(stripeEventsBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ event_id: 'evt_test_123', status: 'pending' })
     );
-    expect(stripeEventsCalls).toHaveLength(2);
+    // Transitioned to `processing`
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'processing' })
+    );
+    // On failure: marked `failed` with last_error + attempts incremented to 1
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        last_error: 'Subscription upsert failed: Upsert failed',
+        attempts: 1,
+      })
+    );
+    // The row must NOT be deleted (this was the ST1 bug)
+    expect(stripeEventsBuilder.delete).not.toHaveBeenCalled();
 
     // Verify Sentry captured the error
     expect(captureException).toHaveBeenCalled();
   });
 
-  // ---------- 13. Compensating delete failure ----------
-  // Both handler and compensating delete fail — verify no crash and full Sentry logging.
-  it('does not crash and logs all errors when both handler and compensating delete fail', async () => {
+  // ---------- 13. ST1: mark-failed update failing does not crash ----------
+  // If even the mark-failed update fails, the route must not throw and must log
+  // both the processing error and the mark-failed error to Sentry.
+  it('does not crash and logs both errors when processing fails AND the mark-failed update fails', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
@@ -668,18 +709,16 @@ describe('POST /api/webhooks/stripe', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'stripe_events') {
         stripeEventsCallCount++;
-        if (stripeEventsCallCount === 1) {
-          // Idempotency insert succeeds
+        // 1: insert(pending) ok, 2: update(processing) ok, 3: update(failed) fails
+        if (stripeEventsCallCount <= 2) {
           return createQueryBuilder({ data: null, error: null });
         }
-        // Compensating delete also fails
         return createQueryBuilder({
           data: null,
-          error: { message: 'Delete also failed' },
+          error: { message: 'mark-failed update failed' },
         });
       }
       if (table === 'profiles') {
-        // AIR-1873: phantom guard must pass so the handler reaches subscriptions upsert
         return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
       }
       if (table === 'subscription_events') {
@@ -703,63 +742,49 @@ describe('POST /api/webhooks/stripe', () => {
     const json = await res.json();
     expect(json.received).toBe(true);
 
-    // Sentry captures: upsert error (at throw) + delete error + handler error (catch)
+    // Sentry captures: upsert error (at throw) + mark-failed error + handler error (catch)
     expect(captureException).toHaveBeenCalledTimes(3);
   });
 
-  // ---------- 14. DLQ insert before compensating delete ----------
-  it('inserts to webhook_dlq with event_id and event_type before stripe_events compensating delete', async () => {
+  // ---------- 14. ST1: happy path drives pending -> processing -> done ----------
+  it('drives the row pending -> processing -> done on a successful event', async () => {
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },
       subscription: 'sub_test_123',
       customer: 'cus_test_456',
     };
-    const event = makeStripeEvent('checkout.session.completed', checkoutSession, 'evt_dlq_test');
+    const event = makeStripeEvent('checkout.session.completed', checkoutSession, 'evt_state_test');
     mockWebhooksConstruct.mockReturnValue(event);
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
 
-    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
-    const tableCallOrder: string[] = [];
-
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
     mockFrom.mockImplementation((table: string) => {
-      tableCallOrder.push(table);
-      if (table === 'stripe_events') {
-        const callIndex = tableCallOrder.filter(t => t === 'stripe_events').length;
-        if (callIndex === 1) return createQueryBuilder({ data: null, error: null }); // idempotency insert
-        return createQueryBuilder({ data: null, error: null }); // compensating delete
-      }
+      if (table === 'stripe_events') return stripeEventsBuilder;
       if (table === 'profiles') {
-        // Return a valid profile so the phantom-user guard passes and the code reaches subscriptions upsert
         return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
       }
-      if (table === 'subscriptions') {
-        // Fail to trigger the catch block
-        return createQueryBuilder({ data: null, error: { message: 'Upsert failed' } });
-      }
-      if (!builders[table]) {
-        builders[table] = createQueryBuilder({ data: null, error: null });
-      }
-      return builders[table];
+      return createQueryBuilder({ data: null, error: null });
     });
 
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
-    // after() refactor: HTTP is always 200; DLQ is written inside the deferred catch block
     expect(res.status).toBe(200);
 
-    // webhook_dlq insert should be called with event_id and event_type
-    expect(builders['webhook_dlq']).toBeDefined();
-    expect(builders['webhook_dlq']!.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event_id: 'evt_dlq_test',
-        event_type: 'checkout.session.completed',
-      })
+    // pending on insert
+    expect(stripeEventsBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ event_id: 'evt_state_test', status: 'pending' })
     );
-
-    // webhook_dlq insert must come before stripe_events compensating delete
-    const dlqIndex = tableCallOrder.indexOf('webhook_dlq');
-    const stripeEventsDeleteIndex = tableCallOrder.lastIndexOf('stripe_events');
-    expect(dlqIndex).toBeGreaterThanOrEqual(0);
-    expect(dlqIndex).toBeLessThan(stripeEventsDeleteIndex);
+    // processing then done
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'processing' })
+    );
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'done', last_error: null })
+    );
+    // never deleted, never marked failed
+    expect(stripeEventsBuilder.delete).not.toHaveBeenCalled();
+    expect(stripeEventsBuilder.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'failed' })
+    );
   });
 
   // ---------- 15. Tier assignment: all 4 price IDs ----------
@@ -1294,9 +1319,9 @@ describe('POST /api/webhooks/stripe', () => {
     const event = makeStripeEvent('checkout.session.completed', checkoutSession);
     mockWebhooksConstruct.mockReturnValue(event);
 
-    // Idempotency insert fails (duplicate)
+    // Idempotency insert fails with a unique violation (true duplicate)
     mockFrom.mockReturnValue(
-      createQueryBuilder({ data: null, error: { message: 'duplicate key' } })
+      createQueryBuilder({ data: null, error: { code: '23505', message: 'duplicate key' } })
     );
 
     await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
@@ -1306,20 +1331,17 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   // ---------- 31. subscription.updated: subscription update DB failure ----------
-  // Processing errors stay inside after() — HTTP is always 200; Sentry captures the error.
-  it('captures Sentry error and compensates when subscription.updated DB update fails', async () => {
+  // Processing errors stay inside after() — HTTP is always 200; the row is marked
+  // failed (not deleted) and Sentry captures the error.
+  it('captures Sentry error and marks failed when subscription.updated DB update fails', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const subscription = makeSubscriptionObject();
     const event = makeStripeEvent('customer.subscription.updated', subscription);
     mockWebhooksConstruct.mockReturnValue(event);
 
-    let stripeEventsCallCount = 0;
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'stripe_events') {
-        stripeEventsCallCount++;
-        if (stripeEventsCallCount === 1) return createQueryBuilder({ data: null, error: null });
-        return createQueryBuilder({ data: null, error: null }); // compensating delete
-      }
+      if (table === 'stripe_events') return stripeEventsBuilder;
       if (table === 'subscription_events') {
         return createQueryBuilder({ data: null, error: null });
       }
@@ -1332,21 +1354,21 @@ describe('POST /api/webhooks/stripe', () => {
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
     expect(res.status).toBe(200);
     expect(captureException).toHaveBeenCalled();
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'failed', attempts: 1 })
+    );
+    expect(stripeEventsBuilder.delete).not.toHaveBeenCalled();
   });
 
-  // ---------- 32. subscription.deleted: cancel DB failure triggers compensating delete ----------
-  it('captures Sentry error and compensates when subscription.deleted cancel DB update fails', async () => {
+  // ---------- 32. subscription.deleted: cancel DB failure marks failed (no delete) ----------
+  it('captures Sentry error and marks failed when subscription.deleted cancel DB update fails', async () => {
     const subscription = makeSubscriptionObject();
     const event = makeStripeEvent('customer.subscription.deleted', subscription);
     mockWebhooksConstruct.mockReturnValue(event);
 
-    let stripeEventsCallCount = 0;
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'stripe_events') {
-        stripeEventsCallCount++;
-        if (stripeEventsCallCount === 1) return createQueryBuilder({ data: null, error: null });
-        return createQueryBuilder({ data: null, error: null }); // compensating delete
-      }
+      if (table === 'stripe_events') return stripeEventsBuilder;
       if (table === 'subscription_events') {
         return createQueryBuilder({ data: null, error: null });
       }
@@ -1359,15 +1381,15 @@ describe('POST /api/webhooks/stripe', () => {
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
     expect(res.status).toBe(200);
 
-    // Verify compensating delete was attempted
-    const stripeEventsCalls = mockFrom.mock.calls.filter(
-      (call: unknown[]) => call[0] === 'stripe_events'
+    // Row marked failed, never deleted (ST1 semantics)
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'failed' })
     );
-    expect(stripeEventsCalls.length).toBeGreaterThanOrEqual(2);
+    expect(stripeEventsBuilder.delete).not.toHaveBeenCalled();
   });
 
-  // ---------- 33. checkout.session.completed: profile update failure triggers compensating delete ----------
-  it('captures Sentry error and compensates when profile update fails on checkout.session.completed', async () => {
+  // ---------- 33. checkout.session.completed: profile update failure marks failed ----------
+  it('captures Sentry error and marks failed when profile update fails on checkout.session.completed', async () => {
     const { captureException } = await import('@sentry/nextjs');
     const checkoutSession = {
       metadata: { supabase_user_id: 'user-uuid-1' },

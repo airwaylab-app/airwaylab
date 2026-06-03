@@ -559,54 +559,107 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Idempotency check — must happen synchronously to prevent duplicate processing
+  // Idempotency + job-state record (ST1). Insert the event as `pending`.
+  //
+  // The PRIMARY KEY on event_id makes this insert the idempotency gate:
+  //   - success            -> first time we see this event, claim it as `pending`
+  //   - unique violation   -> Stripe redelivered an event we already have a row
+  //     for (Postgres code 23505). A TRUE duplicate. Ack with 200, do nothing.
+  //   - any OTHER db error -> the DB is unhealthy (we cannot record the event).
+  //     Return 500 so Stripe RETRIES later. Never swallow it as a duplicate.
+  //
+  // This fixes the pre-ST1 bug where ANY insert error was treated as a duplicate,
+  // silently dropping events whenever the insert failed for a non-duplicate reason.
   const { error: insertError } = await supabase
     .from('stripe_events')
-    .insert({ event_id: event.id, event_type: event.type });
+    .insert({ event_id: event.id, event_type: event.type, status: 'pending' });
 
   if (insertError) {
-    // Duplicate event — already processed, return 200 to acknowledge
-    return NextResponse.json({ received: true, duplicate: true });
+    if (insertError.code === '23505') {
+      // True duplicate — already recorded, return 200 to acknowledge.
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // Non-duplicate DB failure — we could not durably record the event.
+    // Return 500 so Stripe retries; do NOT process and do NOT 200.
+    console.error('[stripe-webhook] stripe_events insert failed (non-duplicate):', insertError);
+    Sentry.captureException(insertError, {
+      level: 'error',
+      tags: { route: 'stripe-webhook', event_type: event.type, action: 'idempotency-insert' },
+    });
+    return NextResponse.json({ error: 'Failed to record event' }, { status: 500 });
   }
 
   // Defer all event processing after the 200 response is sent. This prevents
   // the outbound Stripe API call (checkout.session.completed) and DB writes
   // from exceeding the function timeout under latency spikes (JAVASCRIPT-NEXTJS-56).
+  //
+  // The row is durable now (status `pending`). If processing fails we mark it
+  // `failed` and the subscription-drift cron re-drives it — we NEVER delete the
+  // row, because Stripe already got 200 and will not retry on its own.
   after(async () => {
-    try {
-      await processStripeEvent(stripe, supabase, event);
-    } catch (err) {
-      // Dead-letter queue: persist failure record before compensating delete for audit trail
-      const { error: dlqErr } = await supabase.from('webhook_dlq').insert({
-        event_id: event.id,
-        event_type: event.type,
-        error_message: err instanceof Error ? err.message : String(err),
-      });
-      if (dlqErr) {
-        console.error('[stripe-webhook] DLQ insert failed:', dlqErr);
-        Sentry.captureException(dlqErr, {
-          tags: { route: 'stripe-webhook', event_type: event.type, action: 'dlq-insert' },
-        });
-      }
-
-      // Compensating action: remove idempotency record so manual replay tools can re-process.
-      // Stripe already received 200 so it won't retry; this is for operational recovery.
-      const { error: deleteErr } = await supabase
-        .from('stripe_events')
-        .delete()
-        .eq('event_id', event.id);
-      if (deleteErr) {
-        console.error('[stripe-webhook] Failed to remove idempotency record:', deleteErr);
-        Sentry.captureException(deleteErr, {
-          level: 'error',
-          tags: { route: 'stripe-webhook', event_type: event.type, action: 'compensating-delete' },
-        });
-      }
-
-      Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
-      console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
-    }
+    await runStripeJob(stripe, supabase, event);
   });
 
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Run a stripe_events job through its state machine: pending -> processing ->
+ * done, or -> failed on error. Shared by the webhook route (first attempt) and
+ * the subscription-drift re-drive cron (retries). The row is NEVER deleted; a
+ * failure leaves a durable `failed` record with last_error + attempts so it can
+ * be re-driven idempotently.
+ *
+ * @param attemptsBefore number of prior attempts recorded on the row (0 for a
+ *   fresh webhook insert). On failure the row's attempts is set to this + 1.
+ */
+export async function runStripeJob(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  event: Stripe.Event,
+  attemptsBefore = 0
+): Promise<void> {
+  // Claim the job: pending|failed|processing -> processing.
+  await supabase
+    .from('stripe_events')
+    .update({ status: 'processing' })
+    .eq('event_id', event.id);
+
+  try {
+    await processStripeEvent(stripe, supabase, event);
+
+    // Success — mark done. Clear last_error so a re-driven row reads clean.
+    const { error: doneErr } = await supabase
+      .from('stripe_events')
+      .update({ status: 'done', last_error: null, processed_at: new Date().toISOString() })
+      .eq('event_id', event.id);
+    if (doneErr) {
+      console.error('[stripe-webhook] Failed to mark event done:', doneErr);
+      Sentry.captureException(doneErr, {
+        level: 'error',
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'mark-done' },
+      });
+    }
+  } catch (err) {
+    // Processing failed. Persist the failure on the row (do NOT delete it) so
+    // the re-drive cron can pick it up and retry.
+    const { error: failErr } = await supabase
+      .from('stripe_events')
+      .update({
+        status: 'failed',
+        last_error: err instanceof Error ? err.message : String(err),
+        attempts: attemptsBefore + 1,
+      })
+      .eq('event_id', event.id);
+    if (failErr) {
+      console.error('[stripe-webhook] Failed to mark event failed:', failErr);
+      Sentry.captureException(failErr, {
+        level: 'error',
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'mark-failed' },
+      });
+    }
+
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
+    console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
+  }
 }
