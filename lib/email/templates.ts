@@ -13,7 +13,8 @@ const BASE_URL = 'https://airwaylab.app';
 const DISCORD_INVITE_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL ?? 'https://discord.gg/DK7aN847Mn';
 
 /** CAN-SPAM §7704(a)(5): physical postal address shown in every commercial email footer. */
-const SENDER_PHYSICAL_ADDRESS = process.env.SENDER_PHYSICAL_ADDRESS ?? '';
+const SENDER_PHYSICAL_ADDRESS =
+  process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab B.V., Helperpark 274-6, 9723 ZA Groningen, Netherlands';
 
 // ── Shared layout ────────────────────────────────────────────
 
@@ -317,7 +318,7 @@ function premiumOnboardingStep1(unsubscribeUrl: string): { subject: string; html
       ${paragraph('It references your pressure settings and analyses your data in context with your current settings. Upload a night and see the difference.')}
       ${ctaButton('Upload and Try AI Insights', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=premium_onboarding_1`)}
       ${heading('Your community is waiting')}
-      ${paragraph('You have just unlocked access to the AirwayLab Discord — a Supporter/Champion benefit that does not get mentioned nearly enough.')}
+      ${paragraph('Your subscription includes access to the AirwayLab Discord — a Supporter/Champion benefit that does not get mentioned nearly enough.')}
       ${paragraph('This is a community of people doing what you are doing: parsing their own PAP data, figuring out what the numbers mean, and working to breathe better at night. There is a general channel for day-to-day questions, a research discussion channel for longer threads on RERAs, flow limitation, and treatment-emergent events, and a #premium-lounge that is members-only — where we share what is coming next and you can make direct feature requests.')}
       ${paragraph('<strong style="color:#fff;">To get in:</strong>')}
       ${bulletList([
@@ -453,7 +454,7 @@ export function cpapTipsStep5(unsubscribeUrl: string): { subject: string; html: 
       ${paragraph('AirwayLab can export a session summary with your key metrics and trends. It\'s designed to be readable by a sleep specialist, not just a CPAP enthusiast.')}
       ${paragraph('We\'re a tool for informed conversations -- not a substitute for clinical review. That\'s what we\'re here for.')}
       ${ctaButton('Generate a Session Summary', `${BASE_URL}/analyze?utm_source=email&utm_medium=drip&utm_campaign=cpap_tips_5`)}
-      ${paragraph('If this raises questions about your data or therapy, the AirwayLab Discord is worth dropping into — there are users who have been analysing their data for years and are happy to point you in the right direction. <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a>')}
+      ${paragraph('If this raises questions about your data, the AirwayLab Discord is worth dropping into — there are users who have been analysing their data for years and are happy to point you in the right direction. <a href="' + DISCORD_INVITE_URL + '" style="color:#5eead4;text-decoration:underline;">discord.gg/DK7aN847Mn</a>')}
       ${paragraph('<em>This content is informational only. It is not medical advice. Discuss any concerns with your prescribing clinician or sleep specialist.</em>')}
     `, unsubscribeUrl),
   };
@@ -465,7 +466,8 @@ export function cpapTipsStep5(unsubscribeUrl: string): { subject: string; html: 
  * footer to satisfy CAN-SPAM Act requirements (16 CFR Part 316).
  */
 function reEngagementLayout(content: string, unsubscribeUrl: string): string {
-  const physicalAddress = process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab';
+  const physicalAddress =
+    process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab B.V., Helperpark 274-6, 9723 ZA Groningen, Netherlands';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -500,7 +502,7 @@ function reEngagementLayout(content: string, unsubscribeUrl: string): string {
         AirwayLab is not a medical device. This email contains data summaries for informational purposes. Your clinician can help interpret these findings in the context of your care.
       </p>
       <p style="font-size:10px;color:#52525b;line-height:1.5;margin:8px 0 0 0;">
-        AirwayLab &middot; ${physicalAddress}
+        ${physicalAddress}
       </p>
     </div>
   </div>

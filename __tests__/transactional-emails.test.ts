@@ -44,6 +44,11 @@ describe('email helpers', () => {
     expect(result).toContain('<p>Content</p>')
   })
 
+  it('emailShell includes physical mailing address (CAN-SPAM §7704(a)(5))', () => {
+    const result = emailShell('<p>Content</p>')
+    expect(result).toContain('Helperpark')
+  })
+
   it('BASE_URL points to production', () => {
     expect(BASE_URL).toBe('https://airwaylab.app')
   })
