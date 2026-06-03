@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import posthog from 'posthog-js';
 import * as analytics from '@/lib/analytics';
 
@@ -97,6 +97,66 @@ describe('analytics events', () => {
       tier: 'supporter',
       credits_remaining: 2,
     });
+  });
+});
+
+// ── PostHog SDK init race (AIR-2169) ────────────────────────────
+
+describe('capturePostHog SDK init race', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.clearAllTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('fires capture immediately when posthog is already loaded', async () => {
+    const mockCapture = vi.fn();
+    vi.doMock('posthog-js', () => ({
+      default: { __loaded: true, capture: mockCapture },
+    }));
+
+    const { capturePostHog } = await import('@/lib/analytics');
+    capturePostHog('Signup Completed', { source: 'magic_link' });
+
+    await vi.runAllTimersAsync(); // flushes dynamic import microtask + any timers
+    expect(mockCapture).toHaveBeenCalledWith('Signup Completed', { source: 'magic_link' });
+  });
+
+  it('retries and fires capture once posthog becomes loaded', async () => {
+    const mockCapture = vi.fn();
+    const posthogMock = { __loaded: false, capture: mockCapture };
+    vi.doMock('posthog-js', () => ({ default: posthogMock }));
+
+    const { capturePostHog } = await import('@/lib/analytics');
+    capturePostHog('Signup Completed', { source: 'magic_link' });
+
+    await Promise.resolve(); // flush import microtask
+    expect(mockCapture).not.toHaveBeenCalled(); // not loaded yet
+
+    posthogMock.__loaded = true;
+    await vi.runAllTimersAsync();
+
+    expect(mockCapture).toHaveBeenCalledTimes(1);
+    expect(mockCapture).toHaveBeenCalledWith('Signup Completed', { source: 'magic_link' });
+  });
+
+  it('drops event silently after 3 s if posthog never loads', async () => {
+    const mockCapture = vi.fn();
+    vi.doMock('posthog-js', () => ({
+      default: { __loaded: false, capture: mockCapture },
+    }));
+
+    const { capturePostHog } = await import('@/lib/analytics');
+    capturePostHog('Signup Completed', { source: 'magic_link' });
+
+    await Promise.resolve();
+    await vi.runAllTimersAsync();
+
+    expect(mockCapture).not.toHaveBeenCalled();
   });
 });
 

@@ -108,6 +108,8 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
+  // EU-hosted org — source map uploads must target de.sentry.io, not sentry.io
+  sentryUrl: 'https://de.sentry.io/',
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
 

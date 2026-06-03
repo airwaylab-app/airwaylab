@@ -104,9 +104,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Only mail users who have opted in. email_opt_in=false includes everyone
+    // who unsubscribed, so they MUST be excluded. (Reach policy for never-decided
+    // users is deferred — see scopes/airwaylab/runs/resolve-log.md.) The legacy
+    // "backfill all to true" step was removed: it re-subscribed users who had
+    // explicitly opted out (GDPR / CAN-SPAM violation + deliverability risk).
     const { data: users, error } = await supabase
       .from('profiles')
       .select('id, email')
+      .eq('email_opt_in', true)
       .not('email', 'is', null);
 
     if (error || !users) {
@@ -131,22 +137,6 @@ export async function POST(request: NextRequest) {
         recipient_count: recipients.length,
         recipients: recipients.map((u) => u.email),
       });
-    }
-
-    // Backfill: set email_opt_in = true for all users.
-    // These users consented via the signup form — the /api/subscribe
-    // endpoint was never built, so consent was lost. This restores it.
-    const { error: backfillError } = await supabase
-      .from('profiles')
-      .update({ email_opt_in: true })
-      .eq('email_opt_in', false);
-
-    if (backfillError) {
-      console.error('[email/announce] Backfill failed:', backfillError.message);
-      Sentry.captureException(backfillError, { tags: { route: 'email-announce', action: 'backfill-opt-in' } });
-      // Continue anyway — sending is more important than the flag
-    } else {
-      console.error(`[email/announce] Backfilled email_opt_in = true for all users`);
     }
 
     let sent = 0;
