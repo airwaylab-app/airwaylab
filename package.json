@@ -1,7 +1,10 @@
 {
   "name": "airwaylab",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/check-version.mjs && next build --webpack",

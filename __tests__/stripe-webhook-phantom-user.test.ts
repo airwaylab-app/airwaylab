@@ -52,6 +52,7 @@ vi.mock('@/lib/discord', () => ({
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: vi.fn().mockResolvedValue(undefined),
   formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockFrom = vi.fn();
@@ -189,7 +190,6 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
   });
 
   it('fires Sentry captureMessage with phantom-user-id tag', async () => {
-    const { captureMessage } = await import('@sentry/nextjs');
     const event = makeCheckoutSessionEvent(PHANTOM_USER_ID);
     mockWebhooksConstruct.mockReturnValue(event);
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject(PHANTOM_USER_ID));
@@ -206,6 +206,9 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
 
     await callRoute(makeWebhookRequest());
 
+    // Import after callRoute to get the module instance used by the route
+    // (callRoute calls vi.resetModules() which invalidates pre-call mock references)
+    const { captureMessage } = await import('@sentry/nextjs');
     expect(captureMessage).toHaveBeenCalledWith(
       'Stripe webhook: supabase_user_id in metadata has no matching profile',
       expect.objectContaining({
@@ -247,7 +250,6 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
   });
 
   it('includes userId, eventId, subscriptionId, and stripeCustomerId in Sentry extra', async () => {
-    const { captureMessage } = await import('@sentry/nextjs');
     const event = makeCheckoutSessionEvent(PHANTOM_USER_ID, 'sub_phantom_456');
     mockWebhooksConstruct.mockReturnValue(event);
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject(PHANTOM_USER_ID));
@@ -258,6 +260,9 @@ describe('stripe-webhook-phantom-user: checkout.session.completed with non-exist
 
     await callRoute(makeWebhookRequest());
 
+    // Import after callRoute to get the module instance used by the route
+    // (callRoute calls vi.resetModules() which invalidates pre-call mock references)
+    const { captureMessage } = await import('@sentry/nextjs');
     expect(captureMessage).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({

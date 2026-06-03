@@ -32,6 +32,49 @@ import type { StoredPLDTrace } from './pld-trace-idb';
 
 type StateListener = (state: AnalysisState) => void;
 
+/**
+ * Patient-safety input guard (orchestrator boundary).
+ *
+ * A malformed EDF can yield samplingRate <= 0 / NaN or a bad recordDuration. Those
+ * NaN-propagate through the analysis engines (Glasgow / WAT / NED) and surface as
+ * silently-wrong clinical numbers, and a samplingRate of 0 drives the WAT engine's
+ * stepSize = floor(5 * samplingRate) to 0 → infinite loop → worker hang.
+ *
+ * The parser and engines run INSIDE the protected worker, so the orchestrator cannot
+ * inspect the raw per-EDF samplingRate / sampleCount. The night-level invariant it CAN
+ * enforce at this boundary is recordDuration: a finite, positive recording length, plus
+ * a sane breath count. A night that fails is SKIPPED (never merged / persisted / shown)
+ * and the reason is surfaced on state.warnings — never silently dropped.
+ *
+ * Returns null when the night is safe to keep, or a human-readable reason string when
+ * it must be skipped.
+ *
+ * NOTE: this cannot detect the upstream cause flagged for clinician/maintainer review:
+ * lib/parsers/edf-parser.ts does not validate headerBytes against (256 + numSignals * 256),
+ * so an under-reported header decodes header bytes AS flow samples and yields
+ * plausible-but-wrong metrics. That fix lives in a protected module. See PR body.
+ */
+function validateNightInputs(night: NightResult): string | null {
+  // recordDuration analog: NightResult carries the recording length as durationHours.
+  if (!Number.isFinite(night.durationHours) || night.durationHours <= 0) {
+    return `invalid recording duration (${night.durationHours}h)`;
+  }
+  // sampleCount analog: breathCount is the per-night count derived from samples.
+  // A negative / non-integer / NaN count means the sample stream was malformed.
+  const breathCount = night.ned?.breathCount;
+  if (!Number.isInteger(breathCount) || breathCount < 0) {
+    return `invalid breath count (${breathCount})`;
+  }
+  // Guard against NaN-propagated clinical scores reaching the dashboard.
+  if (!Number.isFinite(night.glasgow?.overall)) {
+    return `non-finite Glasgow score (${night.glasgow?.overall})`;
+  }
+  if (!Number.isFinite(night.wat?.flScore)) {
+    return `non-finite WAT score (${night.wat?.flScore})`;
+  }
+  return null;
+}
+
 const initialState: AnalysisState = {
   status: 'idle',
   progress: { current: 0, total: 0, stage: '' },
@@ -282,10 +325,9 @@ class AnalysisOrchestrator {
       }
 
       // ── Authoritative save of final results ──
-      // Save all merged nights regardless of tier window so the session can be
-      // restored on reload. The page applies the tier window on display, but
-      // bypasses it when the session was saved recently (same-day restore).
-      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
+      // Persist ALL analyzed nights — tier-gating is display-only (visibleNights in page.tsx).
+      // Filtering here caused permanent data loss: sequential SD-card uploads re-applied the
+      // cutoff to current time, silently dropping nights that aged past the community window.
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
       persistBreathData(merged);
@@ -296,7 +338,7 @@ class AnalysisOrchestrator {
       this.setState({
         status: 'complete',
         nights: merged,
-        nightsCappedCount: merged.length - nightsToSave.length,
+        nightsCappedCount: 0,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -399,6 +441,20 @@ class AnalysisOrchestrator {
             break;
           case 'NIGHT_RESULT': {
             const night = msg.night;
+            // ── Patient-safety input guard ──
+            // Skip a night whose parsed inputs are non-finite / out of range before it
+            // is persisted incrementally or merged. Surface the reason; never silently drop.
+            const invalidReason = validateNightInputs(night);
+            if (invalidReason) {
+              const detail = `Skipped night ${night.dateStr}: ${invalidReason}. The recording may be corrupt or incomplete.`;
+              console.error('[orchestrator] rejected invalid night:', detail);
+              Sentry.captureMessage(detail, {
+                level: 'warning',
+                tags: { context: 'analysis-input-guard' },
+              });
+              this.setState({ warnings: [...this.state.warnings, detail] });
+              break;
+            }
             // Bulk arrays are in top-level msg fields (stripped from night to avoid postMessage OOM).
             const breaths = msg.breaths;
             const trace = msg.oximetryTrace;
@@ -415,11 +471,35 @@ class AnalysisOrchestrator {
             onNightComplete?.(night);
             break;
           }
-          case 'RESULTS':
+          case 'RESULTS': {
             settle();
             this.terminate();
-            Promise.allSettled(pendingIdbWrites).then(() => resolve(msg.nights));
+            // ── Patient-safety input guard ──
+            // Filter the authoritative night set: keep only nights with valid parsed
+            // inputs, surface a warning for each skipped night. Prevents non-finite /
+            // out-of-range data from being merged, persisted, or shown.
+            const safeNights: NightResult[] = [];
+            const skipWarnings: string[] = [];
+            for (const night of msg.nights) {
+              const invalidReason = validateNightInputs(night);
+              if (invalidReason) {
+                const detail = `Skipped night ${night.dateStr}: ${invalidReason}. The recording may be corrupt or incomplete.`;
+                console.error('[orchestrator] rejected invalid night:', detail);
+                Sentry.captureMessage(detail, {
+                  level: 'warning',
+                  tags: { context: 'analysis-input-guard' },
+                });
+                skipWarnings.push(detail);
+              } else {
+                safeNights.push(night);
+              }
+            }
+            if (skipWarnings.length > 0) {
+              this.setState({ warnings: [...this.state.warnings, ...skipWarnings] });
+            }
+            Promise.allSettled(pendingIdbWrites).then(() => resolve(safeNights));
             break;
+          }
           case 'WARNING': {
             const isTruncated = msg.detail.includes('Truncated');
             // Truncated EDFs are common on SD cards (power loss, incomplete writes).
@@ -590,17 +670,15 @@ class AnalysisOrchestrator {
         console.error('[orchestrator] Oximetry warning:', warning);
       }
 
-      // Persist updated results — save all nights so reload can restore the session.
-      // The tier window is applied at display time on the page.
+      // Persist updated results (all nights — tier-gating is display-only)
       const therapyChangeDate = detectTherapyChange(merged);
-      const nightsToSave = filterNightsToTierWindow(merged, tier, Date.now(), this.currentOverrideWindowDays);
       const persistResult = persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
       this.setState({
         status: 'complete',
         nights: merged,
-        nightsCappedCount: merged.length - nightsToSave.length,
+        nightsCappedCount: 0,
         therapyChangeDate,
         warning,
         persistenceWarning: persistResult.reason ?? null,
@@ -665,6 +743,20 @@ class AnalysisOrchestrator {
             this.terminate();
             resolve({ oximetryByDate: msg.oximetryByDate, oximetryTraceByDate: msg.oximetryTraceByDate });
             break;
+          case 'WARNING':
+            // ── Surface partial-parse failures ──
+            // The oximetry worker can emit WARNING (e.g. a CSV partially parsed) while
+            // still returning OXIMETRY_RESULTS. Previously only RESULTS/ERROR were
+            // handled, so a partial bad parse looked fully successful. Push the warning
+            // to state so the UI can surface it instead of silently dropping it.
+            if (!msg.detail.includes('Truncated')) {
+              Sentry.captureMessage(msg.detail, {
+                level: 'warning',
+                tags: { checkpoint: msg.checkpoint, ...msg.tags },
+              });
+            }
+            this.setState({ warnings: [...this.state.warnings, msg.detail] });
+            break;
           case 'ERROR':
             settle();
             this.terminate();
@@ -724,8 +816,7 @@ class AnalysisOrchestrator {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       if (this.incrementalNights.length > 0) {
-        const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
-        persistNightsIncremental(nights);
+        persistNightsIncremental(this.incrementalNights);
       }
     }, 2000);
   }
@@ -744,8 +835,7 @@ class AnalysisOrchestrator {
     this.boundBeforeUnload = () => {
       if (this.incrementalNights.length > 0) {
         try {
-          const nights = filterNightsToTierWindow(this.incrementalNights, this.currentTier, Date.now(), this.currentOverrideWindowDays);
-          persistNightsIncremental(nights);
+          persistNightsIncremental(this.incrementalNights);
         } catch {
           // Best effort — page is closing
         }

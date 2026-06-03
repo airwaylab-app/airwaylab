@@ -25,21 +25,18 @@ const mockGetUser = vi.fn();
 
 // Mutable select chain
 let mockSelectResult: { data: unknown; error: null | { message: string } } = { data: [], error: null };
-const mockOrder = vi.fn(() => ({
-  gte: vi.fn(() => Promise.resolve(mockSelectResult)),
-  then: (resolve: (v: typeof mockSelectResult) => unknown) => Promise.resolve(mockSelectResult).then(resolve),
-  // Make the query itself thenable so .gte() is optional
-  ...{ [Symbol.for('thenable')]: true },
-}));
-// We need the query to be awaitable directly when .gte() is not called
-const mockQueryChain = {
-  gte: vi.fn(() => Promise.resolve(mockSelectResult)),
-  order: mockOrder,
-  // Awaitable without .gte() — Supabase builder is a thenable
-  then: (resolve: (v: typeof mockSelectResult) => unknown) =>
-    Promise.resolve(mockSelectResult).then(resolve),
-};
-mockOrder.mockReturnValue(mockQueryChain);
+// The Supabase builder is a thenable that also exposes chainable filter/modifier
+// methods (.gte, .limit). Each method returns the same chain so the order of
+// .gte()/.limit() calls doesn't matter, and awaiting the chain resolves the result.
+const mockQueryChain: Record<string, unknown> = {};
+const mockGte = vi.fn(() => mockQueryChain);
+const mockLimit = vi.fn(() => mockQueryChain);
+const mockOrder = vi.fn(() => mockQueryChain);
+mockQueryChain.gte = mockGte;
+mockQueryChain.limit = mockLimit;
+mockQueryChain.order = mockOrder;
+mockQueryChain.then = (resolve: (v: typeof mockSelectResult) => unknown) =>
+  Promise.resolve(mockSelectResult).then(resolve);
 
 const mockEq = vi.fn(() => ({ order: mockOrder }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
@@ -97,7 +94,10 @@ describe('GET /api/nights', () => {
     mockFrom.mockReturnValue({ select: mockSelect });
     mockSelect.mockReturnValue({ eq: mockEq });
     mockEq.mockReturnValue({ order: mockOrder });
+    // clearAllMocks wipes implementations; restore the chainable returns.
     mockOrder.mockReturnValue(mockQueryChain);
+    mockGte.mockReturnValue(mockQueryChain);
+    mockLimit.mockReturnValue(mockQueryChain);
   });
 
   it('returns 401 when unauthenticated', async () => {
@@ -109,13 +109,15 @@ describe('GET /api/nights', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when origin invalid', async () => {
-    mockValidateOrigin.mockReturnValue(false);
+  it('returns 200 when Origin header is absent (regression: AIR-1870)', async () => {
+    // GET requests from same-origin JS fetch routinely omit the Origin header.
+    // validateOrigin() must NOT gate GET endpoints — auth cookie is the guard.
+    mockSelectResult = { data: [], error: null };
 
     const { GET } = await import('@/app/api/nights/route');
-    const res = await GET(makeRequest());
+    const res = await GET(makeRequest()); // makeRequest sets headers.get → null
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   it('returns 429 when rate limited', async () => {
@@ -177,28 +179,31 @@ describe('GET /api/nights', () => {
     const rows = [makeNightRow('2024-03-15')];
     mockSelectResult = { data: rows, error: null };
 
-    const gteSpy = vi.fn(() => Promise.resolve(mockSelectResult));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockOrder.mockReturnValueOnce({ gte: gteSpy, then: mockQueryChain.then } as any);
-
     const { GET } = await import('@/app/api/nights/route');
     await GET(makeRequest({ since: '2024-03-01' }));
 
-    expect(gteSpy).toHaveBeenCalledWith('night_date', '2024-03-01');
+    expect(mockGte).toHaveBeenCalledWith('night_date', '2024-03-01');
   });
 
   it('does not apply since filter when param is absent', async () => {
     mockSelectResult = { data: [], error: null };
 
-    const gteSpy = vi.fn(() => Promise.resolve(mockSelectResult));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockOrder.mockReturnValueOnce({ gte: gteSpy, then: mockQueryChain.then } as any);
-
     const { GET } = await import('@/app/api/nights/route');
     await GET(makeRequest());
 
     // No since param → .gte() should not have been called
-    expect(gteSpy).not.toHaveBeenCalled();
+    expect(mockGte).not.toHaveBeenCalled();
+  });
+
+  it('caps the result set with a limit on every fetch', async () => {
+    mockSelectResult = { data: [], error: null };
+
+    const { GET } = await import('@/app/api/nights/route');
+    await GET(makeRequest());
+
+    // Payload is bounded server-side (MAX_NIGHTS_RETURNED) since the consumer
+    // needs the full analysis_data blob and cannot use a summary projection.
+    expect(mockLimit).toHaveBeenCalledWith(365);
   });
 
   it('returns 500 when database query fails', async () => {

@@ -7,6 +7,12 @@ const mockUpload = vi.fn();
 const mockInsert = vi.fn();
 const mockRemove = vi.fn();
 
+const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
+// Mutable so individual tests can simulate a logged-out request.
+const mockGetUser = vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>(() =>
+  Promise.resolve({ data: { user: { id: TEST_USER_ID } } })
+);
+
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
@@ -24,6 +30,11 @@ vi.mock('@/lib/supabase/server', () => ({
       insert: mockInsert,
     }),
   })),
+  getSupabaseServer: vi.fn(() =>
+    Promise.resolve({
+      auth: { getUser: () => mockGetUser() },
+    })
+  ),
 }));
 
 vi.mock('@/lib/csrf', () => ({
@@ -54,7 +65,7 @@ function makeRequest(overrides: Partial<{
     'content-type': 'application/octet-stream',
     'content-encoding': 'gzip',
     'x-night-date': '2025-01-15',
-    'x-contribution-id': 'test-contribution-id',
+    'x-contribution-id': '11111111-1111-4111-8111-111111111111',
     'x-engine-version': ENGINE_VERSION,
     'x-sampling-rate': '25',
     'x-duration-seconds': '28800',
@@ -83,6 +94,22 @@ describe('contribute-waveforms API route', () => {
     mockUpload.mockResolvedValue({ error: null });
     mockInsert.mockResolvedValue({ error: null });
     mockRemove.mockResolvedValue({ error: null });
+    // Default: authenticated user. Individual tests override for the 401 path.
+    mockGetUser.mockResolvedValue({ data: { user: { id: TEST_USER_ID } } });
+  });
+
+  it('returns 401 when the request is not authenticated', async () => {
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const request = makeRequest();
+    const response = await POST(request as never);
+
+    expect(response.status).toBe(401);
+    // No storage write or DB insert for an unauthenticated request.
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it('accepts valid waveform upload and stores to Supabase', async () => {
@@ -98,20 +125,21 @@ describe('contribute-waveforms API route', () => {
     // Verify storage upload was called
     expect(mockUpload).toHaveBeenCalledTimes(1);
     const uploadArgs = mockUpload.mock.calls[0];
-    expect(uploadArgs![0]).toBe('test-contribution-id/2025-01-15.flow.gz');
+    expect(uploadArgs![0]).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz');
     // Body must be ArrayBuffer, not Buffer — ensures Content-Length is set correctly by fetch()
     expect(uploadArgs![1]).toBeInstanceOf(ArrayBuffer);
 
     // Verify DB insert was called with correct metadata
     expect(mockInsert).toHaveBeenCalledTimes(1);
     const insertData = mockInsert.mock.calls[0]![0];
-    expect(insertData.contribution_id).toBe('test-contribution-id');
+    expect(insertData.contribution_id).toBe('11111111-1111-4111-8111-111111111111');
+    expect(insertData.user_id).toBe(TEST_USER_ID);
     expect(insertData.night_date).toBe('2025-01-15');
     expect(insertData.engine_version).toBe(ENGINE_VERSION);
     expect(insertData.sampling_rate).toBe(25);
     expect(insertData.device_model).toBe('AirSense 10');
     expect(insertData.pap_mode).toBe('APAP');
-    expect(insertData.storage_path).toBe('test-contribution-id/2025-01-15.flow.gz');
+    expect(insertData.storage_path).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz');
   });
 
   it('uses .bin extension when not compressed', async () => {
@@ -120,7 +148,7 @@ describe('contribute-waveforms API route', () => {
     const headers = new Headers({
       'content-type': 'application/octet-stream',
       'x-night-date': '2025-01-15',
-      'x-contribution-id': 'test-contribution-id',
+      'x-contribution-id': '11111111-1111-4111-8111-111111111111',
       'x-engine-version': ENGINE_VERSION,
       'x-sampling-rate': '25',
       'x-duration-seconds': '28800',
@@ -141,7 +169,7 @@ describe('contribute-waveforms API route', () => {
     await POST(request as never);
 
     const uploadPath = mockUpload.mock.calls[0]?.[0];
-    expect(uploadPath).toBe('test-contribution-id/2025-01-15.flow.bin');
+    expect(uploadPath).toBe('11111111-1111-4111-8111-111111111111/2025-01-15.flow.bin');
   });
 
   it('rejects request with missing required headers', async () => {
@@ -227,7 +255,7 @@ describe('contribute-waveforms API route', () => {
 
     // Should have attempted to clean up the orphaned storage file
     expect(mockRemove).toHaveBeenCalledTimes(1);
-    expect(mockRemove.mock.calls[0]![0]).toEqual(['test-contribution-id/2025-01-15.flow.gz']);
+    expect(mockRemove.mock.calls[0]![0]).toEqual(['11111111-1111-4111-8111-111111111111/2025-01-15.flow.gz']);
   });
 
   it('rejects invalid JSON in analysis results header', async () => {
