@@ -245,6 +245,62 @@ describe('processEmailDrips health check', () => {
   });
 });
 
+// ── cancelOptedOutPendingEmails ──────────────────────────────
+
+describe('cancelOptedOutPendingEmails', () => {
+  it('cancels pending emails for opted-out users and returns the count', async () => {
+    const { cancelOptedOutPendingEmails } = await import('@/lib/email/sequences');
+
+    const mockSupabase = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [{ id: 'user-1' }, { id: 'user-2' }],
+                error: null,
+              }),
+            }),
+          };
+        }
+        // email_sequences: update -> in -> eq -> select
+        return {
+          update: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: [{ id: 'seq-1' }, { id: 'seq-2' }, { id: 'seq-3' }],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        };
+      }),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const count = await cancelOptedOutPendingEmails(mockSupabase as any);
+    expect(count).toBe(3);
+  });
+
+  it('returns 0 when there are no opted-out users', async () => {
+    const { cancelOptedOutPendingEmails } = await import('@/lib/email/sequences');
+
+    const mockSupabase = {
+      from: vi.fn().mockImplementation(() => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      })),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const count = await cancelOptedOutPendingEmails(mockSupabase as any);
+    expect(count).toBe(0);
+  });
+});
+
 // ── Cron handler ordering ────────────────────────────────────
 
 describe('processEmailDrips execution order', () => {
@@ -282,5 +338,26 @@ describe('processEmailDrips execution order', () => {
 
     // Dormancy scheduling must NOT be present -- re_engagement fully replaces it
     expect(body.indexOf('await scheduleDormancySequences')).toBe(-1);
+  });
+
+  it('cancels opted-out pending emails before scheduling new sequences', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/email/cron-handler.ts'),
+      'utf8',
+    );
+
+    const fnStart = source.indexOf('export async function processEmailDrips');
+    const body = source.slice(fnStart);
+
+    const cancelCall = body.indexOf('await cancelOptedOutPendingEmails');
+    const activationCall = body.indexOf('await scheduleActivationSequences');
+
+    expect(cancelCall).toBeGreaterThan(-1);
+    expect(activationCall).toBeGreaterThan(-1);
+    // Cleanup must precede all scheduling
+    expect(cancelCall).toBeLessThan(activationCall);
   });
 });

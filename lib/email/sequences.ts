@@ -567,6 +567,49 @@ export async function scheduleWinBackSequences(
 }
 
 /**
+ * Cancel all pending emails for users who have opted out of email.
+ * Called at the start of each cron run to clean up orphaned pending rows that
+ * accumulate when users opt out via profile settings rather than the unsubscribe
+ * link (which calls cancelAllPending directly). Without this step these rows
+ * consume the getPendingEmails batch limit and inflate the overdue health-check
+ * count even though no email will ever be sent for them.
+ */
+export async function cancelOptedOutPendingEmails(
+  supabase: SupabaseClient
+): Promise<number> {
+  const { data: optedOut, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email_opt_in', false);
+
+  if (profilesError) {
+    console.error('[email-sequences] Failed to query opted-out users:', profilesError.message);
+    return 0;
+  }
+
+  const optedOutIds = optedOut?.map((r: { id: string }) => r.id) ?? [];
+  if (optedOutIds.length === 0) return 0;
+
+  const { data: cancelled, error: cancelError } = await supabase
+    .from('email_sequences')
+    .update({ status: 'cancelled' })
+    .in('user_id', optedOutIds)
+    .eq('status', 'pending')
+    .select('id');
+
+  if (cancelError) {
+    console.error('[email-sequences] Failed to cancel opted-out pending emails:', cancelError.message);
+    return 0;
+  }
+
+  const count = cancelled?.length ?? 0;
+  if (count > 0) {
+    console.error(`[email-sequences] Cancelled ${count} pending emails for opted-out users`);
+  }
+  return count;
+}
+
+/**
  * Mark a user as suppressed from re-engagement emails.
  * Called after the final (step 3) re-engagement email sends.
  */

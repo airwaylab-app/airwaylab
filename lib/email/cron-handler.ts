@@ -15,6 +15,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import {
+  cancelOptedOutPendingEmails,
   getPendingEmails,
   markSent,
   scheduleActivationSequences,
@@ -39,6 +40,7 @@ interface CronResult {
   reEngagementScheduled: number;
   winBackScheduled: number;
   sunsetted: number;
+  optedOutCancelled: number;
 }
 
 export async function processEmailDrips(supabase: SupabaseClient): Promise<CronResult> {
@@ -51,7 +53,15 @@ export async function processEmailDrips(supabase: SupabaseClient): Promise<CronR
     reEngagementScheduled: 0,
     winBackScheduled: 0,
     sunsetted: 0,
+    optedOutCancelled: 0,
   };
+
+  // 0. Cancel pending emails for opted-out users before any other step.
+  //    Users who toggle email_opt_in=false in profile settings (rather than
+  //    clicking the unsubscribe link) leave behind pending rows that are never
+  //    sent but do accumulate in the overdue health-check count and consume
+  //    batch slots in getPendingEmails.
+  result.optedOutCancelled = await cancelOptedOutPendingEmails(supabase);
 
   // 1. Discover new candidates first -- scheduling before sending ensures
   //    newly discovered users get their first email in this run, not 24h later.
