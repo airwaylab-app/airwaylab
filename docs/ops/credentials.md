@@ -10,6 +10,9 @@ Update this file whenever a credential is rotated.
 |------|-------|-----------|---------|--------------|-------------------|--------|
 | `SENTRY_AUTH_TOKEN` | CTO / Board | Vercel env var `SENTRY_AUTH_TOKEN` | 90 days | 2026-04-22† | 2026-07-21 | active |
 | `GITHUB_PAT` (airwaylab-dev) | Board (Demian) | Cortis `.netrc` / git remote URL | 90 days | 2026-04-20† | 2026-07-12 | active |
+| `GMAIL_CLIENT_ID` | Board (Demian) | Vercel env var `GMAIL_CLIENT_ID` | 365 days | unknown§ | 2026-12-02 | active |
+| `GMAIL_CLIENT_SECRET` | Board (Demian) | Vercel env var `GMAIL_CLIENT_SECRET` | 365 days | unknown§ | 2026-12-02 | active |
+| `GMAIL_REFRESH_TOKEN` | Board (Demian) | Vercel env var `GMAIL_REFRESH_TOKEN` | 365 days | unknown§ | 2026-12-02 | active |
 | `DISCORD_REVENUE_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | verify urgently |
 | `DISCORD_OPS_WEBHOOK_URL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
 | `DISCORD_WEBHOOK_CRITICAL` | Board (Demian) | Vercel env var | as needed | unknown | — | untracked |
@@ -18,7 +21,8 @@ Update this file whenever a credential is rotated.
 
 †Estimated from [AIR-927](/AIR/issues/AIR-927) fix date — verify actual expiry in Sentry dashboard and update this row.
 ‡Expiry confirmed via live `GET /rate_limit` header check on 2026-05-11 (`github-authentication-token-expiration: 2026-07-12 14:33:16 UTC`). Doc was previously stale (showed EXPIRED). Updated by [AIR-1358](/AIR/issues/AIR-1358) health check.
-§Discord webhook URLs have no built-in expiry but are permanently invalidated when the target channel or webhook is deleted in Discord. Status "verify urgently" reflects the regression found in [AIR-2385](/AIR/issues/AIR-2385) / [AIR-2389](/AIR/issues/AIR-2389) (2026-06-02): subscription revenue alerts stopped posting to Discord, root cause traced to DISCORD_REVENUE_WEBHOOK_URL missing or pointing to a deleted webhook. Demian must verify in Vercel dashboard and regenerate from Discord server settings if needed.
+§Gmail OAuth credentials were confirmed present in Vercel as of 2026-05-31 (env snapshot) but creation date is unknown — first documented by [AIR-2344](/AIR/issues/AIR-2344). Next rotation date is set to 2026-12-02 as an initial review anchor; update after first explicit rotation.
+‖Discord webhook URLs have no built-in expiry but are permanently invalidated when the target channel or webhook is deleted in Discord. Status "verify urgently" reflects the regression found in [AIR-2385](/AIR/issues/AIR-2385) / [AIR-2389](/AIR/issues/AIR-2389) (2026-06-02): subscription revenue alerts stopped posting to Discord, root cause traced to DISCORD_REVENUE_WEBHOOK_URL missing or pointing to a deleted webhook. Demian must verify in Vercel dashboard and regenerate from Discord server settings if needed.
 
 ---
 
@@ -44,6 +48,29 @@ Update this file whenever a credential is rotated.
    ```
 6. Update `Last Rotated` and `Next Rotation Due` in the table above
 7. Comment on the rotation ticket confirming the new expiry date
+
+### Gmail OAuth credentials (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)
+
+Used by: feedback-processor cron (`/api/cron/feedback-processor`, 07:00 UTC daily) to create Gmail drafts on `dev@airwaylab.app`.
+
+**Rotate client secret** (keep existing client ID unless revoking the whole app):
+
+1. Google Cloud Console → APIs & Services → Credentials
+2. Select the OAuth 2.0 client ID used for AirwayLab (`dev@airwaylab.app`)
+3. Click "Reset Secret" → copy new `GMAIL_CLIENT_SECRET`
+4. File a board approval (External-Service WRITE policy) before updating Vercel
+5. After approval: update `GMAIL_CLIENT_SECRET` in Vercel (Production + Preview + Development)
+
+**Re-issue refresh token** (required if token is revoked or after secret rotation):
+
+1. Re-run the OAuth consent flow for `dev@airwaylab.app` in Google OAuth Playground or equivalent
+2. Exchange auth code for a new refresh token (scope: `https://www.googleapis.com/auth/gmail.compose`)
+3. File a board approval before updating Vercel
+4. After approval: update `GMAIL_REFRESH_TOKEN` in Vercel (Production + Preview + Development)
+
+**Verify** by triggering `GET /api/cron/feedback-processor` (with `CRON_SECRET` header) and confirming the response is `{ ok: true }`, not `{ skipped: true }`.
+
+Note: If the feedback-processor cron silently returns `{ skipped: true, reason: 'Gmail not configured' }`, it means one or more of these three vars is missing or empty in Vercel.
 
 ---
 
