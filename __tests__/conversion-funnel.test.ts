@@ -204,7 +204,7 @@ describe('Step 7: Deep AI insights', () => {
   it('API route extends system prompt for deep mode', () => {
     const src = readSource('app/api/ai-insights/route.ts');
     expect(src).toContain('DEEP_SYSTEM_PROMPT_EXTENSION');
-    expect(src).toContain('RERA clustering');
+    expect(src).toContain('Progressive NED run clustering');
     expect(src).toContain('Breath shape distribution');
   });
 

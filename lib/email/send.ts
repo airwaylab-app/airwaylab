@@ -61,6 +61,9 @@ export async function sendEmail({
     return null
   }
 
+  // Resend rejects subjects containing newlines with HTTP 422
+  const sanitizedSubject = subject.replace(/[\r\n]+/g, ' ').trim()
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -72,7 +75,7 @@ export async function sendEmail({
         from: 'AirwayLab <noreply@mail.airwaylab.app>',
         reply_to: replyTo ?? 'dev@airwaylab.app',
         to: [to],
-        subject,
+        subject: sanitizedSubject,
         ...(html && { html }),
         ...(text && { text }),
         ...(unsubscribeUrl && {
@@ -89,7 +92,7 @@ export async function sendEmail({
       const err = new Error(`Resend API ${res.status}: ${errBody.slice(0, 200)}`)
       Sentry.captureException(err, {
         tags: { subsystem: 'email-send' },
-        extra: { recipient_hash: hashRecipient(to), subject_pattern: subject.slice(0, 40), status: res.status },
+        extra: { recipient_hash: hashRecipient(to), subject_pattern: sanitizedSubject.slice(0, 40), status: res.status },
       })
       console.error(`[email-send] Resend API error ${res.status}: ${errBody}`)
       return null
@@ -107,7 +110,7 @@ export async function sendEmail({
   } catch (err) {
     Sentry.captureException(err, {
       tags: { subsystem: 'email-send' },
-      extra: { recipient_hash: hashRecipient(to), subject_pattern: subject.slice(0, 40) },
+      extra: { recipient_hash: hashRecipient(to), subject_pattern: sanitizedSubject.slice(0, 40) },
     })
     console.error('[email-send] Failed to send email:', err)
     return null
