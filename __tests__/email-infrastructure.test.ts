@@ -283,4 +283,127 @@ describe('processEmailDrips execution order', () => {
     // Dormancy scheduling must NOT be present -- re_engagement fully replaces it
     expect(body.indexOf('await scheduleDormancySequences')).toBe(-1);
   });
+
+  it('calls cancelStaleSequenceSteps before getPendingEmails', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/email/cron-handler.ts'),
+      'utf8',
+    );
+
+    const fnStart = source.indexOf('export async function processEmailDrips');
+    expect(fnStart).toBeGreaterThan(-1);
+    const body = source.slice(fnStart);
+
+    const staleCall = body.indexOf('await cancelStaleSequenceSteps');
+    const sendCall = body.indexOf('await getPendingEmails');
+
+    expect(staleCall).toBeGreaterThan(-1);
+    expect(sendCall).toBeGreaterThan(-1);
+    expect(staleCall).toBeLessThan(sendCall);
+  });
+});
+
+// ── cancelStaleSequenceSteps ─────────────────────────────────
+
+describe('cancelStaleSequenceSteps', () => {
+  it('cancels activation and cpap_tips steps older than 14 days', async () => {
+    const { cancelStaleSequenceSteps } = await import('@/lib/email/sequences');
+
+    const cancelledIds = ['id-1', 'id-2', 'id-3'];
+    const mockSupabase = {
+      from: vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              lt: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: cancelledIds.map((id) => ({ id })),
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelStaleSequenceSteps(mockSupabase as any);
+    expect(result).toBe(3);
+    expect(mockSupabase.from).toHaveBeenCalledWith('email_sequences');
+  });
+
+  it('returns 0 and logs on database error', async () => {
+    const { cancelStaleSequenceSteps } = await import('@/lib/email/sequences');
+
+    const mockSupabase = {
+      from: vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              lt: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: 'DB error' },
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelStaleSequenceSteps(mockSupabase as any);
+    expect(result).toBe(0);
+  });
+
+  it('returns 0 when no stale steps exist', async () => {
+    const { cancelStaleSequenceSteps } = await import('@/lib/email/sequences');
+
+    const mockSupabase = {
+      from: vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              lt: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelStaleSequenceSteps(mockSupabase as any);
+    expect(result).toBe(0);
+  });
+
+  it('only targets activation and cpap_tips sequences', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/email/sequences.ts'),
+      'utf8',
+    );
+
+    // The stale step sequences constant must include only these two
+    expect(source).toContain("'activation'");
+    expect(source).toContain("'cpap_tips'");
+    expect(source).toContain('STALE_STEP_SEQUENCES');
+    // re_engagement and win_back must NOT appear in the stale sequences list
+    const staleConstIdx = source.indexOf('STALE_STEP_SEQUENCES');
+    const listEnd = source.indexOf(']', staleConstIdx);
+    const listContent = source.slice(staleConstIdx, listEnd);
+    expect(listContent).not.toContain("'re_engagement'");
+    expect(listContent).not.toContain("'win_back'");
+  });
 });
