@@ -748,7 +748,7 @@ export function formatElapsedTimeShort(seconds: number): string {
  */
 export function formatWallClockTime(recordingDate: Date | undefined | null, elapsedSec: number): string {
   const elapsed = formatElapsedTime(elapsedSec);
-  if (!recordingDate) return elapsed;
+  if (!recordingDate || !(recordingDate instanceof Date)) return elapsed;
 
   const wallClock = new Date(recordingDate.getTime() + elapsedSec * 1000);
   const timeStr = wallClock.toLocaleTimeString(undefined, {
