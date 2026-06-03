@@ -21,6 +21,7 @@ on:
       - 'lib/email/broadcast.ts'
       - 'app/api/ai-insights/**'
       - '__tests__/insights.test.ts'
+  merge_group: {}
   workflow_dispatch:
 
 jobs:
@@ -29,12 +30,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Merge-queue events carry no PR diff/label context. The string scan
+      # already ran on the PR before it entered the queue, so pass here as a
+      # no-op to avoid stalling the queue (sibling pattern to clinical-gate.yml).
+      - name: No-op on merge_group
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event — MDR string check evaluated on the PR; passing."
+
       - name: Checkout repository
+        if: github.event_name != 'merge_group'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Run MDR prohibited string check
+        if: github.event_name != 'merge_group'
         env:
           BASE_BRANCH: ${{ github.base_ref || 'main' }}
         run: |
@@ -89,7 +99,7 @@ jobs:
 
               # Hunk header: extract new-file start line number
               elif [[ "$diffline" =~ ^@@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+) ]]; then
-                CURRENT_LINE=$(( ${BASH_REMATCH[2]} - 1 ))
+                CURRENT_LINE=$(( BASH_REMATCH[2] - 1 ))
                 IN_HUNK=true
 
               elif [ "$IN_HUNK" = false ]; then

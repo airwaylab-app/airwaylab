@@ -4,24 +4,34 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
-permissions: {}
+permissions:
+  contents: read
 
 # Security model
 # --------------
 # This workflow rubber-stamps a review on a PR. A review can satisfy a
 # required-review branch-protection rule, so the gate must be tight.
 #
-#   * Self-approval guard: never approve a PR the reviewer identity
-#     (airwaylab-dev) opened.
-#   * Trusted-author allowlist: only known automation identities, or a
-#     PR explicitly opted in with the `auto-approve` label, may be approved.
-#     Arbitrary / external-author PRs are NOT auto-approved.
+#   * Bot-allowlist ONLY: the PR author must be a Bot AND one of a small,
+#     explicit set of trusted automation accounts (the standard dependency
+#     bots). The `auto-approve` LABEL is intentionally NOT a trigger: a label
+#     can be applied by any user with write/triage access, so letting a label
+#     authorise an approval is a review-bypass hole. Removed.
+#   * Self-approval guard: airwaylab-dev is the REVIEWER identity (a User /
+#     PAT account, not a bot author), so it is never on the author allowlist
+#     and never approves a PR it opened.
 #   * Same-repo only: fork PRs (head repo != base repo) are never
 #     auto-approved, even from a bot, since a fork can spoof author metadata
 #     on the head side.
+#   * Clinical safety: even an allowlisted bot is NOT auto-approved if the PR
+#     touches lib/parsers/, lib/analyzers/ or workers/ without a
+#     `clinical-signoff` label. This mirrors clinical-gate.yml and is enforced
+#     at runtime (the job `if:` cannot read the diff), so the auto-approval can
+#     never rubber-stamp a clinical-module change that has not been signed off.
 #
 # Add new trusted automation accounts to the `if:` allowlist below — keep it
-# explicit. Do not relax this to "anyone but airwaylab-dev".
+# explicit. Do not relax this to "anyone but airwaylab-dev" or "any PR with a
+# label".
 
 jobs:
   auto-approve:
@@ -29,18 +39,48 @@ jobs:
     # Gate the whole job. All conditions must hold:
     #   1. Same-repo PR (not a fork).
     #   2. Reviewer is not approving its own PR (self-approval guard).
-    #   3. Author is a trusted bot OR the PR carries the `auto-approve` label.
+    #   3. Author is a trusted automation bot on the explicit allowlist.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login != 'airwaylab-dev' &&
-      (
-        (
-          github.event.pull_request.user.type == 'Bot' &&
-          contains(fromJSON('["renovate[bot]", "dependabot[bot]", "github-actions[bot]"]'), github.event.pull_request.user.login)
-        ) ||
-        contains(github.event.pull_request.labels.*.name, 'auto-approve')
-      )
+      github.event.pull_request.user.type == 'Bot' &&
+      contains(fromJSON('["renovate[bot]", "dependabot[bot]", "github-actions[bot]"]'), github.event.pull_request.user.login)
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block auto-approval of unsigned clinical-module changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+
+          CHANGED=$(git diff --name-only "origin/${BASE_BRANCH}...HEAD")
+
+          if echo "$CHANGED" | grep -Eq '^(lib/parsers|lib/analyzers|workers)/'; then
+            echo "PR touches clinically-validated paths:"
+            echo "$CHANGED" | grep -E '^(lib/parsers|lib/analyzers|workers)/'
+
+            # Query CURRENT labels at runtime — the event payload is stale on synchronize.
+            LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+
+            if echo "$LABELS" | grep -qx 'clinical-signoff'; then
+              echo "clinical-signoff label present — auto-approval may proceed."
+            else
+              echo "::error::Refusing to auto-approve: PR changes clinically-validated logic (lib/parsers, lib/analyzers, or workers) without a 'clinical-signoff' label. A human must review and sign off."
+              exit 1
+            fi
+          else
+            echo "No clinically-validated paths changed — auto-approval may proceed."
+          fi
+
       - name: Approve PR as airwaylab-dev
         env:
           GH_TOKEN: ${{ secrets.AIRWAYLAB_DEV_TOKEN }}
