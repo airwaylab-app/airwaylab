@@ -11,6 +11,21 @@ import { sendAlert, formatRevenueEmbed, alertStripePaymentFailed } from '@/lib/d
 
 export const maxDuration = 30;
 
+/**
+ * A `processing` row older than this is abandoned: the worker that claimed it
+ * crashed/timed out before reaching done|failed. Webhook maxDuration is 30s, so
+ * 15 min is a safe "definitely dead" cutoff. Shared cutoff for the atomic claim
+ * (so a stale row can be re-claimed) and the cron re-drive SELECT.
+ */
+export const STALE_PROCESSING_MS = 15 * 60 * 1000;
+
+/**
+ * Max processing attempts before a row is parked in the terminal `dead` state.
+ * A poison event (one that always throws) must not re-drive forever. After this
+ * many attempts the re-drive query excludes it and ops gets a single alert.
+ */
+export const MAX_ATTEMPTS = 5;
+
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -28,7 +43,18 @@ function computeMrrCents(unitAmount: number, interval: string): number {
   return unitAmount; // monthly
 }
 
-/** Log a subscription lifecycle event for LTV/churn analytics. Non-blocking. */
+/**
+ * Log a subscription lifecycle event for LTV/churn analytics. Non-blocking.
+ *
+ * Defence-in-depth against double-counting (BLOCKER 2): even though the atomic
+ * claim in runStripeJob already ensures each event is processed once, this write
+ * is an UPSERT with ignoreDuplicates against the unique index added in
+ * migration 059 (stripe_event_id). A re-driven row that somehow re-reached this
+ * path can therefore never insert a second analytics row that would corrupt
+ * MRR/churn. The stripe_event_id is the dedup key (one analytics row per Stripe
+ * event); it is null for the cron's own non-webhook recovery writes, and NULL
+ * keys never conflict in a Postgres unique index, so those rows are unaffected.
+ */
 async function logSubscriptionEvent(
   supabase: SupabaseClient,
   params: {
@@ -38,19 +64,24 @@ async function logSubscriptionEvent(
     interval?: string;
     stripeSubscriptionId?: string;
     mrrCents?: number;
+    stripeEventId?: string;
   }
 ) {
-  const { error } = await supabase.from('subscription_events').insert({
-    user_id: params.userId ?? null,
-    event_type: params.eventType,
-    tier: params.tier ?? null,
-    interval: params.interval ?? null,
-    stripe_subscription_id: params.stripeSubscriptionId ?? null,
-    mrr_cents: params.mrrCents ?? null,
-  });
+  const { error } = await supabase.from('subscription_events').upsert(
+    {
+      user_id: params.userId ?? null,
+      event_type: params.eventType,
+      tier: params.tier ?? null,
+      interval: params.interval ?? null,
+      stripe_subscription_id: params.stripeSubscriptionId ?? null,
+      mrr_cents: params.mrrCents ?? null,
+      stripe_event_id: params.stripeEventId ?? null,
+    },
+    { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+  );
   if (error) {
     // Non-blocking — log but don't throw
-    console.error('[stripe-webhook] subscription_events insert failed:', error);
+    console.error('[stripe-webhook] subscription_events upsert failed:', error);
     Sentry.captureException(error, { tags: { route: 'stripe-webhook', action: 'subscription-events-insert' } });
   }
 }
@@ -315,6 +346,7 @@ async function processStripeEvent(
         interval,
         stripeSubscriptionId: subscriptionId,
         mrrCents: computeMrrCents(firstItem?.price.unit_amount ?? 0, interval),
+        stripeEventId: event.id,
       });
 
       void Promise.all([
@@ -403,6 +435,7 @@ async function processStripeEvent(
         interval: updatedInterval,
         stripeSubscriptionId: subscription.id,
         mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+        stripeEventId: event.id,
       });
 
       if (shouldUpdateProfile) {
@@ -486,6 +519,7 @@ async function processStripeEvent(
         userId,
         eventType: 'cancelled',
         stripeSubscriptionId: subscription.id,
+        stripeEventId: event.id,
       });
 
       break;
@@ -508,6 +542,7 @@ async function processStripeEvent(
           userId: undefined,
           eventType: 'past_due',
           stripeSubscriptionId: subscriptionId,
+          stripeEventId: event.id,
         });
 
         // Critical alert: Discord #critical + email to ops (non-blocking, fire-and-forget)
@@ -559,54 +594,183 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Idempotency check — must happen synchronously to prevent duplicate processing
+  // Idempotency + job-state record (ST1). Insert the event as `pending`.
+  //
+  // The PRIMARY KEY on event_id makes this insert the idempotency gate:
+  //   - success            -> first time we see this event, claim it as `pending`
+  //   - unique violation   -> Stripe redelivered an event we already have a row
+  //     for (Postgres code 23505). A TRUE duplicate. Ack with 200, do nothing.
+  //   - any OTHER db error -> the DB is unhealthy (we cannot record the event).
+  //     Return 500 so Stripe RETRIES later. Never swallow it as a duplicate.
+  //
+  // This fixes the pre-ST1 bug where ANY insert error was treated as a duplicate,
+  // silently dropping events whenever the insert failed for a non-duplicate reason.
   const { error: insertError } = await supabase
     .from('stripe_events')
-    .insert({ event_id: event.id, event_type: event.type });
+    .insert({ event_id: event.id, event_type: event.type, status: 'pending' });
 
   if (insertError) {
-    // Duplicate event — already processed, return 200 to acknowledge
-    return NextResponse.json({ received: true, duplicate: true });
+    if (insertError.code === '23505') {
+      // True duplicate — already recorded, return 200 to acknowledge.
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // Non-duplicate DB failure — we could not durably record the event.
+    // Return 500 so Stripe retries; do NOT process and do NOT 200.
+    console.error('[stripe-webhook] stripe_events insert failed (non-duplicate):', insertError);
+    Sentry.captureException(insertError, {
+      level: 'error',
+      tags: { route: 'stripe-webhook', event_type: event.type, action: 'idempotency-insert' },
+    });
+    return NextResponse.json({ error: 'Failed to record event' }, { status: 500 });
   }
 
   // Defer all event processing after the 200 response is sent. This prevents
   // the outbound Stripe API call (checkout.session.completed) and DB writes
   // from exceeding the function timeout under latency spikes (JAVASCRIPT-NEXTJS-56).
+  //
+  // The row is durable now (status `pending`). If processing fails we mark it
+  // `failed` and the subscription-drift cron re-drives it — we NEVER delete the
+  // row, because Stripe already got 200 and will not retry on its own.
   after(async () => {
-    try {
-      await processStripeEvent(stripe, supabase, event);
-    } catch (err) {
-      // Dead-letter queue: persist failure record before compensating delete for audit trail
-      const { error: dlqErr } = await supabase.from('webhook_dlq').insert({
-        event_id: event.id,
-        event_type: event.type,
-        error_message: err instanceof Error ? err.message : String(err),
-      });
-      if (dlqErr) {
-        console.error('[stripe-webhook] DLQ insert failed:', dlqErr);
-        Sentry.captureException(dlqErr, {
-          tags: { route: 'stripe-webhook', event_type: event.type, action: 'dlq-insert' },
-        });
-      }
-
-      // Compensating action: remove idempotency record so manual replay tools can re-process.
-      // Stripe already received 200 so it won't retry; this is for operational recovery.
-      const { error: deleteErr } = await supabase
-        .from('stripe_events')
-        .delete()
-        .eq('event_id', event.id);
-      if (deleteErr) {
-        console.error('[stripe-webhook] Failed to remove idempotency record:', deleteErr);
-        Sentry.captureException(deleteErr, {
-          level: 'error',
-          tags: { route: 'stripe-webhook', event_type: event.type, action: 'compensating-delete' },
-        });
-      }
-
-      Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
-      console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
-    }
+    await runStripeJob(stripe, supabase, event);
   });
 
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Run a stripe_events job through its state machine: pending -> processing ->
+ * done, or -> failed on error. Shared by the webhook route (first attempt) and
+ * the subscription-drift re-drive cron (retries). The row is NEVER deleted; a
+ * failure leaves a durable `failed` record with last_error + attempts so it can
+ * be re-driven idempotently.
+ *
+ * CONCURRENCY (BLOCKER 1): the first step is an ATOMIC, CONDITIONAL claim. The
+ * UPDATE flips the row to `processing` only when it is currently claimable
+ * (pending|failed, or a `processing` row gone stale past STALE_PROCESSING_MS)
+ * and RETURNING tells us whether THIS caller won the row. If no row comes back,
+ * another worker already owns it (or it is already done/dead) and we return
+ * WITHOUT processing. This makes after() and the cron re-drive mutually
+ * exclusive — they can never both process the same event, so the non-idempotent
+ * side effects inside processStripeEvent (Resend emails, subscription_events
+ * inserts, Discord alerts) run at most once per real transition.
+ *
+ * @param attemptsBefore number of prior attempts recorded on the row (0 for a
+ *   fresh webhook insert). The claim sets attempts to this + 1 atomically.
+ * @returns true if this caller claimed and processed the row, false if another
+ *   worker owned it / it was already terminal (no processing, no side effects).
+ */
+export async function runStripeJob(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  event: Stripe.Event,
+  attemptsBefore = 0
+): Promise<boolean> {
+  const staleCutoff = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+
+  // Atomic conditional claim. Equivalent SQL:
+  //   UPDATE stripe_events
+  //      SET status='processing', attempts=$attempts, updated_at=now()
+  //    WHERE event_id=$id
+  //      AND ( status IN ('pending','failed')
+  //            OR (status='processing' AND updated_at < $staleCutoff) )
+  //   RETURNING event_id;
+  // RETURNING (.select) tells us if we won the row. attempts is set to
+  // attemptsBefore+1 (PostgREST cannot express attempts=attempts+1, and the
+  // caller already knows the prior count: 0 for a fresh insert, row.attempts for
+  // the cron). updated_at is set explicitly so the stale-claim window is exact.
+  const { data: claimed, error: claimErr } = await supabase
+    .from('stripe_events')
+    .update({
+      status: 'processing',
+      attempts: attemptsBefore + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('event_id', event.id)
+    .or(`status.in.(pending,failed),and(status.eq.processing,updated_at.lt.${staleCutoff})`)
+    .select('event_id');
+
+  if (claimErr) {
+    // Could not even attempt the claim (DB unhealthy). Surface it; the row keeps
+    // its prior status and the cron will retry on a later run.
+    console.error('[stripe-webhook] Failed to claim event:', claimErr);
+    Sentry.captureException(claimErr, {
+      level: 'error',
+      tags: { route: 'stripe-webhook', event_type: event.type, action: 'claim' },
+    });
+    return false;
+  }
+
+  if (!claimed || claimed.length === 0) {
+    // No row returned -> another worker owns it, or it is already done/dead.
+    // Do NOT process and do NOT run any side effects.
+    return false;
+  }
+
+  // We won the claim. processStripeEvent (and its side effects) run exactly once
+  // for this transition because the claim was atomic.
+  try {
+    await processStripeEvent(stripe, supabase, event);
+
+    // Success — mark done. Clear last_error so a re-driven row reads clean.
+    const { error: doneErr } = await supabase
+      .from('stripe_events')
+      .update({ status: 'done', last_error: null, processed_at: new Date().toISOString() })
+      .eq('event_id', event.id);
+    if (doneErr) {
+      console.error('[stripe-webhook] Failed to mark event done:', doneErr);
+      Sentry.captureException(doneErr, {
+        level: 'error',
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'mark-done' },
+      });
+    }
+    return true;
+  } catch (err) {
+    // Processing failed. attempts was already incremented by the claim. Park the
+    // row in a terminal `dead` state once it hits the attempt cap (BLOCKER/HIGH
+    // 3) so a poison event stops re-driving; otherwise mark it `failed` so the
+    // cron retries. Either way the row is kept (never deleted).
+    const attemptsNow = attemptsBefore + 1;
+    const terminal = attemptsNow >= MAX_ATTEMPTS;
+    const { error: failErr } = await supabase
+      .from('stripe_events')
+      .update({
+        status: terminal ? 'dead' : 'failed',
+        last_error: err instanceof Error ? err.message : String(err),
+      })
+      .eq('event_id', event.id);
+    if (failErr) {
+      console.error('[stripe-webhook] Failed to mark event failed:', failErr);
+      Sentry.captureException(failErr, {
+        level: 'error',
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'mark-failed' },
+      });
+    }
+
+    if (terminal) {
+      // Poison event parked. Emit ONE ops alert so it gets manual attention.
+      Sentry.captureMessage('Stripe event hit max attempts — parked as dead', {
+        level: 'error',
+        fingerprint: ['stripe-event-dead', event.id],
+        tags: { route: 'stripe-webhook', event_type: event.type, action: 'dead-letter' },
+        extra: { event_id: event.id, attempts: attemptsNow },
+      });
+      void sendAlert('ops', '', [{
+        title: ':skull: Stripe event parked (dead-letter)',
+        description: `Event \`${event.id}\` (${event.type}) failed ${attemptsNow} times and will no longer be re-driven. Manual review required.`,
+        color: 0xef4444,
+        fields: [
+          { name: 'Event ID', value: event.id, inline: true },
+          { name: 'Type', value: event.type, inline: true },
+          { name: 'Attempts', value: String(attemptsNow), inline: true },
+          { name: 'Last error', value: (err instanceof Error ? err.message : String(err)).slice(0, 1000) },
+        ],
+        timestamp: new Date().toISOString(),
+      }]);
+    }
+
+    Sentry.captureException(err, { tags: { route: 'stripe-webhook', event_type: event.type } });
+    console.error(`[stripe-webhook] Error handling ${event.type}:`, err);
+    return true;
+  }
 }
