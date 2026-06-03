@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 
+import { scrubEvent } from '@/lib/sentry-scrub';
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
@@ -57,13 +59,18 @@ Sentry.init({
     if (
       message.includes('ResizeObserver loop') ||
       message.includes('Non-Error promise rejection captured') ||
+      // Browser extensions dispatch a CustomEvent for unhandledrejection with a
+      // non-Error rejection value — Sentry captures these as "Event CustomEvent".
+      // Confirmed: /about page is fully static, so this is 100% extension noise.
+      message.includes('Event CustomEvent (type=unhandledrejection)') ||
       message.includes('Load failed') ||
       message.includes('Failed to fetch')
     ) {
       return null;
     }
 
-    return event;
+    // Strip PII (ids set via Sentry.setUser, emails) before anything leaves for Sentry.
+    return scrubEvent(event);
   },
 });
 

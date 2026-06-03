@@ -1,0 +1,35 @@
+name: Dependency Review
+
+# Blocks PRs that introduce dependencies with known high-severity vulnerabilities.
+# Triggers on merge_group too (same check name) so it never stalls the merge queue.
+
+on:
+  pull_request: {}
+  merge_group: {}
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: dependency-review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: No-op on merge_group (review already ran on the PR)
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event — dependency review runs on the PR diff; passing."
+
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
