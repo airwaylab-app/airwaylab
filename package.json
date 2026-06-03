@@ -32,7 +32,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
     "neverthrow": "^8.2.0",
-    "next": "^16.2.1",
+    "next": "16.2.6",
     "posthog-js": "^1.369.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -41,6 +41,9 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "ws": "8.20.1"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -64,7 +67,7 @@
     "jsdom": "^28.1.0",
     "knip": "^5.88.0",
     "lint-staged": "^16.3.2",
-    "postcss": "^8",
+    "postcss": "8.5.10",
     "postcss-load-config": "^6.0.1",
     "shadcn": "^4.0.0",
     "tailwindcss": "^3.4.1",
