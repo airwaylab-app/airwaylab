@@ -41,3 +41,11 @@ BEGIN
   WHERE sdc.signal_type = p_signal_type AND sdc.signal_date = CURRENT_DATE;
 END;
 $$;
+
+-- SECURITY DEFINER lockdown (S2 pattern, see 055_security_rls_grant_lockdown.sql).
+-- This function is called ONLY by the service role via lib/signal-tracker.ts
+-- (getSupabaseAdmin / SUPABASE_SERVICE_ROLE_KEY). Function EXECUTE defaults to
+-- PUBLIC, so REVOKE must include PUBLIC — revoking only anon/authenticated
+-- leaves it executable via the PUBLIC grant.
+REVOKE EXECUTE ON FUNCTION public.increment_signal_count(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_signal_count(TEXT, TEXT) TO service_role;

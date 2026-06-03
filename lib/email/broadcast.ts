@@ -6,7 +6,7 @@
  * by ID from the BROADCAST_TEMPLATES registry at the bottom.
  */
 
-import { BASE_URL, ctaButton, paragraph, emailShell } from './helpers'
+import { BASE_URL, ctaButton, paragraph, bulletList, emailShell } from './helpers'
 
 // ── Broadcast layout (with unsubscribe) ──────────────────────
 
@@ -125,6 +125,133 @@ function analysisWindowAnnouncement(unsubscribeUrl: string, _subjectVariant: Bro
   }
 }
 
+// ── May 2026 month-in-review broadcast ──────────────────────────
+
+const MAY_2026_UTM = 'utm_source=email&utm_medium=broadcast&utm_campaign=monthly_review_may_2026'
+const MAY_2026_DISCORD_URL = 'https://discord.gg/DK7aN847Mn'
+
+// GDPR controller-change notice: AirwayLab B.V. incorporation (2026-05-20), per AIR-1931 Section E.
+const MAY_2026_GDPR_NOTICE = paragraph(
+  'Quick note: AirwayLab is now AirwayLab B.V., a Dutch limited company (registered 2026-05-20). ' +
+  'The product, your data, and how we handle privacy are unchanged. Our Privacy Policy has been ' +
+  'updated to reflect AirwayLab B.V. as the data controller at Helperpark 274-6, 9723 ZA Groningen.'
+)
+
+const MAY_2026_FEATURE_LIST_PAYING = [
+  'AirSense 11 now has full support (was partial)',
+  'AirCurve 10 VAuto: Machine Settings Timeline and Spontaneous% now read correctly',
+  'New BiPAP metric: Spontaneous% and Timed% are both tracked',
+  'History extended to 14 nights (was 7)',
+  'Upload errors are now specific: you will know exactly which file is the problem',
+  'Fewer false storage warnings',
+  'Behind the scenes: subscription state sync improvements, daily database integrity checks, Discord notification deduplication',
+]
+
+function monthlyReviewMay2026(
+  unsubscribeUrl: string,
+  subjectVariant: BroadcastSubjectVariant
+): { subject: string; html: string } {
+  const subjects: Record<BroadcastSubjectVariant, string> = {
+    A: 'A month of honest fixes, and a thank you',
+    B: 'What changed in AirwayLab this month (and what you made possible)',
+  }
+
+  const CHANGELOG_URL = `${BASE_URL}/changelog?${MAY_2026_UTM}`
+
+  return {
+    subject: subjects[subjectVariant],
+    html: broadcastLayout(`
+      ${paragraph('I wanted to write to you directly. Your support is the reason this past month happened.')}
+
+      ${subheading('What shipped')}
+      ${bulletList(MAY_2026_FEATURE_LIST_PAYING)}
+
+      ${paragraph('None of this happened without paying supporters. Thank you.')}
+      ${paragraph('See the full list of changes: <a href="' + CHANGELOG_URL + '" style="color:#5eead4;text-decoration:underline;">changelog</a>')}
+
+      ${MAY_2026_GDPR_NOTICE}
+
+      ${ctaButton('Join the Community in Discord', MAY_2026_DISCORD_URL)}
+      ${ctaButton('See the Full Changelog', CHANGELOG_URL)}
+
+      ${paragraph('<span style="color:#a1a1aa;">— Demian, AirwayLab</span>')}
+    `, unsubscribeUrl),
+  }
+}
+
+function monthlyReviewMay2026Engaged(
+  unsubscribeUrl: string,
+  subjectVariant: BroadcastSubjectVariant
+): { subject: string; html: string } {
+  const subjects: Record<BroadcastSubjectVariant, string> = {
+    A: 'AirSense 11 is fully supported now',
+    B: 'What shipped in AirwayLab this month',
+  }
+
+  const CHANGELOG_URL = `${BASE_URL}/changelog?${MAY_2026_UTM}`
+
+  return {
+    subject: subjects[subjectVariant],
+    html: broadcastLayout(`
+      ${paragraph('If you have been uploading your data and watching the trends, here is what is new since you last checked in.')}
+
+      ${bulletList([
+        'AirSense 11 now has full support (was partial)',
+        'AirCurve 10 VAuto: Machine Settings Timeline and Spontaneous% now read correctly',
+        'New BiPAP metric: Spontaneous% and Timed% are both tracked',
+        'History extended to 14 nights (was 7)',
+        'Upload errors are now specific: you will know exactly which file is the problem',
+        'Fewer false storage warnings',
+        'Behind the scenes: subscription sync improvements, daily database integrity checks, Discord notification deduplication',
+      ])}
+
+      ${paragraph('See the full list of changes: <a href="' + CHANGELOG_URL + '" style="color:#5eead4;text-decoration:underline;">changelog</a>')}
+
+      ${MAY_2026_GDPR_NOTICE}
+
+      ${ctaButton('Join the Community in Discord', MAY_2026_DISCORD_URL)}
+
+      ${paragraph('<span style="color:#a1a1aa;">— Demian, AirwayLab</span>')}
+    `, unsubscribeUrl),
+  }
+}
+
+function monthlyReviewMay2026Dormant(
+  unsubscribeUrl: string,
+  subjectVariant: BroadcastSubjectVariant
+): { subject: string; html: string } {
+  const subjects: Record<BroadcastSubjectVariant, string> = {
+    A: 'Your CPAP data is probably readable now',
+    B: 'We fixed the AirSense 11 reader. Try again',
+  }
+
+  const ANALYZE_URL = `${BASE_URL}/analyze?${MAY_2026_UTM}`
+  const CHANGELOG_URL = `${BASE_URL}/changelog?${MAY_2026_UTM}`
+
+  return {
+    subject: subjects[subjectVariant],
+    html: broadcastLayout(`
+      ${paragraph('If your last upload did not give you the picture you wanted, the issue was likely on our side. Three of the most common gaps are now fixed.')}
+
+      ${bulletList([
+        'AirSense 11 now has full support',
+        'AirCurve 10 VAuto: pressure settings now read correctly',
+        'Upload errors now tell you exactly which file is the problem',
+        '14 nights of history are available (was 7)',
+      ])}
+
+      ${paragraph('Give it another try. Your data stays in your browser, nothing was lost.')}
+      ${paragraph('<a href="' + CHANGELOG_URL + '" style="color:#5eead4;text-decoration:underline;">See what changed</a>')}
+
+      ${MAY_2026_GDPR_NOTICE}
+
+      ${ctaButton('Re-upload Your Data', ANALYZE_URL)}
+
+      ${paragraph('<span style="color:#a1a1aa;">— Demian, AirwayLab</span>')}
+    `, unsubscribeUrl),
+  }
+}
+
 // ── Template registry ────────────────────────────────────────
 
 export interface BroadcastTemplate {
@@ -143,5 +270,20 @@ export const BROADCAST_TEMPLATES: Record<string, BroadcastTemplate> = {
     id: 'analysis_window_announcement',
     description: 'May 2026 history window cap: community tier 14-night limit shipping May 27',
     getTemplate: analysisWindowAnnouncement,
+  },
+  monthly_review_may_2026: {
+    id: 'monthly_review_may_2026',
+    description: 'May 2026 month-in-review broadcast — paying segment (Supporter + Champion)',
+    getTemplate: monthlyReviewMay2026,
+  },
+  monthly_review_may_2026_engaged: {
+    id: 'monthly_review_may_2026_engaged',
+    description: 'May 2026 month-in-review broadcast — community engaged segment (active last 14 days)',
+    getTemplate: monthlyReviewMay2026Engaged,
+  },
+  monthly_review_may_2026_dormant: {
+    id: 'monthly_review_may_2026_dormant',
+    description: 'May 2026 month-in-review broadcast — community dormant segment (no activity 14+ days)',
+    getTemplate: monthlyReviewMay2026Dormant,
   },
 }
