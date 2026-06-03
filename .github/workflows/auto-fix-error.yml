@@ -106,12 +106,12 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
           # Check if PR touches sensitive files (security-critical paths)
-          SENSITIVE_PATTERNS="app/api/ lib/auth/ lib/env.ts lib/supabase/ lib/csrf.ts lib/rate-limit.ts supabase/migrations/ .github/ sentry middleware.ts next.config"
+          SENSITIVE_PATTERNS="app/api/ lib/auth/ lib/env.ts lib/supabase/ lib/csrf.ts lib/rate-limit.ts supabase/migrations/ .github/ sentry middleware.ts next.config lib/parsers/ lib/analyzers/ workers/"
           CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only 2>/dev/null || echo "")
 
           SENSITIVE=false
           for pattern in $SENSITIVE_PATTERNS; do
-            if echo "$CHANGED_FILES" | grep -q "$pattern"; then
+            if echo "$CHANGED_FILES" | grep -qF -- "$pattern"; then
               echo "PR touches sensitive path: $pattern"
               SENSITIVE=true
             fi
@@ -126,7 +126,7 @@ jobs:
             while IFS= read -r f; do
               [ -z "$f" ] && continue
               for p in $SENSITIVE_PATTERNS; do
-                if echo "$f" | grep -q "$p"; then
+                if echo "$f" | grep -qF -- "$p"; then
                   FLAGGED="${FLAGGED}- \`${f}\` (matches \`${p}\`)\n"
                   break
                 fi
