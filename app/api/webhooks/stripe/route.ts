@@ -668,27 +668,26 @@ export async function runStripeJob(
 ): Promise<boolean> {
   const staleCutoff = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
 
-  // Atomic conditional claim. Equivalent SQL:
+  // Atomic conditional claim via the claim_stripe_event SQL function
+  // (migration 063). Equivalent SQL:
   //   UPDATE stripe_events
   //      SET status='processing', attempts=$attempts, updated_at=now()
   //    WHERE event_id=$id
   //      AND ( status IN ('pending','failed')
   //            OR (status='processing' AND updated_at < $staleCutoff) )
   //   RETURNING event_id;
-  // RETURNING (.select) tells us if we won the row. attempts is set to
-  // attemptsBefore+1 (PostgREST cannot express attempts=attempts+1, and the
-  // caller already knows the prior count: 0 for a fresh insert, row.attempts for
-  // the cron). updated_at is set explicitly so the stale-claim window is exact.
-  const { data: claimed, error: claimErr } = await supabase
-    .from('stripe_events')
-    .update({
-      status: 'processing',
-      attempts: attemptsBefore + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('event_id', event.id)
-    .or(`status.in.(pending,failed),and(status.eq.processing,updated_at.lt.${staleCutoff})`)
-    .select('event_id');
+  // This MUST be a function, not a PostgREST `.update().or(...)`: PostgREST
+  // cannot build an `or` filter on a MUTATION and rejects it with 42703
+  // "column stripe_events.status does not exist" (the identical `or` works on a
+  // SELECT, and direct SQL runs the UPDATE fine). The function RETURNs the row
+  // id so we know whether THIS caller won the claim. attempts is set to
+  // attemptsBefore+1 (0 for a fresh insert, row.attempts for the cron);
+  // updated_at is set inside the function so the stale-claim window is exact.
+  const { data: claimed, error: claimErr } = await supabase.rpc('claim_stripe_event', {
+    p_event_id: event.id,
+    p_attempts: attemptsBefore + 1,
+    p_stale_cutoff: staleCutoff,
+  });
 
   if (claimErr) {
     // Could not even attempt the claim (DB unhealthy). Surface it; the row keeps

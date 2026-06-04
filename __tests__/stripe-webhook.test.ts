@@ -83,10 +83,12 @@ vi.mock('@/lib/discord-webhook', () => ({
 
 // Mock Supabase — builder pattern that supports chaining
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServiceRole: vi.fn(() => ({
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   })),
 }));
 
@@ -109,46 +111,29 @@ vi.mock('stripe', () => {
 // ── Helpers ──────────
 
 /** Build a supabase query builder mock that chains any method calls and
- *  resolves to a configurable terminal result when awaited.
+ *  resolves to a configurable terminal result when awaited. Used for inserts
+ *  and the done/failed updates (which only read `.error`) and for table reads.
  *
- *  ST1 atomic claim: runStripeJob's claim ends in `.select('event_id')` and
- *  awaits the affected rows. By default a stripe_events builder must report the
- *  claim WON (a non-empty array) so the happy/failure paths reach
- *  processStripeEvent. Tests that want the claim to LOSE (already
- *  processing/done/dead) pass `claimWins: false`, which makes `.select('event_id')`
- *  resolve to an empty array so runStripeJob returns without processing. The
- *  default terminalResult (used by inserts and done/failed updates, which only
- *  read `.error`) is unaffected.
+ *  The ST1 atomic claim no longer flows through this builder: it is a
+ *  `supabase.rpc('claim_stripe_event', ...)` call mocked via `mockRpc`. By
+ *  default (see beforeEach) the claim WINS (resolves a non-empty RETURNING set)
+ *  so the happy/failure paths reach processStripeEvent; a test that needs the
+ *  claim to LOSE sets `mockRpc.mockResolvedValueOnce({ data: [], error: null })`.
  */
 function createQueryBuilder(
-  terminalResult: { data?: unknown; error?: unknown } = { data: null, error: null },
-  opts: { claimWins?: boolean } = {}
+  terminalResult: { data?: unknown; error?: unknown } = { data: null, error: null }
 ) {
-  const claimWins = opts.claimWins ?? true;
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
-  // Flip to the claim-result thenable once `.select('event_id')` is observed.
-  let claimResult: { data?: unknown; error?: unknown } | null = null;
 
   const proxy = new Proxy(builder, {
     get(target, prop: string) {
       if (prop === 'then') {
-        const result = claimResult ?? terminalResult;
-        // Make the builder thenable so `await` resolves to the active result
-        return (resolve: (v: unknown) => void) => resolve(result);
+        // Make the builder thenable so `await` resolves to the terminal result.
+        return (resolve: (v: unknown) => void) => resolve(terminalResult);
       }
       if (!target[prop]) {
-        // Each chained method records the call and returns the proxy. `select`
-        // additionally detects the atomic claim's RETURNING ('event_id') and
-        // arms the claim result for the next await.
-        target[prop] = vi.fn((...args: unknown[]) => {
-          if (prop === 'select' && args[0] === 'event_id') {
-            claimResult = {
-              data: claimWins ? [{ event_id: 'evt_claimed' }] : [],
-              error: terminalResult.error ?? null,
-            };
-          }
-          return proxy;
-        });
+        // Each chained method records the call and returns the proxy.
+        target[prop] = vi.fn(() => proxy);
       }
       return target[prop];
     },
@@ -203,6 +188,10 @@ function makeSubscriptionObject(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   afterCallbacks.length = 0;
+  // ST1 atomic claim (claim_stripe_event RPC) WINS by default: resolves a
+  // non-empty RETURNING set so runStripeJob proceeds to processStripeEvent.
+  // Claim-loses tests override with mockRpc.mockResolvedValueOnce({data:[],...}).
+  mockRpc.mockResolvedValue({ data: [{ event_id: 'evt_claimed' }], error: null });
   vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test_123');
   vi.stubEnv('NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID', 'price_supp_m');
@@ -717,10 +706,11 @@ describe('POST /api/webhooks/stripe', () => {
     expect(stripeEventsBuilder.insert).toHaveBeenCalledWith(
       expect.objectContaining({ event_id: 'evt_test_123', status: 'pending' })
     );
-    // ATOMIC CLAIM: transitioned to `processing` and incremented attempts to 1
-    // in a single conditional update (status='processing', attempts=1).
-    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'processing', attempts: 1 })
+    // ATOMIC CLAIM via the claim_stripe_event RPC: transitioned to `processing`
+    // and set attempts to 1 (attemptsBefore 0 + 1) in a single conditional UPDATE.
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_test_123', p_attempts: 1 })
     );
     // On failure: marked `failed` with last_error (attempts already bumped by
     // the claim, so the failure update does not touch attempts).
@@ -755,8 +745,10 @@ describe('POST /api/webhooks/stripe', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'stripe_events') {
         stripeEventsCallCount++;
-        // 1: insert(pending) ok, 2: update(processing) ok, 3: update(failed) fails
-        if (stripeEventsCallCount <= 2) {
+        // The claim is now the claim_stripe_event RPC, not a from('stripe_events')
+        // call, so the stripe_events builder sees only: 1: insert(pending) ok,
+        // 2: update(failed) fails.
+        if (stripeEventsCallCount <= 1) {
           return createQueryBuilder({ data: null, error: null });
         }
         return createQueryBuilder({
@@ -819,9 +811,10 @@ describe('POST /api/webhooks/stripe', () => {
     expect(stripeEventsBuilder.insert).toHaveBeenCalledWith(
       expect.objectContaining({ event_id: 'evt_state_test', status: 'pending' })
     );
-    // processing then done
-    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'processing' })
+    // claim (processing) via RPC, then done
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_state_test', p_attempts: 1 })
     );
     expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'done', last_error: null })
@@ -1406,9 +1399,10 @@ describe('POST /api/webhooks/stripe', () => {
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
     expect(res.status).toBe(200);
     expect(captureException).toHaveBeenCalled();
-    // Atomic claim bumped attempts to 1; failure marked the row `failed`.
-    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'processing', attempts: 1 })
+    // Atomic claim (RPC) bumped attempts to 1; failure marked the row `failed`.
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_attempts: 1 })
     );
     expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'failed' })
@@ -1729,11 +1723,12 @@ describe('POST /api/webhooks/stripe', () => {
     mockWebhooksConstruct.mockReturnValue(event);
     mockSubscriptionsRetrieve.mockResolvedValue(makeSubscriptionObject());
 
-    // stripe_events: insert ok, but the claim LOSES (claimWins: false → .select
-    // returns []). All other tables would otherwise allow processing.
-    const lostClaimBuilder = createQueryBuilder({ data: null, error: null }, { claimWins: false });
+    // stripe_events insert ok, but the claim LOSES (rpc returns []). All other
+    // tables would otherwise allow processing.
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'stripe_events') return lostClaimBuilder;
+      if (table === 'stripe_events') return stripeEventsBuilder;
       if (table === 'profiles') return createQueryBuilder({ data: { id: 'user-uuid-1' }, error: null });
       return createQueryBuilder({ data: null, error: null });
     });
@@ -1741,9 +1736,10 @@ describe('POST /api/webhooks/stripe', () => {
     const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
     expect(res.status).toBe(200);
 
-    // Claim attempted (update with processing) but NO processing happened:
-    expect(lostClaimBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'processing' })
+    // Claim attempted (RPC called) but NO processing happened:
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_test_123', p_attempts: 1 })
     );
     // The event payload was never fetched → processStripeEvent never ran.
     expect(mockSubscriptionsRetrieve).not.toHaveBeenCalled();
@@ -1751,10 +1747,10 @@ describe('POST /api/webhooks/stripe', () => {
     expect(sendEmail).not.toHaveBeenCalled();
     expect(sendAlert).not.toHaveBeenCalled();
     // Row never flipped to done or failed by this caller.
-    expect(lostClaimBuilder.update).not.toHaveBeenCalledWith(
+    expect(stripeEventsBuilder.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ status: 'done' })
     );
-    expect(lostClaimBuilder.update).not.toHaveBeenCalledWith(
+    expect(stripeEventsBuilder.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ status: 'failed' })
     );
   });
@@ -1771,13 +1767,10 @@ describe('POST /api/webhooks/stripe', () => {
     mockWebhooksConstruct.mockReturnValue(event);
 
     const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    // Claim loses (row already in a terminal state): rpc returns [].
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
     mockFrom.mockImplementation((table: string) => {
-      if (!builders[table]) {
-        // stripe_events claim loses (row already done). Others are benign.
-        builders[table] = table === 'stripe_events'
-          ? createQueryBuilder({ data: null, error: null }, { claimWins: false })
-          : createQueryBuilder({ data: null, error: null });
-      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
       return builders[table];
     });
 
@@ -1824,12 +1817,13 @@ describe('POST /api/webhooks/stripe', () => {
       return createQueryBuilder({ data: null, error: null });
     });
 
-    const did = await runStripeJob(stripe as never, { from: (...a: unknown[]) => mockFrom(...a) } as never, event as never, 4);
+    const did = await runStripeJob(stripe as never, { from: (...a: unknown[]) => mockFrom(...a), rpc: (...a: unknown[]) => mockRpc(...a) } as never, event as never, 4);
     expect(did).toBe(true); // we claimed it (then it failed)
 
-    // Claim set attempts to 5.
-    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'processing', attempts: 5 })
+    // Claim (RPC) set attempts to 5 (attemptsBefore 4 + 1).
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_poison', p_attempts: 5 })
     );
     // Terminal: row parked `dead`, NOT `failed`.
     expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
@@ -1871,7 +1865,7 @@ describe('POST /api/webhooks/stripe', () => {
     });
 
     // attemptsBefore=1 → this attempt is #2, below the cap of 5.
-    await runStripeJob(stripe as never, { from: (...a: unknown[]) => mockFrom(...a) } as never, event as never, 1);
+    await runStripeJob(stripe as never, { from: (...a: unknown[]) => mockFrom(...a), rpc: (...a: unknown[]) => mockRpc(...a) } as never, event as never, 1);
 
     expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'failed' })
