@@ -394,25 +394,27 @@ describe('POST /api/files/confirm', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns 404 and cleans up when file not in storage', async () => {
+  it('returns 503 without deleting metadata when file not in storage after all retries', async () => {
     setupAuthenticatedUser();
+    const deleteMock = vi.fn(() => chain);
     const chain = createChain({
       data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
       error: null,
     });
-    // delete().eq() for cleanup
-    chain.delete = vi.fn(() => chain);
+    chain.delete = deleteMock;
     mockFrom.mockReturnValue(chain);
 
-    // Storage list returns empty (file not in storage)
+    // Storage list consistently returns empty (propagation not yet complete)
     mockStorageFrom.mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [], error: null }),
     });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
     const body = await res.json();
-    expect(body.error).toContain('not found in storage');
+    expect(body.error).toContain('not yet visible');
+    // Metadata must NOT be deleted — stale orphan cleanup in presign handles this
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it('confirms upload when file exists in storage', async () => {
@@ -534,7 +536,6 @@ describe('POST /api/files/confirm', () => {
       data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
       error: null,
     });
-    chain.delete = vi.fn(() => chain);
     mockFrom.mockReturnValue(chain);
 
     mockStorageFrom.mockReturnValue({
@@ -542,7 +543,7 @@ describe('POST /api/files/confirm', () => {
     });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
     expect(captureApiError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ context: 'storage_list_empty', fileId: validBody.fileId })

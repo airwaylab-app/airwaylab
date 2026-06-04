@@ -38,6 +38,7 @@ export interface UploadResult {
   skipped: number;
   failed: number;
   errors: string[];
+  presignErrors?: unknown[];
 }
 
 export type UploadStatus = 'idle' | 'hashing' | 'checking' | 'uploading' | 'complete' | 'error';
