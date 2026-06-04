@@ -3,7 +3,6 @@ import {
   ClipboardList,
   AlertTriangle,
   Brain,
-  Info,
   Lightbulb,
   BookOpen,
   ArrowRight,
@@ -13,7 +12,88 @@ import {
 export default function EpworthSleepinessScalePost() {
   return (
     <article>
-      <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+      {/* Medical disclaimer — top */}
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+        <div className="flex gap-2.5">
+          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-amber-400">Note:</strong> This article is for informational
+            purposes. AirwayLab is not a medical device and does not provide medical advice,
+            diagnosis, or treatment. Discuss your ESS score and any sleep concerns with a
+            qualified clinician.
+          </p>
+        </div>
+      </div>
+
+      {/* ESS basics — for informational searchers */}
+      <section className="mt-8">
+        <div className="flex items-center gap-2.5">
+          <ClipboardList className="h-5 w-5 text-blue-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">What Is the Epworth Sleepiness Scale?</h2>
+        </div>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p>
+            The Epworth Sleepiness Scale (ESS) is a standardised 8-item questionnaire, developed
+            by Dr. Murray Johns in 1991, used in sleep medicine to assess daytime sleepiness.
+          </p>
+
+          <div>
+            <p className="font-medium text-foreground">The eight situations rated:</p>
+            <ul className="mt-2 space-y-1.5">
+              {[
+                'Sitting and reading',
+                'Watching TV',
+                'Sitting inactive in a public place (e.g. a theatre or a meeting)',
+                'As a passenger in a car for an hour without a break',
+                'Lying down to rest in the afternoon when circumstances permit',
+                'Sitting and talking to someone',
+                'Sitting quietly after lunch without alcohol',
+                'In a car, stopped for a few minutes in traffic',
+              ].map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Scoring</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Each situation is rated 0 (would never doze) to 3 (high chance of dozing), for a
+                maximum total score of 24.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+              <p className="text-sm font-semibold text-foreground">Reference score ranges</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                0–9: within the typical range &middot; 10–15: mild-to-moderate daytime sleepiness
+                &middot; 16–24: severe daytime sleepiness. These are reference thresholds used in
+                clinical practice — your clinician interprets the score in the context of your
+                full history.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            In clinical practice, the ESS is used as a{' '}
+            <strong className="text-foreground">screening tool</strong> — typically completed at
+            initial consultations and before sleep studies — rather than as a standalone
+            diagnostic test. It is commonly used alongside clinical history and objective testing
+            such as the Multiple Sleep Latency Test (MSLT).
+          </p>
+          <p>
+            Another widely used screening questionnaire is STOP-BANG, which assesses observable
+            risk factors (snoring, hypertension, BMI, age, neck circumference, sex) rather than
+            subjective symptoms — giving it different sensitivity characteristics from the ESS.
+          </p>
+        </div>
+      </section>
+
+      {/* The critique angle */}
+      <p className="mt-10 text-base leading-relaxed text-muted-foreground sm:text-lg">
         You scored 8 on the Epworth Sleepiness Scale. Your doctor says that&apos;s
         normal. But you can barely get through the afternoon without feeling like
         you&apos;ve been hit by a truck.
@@ -27,60 +107,23 @@ export default function EpworthSleepinessScalePost() {
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <ClipboardList className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">What Is the Epworth Sleepiness Scale?</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">What the ESS Actually Asks</h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            The Epworth Sleepiness Scale (ESS) is an 8-question survey that asks how likely you
-            are to doze off in everyday situations. You rate each situation from 0 (no chance of
-            dozing) to 3 (high chance of dozing), for a total maximum score of 24. It was
-            developed by Dr Murray Johns in 1991 and is now used in sleep clinics worldwide.
-          </p>
-          <p>The eight situations are:</p>
-          <ol className="ml-4 list-decimal space-y-1 text-sm text-muted-foreground">
-            <li>Sitting and reading</li>
-            <li>Watching TV</li>
-            <li>Sitting inactive in a public place (e.g. a meeting or theatre)</li>
-            <li>As a passenger in a car for an hour without a break</li>
-            <li>Lying down to rest in the afternoon when circumstances allow</li>
-            <li>Sitting and talking to someone</li>
-            <li>Sitting quietly after lunch (no alcohol)</li>
-            <li>In a car, stopped for a few minutes in traffic</li>
-          </ol>
-
-          {/* Score range table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/30">
-                  <th className="py-2 pr-4 text-left font-semibold text-foreground">ESS score</th>
-                  <th className="py-2 pr-4 text-left font-semibold text-foreground">Interpretation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20">
-                <tr>
-                  <td className="py-2 pr-4">0–9</td>
-                  <td className="py-2">Normal range</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">10–15</td>
-                  <td className="py-2">Mild to moderate excessive sleepiness</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">16–24</td>
-                  <td className="py-2">Severe excessive sleepiness</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted-foreground/70 italic">
-            Score ranges are widely cited reference points; your sleep physician can help
-            interpret your score in the context of your full clinical picture.
+            The Epworth Sleepiness Scale is an 8-question survey that asks you to rate how
+            likely you are to doze off in various situations: sitting and reading, watching
+            TV, sitting in a meeting, lying down in the afternoon. You rate each from 0
+            (no chance of dozing) to 3 (high chance), for a maximum score of 24.
           </p>
           <p>
-            A score above 10 is generally considered &quot;excessive sleepiness.&quot; Below
-            10 is &quot;normal.&quot; There&apos;s just one problem: the scale conflates two
-            fundamentally different things.
+            A score above 10 is generally considered &quot;excessive sleepiness.&quot;
+            Below 10 is &quot;normal.&quot; The ESS has been the standard tool for
+            assessing daytime sleepiness in sleep medicine since 1991, and it&apos;s used
+            in virtually every sleep clinic in the world.
+          </p>
+          <p>
+            There&apos;s just one problem: it conflates two fundamentally different things.
           </p>
         </div>
       </section>
@@ -127,51 +170,6 @@ export default function EpworthSleepinessScalePost() {
             symptom is fatigue rather than sleepiness, you&apos;ll score low on the ESS
             even though you&apos;re profoundly impaired. And your doctor will tell you
             you&apos;re fine.
-          </p>
-        </div>
-      </section>
-
-      {/* How doctors use the ESS */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <BookOpen className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">How Doctors Use the ESS</h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            In clinical practice, the ESS is commonly used in three ways:
-          </p>
-          <ul className="ml-4 space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-              <span>
-                <strong className="text-foreground">Pre-diagnosis screening.</strong> A score
-                of 10 or above is often used as one signal — among others — that a patient
-                may warrant further investigation for sleep-disordered breathing. It is not
-                used in isolation to diagnose any condition.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-              <span>
-                <strong className="text-foreground">Monitoring treatment response.</strong>{' '}
-                Clinicians may re-administer the ESS after starting PAP therapy to see whether
-                reported sleepiness changes. A lower score over time is one data point in a
-                broader clinical review.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-              <span>
-                <strong className="text-foreground">Research baseline.</strong> Many sleep
-                studies enrol participants based partly on their ESS score, making it a
-                consistent benchmark across the literature.
-              </span>
-            </li>
-          </ul>
-          <p>
-            Your sleep physician will look at your ESS score alongside your full history,
-            a physical examination, and objective sleep study data — not the ESS score alone.
           </p>
         </div>
       </section>
@@ -236,52 +234,6 @@ export default function EpworthSleepinessScalePost() {
         </div>
       </section>
 
-      {/* ESS vs STOP-BANG */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <Scale className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">
-            ESS vs STOP-BANG: Different Tools for Different Questions
-          </h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            A common question: &quot;if I score low on the Epworth, do I also score low on
-            STOP-BANG?&quot; Not necessarily — because these questionnaires measure completely
-            different things.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/30">
-                  <th className="py-2 pr-4 text-left font-semibold text-foreground">Tool</th>
-                  <th className="py-2 pr-4 text-left font-semibold text-foreground">What it measures</th>
-                  <th className="py-2 text-left font-semibold text-foreground">What it does not measure</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20">
-                <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">ESS</td>
-                  <td className="py-2 pr-4">Subjective daytime sleepiness (how likely you are to doze)</td>
-                  <td className="py-2">OSA risk factors; fatigue; breathing events</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">STOP-BANG</td>
-                  <td className="py-2 pr-4">Anatomical and lifestyle risk factors for OSA (snoring, BMI, neck circumference, etc.)</td>
-                  <td className="py-2">Symptom severity; fatigue vs sleepiness distinction</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            You can have a high STOP-BANG score and a low ESS — particularly if your main
-            symptom is fatigue rather than the urge to fall asleep. This is one reason why a
-            low ESS does not rule out sleep-disordered breathing. Your clinician can advise
-            which tools are appropriate for your specific situation.
-          </p>
-        </div>
-      </section>
-
       {/* What You Can Do */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
@@ -327,63 +279,6 @@ export default function EpworthSleepinessScalePost() {
               </span>
             </li>
           </ul>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <Info className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
-        </div>
-        <div className="mt-4 space-y-4">
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">What is a normal Epworth Sleepiness Scale score?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              A score of 0–9 is in the normal range. A score of 10 or above is in the excessive
-              sleepiness range. Your sleep physician can put your score in context with your
-              other symptoms and test results.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">What does an ESS score of 10 mean?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              A score of 10 sits at the boundary between normal and mild-to-moderate excessive
-              sleepiness. It is one data point — not a diagnosis. Discuss with your sleep
-              physician what it means alongside your other symptoms.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">What does an ESS score of 16 or above mean?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              A score of 16–24 is in the severe excessive sleepiness range. This is a signal to
-              discuss further evaluation with your sleep specialist or GP.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">Can I have sleep apnea with a low Epworth score?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Yes. A low ESS does not rule out sleep-disordered breathing. The ESS measures
-              subjective sleepiness — but many people whose primary complaint is fatigue (rather
-              than the urge to doze off) score low on the ESS even when their breathing data
-              shows significant flow limitation or RERAs. A sleep study or objective data review
-              gives a more complete picture.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">What is the difference between the ESS and STOP-BANG?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              The ESS measures how sleepy you feel during the day. STOP-BANG assesses risk
-              factors for obstructive sleep apnea (snoring, BMI, neck size, age, etc.). They
-              measure different things and are often used together in a clinical assessment.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-5">
-            <p className="text-sm font-semibold text-foreground">How many questions does the Epworth Sleepiness Scale have?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              The ESS has 8 questions. Each is rated 0–3, giving a maximum score of 24.
-            </p>
-          </div>
         </div>
       </section>
 
@@ -458,14 +353,6 @@ export default function EpworthSleepinessScalePost() {
           </Link>
         </div>
       </section>
-
-      {/* YMYL disclosure — verbatim AIR-1611 */}
-      <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
-        This article is for educational and informational purposes only. It has not been
-        reviewed by a licensed clinician and is not a substitute for professional medical
-        advice. Consult your sleep specialist or healthcare provider before making any
-        changes to your therapy.
-      </p>
 
       {/* Medical disclaimer */}
       <p className="mt-8 text-xs text-muted-foreground/60 italic">

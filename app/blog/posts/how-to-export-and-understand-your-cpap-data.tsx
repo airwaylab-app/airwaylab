@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import {
   ArrowRight,
-  HardDrive,
   BarChart3,
   Activity,
+  HardDrive,
+  HelpCircle,
   Lightbulb,
   Monitor,
   MessageSquare,
-  HelpCircle,
 } from 'lucide-react';
 
 export default function HowToExportAndUnderstandYourCPAPDataPost() {
@@ -484,6 +484,43 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
         </div>
       </section>
 
+      {/* FAQ — folded from how-to-export-understand-cpap-data */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2.5">
+          <HelpCircle className="h-5 w-5 text-amber-400" />
+          <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
+        </div>
+        <div className="mt-4 space-y-4">
+          {[
+            {
+              q: 'How do I get data off my CPAP machine?',
+              a: 'Most machines use a standard SD card. Power off, remove the card, and insert it into your computer using an SD card reader. Tools like OSCAR and AirwayLab can then read the data files directly.',
+            },
+            {
+              q: 'What is the difference between AHI and flow limitation?',
+              a: 'AHI counts discrete breathing events (apneas and hypopneas) per hour. Flow limitation measures partial airway narrowing that may not meet the threshold for a scored event. Both are visible in full flow data from your SD card.',
+            },
+            {
+              q: 'Can I analyse my CPAP data without installing software?',
+              a: 'Yes. AirwayLab runs entirely in your browser — no download or install needed. Open the upload page, drag in your SD card files, and your data loads immediately.',
+            },
+            {
+              q: 'Does my CPAP data leave my device when using AirwayLab?',
+              a: 'No. AirwayLab processes all data locally in your browser. Nothing is uploaded to a server. Optional features like AI insights require explicit consent before any data is sent.',
+            },
+            {
+              q: 'Which CPAP machines does AirwayLab support?',
+              a: 'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve devices via SD card. Support for additional manufacturers is planned.',
+            },
+          ].map(({ q, a }) => (
+            <div key={q} className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-semibold text-foreground">{q}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Summary */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
@@ -501,43 +538,6 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
             Tools like AirwayLab and OSCAR exist to make your data accessible — in your browser, on
             your terms, with open and verifiable analysis.
           </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <HelpCircle className="h-5 w-5 text-purple-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">Frequently Asked Questions</h2>
-        </div>
-        <div className="mt-4 space-y-4">
-          {[
-            {
-              q: 'How do I get my CPAP data onto my computer?',
-              a: 'Power off your machine, remove the SD card from its slot, and insert it into a computer using an SD card reader. Open OSCAR or AirwayLab to read the data. ResMed files are .edf; Philips files use .001 or Encore Pro format. The import process in either tool takes under a minute.',
-            },
-            {
-              q: 'What is the difference between AHI and flow limitation?',
-              a: 'AHI counts discrete breathing events that cross a defined threshold of length and airflow reduction. Flow limitation captures something different: the partial breath-peak flattening that can occur without registering as a scored event. Both are data points your clinician may want to review together.',
-            },
-            {
-              q: 'Can I analyse my data without installing software?',
-              a: 'Yes. AirwayLab runs entirely in your browser — no download, no account. Load your SD card data via the file picker and view trend charts and nightly summaries right away.',
-            },
-            {
-              q: 'Is my data private when I use AirwayLab?',
-              a: 'Standard analysis in AirwayLab runs locally in your browser using Web Workers. Nothing is transmitted. If you use optional AI-assisted features, the tool asks for explicit consent before any data leaves your device.',
-            },
-            {
-              q: 'Which machines does AirwayLab support?',
-              a: 'AirwayLab currently supports ResMed AirSense 10, AirSense 11, and AirCurve series via SD card. For other manufacturers — Philips, Fisher & Paykel — OSCAR offers broader compatibility at this time.',
-            },
-          ].map(({ q, a }) => (
-            <div key={q} className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-semibold text-foreground">{q}</p>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{a}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -562,7 +562,7 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
             <Link
-              href="/blog/how-to-read-cpap-therapy-report"
+              href="/blog/how-to-read-cpap-data"
               className="text-primary hover:text-primary/80"
             >
               How to Read Your CPAP Data
