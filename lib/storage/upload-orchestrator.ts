@@ -11,6 +11,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { extractNightDate } from '@/lib/file-manifest';
+import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { UploadState, UploadResult } from './types';
 import type { WorkerMessage } from './hash-worker';
 import { HashCache } from './hash-cache';
@@ -214,6 +215,16 @@ class UploadOrchestrator {
       }
       if (signal.aborted) throw new Error('Cancelled');
 
+      // Refresh session so auth token doesn't expire mid-batch
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error('Cloud sync requires an active session. Please sign in again.');
+        }
+      }
+      if (signal.aborted) throw new Error('Cancelled');
+
       // Step 1: Hash all files
       const fileHashes = await this.hashFiles(nonEmptyFiles, signal);
       if (signal.aborted) throw new Error('Cancelled');
@@ -329,6 +340,7 @@ class UploadOrchestrator {
         failed: result.failed,
         totalFiles,
         topErrors: Object.fromEntries(topErrors),
+        ...(result.presignErrors?.length ? { presignErrors: result.presignErrors.slice(0, 10) } : {}),
       },
     });
   }
@@ -574,6 +586,13 @@ class UploadOrchestrator {
             result.failed++;
             result.errors.push(`${fileName}: ${errMsg}`);
 
+            // Collect presign error body for Sentry context in reportFailures
+            const presignBody = retryErr instanceof Error ? (retryErr as Error & { presignBody?: unknown }).presignBody : undefined;
+            if (presignBody !== undefined) {
+              result.presignErrors = result.presignErrors ?? [];
+              result.presignErrors.push(presignBody);
+            }
+
             // Fail-fast: only count systemic errors (auth, network, server),
             // not per-file validation errors (400) which are expected for some files
             const isValidation = retryErr instanceof Error && (retryErr as Error & { isValidation?: boolean }).isValidation === true;
@@ -657,6 +676,8 @@ class UploadOrchestrator {
       (error as Error & { isRateLimit?: boolean }).isRateLimit = presignRes.status === 429;
       // Tag validation errors (400) so fail-fast can distinguish them from systemic failures
       (error as Error & { isValidation?: boolean }).isValidation = presignRes.status === 400;
+      // Attach parsed response body for Sentry context in reportFailures
+      (error as Error & { presignBody?: unknown }).presignBody = { status: presignRes.status, body: err };
       throw error;
     }
 
