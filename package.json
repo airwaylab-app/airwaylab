@@ -10,6 +10,7 @@
     "build": "node scripts/check-version.mjs && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
+    "lint:mutations": "node scripts/check-no-mutation-or.mjs",
     "check": "tsc --noEmit && eslint . && vitest run",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
