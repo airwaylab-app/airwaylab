@@ -80,10 +80,12 @@ let capturedOrFilter = '';
 let capturedLt: { col: string; val: unknown } | null = null;
 
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServiceRole: vi.fn(() => ({
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   })),
 }));
 
@@ -106,26 +108,22 @@ function emptyProfilesChain(): Record<string, unknown> {
  * runStripeJob use against this table:
  *   - re-drive SELECT:  .select(cols).lt(attempts).or(f).order().limit()
  *                       → resolves redriveRows
- *   - ATOMIC CLAIM:     .update(patch).eq().or(f).select('event_id')
- *                       → resolves a winning array (or [] when claimWins=false)
  *   - state UPDATE:     .update(patch).eq()   → awaited → { error: null }
  *   - status confirm:   .select('status').eq().maybeSingle() → last update's status
- * By default the claim WINS; set claimWins=false to simulate a row another worker
- * already owns (the conditional UPDATE returns no row).
+ * The ATOMIC CLAIM is NOT a builder call: it is supabase.rpc('claim_stripe_event')
+ * (migration 063), mocked via mockRpc. By default the claim WINS; set
+ * claimWins=false to simulate a row another worker already owns (rpc returns []).
  */
 let claimWins = true;
 
 function stripeEventsBuilder(): Record<string, unknown> {
   // Tracks the last terminal so the thenable returns the right payload.
-  let pending: 'select_rows' | 'claim' | 'update_eq' | null = null;
+  let pending: 'select_rows' | 'update_eq' | null = null;
 
   const builder: Record<string, unknown> = {};
   const ret = () => builder;
 
-  builder['select'] = vi.fn((cols?: string) => {
-    if (cols === 'event_id') pending = 'claim';
-    return builder;
-  });
+  builder['select'] = vi.fn(ret);
   // HIGH 3: the re-drive query excludes attempts >= MAX_ATTEMPTS via .lt().
   builder['lt'] = vi.fn((col: string, val: unknown) => { capturedLt = { col, val }; return builder; });
   builder['or'] = vi.fn((f: string) => { capturedOrFilter = f; return builder; });
@@ -138,16 +136,13 @@ function stripeEventsBuilder(): Record<string, unknown> {
     return builder;
   });
   builder['maybeSingle'] = vi.fn().mockImplementation(() => {
-    // Confirm-status read after runStripeJob: reflect the last claim/update.
+    // Confirm-status read after runStripeJob: reflect the last update.
     const last = stripeEventsUpdates[stripeEventsUpdates.length - 1];
     return Promise.resolve({ data: { status: last?.status ?? 'failed' }, error: null });
   });
   // Thenable: resolve based on which terminal was last invoked.
   (builder as { then?: unknown }).then = (resolve: (v: unknown) => void) => {
     if (pending === 'select_rows') return resolve({ data: redriveRows, error: null });
-    if (pending === 'claim') {
-      return resolve({ data: claimWins ? [{ event_id: 'evt_claimed' }] : [], error: null });
-    }
     return resolve({ data: null, error: null });
   };
   return builder;
@@ -177,6 +172,11 @@ beforeEach(() => {
   capturedOrFilter = '';
   capturedLt = null;
   claimWins = true;
+  // Atomic claim is the claim_stripe_event RPC. Resolves a winning RETURNING set
+  // by default; reads claimWins at call time so a test can flip it before GET.
+  mockRpc.mockImplementation(() =>
+    Promise.resolve({ data: claimWins ? [{ event_id: 'evt_claimed' }] : [], error: null })
+  );
   process.env.CRON_SECRET = 'test-secret';
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
@@ -231,8 +231,11 @@ describe('subscription-drift cron — ST1 webhook re-drive', () => {
     expect(body.redrive_recovered).toBe(1);
     expect(body.redrive_still_failed).toBe(0);
 
-    // State machine ran: processing then done. No failed transition.
-    expect(stripeEventsUpdates).toContainEqual(expect.objectContaining({ status: 'processing' }));
+    // State machine ran: claim (RPC) then done. No failed transition.
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_failed_1', p_attempts: 2 })
+    );
     expect(stripeEventsUpdates).toContainEqual(expect.objectContaining({ status: 'done' }));
     expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'failed' }));
   });
@@ -300,8 +303,11 @@ describe('subscription-drift cron — ST1 webhook re-drive', () => {
 
     // Picked for re-drive, but runStripeJob returned without processing.
     expect(body.redrive_picked).toBe(1);
-    // Claim attempted (processing) but never advanced to done or failed.
-    expect(stripeEventsUpdates).toContainEqual(expect.objectContaining({ status: 'processing' }));
+    // Claim attempted (RPC) but lost, so never advanced to done or failed.
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_contended', p_attempts: 2 })
+    );
     expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'done' }));
     expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'failed' }));
   });

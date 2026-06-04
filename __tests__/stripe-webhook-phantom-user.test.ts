@@ -68,10 +68,12 @@ vi.mock('@/lib/discord-webhook', () => ({
 }));
 
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServiceRole: vi.fn(() => ({
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   })),
 }));
 
@@ -94,23 +96,16 @@ vi.mock('stripe', () => {
 
 function createQueryBuilder(terminalResult: { data?: unknown; error?: unknown } = { data: null, error: null }) {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
-  // ST1 atomic claim: runStripeJob ends the claim in `.select('event_id')` and
-  // awaits the affected rows. Report the claim WON (non-empty array) so the
-  // phantom-user guard inside processStripeEvent is actually reached.
-  let claimResult: { data?: unknown; error?: unknown } | null = null;
+  // The ST1 atomic claim is a supabase.rpc('claim_stripe_event') call (mocked via
+  // mockRpc, which WINS by default), not a builder call. This builder serves the
+  // idempotency insert, state updates and reads, resolving to terminalResult.
   const proxy = new Proxy(builder, {
     get(target, prop: string) {
       if (prop === 'then') {
-        const result = claimResult ?? terminalResult;
-        return (resolve: (v: unknown) => void) => resolve(result);
+        return (resolve: (v: unknown) => void) => resolve(terminalResult);
       }
       if (!target[prop]) {
-        target[prop] = vi.fn((...args: unknown[]) => {
-          if (prop === 'select' && args[0] === 'event_id') {
-            claimResult = { data: [{ event_id: 'evt_claimed' }], error: null };
-          }
-          return proxy;
-        });
+        target[prop] = vi.fn(() => proxy);
       }
       return target[prop];
     },
@@ -174,6 +169,9 @@ async function callRoute(req: NextRequest) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // ST1 atomic claim (claim_stripe_event RPC) WINS by default so processStripeEvent
+  // (and its phantom-user guard) is reached.
+  mockRpc.mockResolvedValue({ data: [{ event_id: 'evt_claimed' }], error: null });
   vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test_123');
   vi.stubEnv('NEXT_PUBLIC_STRIPE_SUPPORTER_MONTHLY_PRICE_ID', 'price_supp_m');
