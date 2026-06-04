@@ -298,6 +298,20 @@ class UploadOrchestrator {
       (err) => /\b(500|502|503|504|520)\b/.test(err)
     );
 
+    // Identify the dominant failing step so each Sentry event pinpoints the root cause
+    const normalizedErrors = result.errors.map(e => e.replace(/^[^:]+:\s*/, ''));
+    const stepCounts: Record<string, number> = {
+      confirm_missing: normalizedErrors.filter(e => e.includes('file missing from storage')).length,
+      put_failed: normalizedErrors.filter(e => /^Upload failed:/.test(e)).length,
+      presign_failed: normalizedErrors.filter(e => /^Presign failed:/.test(e)).length,
+      rate_limited: normalizedErrors.filter(e => /Rate limited after retries/.test(e)).length,
+      transient_exhausted: normalizedErrors.filter(e => /Transient server error/.test(e)).length,
+    };
+    const dominantStep = Object.entries(stepCounts)
+      .sort((a, b) => b[1] - a[1])
+      .find(([, count]) => count > 0);
+    const failureStep = dominantStep ? dominantStep[0] : 'unknown';
+
     const userId = String(Sentry.getCurrentScope().getUser()?.id ?? 'anonymous');
 
     Sentry.captureMessage('cloud_upload_partial_failure', {
@@ -307,6 +321,7 @@ class UploadOrchestrator {
         allFailed: String(result.uploaded === 0),
         failedCount: String(result.failed),
         transient: String(allTransient),
+        failureStep,
       },
       extra: {
         uploaded: result.uploaded,
