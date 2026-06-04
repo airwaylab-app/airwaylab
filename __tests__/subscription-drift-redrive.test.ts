@@ -130,6 +130,7 @@ function stripeEventsBuilder(): Record<string, unknown> {
   builder['order'] = vi.fn(ret);
   builder['limit'] = vi.fn(() => { pending = 'select_rows'; return builder; });
   builder['eq'] = vi.fn(() => { if (pending === null) pending = 'update_eq'; return builder; });
+  builder['neq'] = vi.fn(ret);
   builder['update'] = vi.fn((patch: Record<string, unknown>) => {
     stripeEventsUpdates.push(patch);
     pending = 'update_eq';
@@ -240,15 +241,48 @@ describe('subscription-drift cron — ST1 webhook re-drive', () => {
     expect(stripeEventsUpdates).not.toContainEqual(expect.objectContaining({ status: 'failed' }));
   });
 
-  it('builds an .or() filter that selects failed rows and stale (not fresh) processing rows', async () => {
+  it('builds an .or() filter that selects failed + stale pending + stale processing rows', async () => {
     redriveRows = [];
     const { GET } = await import('@/app/api/cron/subscription-drift/route');
     await GET(makeRequest());
 
-    // failed rows unconditionally + processing rows older than the stale cutoff.
+    // failed rows unconditionally + pending/processing rows older than the cutoff.
     expect(capturedOrFilter).toContain('status.eq.failed');
+    expect(capturedOrFilter).toContain('status.eq.pending');
     expect(capturedOrFilter).toContain('status.eq.processing');
     expect(capturedOrFilter).toContain('updated_at.lt.');
+  });
+
+  it('sweeps a stranded pending row, counts it, and fires the stranded-pending alert (G1/G3)', async () => {
+    redriveRows = [
+      { event_id: 'evt_stranded', event_type: 'customer.created', status: 'pending', attempts: 0, updated_at: '2026-01-01T00:00:00Z' },
+    ];
+    // customer.created is an unhandled type -> processStripeEvent is a no-op -> success.
+    mockEventsRetrieve.mockResolvedValue({
+      id: 'evt_stranded',
+      type: 'customer.created',
+      data: { object: { id: 'cus_x' } },
+    });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    // Picked, swept to done, and counted as stranded pending.
+    expect(body.redrive_picked).toBe(1);
+    expect(body.redrive_recovered).toBe(1);
+    expect(body.redrive_stranded_pending).toBe(1);
+    // The claim ran via the RPC (pending is claimable; attemptsBefore 0 + 1).
+    expect(mockRpc).toHaveBeenCalledWith(
+      'claim_stripe_event',
+      expect.objectContaining({ p_event_id: 'evt_stranded', p_attempts: 1 })
+    );
+    // Fingerprinted stranded-pending regression alert fired.
+    expect(mockCaptureMessage).toHaveBeenCalledWith(
+      'stripe stranded pending: 1',
+      expect.objectContaining({ fingerprint: ['stripe-stranded-pending'] })
+    );
+    expect(mockSendAlert).toHaveBeenCalledWith('ops', '', expect.any(Array));
   });
 
   it('excludes attempts >= MAX_ATTEMPTS via a .lt(attempts, 5) filter (HIGH 3)', async () => {
