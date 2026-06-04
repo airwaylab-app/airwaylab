@@ -795,9 +795,9 @@ function AnalyzePageInner() {
               </Link>
             </p>
             <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
-              Not sure what to look for? Read about{"' '"}
-              <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
-                what your AHI number means
+              Not sure what to look for? Read{' '}
+              <Link href="/blog/what-is-a-good-ahi-on-cpap" className="text-primary hover:text-primary/80">
+                what a good AHI on CPAP looks like
               </Link>
               .
             </p>
