@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
   }
 
   const version = process.env.npm_package_version ?? 'unknown';
+  // Vercel injects the deployed commit SHA at build time. Exposing it lets the
+  // smoke check assert deployed-SHA == merged-SHA after a release.
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? 'unknown';
 
-  return NextResponse.json({ status: 'ok', version });
+  return NextResponse.json({ status: 'ok', version, sha });
 }
