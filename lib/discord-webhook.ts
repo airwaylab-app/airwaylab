@@ -263,6 +263,8 @@ async function postToWebhook(
  * DB writes must happen in the caller BEFORE this function is invoked.
  *
  * Falls back to DISCORD_WEBHOOK_URL if the specific channel env var is absent.
+ * For critical classes that also need email fallback, use the typed helpers instead:
+ * `alertCredentialExpiry`, `alertStripePaymentFailed`, `alertSecurityIncident`.
  */
 export async function routeAlert(
   alertType: AlertType,
