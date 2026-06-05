@@ -138,9 +138,9 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 1. **Privacy-first with opt-in sharing.** Core analysis is browser-only. Server features require explicit consent. This is a non-negotiable architectural constraint, not a preference.
 
-2. **Two-tier architecture.** Free tier (Tier 1) is complete — all engines, insights, exports, persistence. Premium tier (Tier 2) adds AI-powered analysis via Claude Haiku behind the `ailab-beta-2026` feature gate. Premium funds development; it does not gate essential analysis.
+2. **Two-tier architecture.** Free tier (Tier 1) is complete — all engines, insights, exports, persistence. Premium tier (Tier 2) adds AI-powered analysis behind the `ailab-beta-2026` feature gate. Premium funds development; it does not gate essential analysis.
 
-3. **Haiku over Sonnet/Opus.** Cost constraint for a side project with a 2hr/week maintenance budget. Haiku is sufficient for structured sleep data analysis. Do not upgrade model without discussion.
+3. **Tiered models, cost-constrained.** Community insights use Claude Haiku; premium uses Claude Sonnet 4.6 for higher-quality analysis (`app/api/ai-insights/route.ts`). Cost constraint for a side project with a 2hr/week maintenance budget. Do not change models without discussion.
 
 4. **localStorage persistence.** Results persist for 30 days under `airwaylab_results` key with a 4MB cap. Bulk data (per-breath arrays) is stripped before serialisation. Date objects are restored on load. Migration guards handle schema evolution (e.g., `estimatedArousalIndex` added in v0.6.0).
 
