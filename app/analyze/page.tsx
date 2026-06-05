@@ -42,7 +42,7 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { loadPersistedResults, clearPersistedNights, mergeNightsByDate } from '@/lib/persistence';
 import { events, capturePostHog, setPostHogPersonProps } from '@/lib/analytics';
 import { useTierHistoryWindowDays } from '@/hooks/use-tier-history-window-days';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
@@ -364,9 +364,15 @@ function AnalyzePageInner() {
           }
         }
 
-        // Orchestrator already calls persistResults internally — don't double-persist.
-        // The persistenceWarning from the orchestrator state will surface any issues.
-        setPersistedData(null);
+        // Keep prior history alongside the fresh upload in the in-memory view, so
+        // a second upload in one session doesn't appear to wipe earlier nights (#978).
+        // The orchestrator already persisted to localStorage; this only accumulates
+        // the dashboard view. mergeNightsByDate prefers the fresh nights on conflict.
+        setPersistedData((prev) => ({
+          nights: mergeNightsByDate(newState.nights, prev?.nights ?? []),
+          therapyChangeDate: newState.therapyChangeDate ?? prev?.therapyChangeDate ?? null,
+          savedAt: Date.now(),
+        }));
 
         // Detect oximetry just added (show confirmation banner)
         const hasOximetry = newState.nights.some((n) => !!n.oximetry);
@@ -583,7 +589,9 @@ function AnalyzePageInner() {
     const raw = isDemo
       ? SAMPLE_NIGHTS
       : state.nights.length > 0
-        ? state.nights
+        // Merge the fresh upload with accumulated history (cloud-hydrated +
+        // prior in-session uploads) so earlier nights stay visible (#978).
+        ? mergeNightsByDate(state.nights, persistedData?.nights ?? [])
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
