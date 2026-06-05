@@ -666,6 +666,10 @@ export async function POST(request: NextRequest) {
     const message = await client.messages.create({
       model,
       max_tokens: maxTokens,
+      // Deterministic output: the same night must yield the same insights on
+      // refresh. Without this, temperature defaults to 1.0 and the insight count
+      // drifts between calls (reported bug #976).
+      temperature: 0,
       system: systemPrompt,
       messages: [
         {
