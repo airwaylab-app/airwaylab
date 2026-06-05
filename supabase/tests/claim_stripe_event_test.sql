@@ -10,8 +10,9 @@
 -- A failed assertion RAISEs and aborts the run; success emits
 -- 'claim_stripe_event: all assertions passed'.
 --
--- Not yet wired into CI (no ephemeral test-DB step). Add one to gate the claim
--- contract automatically.
+-- Wired into CI via the `db-contract` job (.github/workflows/integration-db.yml),
+-- which replays the full migration history into a throwaway Postgres and runs
+-- every supabase/tests/*.sql. Non-required for now; promote once reliably green.
 
 begin;
 
