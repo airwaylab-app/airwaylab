@@ -18,14 +18,14 @@
 @layer base {
   /* Dark clinical theme (default) */
   :root {
-    --background: 222 47% 4%;
+    --background: 222 47% 7%;
     --foreground: 210 40% 93%;
-    --card: 217 33% 7%;
-    --card-elevated: 217 33% 10%;
+    --card: 217 33% 9%;
+    --card-elevated: 217 33% 12%;
     --card-foreground: 210 40% 93%;
     --popover: 217 33% 8%;
     --popover-foreground: 210 40% 93%;
-    --primary: 213 94% 56%;
+    --primary: 213 82% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 12%;
     --secondary-foreground: 210 40% 93%;
@@ -62,14 +62,14 @@
 
   /* Light theme (accessibility) */
   [data-theme="light"] {
-    --background: 210 20% 98%;
+    --background: 210 20% 96%;
     --foreground: 222 47% 11%;
-    --card: 210 20% 96%;
-    --card-elevated: 210 20% 93%;
+    --card: 210 20% 94%;
+    --card-elevated: 210 20% 91%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 213 94% 45%;
+    --primary: 213 82% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 20% 93%;
     --secondary-foreground: 222 47% 11%;
