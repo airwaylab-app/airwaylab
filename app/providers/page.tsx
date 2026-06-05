@@ -376,7 +376,7 @@ export default function ProvidersPage() {
               <h3 className="text-sm font-semibold text-foreground">How does this compare to OSCAR?</h3>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 OSCAR is a desktop application for interactive waveform browsing. AirwayLab adds
-                automated flow limitation scoring (Glasgow Index, NED, WAT), RERA detection, and
+                automated flow limitation scoring (Glasgow Index, NED, WAT), effort-pattern analysis, and
                 composite metrics that OSCAR doesn&apos;t compute. Many providers use both. See our{' '}
                 <Link href="/blog" className="text-primary hover:text-primary/80">
                   comparison article
