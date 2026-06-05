@@ -5,12 +5,21 @@ import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { STORAGE_BUCKET } from '@/lib/storage/types';
+import Stripe from 'stripe';
 
 // This endpoint derives all input from the authenticated session.
 // No request body is accepted; unexpected fields are rejected.
 const BodySchema = z.object({}).strict();
 
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 3 });
+
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe | null {
+  if (!stripeSecretKey) return null;
+  if (!_stripe) _stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-02-25.clover' });
+  return _stripe;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +53,130 @@ export async function POST(request: NextRequest) {
     const serviceRole = getSupabaseServiceRole();
     if (!serviceRole) {
       return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+
+    // 0. Cancel any live Stripe subscription BEFORE deleting local/auth data.
+    //    STRIPE IS THE SOURCE OF TRUTH (local `subscriptions` rows can drift — the
+    //    drift cron exists precisely because Stripe subs can lack a local row).
+    //    FAIL-SAFE: if the user has a billing identity (stripe_customer_id) and we
+    //    cannot verify/cancel via Stripe, ABORT the whole deletion — never strand a
+    //    deleted account with a live subscription that keeps billing the customer.
+    const { data: profileRow, error: profileLookupError } = await serviceRole
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileLookupError) {
+      Sentry.captureException(profileLookupError, {
+        tags: { route: 'delete-user-data', action: 'profile-lookup' },
+        extra: { userId: user.id },
+      });
+      return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
+    }
+    const stripeCustomerId = (profileRow as { stripe_customer_id?: string } | null)?.stripe_customer_id;
+    if (stripeCustomerId) {
+      const stripe = getStripe();
+      if (!stripe) {
+        // Billing identity exists but Stripe is unavailable (config regression).
+        // Abort rather than orphan a paying customer.
+        Sentry.captureMessage('account-deletion aborted: Stripe not configured but user has a stripe_customer_id', {
+          level: 'error',
+          fingerprint: ['delete-stripe-unconfigured'],
+          tags: { route: 'delete-user-data', action: 'cancel-subscription' },
+          extra: { userId: user.id },
+        });
+        return NextResponse.json({ error: 'Account deletion is temporarily unavailable. Please try again later.' }, { status: 503 });
+      }
+      // Authoritative: list the customer's subscriptions from Stripe.
+      let subs: Stripe.Subscription[];
+      try {
+        const list = await stripe.subscriptions.list({ customer: stripeCustomerId, status: 'all', limit: 100 });
+        if (list.has_more) {
+          // >100 subscriptions cannot be enumerated in one page — fail closed
+          // rather than risk leaving a live one billing. (Not realistic for a real
+          // customer; surfaces for manual handling if it ever happens.)
+          Sentry.captureMessage('account-deletion aborted: customer has >100 subscriptions', {
+            level: 'error',
+            fingerprint: ['delete-too-many-subs'],
+            tags: { route: 'delete-user-data', action: 'cancel-subscription' },
+            extra: { userId: user.id, stripeCustomerId },
+          });
+          return NextResponse.json(
+            { error: 'Could not delete your account automatically — please contact support.' },
+            { status: 502 }
+          );
+        }
+        subs = list.data;
+      } catch (err) {
+        Sentry.captureException(err, {
+          level: 'error',
+          fingerprint: ['delete-stripe-list-failed'],
+          tags: { route: 'delete-user-data', action: 'cancel-subscription' },
+          extra: { userId: user.id, stripeCustomerId },
+        });
+        return NextResponse.json(
+          { error: 'Could not verify your subscription. Your account was NOT deleted — please retry.' },
+          { status: 502 }
+        );
+      }
+      const cancellable = subs.filter((s) => s.status !== 'canceled' && s.status !== 'incomplete_expired');
+      let cancelledCount = 0;
+      for (const sub of cancellable) {
+        try {
+          await stripe.subscriptions.cancel(sub.id);
+        } catch (err) {
+          // Only a confirmed-missing resource is idempotent success; anything else
+          // aborts. Subs cancelled earlier in this loop already recorded their churn
+          // below, so an abort here never loses an earlier cancellation.
+          if ((err as { code?: string })?.code !== 'resource_missing') {
+            Sentry.captureException(err, {
+              level: 'error',
+              fingerprint: ['delete-cancel-subscription-failed'],
+              tags: { route: 'delete-user-data', action: 'cancel-subscription' },
+              extra: { userId: user.id, stripeCustomerId, failedSubscriptionId: sub.id, cancelledSoFar: cancelledCount },
+            });
+            return NextResponse.json(
+              { error: 'Could not cancel your subscription. Your account was NOT deleted — please retry or contact support.' },
+              { status: 502 }
+            );
+          }
+          // resource_missing — already gone; still record churn (idempotent) below.
+        }
+        // Record churn for THIS sub immediately + idempotently. The
+        // customer.subscription.deleted webhook cannot record it (by the time it
+        // processes, the user is deleted → its insert hits the FK and is swallowed),
+        // and recording per-sub means a later abort never loses an earlier one.
+        const { error: auditError } = await serviceRole.from('subscription_events').upsert(
+          {
+            user_id: user.id,
+            event_type: 'cancelled',
+            tier: 'community',
+            mrr_cents: 0,
+            stripe_subscription_id: sub.id,
+            stripe_event_id: `account_deletion:${user.id}:${sub.id}`,
+          },
+          { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+        );
+        if (auditError) {
+          // The subscription IS cancelled (billing stopped) — do not fail the whole
+          // deletion over an analytics write. Alert loudly for manual backfill.
+          Sentry.captureException(auditError, {
+            level: 'error',
+            fingerprint: ['delete-churn-audit-failed'],
+            tags: { route: 'delete-user-data', action: 'audit-cancellation' },
+            extra: { userId: user.id, subscriptionId: sub.id },
+          });
+        }
+        cancelledCount++;
+      }
+      if (cancelledCount > 0) {
+        Sentry.captureMessage('account-deletion: stripe subscription(s) cancelled', {
+          level: 'info',
+          fingerprint: ['account-deletion-sub-cancelled'],
+          tags: { route: 'delete-user-data', action: 'account-deletion' },
+          extra: { userId: user.id, count: cancelledCount },
+        });
+      }
     }
 
     // 1. Delete files from Supabase Storage (handles nested directories)
