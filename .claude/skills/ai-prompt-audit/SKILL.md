@@ -49,9 +49,9 @@ MDR language risk in AI output is owned by the `mdr-compliance-check` skill, the
 **Version:** [hash or last-modified date]
 **Token count:** [input prompt tokens]
 
-### MDR Compliance
-**Verdict:** PASS / FAIL
-- [specific findings]
+### MDR (delegated)
+Ran `mdr-compliance-check` + `mdr-string-check`: [yes / no]
+- [MDR findings belong to that skill, not here]
 
 ### Hallucination Risk
 **Risk level:** Low / Medium / High
