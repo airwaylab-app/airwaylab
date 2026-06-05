@@ -405,7 +405,10 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Portability:</strong> Export your analysis data as CSV, JSON, or PDF at any
-              time from the dashboard — no request needed.
+              time from the dashboard — no request needed. You can also download all of your raw
+              device files (EDF) and full analysis history as a structured JSON package via
+              Account Settings &rsquo; Download My Data. This covers all data held under GDPR
+              Art. 20.
             </li>
             <li>
               <strong>Rectification:</strong> Update your account details via your profile settings.
