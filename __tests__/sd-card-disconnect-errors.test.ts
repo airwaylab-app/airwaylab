@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
+  captureMessage: vi.fn(),
   addBreadcrumb: vi.fn(),
 }));
 
@@ -156,11 +157,7 @@ describe('AnalysisOrchestrator — SD card disconnect errors', () => {
     const file = makeEdfFile(makeNotFoundError());
     const fileList = [file];
 
-    try {
-      await orchestrator.analyze(fileList, undefined, undefined, undefined, 'community');
-    } catch {
-      // analyze() re-throws after setting state
-    }
+    await orchestrator.analyze(fileList, undefined, undefined, undefined, 'community');
 
     expect(orchestrator.getState().status).toBe('error');
     expect(orchestrator.getState().error).toBe(
@@ -168,20 +165,17 @@ describe('AnalysisOrchestrator — SD card disconnect errors', () => {
     );
   });
 
-  it('reports NotFoundError to Sentry with analysis-worker context', async () => {
+  it('reports NotFoundError to Sentry at info level (user-visible, recoverable)', async () => {
     const { orchestrator } = await import('@/lib/analysis-orchestrator');
     const Sentry = await import('@sentry/nextjs');
     const file = makeEdfFile(makeNotFoundError());
 
-    try {
-      await orchestrator.analyze([file], undefined, undefined, undefined, 'community');
-    } catch {
-      // expected
-    }
+    await orchestrator.analyze([file], undefined, undefined, undefined, 'community');
 
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'NotFoundError' }),
-      expect.objectContaining({ extra: expect.objectContaining({ context: 'analysis-worker' }) })
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'The SD card was removed or became unavailable. Please reconnect and try again.',
+      expect.objectContaining({ level: 'info', extra: expect.objectContaining({ domExceptionName: 'NotFoundError' }) })
     );
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });
