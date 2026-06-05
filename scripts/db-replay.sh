@@ -1,34 +1,39 @@
 #!/usr/bin/env bash
-# Replay every AirwayLab migration into a fresh DB in filename order, then run
-# the SQL contract tests. Proves the migration history is replayable and gates
-# the claim_stripe_event contract.
+# Build a test DB and run the SQL contract tests, two modes:
 #
-# Migrations are applied MANUALLY in prod (see skills/awl-migration); they are
-# sequential (001..NNN). The two duplicate-version pairs (003_*, 036_*) are
-# order-independent (different tables), so filename-sorted apply is correct.
+# GATE mode (preferred): if supabase/baseline.sql exists, apply it (a
+# structure-only dump of prod — see supabase/BASELINE.md), then apply only the
+# migrations newer than the baseline cut (supabase/baseline.cut), then run the
+# contract tests. Faithful and gateable, because the AirwayLab migration history
+# is NOT replayable from scratch (PR #984).
 #
-# Usage:
-#   DATABASE_URL=postgres://user:pass@host:5432/db scripts/db-replay.sh
-# The target should be a fresh DB; this script bootstraps a minimal Supabase
-# auth/roles shim first (for plain-Postgres CI without GoTrue).
+# AUDIT mode (fallback): with no baseline, bootstrap a minimal Supabase env shim
+# and replay ALL migrations in filename order. This surfaces the history's
+# replay defects and is EXPECTED to fail until a baseline is committed.
+#
+# Usage: DATABASE_URL=postgres://user:pass@host:5432/db scripts/db-replay.sh
 set -euo pipefail
 : "${DATABASE_URL:?set DATABASE_URL to a fresh target Postgres}"
-
 run() { psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q "$@"; }
 
-echo ">> bootstrap: Supabase auth/roles shim"
-run -f scripts/ci-db-bootstrap.sql
-
-echo ">> replay migrations (filename order)"
-for f in supabase/migrations/*.sql; do
-  echo "   apply $(basename "$f")"
-  run -f "$f"
-done
+if [ -f supabase/baseline.sql ]; then
+  echo ">> GATE mode: applying schema baseline (supabase/baseline.sql)"
+  run -f supabase/baseline.sql
+  cut="$(cat supabase/baseline.cut 2>/dev/null || echo 000)"
+  echo ">> applying migrations newer than baseline cut ${cut}"
+  for f in supabase/migrations/*.sql; do
+    n="$(basename "$f" | grep -oE '^[0-9]+' || echo 000)"
+    if [ "$n" \> "$cut" ]; then echo "   apply $(basename "$f")"; run -f "$f"; fi
+  done
+else
+  echo ">> AUDIT mode: no baseline; shim + full replay (expects history defects, see PR #984)"
+  run -f scripts/ci-db-bootstrap.sql
+  for f in supabase/migrations/*.sql; do echo "   apply $(basename "$f")"; run -f "$f"; done
+fi
 
 echo ">> SQL contract tests"
 for t in supabase/tests/*.sql; do
   echo "   run $(basename "$t")"
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$t"
 done
-
 echo ">> db-replay: OK"
