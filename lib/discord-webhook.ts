@@ -503,6 +503,7 @@ export function formatUserSignalEmbed(opts: {
   message?: string
   email?: string
   name?: string
+  feedbackId?: string
 }): DiscordEmbed {
   const titles: Record<string, string> = {
     feedback: ':speech_balloon: User Feedback',
@@ -524,10 +525,12 @@ export function formatUserSignalEmbed(opts: {
   if (opts.category) fields.push({ name: 'Category', value: opts.category, inline: true })
   if (opts.email) fields.push({ name: 'Email', value: opts.email, inline: true })
   if (opts.name) fields.push({ name: 'Name', value: opts.name, inline: true })
+  if (opts.feedbackId) fields.push({ name: 'Ref', value: opts.feedbackId, inline: true })
 
   return {
     title: titles[opts.type] ?? opts.type,
-    description: opts.message ? opts.message.slice(0, 500) : undefined,
+    // #user-signals is admin-only, so carry the full report (Discord embed cap is 4096).
+    description: opts.message ? opts.message.slice(0, 4000) : undefined,
     color: colors[opts.type] ?? COLORS.blue,
     fields,
     footer: { text: 'airwaylab.app' },
