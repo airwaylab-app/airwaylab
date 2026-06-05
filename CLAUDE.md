@@ -90,7 +90,7 @@ airwaylab/
 ├── hooks/                  → Custom React hooks (client-side only)
 ├── __tests__/              → Vitest test files
 │   ├── setup.ts            → Test setup (@testing-library/jest-dom)
-│   └── *.test.ts           → 16 test files covering engines, exports, insights, etc.
+│   └── *.test.ts           → Vitest test files covering engines, exports, insights, etc.
 ├── supabase/
 │   └── migrations/         → Database migrations (append-only, never edit existing)
 │       └── NEXT_MIGRATION  → Next available migration number (increment in same commit as new migration)
