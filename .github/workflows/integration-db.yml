@@ -1,0 +1,44 @@
+name: Integration DB
+
+# Replays the full migration history into a throwaway Postgres and runs the SQL
+# contract tests. NON-REQUIRED for now (see ruleset) — promote to a required
+# check once it is reliably green. Runs on PRs + manual dispatch (not in the
+# merge queue, to avoid slowing it while this is being stabilised).
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: intdb-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  db-contract:
+    name: db-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: airwaylab_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/airwaylab_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: Replay migrations + SQL contract tests
+        run: bash scripts/db-replay.sh

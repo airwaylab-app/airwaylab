@@ -1,0 +1,12 @@
+# Supabase project config.
+#
+# NOTE: AirwayLab migrations are applied MANUALLY in prod via raw SQL (see the
+# awl-migration skill + memory airwaylab-product-repo-ops). This file pins the
+# local/CI Postgres major version to match prod (Postgres 17) and documents the
+# project for any future `supabase` CLI use. The CI replay (db-contract job)
+# does NOT use the CLI — it applies supabase/migrations/*.sql directly with psql.
+
+project_id = "airwaylab"
+
+[db]
+major_version = 17
