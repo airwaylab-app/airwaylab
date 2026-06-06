@@ -122,7 +122,15 @@ function setupDefaultMocks() {
     limit: vi.fn().mockReturnValue({ data: [], error: null }),
     maybeSingle: vi.fn().mockReturnValue({ data: { stripe_customer_id: 'cus_existing' }, error: null }),
     single: vi.fn().mockReturnValue({ data: { stripe_customer_id: 'cus_existing' }, error: null }),
-    insert: vi.fn().mockReturnValue({ error: null }),
+    // Supports both `await insert(...)` -> { error } and the feedback path
+    // `insert(...).select('id').single()` -> { data: { id }, error }.
+    insert: vi.fn().mockReturnValue({
+      error: null,
+      then: (resolve: (v: { error: null }) => unknown) => resolve({ error: null }),
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockReturnValue({ data: { id: 'feedback-test-id' }, error: null }),
+      }),
+    }),
     update: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockReturnValue({ error: null }),
   };

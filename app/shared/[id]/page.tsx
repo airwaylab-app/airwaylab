@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const fallback: Metadata = {
     title: 'Shared Analysis | AirwayLab',
-    description: 'View a shared PAP therapy analysis with flow limitation scores, Glasgow Index, and RERA detection.',
+    description: 'View a shared PAP therapy analysis with flow limitation scores, Glasgow Index, and effort-pattern analysis.',
     robots: { index: false, follow: false },
   };
 

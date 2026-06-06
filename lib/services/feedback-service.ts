@@ -1,7 +1,7 @@
 import { ResultAsync, okAsync } from 'neverthrow'
 import type { AppError } from '@/lib/errors'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { supabaseInsert } from './supabase-helpers'
+import { supabaseQuery } from './supabase-helpers'
 import { sendEmail } from '@/lib/email/send'
 import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook'
 
@@ -31,9 +31,11 @@ const TYPE_LABELS: Record<string, string> = {
 /**
  * Persists feedback to Supabase and fires notifications.
  *
- * Notification routing:
- * - Bug reports → email (dev@airwaylab.app) + Discord (with @mention)
- * - All other types → Discord only
+ * Notification routing (every type fans out to all three trails):
+ * - Email (dev@airwaylab.app) + Discord (#user-signals, admin-only) for ALL types
+ * - Bug reports additionally @mention the admin in Discord
+ * The feedback row id is stamped into both trails so triage can reconcile the
+ * GitHub issue it opens against the Supabase source of truth.
  *
  * This function owns the business logic; HTTP concerns (auth, CSRF,
  * rate limiting, Zod validation) stay in the API route.
@@ -52,7 +54,7 @@ export function submitFeedback(
     return okAsync({ ok: true as const })
   }
 
-  return supabaseInsert(
+  return supabaseQuery<{ id: string }>(
     supabase.from('feedback').insert({
       message: `[${input.type}] ${input.message.trim()}`,
       email: input.email?.trim() || null,
@@ -61,41 +63,41 @@ export function submitFeedback(
       contact_ok: input.contact_ok ?? false,
       type: input.type,
       metadata: input.metadata ?? null,
-    }),
+    }).select('id').single(),
     'feedback',
-  ).map((result) => {
+  ).map((row) => {
+    const feedbackId = row.id
     const label = TYPE_LABELS[input.type] ?? 'Feedback'
     const meta = (input.metadata ?? {}) as Record<string, unknown>
 
-    // Admin email only for bug reports (feature requests / ideas → Discord only)
-    if (input.type === 'bug') {
-      void sendEmail({
-        to: 'dev@airwaylab.app',
-        subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
-        text: [
-          `New ${label.toLowerCase()} on airwaylab.app`,
-          '',
-          `Type: ${label}`,
-          `Page: ${input.page ?? '\u2014'}`,
-          `Email: ${input.email?.trim() ?? '\u2014'}`,
-          `Contact OK: ${input.contact_ok ? 'Yes' : 'No'}`,
-          `User ID: ${input.user_id ?? '\u2014'}`,
-          `Tier: ${meta.user_tier ?? '\u2014'}`,
-          `Display name: ${meta.display_name ?? '\u2014'}`,
-          '',
-          'Message:',
-          input.message.trim(),
-          '',
-          '\u2500\u2500 Context \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
-          `App version: ${meta.app_version ?? '\u2014'}`,
-          `Browser: ${typeof meta.user_agent === 'string' ? meta.user_agent.slice(0, 120) : '\u2014'}`,
-          `Screen: ${meta.screen_width ?? '?'}x${meta.screen_height ?? '?'} (viewport: ${meta.viewport_width ?? '?'}x${meta.viewport_height ?? '?'})`,
-          `Timezone: ${meta.timezone ?? '\u2014'}`,
-          `Has analysis: ${meta.has_analysis_results === true ? 'Yes' : meta.has_analysis_results === false ? 'No' : '\u2014'}`,
-        ].join('\n'),
-        metadata: { emailType: 'admin_feedback' },
-      })
-    }
+    // Admin email for EVERY feedback type (internal inbox, full context incl. PHI)
+    void sendEmail({
+      to: 'dev@airwaylab.app',
+      subject: `${label}: ${input.message.slice(0, 60)}${input.message.length > 60 ? '...' : ''}`,
+      text: [
+        `New ${label.toLowerCase()} on airwaylab.app`,
+        '',
+        `Feedback ID: ${feedbackId}`,
+        `Type: ${label}`,
+        `Page: ${input.page ?? '\u2014'}`,
+        `Email: ${input.email?.trim() ?? '\u2014'}`,
+        `Contact OK: ${input.contact_ok ? 'Yes' : 'No'}`,
+        `User ID: ${input.user_id ?? '\u2014'}`,
+        `Tier: ${meta.user_tier ?? '\u2014'}`,
+        `Display name: ${meta.display_name ?? '\u2014'}`,
+        '',
+        'Message:',
+        input.message.trim(),
+        '',
+        '\u2500\u2500 Context \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+        `App version: ${meta.app_version ?? '\u2014'}`,
+        `Browser: ${typeof meta.user_agent === 'string' ? meta.user_agent.slice(0, 120) : '\u2014'}`,
+        `Screen: ${meta.screen_width ?? '?'}x${meta.screen_height ?? '?'} (viewport: ${meta.viewport_width ?? '?'}x${meta.viewport_height ?? '?'})`,
+        `Timezone: ${meta.timezone ?? '\u2014'}`,
+        `Has analysis: ${meta.has_analysis_results === true ? 'Yes' : meta.has_analysis_results === false ? 'No' : '\u2014'}`,
+      ].join('\n'),
+      metadata: { emailType: 'admin_feedback' },
+    })
 
     // Discord notification for all feedback types
     // Personal mention for bugs so admin gets pinged
@@ -109,8 +111,9 @@ export function submitFeedback(
       category: label,
       message: input.message.trim(),
       email: input.email?.trim() ?? undefined,
+      feedbackId,
     })])
 
-    return result
+    return { ok: true as const }
   })
 }

@@ -16,11 +16,11 @@ import { FAQItem } from '@/components/common/faq-item';
 export const metadata: Metadata = {
   title: 'AirwayLab vs myAir: Beyond Basic CPAP Metrics',
   description:
-    'Compare AirwayLab and ResMed myAir for CPAP analysis. Go beyond AHI, mask fit, and usage hours with flow limitation scoring, RERA detection, Glasgow Index, and privacy-first browser analysis.',
+    'Compare AirwayLab and ResMed myAir for CPAP analysis. Go beyond AHI, mask fit, and usage hours with flow limitation scoring, effort-pattern analysis, Glasgow Index, and privacy-first browser analysis.',
   openGraph: {
     title: 'AirwayLab vs myAir: Beyond Basic CPAP Metrics',
     description:
-      'Compare AirwayLab and ResMed myAir for CPAP analysis. Go beyond AHI with flow limitation scoring, RERA detection, and the Glasgow Index.',
+      'Compare AirwayLab and ResMed myAir for CPAP analysis. Go beyond AHI with flow limitation scoring, effort-pattern analysis, and the Glasgow Index.',
   },
   alternates: {
     canonical: 'https://airwaylab.app/compare/myair',
@@ -71,7 +71,7 @@ const faqData = [
   {
     question: 'What does AirwayLab see that myAir does not?',
     answer:
-      'myAir receives a simplified summary: AHI, usage hours, mask fit, and leak data. The SD card contains the full flow waveform -- every breath, sampled 25 times per second. AirwayLab analyses these raw waveforms to compute flow limitation scores, detect RERAs, calculate the Glasgow Index, and identify breathing pattern abnormalities that the simplified summary hides.',
+      'myAir receives a simplified summary: AHI, usage hours, mask fit, and leak data. The SD card contains the full flow waveform -- every breath, sampled 25 times per second. AirwayLab analyses these raw waveforms to compute flow limitation scores, analyse effort-related breathing patterns, calculate the Glasgow Index, and identify breathing pattern abnormalities that the simplified summary hides.',
   },
   {
     question: 'Does myAir share my data with my insurance company?',
@@ -234,11 +234,11 @@ export default function CompareMyAirPage() {
               </p>
             </div>
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-              <p className="text-sm font-semibold text-emerald-400">RERA Detection</p>
+              <p className="text-sm font-semibold text-emerald-400">Progressive Effort Patterns</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 AirwayLab identifies sequences of flow-limited breaths ending in arousals --
-                Respiratory Effort-Related Arousals (RERAs) that fragment sleep but never appear in
-                your AHI or myAir score.
+                effort-related events that fragment sleep but never appear in your AHI or myAir
+                score.
               </p>
             </div>
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
@@ -297,7 +297,7 @@ export default function CompareMyAirPage() {
                 <td className="px-4 py-2.5 text-center text-emerald-400">4 engines</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">RERA detection</td>
+                <td className="py-2.5 pr-4">Effort-pattern analysis</td>
                 <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes (NED)</td>
               </tr>
@@ -470,8 +470,8 @@ export default function CompareMyAirPage() {
         <h3 className="text-lg font-bold">See What myAir Does Not Show You</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload your ResMed SD card and discover the flow limitation patterns hiding behind your
-          myAir score. Four research-grade engines, composite metrics, RERA detection, and trend
-          tracking. No installation, no account required, 100% private.
+          myAir score. Four research-grade engines, composite metrics, progressive effort-pattern
+          analysis, and trend tracking. No installation, no account required, 100% private.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
           <Link

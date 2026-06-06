@@ -80,6 +80,14 @@ export async function GET(request: NextRequest) {
       .order('night_date', { ascending: true });
     if (nightsError) throw nightsError;
 
+    // Audit log: GDPR Art 20 portability export (flows to Vercel logs + Sentry)
+    console.error('[AUDIT] bulk-download', {
+      action: 'gdpr_data_export',
+      userId: user.id,
+      fileCount: files.length,
+      nightCount: nightRows?.length ?? 0,
+    });
+
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
       urlTtlSeconds: SIGNED_URL_TTL,

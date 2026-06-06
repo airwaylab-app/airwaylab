@@ -348,7 +348,13 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4 font-medium text-foreground">Discord</td>
                   <td className="py-2 pr-4">Community (opt-in, paid subscribers only)</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Discord user ID and username only. No health data is sent to Discord.</td>
+                  <td className="py-2">Discord user ID and username only. No health data is sent to Discord via this channel.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">Discord (admin webhook)</td>
+                  <td className="py-2 pr-4">Internal feedback triage &amp; operational alerts (admin-only channel)</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">Feedback message text, submitter email (if provided), app metadata (page, tier, browser). No raw therapy data. Message text may contain health context provided voluntarily by the user.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Google (Gmail API)</td>
@@ -399,7 +405,10 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Portability:</strong> Export your analysis data as CSV, JSON, or PDF at any
-              time from the dashboard — no request needed.
+              time from the dashboard — no request needed. You can also download all of your raw
+              device files (EDF) and full analysis history as a structured JSON package via
+              Account Settings &rsquo; Download My Data. This covers all data held under GDPR
+              Art. 20.
             </li>
             <li>
               <strong>Rectification:</strong> Update your account details via your profile settings.
