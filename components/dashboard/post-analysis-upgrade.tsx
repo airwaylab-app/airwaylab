@@ -71,7 +71,7 @@ export function PostAnalysisUpgrade({ isComplete, sequencerActive, onDismiss }: 
             </button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            You just got Glasgow Index, flow limitation scores, and RERA detection — free, in your browser.
+            You just got Glasgow Index, flow limitation scores, and effort-pattern analysis — free, in your browser.
             Want to go deeper?
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
