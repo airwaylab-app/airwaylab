@@ -45,8 +45,12 @@ function fingerprintFile(file: File): FileFingerprint {
 export function extractNightDate(path: string): string | null {
   const m = DATE_FOLDER_RE.exec(path);
   if (!m) return null;
-  const raw = m[1]!; // YYYYMMDD
-  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+  const raw = m[1]!;
+  const candidate = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+  // Validate: same logic as presign schema refine
+  const t = new Date(candidate);
+  if (isNaN(t.getTime()) || !t.toISOString().startsWith(candidate)) return null;
+  return candidate;
 }
 
 /**

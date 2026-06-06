@@ -14,7 +14,10 @@ const confirmSchema = z.object({
 
 /**
  * Confirms a file upload completed successfully.
- * Verifies the file exists in storage. If not, cleans up the metadata row.
+ * Verifies the file exists in storage. Returns 503 (retriable) if the storage
+ * list does not yet show the object — the client retries confirm, giving the
+ * eventually-consistent storage list more time to propagate. Rows that remain
+ * unconfirmed > 10 minutes are cleaned up by the stale orphan logic in presign.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -104,15 +107,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (!storageFile || storageFile.length === 0) {
-      // File absent from storage despite PUT succeeding — capture for diagnosis before cleanup
+      // Storage list returned empty after all retries — the object may not have
+      // propagated yet. Capture for diagnosis but do NOT delete the metadata row;
+      // the client retries confirm on 5xx, extending the propagation window.
+      // Stale unconfirmed rows (> 10 min) are cleaned up in /api/files/presign.
       captureApiError(new Error('File absent from storage at confirm step'), {
         route: 'files/confirm',
         context: 'storage_list_empty',
         fileId,
         storagePath: fileRow.storage_path,
       });
-      await serviceRole.from('user_files').delete().eq('id', fileId);
-      return NextResponse.json({ error: 'Upload not found in storage. Metadata cleaned up.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'File not yet visible in storage. Please retry.' },
+        { status: 503 }
+      );
     }
 
     // Reconcile actual stored size against the client-declared size.

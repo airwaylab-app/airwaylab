@@ -15,7 +15,21 @@ vi.mock('@sentry/nextjs', () => ({
 }))
 
 vi.mock('@/lib/discord-webhook', () => ({
-  COLORS: { green: 0x10b981, red: 0xef4444, blue: 0x3b82f6, amber: 0xf59e0b },
+  COLORS: { green: 0x10b981, amber: 0xf59e0b, red: 0xef4444, blue: 0x3b82f6, purple: 0x8b5cf6, teal: 0x14b8a6 },
+  _budget: { date: '', count: 0 },
+  sendAlert: vi.fn().mockResolvedValue(false),
+  routeAlert: vi.fn().mockResolvedValue(false),
+  sendOpsAlert: vi.fn().mockResolvedValue(false),
+  sendCriticalAlert: vi.fn().mockResolvedValue(false),
+  alertCredentialExpiry: vi.fn().mockResolvedValue(false),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(false),
+  alertSecurityIncident: vi.fn().mockResolvedValue(false),
+  formatMonitorEmbed: vi.fn().mockReturnValue({}),
+  formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  formatUserSignalEmbed: vi.fn().mockReturnValue({}),
+  formatEmailAlertEmbed: vi.fn().mockReturnValue({}),
+  formatBroadcastEmbed: vi.fn().mockReturnValue({}),
+  formatGrowthEmbed: vi.fn().mockReturnValue({}),
 }))
 
 const mockFrom = vi.fn()

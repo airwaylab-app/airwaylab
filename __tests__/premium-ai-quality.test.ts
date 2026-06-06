@@ -25,7 +25,7 @@ const mockSupabaseFrom = vi.fn().mockReturnValue({
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
   single: vi.fn().mockImplementation(() =>
-    Promise.resolve({ data: { tier: mockTier } })
+    Promise.resolve({ data: { tier: mockTier, ai_insights_consent: true } })
   ),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
   insert: vi.fn().mockResolvedValue({ error: null }),
@@ -335,7 +335,7 @@ describe('Premium AI Quality — Response Fields', () => {
     mockSupabaseFrom.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { tier: 'community' } }),
+      single: vi.fn().mockResolvedValue({ data: { tier: 'community', ai_insights_consent: true } }),
       maybeSingle: vi.fn().mockResolvedValue({ data: { count: 1 } }),
       insert: vi.fn().mockResolvedValue({ error: null }),
     });

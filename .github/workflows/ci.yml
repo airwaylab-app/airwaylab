@@ -70,6 +70,19 @@ jobs:
             exit 1
           fi
 
+  mutation-guard:
+    name: Supabase mutation guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      # No deps: pure node + git. Fails on any `.update/.delete/.upsert().or()`
+      # (PostgREST 42703 on or-mutations — 2026-06-04 billing incident).
+      - run: node scripts/check-no-mutation-or.mjs
+
   # Single build lives here: `npx playwright test` starts the built app via
   # playwright.config.ts webServer (`npm run start`, reuseExistingServer=false on CI).
   e2e:

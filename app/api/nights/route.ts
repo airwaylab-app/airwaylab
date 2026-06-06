@@ -67,7 +67,28 @@ export async function GET(request: NextRequest) {
     // most recent nights are always returned.
     query = query.limit(MAX_NIGHTS_RETURNED);
 
-    const { data, error: queryError } = await query;
+    // Race the query against an 8s cap to prevent Supabase statement timeouts from
+    // propagating as opaque Vercel 500s (JAVASCRIPT-NEXTJS-79 / AIR-2241).
+    const QUERY_TIMEOUT_MS = 8_000;
+    const queryResult = await Promise.race([
+      query,
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), QUERY_TIMEOUT_MS)),
+    ]);
+
+    if (queryResult === 'timeout') {
+      console.error('[nights] Supabase query timed out', {
+        action: 'nights_fetch_timeout',
+        user_id: user.id.slice(0, 8),
+      });
+      Sentry.captureMessage('nights GET query timeout', {
+        level: 'warning',
+        tags: { route: 'nights/get', step: 'query-timeout' },
+        extra: { userId: user.id.slice(0, 8) },
+      });
+      return NextResponse.json({ error: 'Request timed out — please try again' }, { status: 503 });
+    }
+
+    const { data, error: queryError } = queryResult;
 
     if (queryError) {
       Sentry.captureException(queryError, {

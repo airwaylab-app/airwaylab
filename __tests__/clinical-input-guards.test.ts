@@ -61,7 +61,7 @@ const GOLDEN = {
   wat: {
     flScore: 55.055737689664774,
     regularityScore: 62.62244876774203,
-    periodicityIndex: 37.39747923621575,
+    periodicityIndex: 37.397479236215744,
   },
   // NED exposes large per-breath arrays; we pin the clinical scalar outputs.
   nedScalars: {

@@ -256,8 +256,14 @@ function AnalyzePageInner() {
         });
       })
       .catch((err) => {
-        // Non-fatal: fall back to localStorage silently
-        Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+        // Non-fatal: fall back to localStorage silently.
+        // 401 means the session has fully expired (both tokens) — not a code bug.
+        // The auth-context will detect this via getUser() and sign the user out.
+        const isExpiredSession =
+          err instanceof Error && err.message.includes(': 401');
+        if (!isExpiredSession) {
+          Sentry.captureException(err, { extra: { context: 'cloud_first_hydration' } });
+        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]); // Fires once on auth; state/isDemo are stable at auth time
@@ -789,9 +795,9 @@ function AnalyzePageInner() {
               </Link>
             </p>
             <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
-              Not sure what to look for? Read about{"' '"}
-              <Link href="/blog/what-does-cpap-ahi-mean" className="text-primary hover:text-primary/80">
-                what your AHI number means
+              Not sure what to look for? Read{' '}
+              <Link href="/blog/what-is-a-good-ahi-on-cpap" className="text-primary hover:text-primary/80">
+                what a good AHI on CPAP looks like
               </Link>
               .
             </p>
