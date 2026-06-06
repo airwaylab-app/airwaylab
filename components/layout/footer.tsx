@@ -123,6 +123,9 @@ export function Footer() {
               <Link href="/accessibility" className="transition-colors hover:text-foreground">
                 Accessibility
               </Link>
+              <Link href="/legal" className="transition-colors hover:text-foreground">
+                Legal Notice
+              </Link>
               <Link href="/contact" className="transition-colors hover:text-foreground">
                 Contact
               </Link>
