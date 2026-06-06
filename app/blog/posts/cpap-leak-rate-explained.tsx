@@ -1,13 +1,11 @@
 import Link from 'next/link';
 import {
   Activity,
-  AlertTriangle,
   ArrowRight,
   BookOpen,
   Droplets,
   HelpCircle,
   Lightbulb,
-  Monitor,
   Waves,
   Wind,
 } from 'lucide-react';
@@ -15,19 +13,6 @@ import {
 export default function CPAPLeakRateExplainedPost() {
   return (
     <article>
-      {/* Top medical disclaimer */}
-      <div className="mb-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-        <div className="flex items-center gap-2.5">
-          <Lightbulb className="h-4 w-4 text-amber-500" />
-          <p className="text-xs font-semibold text-foreground">Medical disclaimer</p>
-        </div>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          AirwayLab is a data visualisation and analytics tool, not a medical device. Nothing in
-          this article constitutes medical advice. Always discuss your therapy data with your sleep
-          physician or equipment provider.
-        </p>
-      </div>
-
       {/* Hook */}
       <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
         You open your CPAP app and see it: <strong className="text-foreground">Leak rate: 24 L/min.</strong>{' '}
@@ -173,6 +158,54 @@ export default function CPAPLeakRateExplainedPost() {
             pattern is stable or changing over time.
           </p>
 
+          {/* H3: Reading Leak Rate in OSCAR — folded from cpap-leak-rate-meaning */}
+          <h3 className="mt-6 text-base font-semibold text-foreground sm:text-lg">
+            Reading Leak Rate in OSCAR: Step by Step
+          </h3>
+          <p>
+            OSCAR (Open Source CPAP Analysis Reporter) is the standard desktop tool for detailed
+            PAP data review. Here is how to read leak data in it:
+          </p>
+          <ol className="ml-4 mt-3 space-y-3">
+            {[
+              {
+                step: 'Import your CPAP data',
+                detail: 'From your SD card or ResMed data folder using the import wizard.',
+              },
+              {
+                step: 'Open the daily view',
+                detail:
+                  'Look at the "Leak Rate" chart. By default, OSCAR displays unintentional (residual) leak after subtracting the vent flow curve for your detected mask model.',
+              },
+              {
+                step: 'Check the statistics panel',
+                detail:
+                  'On the left, review the 95th percentile, median, and maximum leak values for the session.',
+              },
+              {
+                step: 'Overlay with AHI or flow limitation',
+                detail:
+                  'Look for correlations between leak rate spikes and event clusters. Clusters that coincide with high-leak episodes are worth noting and discussing with your clinician.',
+              },
+            ].map(({ step, detail }, i) => (
+              <li key={step} className="flex gap-3">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  {i + 1}
+                </span>
+                <span>
+                  <strong className="text-foreground">{step}:</strong>{' '}
+                  <span className="text-muted-foreground">{detail}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 text-sm text-muted-foreground">
+            One important note: confirm OSCAR has detected the correct mask model. The vent flow
+            curve used to calculate unintentional leak depends on the specific mask — if OSCAR is
+            using the wrong profile, the residual leak figure will be off. Set your mask manually
+            in OSCAR&apos;s settings if the auto-detected mask doesn&apos;t match what you use.
+          </p>
+
           {/* H3: Reading Leak Data with AirwayLab */}
           <h3 className="mt-6 text-base font-semibold text-foreground sm:text-lg">
             Reading Leak Data with AirwayLab
@@ -296,6 +329,24 @@ export default function CPAPLeakRateExplainedPost() {
             happening with your breathing. Reviewing leak and event data together gives a more
             complete picture.
           </p>
+
+          {/* "When to Worry" framing — folded from cpap-leak-rate-meaning */}
+          <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <p className="text-sm font-semibold text-rose-400">
+              Understanding the &quot;Large Leak&quot; flag
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The &quot;Large Leak&quot; flag on ResMed devices (and equivalent alerts on other
+              machines) is a{' '}
+              <strong className="text-foreground">data-quality signal, not a diagnosis</strong>.
+              It tells you that unintentional leak exceeded the manufacturer&apos;s threshold for
+              a sustained portion of the night — meaning event detection for that session may be
+              less reliable. Your AHI on a high-leak night should be read with that caveat: the
+              figure may be less reliable not because your breathing was better or worse, but
+              because the underlying signal quality was lower. Your clinician can help interpret
+              recurring Large Leak flags in the context of your full therapy data.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -348,114 +399,45 @@ export default function CPAPLeakRateExplainedPost() {
         </div>
       </section>
 
-      {/* H2: When High Leak Matters: A Data-Quality Signal */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <AlertTriangle className="h-5 w-5 text-amber-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">
-            When High Leak Matters: A Data-Quality Signal
-          </h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <p>
-            Elevated unintentional leak is primarily a{' '}
-            <strong className="text-foreground">data-quality signal, not a diagnosis</strong>. When
-            leak is high, the flow signal your machine uses for event detection becomes less reliable:
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                label: 'Genuine apnoeas can be missed',
-                desc: 'The leak noise can obscure real airflow reductions, causing the machine to miss events it would otherwise detect.',
-              },
-              {
-                label: 'Leak artifacts scored as events',
-                desc: 'Sudden changes in leak can look like respiratory events to the detection algorithm, inflating the AHI count on high-leak nights.',
-              },
-              {
-                label: 'Pressure adjustments on APAP/BiPAP',
-                desc: 'Auto-titrating devices may raise or lower pressure based on inaccurate airflow readings when leak distorts the flow signal.',
-              },
-            ].map(({ label, desc }) => (
-              <div key={label} className="rounded-xl border border-border/50 p-4">
-                <p className="text-sm font-semibold text-foreground">{label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-              </div>
-            ))}
-          </div>
-          <p>
-            This means AHI figures from high-leak nights warrant cautious interpretation. A single
-            high-leak night does not tell you much — temporary factors like positional shifts,
-            congestion, or a partial mask seal from movement can all cause one-off elevated readings.
-            But consistent elevation over multiple nights means your event data from those sessions
-            is less reliable. Your clinician can help you interpret what the patterns mean in your
-            specific context.
-          </p>
-        </div>
-      </section>
-
-      {/* H2: Reading Your Leak Data in OSCAR */}
-      <section className="mt-10">
-        <div className="flex items-center gap-2.5">
-          <Monitor className="h-5 w-5 text-blue-400" />
-          <h2 className="text-xl font-bold sm:text-2xl">Reading Your Leak Data in OSCAR</h2>
-        </div>
-        <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          <ol className="space-y-3 pl-0">
-            {[
-              'Import your CPAP SD card data into OSCAR.',
-              'Open the daily view and locate the Leak Rate chart.',
-              'Review the statistics panel for 95th percentile, median, and maximum values.',
-              'Overlay the AHI or flow limitation chart to see whether high-leak nights also show unusual event counts — a correlation that indicates less reliable event detection.',
-              'Verify OSCAR has identified your correct mask model; vent flow curves vary by mask type and an incorrect selection affects leak and flow limitation calculations.',
-            ].map((step, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-400/15 text-xs font-bold text-blue-400">
-                  {i + 1}
-                </span>
-                <p className="text-muted-foreground">{step}</p>
-              </li>
-            ))}
-          </ol>
-          <p>
-            For multi-week review, OSCAR&apos;s overview charts let you compare 95th-percentile
-            leak across sessions at a glance, making it easy to spot gradual worsening trends or
-            isolated spikes.
-          </p>
-        </div>
-      </section>
-
-      {/* H2: Reading Your Leak Data in AirwayLab */}
+      {/* H2: Analyzing Your Leak Rate Data with AirwayLab */}
       <section className="mt-10">
         <div className="flex items-center gap-2.5">
           <BookOpen className="h-5 w-5 text-emerald-400" />
           <h2 className="text-xl font-bold sm:text-2xl">
-            Reading Your Leak Data in AirwayLab
+            Analyzing Your Leak Rate Data with AirwayLab
           </h2>
         </div>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            AirwayLab displays leak data alongside AHI, flow limitation, and breathing pattern
-            metrics in a single browser-based view. Your data does not leave your browser. No
-            account is needed.
+            AirwayLab reads the full SD card data from your ResMed device — the same source that{' '}
+            <a
+              href="https://www.sleepfiles.com/OSCAR/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80"
+            >
+              OSCAR
+            </a>{' '}
+            reads — and surfaces your leak rate in context with the rest of your therapy data. Your
+            data never leaves your browser. No account required.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               {
-                label: 'Nightly leak rate trends',
-                desc: 'See your 95th percentile mask leak rate across your selected date range — stable, worsening, or variable at a glance.',
+                label: 'Leak trend across nights',
+                desc: 'See whether your 95th percentile mask leak rate is stable, worsening, or variable across your history.',
               },
               {
-                label: 'Session-level leak distribution',
-                desc: 'See how leak varied within a night, not just the summary statistic. Useful for identifying positional or time-of-night patterns.',
+                label: 'Nightly leak timeline',
+                desc: 'View leak rate plotted across the full night alongside events — see whether elevated leak periods coincide with increased AHI or flagged breathing events.',
               },
               {
-                label: 'High-leak session flagging',
-                desc: 'Nights where elevated leak may have reduced event detection reliability are noted, so you know which sessions to interpret cautiously.',
+                label: 'H1/H2 split',
+                desc: 'Compare first-half vs second-half of the night. Leak that worsens in H2 often correlates with positional changes as sleep deepens.',
               },
               {
-                label: 'Side-by-side with flow limitation and AHI',
-                desc: 'Review leak alongside the metrics it affects most, in the same view, for the same sessions.',
+                label: 'Cross-metric view',
+                desc: 'Review leak alongside flow limitation scores, AHI, and pressure to understand whether a high-leak night also had less reliable event data.',
               },
             ].map(({ label, desc }) => (
               <div key={label} className="rounded-xl border border-border/50 p-4">
@@ -515,10 +497,6 @@ export default function CPAPLeakRateExplainedPost() {
               a: 'ResMed myAir displays a mask seal rating derived from leak data. For the raw L/min figures, you need SD card analysis software: OSCAR (free, local) or AirwayLab (free, browser-based). Both read the same underlying data.',
             },
             {
-              q: 'How do I verify my OSCAR mask setting?',
-              a: 'In OSCAR, check that your mask model is correctly identified in the session settings. The vent flow curve calculation depends on accurate mask identification — an incorrect mask selection can affect leak and flow limitation figures.',
-            },
-            {
               q: 'What does it mean when my CPAP reports a leak rate of 0?',
               a: 'A reported unintentional leak of 0 L/min means the device detected no leak above the expected vent flow. This is normal for a well-fitting mask on a given night. If you see 0 L/min consistently across all nights, double-check that your device is reporting unintentional leak rather than a different column.',
             },
@@ -535,7 +513,7 @@ export default function CPAPLeakRateExplainedPost() {
         </div>
       </section>
 
-      {/* Bottom medical disclaimer */}
+      {/* Medical disclaimer */}
       <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex items-center gap-2.5">
           <Lightbulb className="h-4 w-4 text-amber-500" />
@@ -564,7 +542,7 @@ export default function CPAPLeakRateExplainedPost() {
           </p>
           <p>
             <Link
-              href="/blog/how-to-read-cpap-therapy-report"
+              href="/blog/how-to-read-cpap-data"
               className="text-primary hover:text-primary/80"
             >
               How to Read Your CPAP Data (And Why AHI Isn&apos;t the Whole Story)

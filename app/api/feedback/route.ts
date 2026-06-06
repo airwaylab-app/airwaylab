@@ -6,6 +6,7 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit'
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard'
 import { resultToResponse } from '@/lib/errors'
 import { submitFeedback } from '@/lib/services/feedback-service'
+import { trackSignalCount } from '@/lib/signal-tracker'
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 10 })
 
@@ -71,6 +72,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await submitFeedback(parsed.data)
+    if (parsed.data.type === 'bug') void trackSignalCount('feedback_bug', 'Bug Report')
+    void trackSignalCount('user_feedback', 'User Feedback')
     return resultToResponse(result)
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'feedback' } })

@@ -18,26 +18,50 @@ vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
 }));
 
+// Shared chainable mock — .single() returns tier (profile lookup) and
+// ai_insights_consent (R-B consent gate, read via service role).
+const mockSupabaseChain = {
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  single: vi.fn().mockResolvedValue({ data: { tier: 'supporter', ai_insights_consent: true } }),
+  maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+  insert: vi.fn().mockReturnThis(),
+  then: vi.fn().mockResolvedValue({ error: null }),
+};
+
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServer: vi.fn(() => ({
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { tier: 'supporter' } }),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-    }),
+    from: vi.fn(() => mockSupabaseChain),
     auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user' } }, error: null }) },
   })),
-  getSupabaseServiceRole: vi.fn(() => null),
+  // Consent gate requires a service-role client; provide one that grants consent.
+  getSupabaseServiceRole: vi.fn(() => ({
+    from: vi.fn(() => mockSupabaseChain),
+    rpc: vi.fn().mockResolvedValue({ data: null }),
+  })),
 }));
 
 vi.mock('@/lib/email/sequences', () => ({
-  cancelSequence: vi.fn(),
+  // Must resolve a promise — the route does cancelSequence(...).catch(...).
+  cancelSequence: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/discord-webhook', () => ({
-  sendAlert: vi.fn(),
-  COLORS: { amber: 0xf59e0b },
+  sendAlert: vi.fn().mockResolvedValue(undefined),
+  COLORS: { green: 0x10b981, amber: 0xf59e0b, red: 0xef4444, blue: 0x3b82f6, purple: 0x8b5cf6, teal: 0x14b8a6 },
+  _budget: { date: '', count: 0 },
+  routeAlert: vi.fn().mockResolvedValue(false),
+  sendOpsAlert: vi.fn().mockResolvedValue(false),
+  sendCriticalAlert: vi.fn().mockResolvedValue(false),
+  alertCredentialExpiry: vi.fn().mockResolvedValue(false),
+  alertStripePaymentFailed: vi.fn().mockResolvedValue(false),
+  alertSecurityIncident: vi.fn().mockResolvedValue(false),
+  formatMonitorEmbed: vi.fn().mockReturnValue({}),
+  formatRevenueEmbed: vi.fn().mockReturnValue({}),
+  formatUserSignalEmbed: vi.fn().mockReturnValue({}),
+  formatEmailAlertEmbed: vi.fn().mockReturnValue({}),
+  formatBroadcastEmbed: vi.fn().mockReturnValue({}),
+  formatGrowthEmbed: vi.fn().mockReturnValue({}),
 }));
 
 // Capture the constructor args passed to Anthropic

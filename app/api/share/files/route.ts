@@ -6,7 +6,7 @@ import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getUserRateLimitKey, getRateLimitKey } from '@/lib/rate-limit';
 
 const SHARED_FILES_BUCKET = 'shared-files';
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB per file
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB per file (ResMed BRP.edf can exceed 100 MB for full SD cards)
 const MAX_TOTAL_BYTES = 500 * 1024 * 1024; // 500 MB total per share
 const SIGNED_URL_TTL = 300; // 5 minutes
 
@@ -81,6 +81,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = PresignRequestSchema.safeParse(body);
     if (!parsed.success) {
+      const issues = parsed.error.issues;
+      Sentry.captureMessage('share/files presign validation failed', {
+        level: 'warning',
+        extra: { issues: issues.map((i) => ({ path: i.path.join('.'), message: i.message })) },
+        tags: { route: 'share-files-presign', action: 'validation' },
+      });
+      // Surface a specific, actionable message for oversized files
+      const oversized = issues.find((i) => i.code === 'too_big' && i.path.some((p) => p === 'fileSize'));
+      if (oversized) {
+        const limitMB = MAX_FILE_SIZE / (1024 * 1024);
+        return NextResponse.json(
+          { error: `One or more files exceed the ${limitMB} MB per-file size limit.` },
+          { status: 400 }
+        );
+      }
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
@@ -205,8 +220,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No files available for this share' }, { status: 404 });
     }
 
-    // Generate signed download URLs for each file
-    const filePaths = share.file_paths as string[];
+    // Generate signed download URLs for each file. Defense-in-depth: only sign
+    // paths under this share's own prefix, even if file_paths was tampered.
+    const sharePrefix = `${shareId}/`;
+    const filePaths = (share.file_paths as string[]).filter(
+      (p) => p.startsWith(sharePrefix) && isSafeFileName(p.slice(sharePrefix.length))
+    );
     const downloadUrls: { fileName: string; downloadUrl: string }[] = [];
 
     for (const storagePath of filePaths) {
@@ -281,6 +300,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { shareId, filePaths } = parsed.data;
+
+    // Every path must live under this share's own prefix, else finalising one
+    // share with another share's paths would let GET sign+leak those files (IDOR).
+    const sharePrefix = `${shareId}/`;
+    for (const p of filePaths) {
+      if (!p.startsWith(sharePrefix) || !isSafeFileName(p.slice(sharePrefix.length))) {
+        return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+      }
+    }
 
     // Verify share exists and belongs to this user
     const { data: share, error: shareError } = await serviceRole

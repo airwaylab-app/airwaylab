@@ -322,23 +322,32 @@ export function loadPersistedResults(): {
 }
 
 /**
+ * Merge two night lists by dateStr. `primary` wins on a date conflict (it
+ * holds the fresher / fuller version); `secondary` contributes any dates the
+ * primary lacks. Result is sorted most-recent-first.
+ *
+ * Used to keep a fresh upload AND the accumulated history visible together, so
+ * a second upload in one session does not appear to wipe earlier nights (#978).
+ */
+export function mergeNightsByDate(
+  primary: NightResult[],
+  secondary: NightResult[],
+): NightResult[] {
+  const map = new Map<string, NightResult>();
+  for (const n of secondary) map.set(n.dateStr, n);
+  for (const n of primary) map.set(n.dateStr, n); // primary overwrites on conflict
+  return Array.from(map.values()).sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+}
+
+/**
  * Incrementally persist nights by merging into existing cached data.
  * New nights replace existing ones by dateStr; unknown dates are appended.
  * Uses the same 4MB cap handling as persistResults().
  */
 export function persistNightsIncremental(nights: NightResult[]): PersistResult {
   const existing = loadPersistedResults();
-  const existingNights = existing?.nights ?? [];
   const therapyChangeDate = existing?.therapyChangeDate ?? null;
-
-  // Build map: existing first, incoming overwrites by dateStr
-  const map = new Map<string, NightResult>();
-  for (const n of existingNights) map.set(n.dateStr, n);
-  for (const n of nights) map.set(n.dateStr, n);
-
-  const merged = Array.from(map.values());
-  merged.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
-
+  const merged = mergeNightsByDate(nights, existing?.nights ?? []);
   return persistResults(merged, therapyChangeDate);
 }
 

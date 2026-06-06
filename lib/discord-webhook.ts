@@ -4,13 +4,20 @@
  * Sends messages to private admin channels via per-channel webhook URLs.
  * Separate from lib/discord.ts which handles community role management.
  *
- * Channels:
- *   #critical         — Payment failures, credential expiry <72h, security incidents
- *   #ops-alerts       — Sentry, monitor cron, GitHub, deploys
- *   #revenue          — Stripe payments, cancellations, tier changes
- *   #user-signals     — Feedback, contact forms, provider interest, deletions
- *   #growth           — Signups, data contributions, research milestones
- *   #platform-health  — Daily DB integrity checks, data audit results
+ * New 5-channel taxonomy (AIR-1841):
+ *   #critical          — Payment failures, credential expiry <72h, security incidents
+ *   #strategy-digest   — Subscriptions, feedback, provider interest
+ *   #user-support      — Bug-flagged feedback, contact form submissions
+ *   #platform-health   — Sentry spikes, deploys
+ *   #audit-log         — Account deletions
+ *
+ * Legacy channel system kept for backward compatibility:
+ *   #critical       — Also accessible via sendCriticalAlert() with email fallback
+ *   #ops-alerts     — Sentry, monitor cron, GitHub, deploys
+ *   #revenue        — Stripe payments, cancellations, tier changes
+ *   #user-signals   — Feedback, contact forms, provider interest, deletions
+ *   #growth         — Signups, data contributions, research milestones
+ *   #platform-health — Daily DB integrity checks, data audit results
  *
  * Fail-open: if a webhook URL is not configured or the request fails,
  * the caller continues without error.
@@ -18,10 +25,14 @@
  * Critical alerts (sendCriticalAlert / alertCredentialExpiry / alertSecurityIncident):
  *   Both Discord AND email are fired independently. Discord failure does not block
  *   the email attempt, and vice versa. Resend errors are logged to Sentry only.
+ *
+ * Rule: DB write must always happen in the caller BEFORE routeAlert() is called.
+ * A suppressed Discord push must never prevent the DB record.
  */
 
 import * as Sentry from '@sentry/nextjs'
 import { sendEmail } from '@/lib/email/send'
+import { z } from 'zod'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -40,7 +51,52 @@ interface DiscordEmbed {
   timestamp?: string
 }
 
+/** Legacy channel names (kept for backward compat; includes critical for sendCriticalAlert callers). */
 export type AlertChannel = 'critical' | 'ops' | 'revenue' | 'user-signals' | 'growth' | 'platform-health'
+
+/** New 5-channel names (AIR-1841 taxonomy). */
+export type NewAlertChannel =
+  | 'critical'
+  | 'strategy-digest'
+  | 'user-support'
+  | 'platform-health'
+  | 'audit-log'
+
+/**
+ * Discriminated union of all alert types in the AIR-1841 routing table.
+ * Callers pass one of these to routeAlert() instead of a raw channel name.
+ */
+export type AlertType =
+  // → #critical (immediate)
+  | 'stripe_payment_failed'
+  | 'credential_expiry_critical' // < 72h to expiry
+  | 'security_incident'
+  // → #strategy-digest
+  | 'subscription_created'
+  | 'subscription_cancelled'
+  | 'feedback_non_bug'
+  | 'provider_interest'
+  // → #user-support
+  | 'bug_feedback'
+  | 'contact_form'
+  // → #platform-health
+  | 'sentry_spike'
+  | 'deploy_to_prod'
+  | 'supported_device_extraction_failed' // a device we support produced an empty-settings diagnostic
+  // → #audit-log
+  | 'account_deletion'
+  // → weekly-digest accumulator (no live Discord push)
+  | 'unsupported_device_known'
+  | 'credential_expiry_routine' // > 14d to expiry
+  // → fully suppressed (DB write still required in caller)
+  | 'unsupported_device_unknown'
+  | 'vercel_deploy_success'
+  | 'ci_failure_feature_branch'
+
+type RoutingDecision =
+  | { action: 'send'; channel: NewAlertChannel }
+  | { action: 'weekly_digest' }
+  | { action: 'suppress' }
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -54,6 +110,7 @@ export const COLORS = {
   teal: 0x14b8a6,
 } as const
 
+/** Legacy channel → env var mapping (unchanged). */
 const CHANNEL_ENV_MAP: Record<AlertChannel, string> = {
   critical: 'DISCORD_WEBHOOK_CRITICAL',
   ops: 'DISCORD_OPS_WEBHOOK_URL',
@@ -65,10 +122,177 @@ const CHANNEL_ENV_MAP: Record<AlertChannel, string> = {
 
 const CRITICAL_OPS_EMAIL = 'd.voorhagen@gmail.com'
 
-// ── Core sender ──────────────────────────────────────────────
+/** New 5-channel → env var mapping (AIR-1841). */
+const NEW_CHANNEL_ENV_MAP: Record<NewAlertChannel, string> = {
+  'critical': 'DISCORD_WEBHOOK_CRITICAL',
+  'strategy-digest': 'DISCORD_WEBHOOK_STRATEGY_DIGEST',
+  'user-support': 'DISCORD_WEBHOOK_USER_SUPPORT',
+  'platform-health': 'DISCORD_WEBHOOK_PLATFORM_HEALTH',
+  'audit-log': 'DISCORD_WEBHOOK_AUDIT_LOG',
+}
+
+/** Authoritative routing table for all AlertType values. */
+const ALERT_ROUTING: Record<AlertType, RoutingDecision> = {
+  // #critical
+  stripe_payment_failed: { action: 'send', channel: 'critical' },
+  credential_expiry_critical: { action: 'send', channel: 'critical' },
+  security_incident: { action: 'send', channel: 'critical' },
+  // #strategy-digest
+  subscription_created: { action: 'send', channel: 'strategy-digest' },
+  subscription_cancelled: { action: 'send', channel: 'strategy-digest' },
+  feedback_non_bug: { action: 'send', channel: 'strategy-digest' },
+  provider_interest: { action: 'send', channel: 'strategy-digest' },
+  // #user-support
+  bug_feedback: { action: 'send', channel: 'user-support' },
+  contact_form: { action: 'send', channel: 'user-support' },
+  // #platform-health
+  sentry_spike: { action: 'send', channel: 'platform-health' },
+  deploy_to_prod: { action: 'send', channel: 'platform-health' },
+  supported_device_extraction_failed: { action: 'send', channel: 'platform-health' },
+  // #audit-log
+  account_deletion: { action: 'send', channel: 'audit-log' },
+  // weekly-digest accumulator — no live Discord push
+  unsupported_device_known: { action: 'weekly_digest' },
+  credential_expiry_routine: { action: 'weekly_digest' },
+  // suppressed — Discord push skipped; DB write must still occur in caller
+  unsupported_device_unknown: { action: 'suppress' },
+  vercel_deploy_success: { action: 'suppress' },
+  ci_failure_feature_branch: { action: 'suppress' },
+}
+
+// ── Env validation ───────────────────────────────────────────
+
+const webhookEnvSchema = z.object({
+  DISCORD_WEBHOOK_CRITICAL: z.string().url().optional(),
+  DISCORD_WEBHOOK_STRATEGY_DIGEST: z.string().url().optional(),
+  DISCORD_WEBHOOK_USER_SUPPORT: z.string().url().optional(),
+  DISCORD_WEBHOOK_PLATFORM_HEALTH: z.string().url().optional(),
+  DISCORD_WEBHOOK_AUDIT_LOG: z.string().url().optional(),
+})
+
+// Lazy validation — runs once on first routeAlert() call to avoid breaking
+// test-environment imports where env vars are intentionally absent.
+let _envsValidated = false
+function ensureEnvsValidated(): void {
+  if (_envsValidated) return
+  _envsValidated = true
+
+  const result = webhookEnvSchema.safeParse(process.env)
+  if (!result.success) {
+    console.error('[discord-webhook] new webhook env vars failed Zod validation', result.error.flatten())
+  }
+
+  if (!process.env.DISCORD_WEBHOOK_CRITICAL) {
+    console.error(
+      '[discord-webhook] DISCORD_WEBHOOK_CRITICAL is not configured — critical alerts (payment failures, credential expiry, security incidents) will fall back to DISCORD_WEBHOOK_URL or be dropped'
+    )
+  }
+}
+
+// ── Budget counter ───────────────────────────────────────────
+
+/** Channels counted toward the combined ≤10/day budget. */
+const BUDGET_CHANNELS = new Set<NewAlertChannel>(['critical', 'strategy-digest'])
+const DAILY_BUDGET_LIMIT = 10
+
+// Exported for test resets only — not part of the public API.
+export const _budget = { date: '', count: 0 }
+
+function incrementBudget(channel: NewAlertChannel): void {
+  if (!BUDGET_CHANNELS.has(channel)) return
+
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  if (_budget.date !== today) {
+    _budget.date = today
+    _budget.count = 0
+  }
+  _budget.count++
+
+  if (_budget.count > DAILY_BUDGET_LIMIT) {
+    // Observability only — suppression is a board decision, not automatic.
+    console.error('[discord-webhook] daily budget exceeded', {
+      channel,
+      date: today,
+      count: _budget.count,
+      limit: DAILY_BUDGET_LIMIT,
+    })
+  }
+}
+
+// ── Internal fetch helper ────────────────────────────────────
+
+async function postToWebhook(
+  url: string,
+  channelLabel: string,
+  content: string,
+  embeds?: DiscordEmbed[]
+): Promise<boolean> {
+  try {
+    const body: Record<string, unknown> = {}
+    if (content) body.content = content
+    if (embeds && embeds.length > 0) body.embeds = embeds
+
+    // 3s timeout — avoids keeping Vercel function budgets alive on slow Discord.
+    // Reducing from 10s fixed unhandled TimeoutError events (JAVASCRIPT-NEXTJS-56).
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(3_000),
+    })
+
+    if (!res.ok) {
+      console.error(`[discord-webhook] ${channelLabel} POST failed (${res.status})`)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    // Fail-open: Discord alerts are non-critical notifications. Log only; do not
+    // forward to Sentry because fire-and-forget callers would create misleading
+    // error attribution (the active request scope is unrelated to Discord health).
+    console.error(`[discord-webhook] ${channelLabel} send failed:`, err instanceof Error ? err.message : 'unknown')
+    return false
+  }
+}
+
+// ── New routing API (AIR-1841) ───────────────────────────────
 
 /**
- * Send a message to a Discord admin channel.
+ * Route an alert by type to the appropriate Discord channel.
+ *
+ * Suppressed and weekly-digest types return false without calling Discord.
+ * DB writes must happen in the caller BEFORE this function is invoked.
+ *
+ * Falls back to DISCORD_WEBHOOK_URL if the specific channel env var is absent.
+ */
+export async function routeAlert(
+  alertType: AlertType,
+  content: string,
+  embeds?: DiscordEmbed[]
+): Promise<boolean> {
+  ensureEnvsValidated()
+
+  const routing = ALERT_ROUTING[alertType]
+
+  if (routing.action === 'suppress' || routing.action === 'weekly_digest') {
+    return false
+  }
+
+  const { channel } = routing
+  incrementBudget(channel)
+
+  const envKey = NEW_CHANNEL_ENV_MAP[channel]
+  const url = process.env[envKey] ?? process.env.DISCORD_WEBHOOK_URL
+  if (!url) return false
+
+  return postToWebhook(url, channel, content, embeds)
+}
+
+// ── Legacy API (kept for backward compat) ────────────────────
+
+/**
+ * Send a message to a Discord admin channel by channel name.
  * Returns true if delivered, false if skipped or failed (never throws).
  */
 export async function sendAlert(
@@ -80,34 +304,7 @@ export async function sendAlert(
   const url = process.env[envKey]
   if (!url) return false
 
-  try {
-    const body: Record<string, unknown> = {}
-    if (content) body.content = content
-    if (embeds && embeds.length > 0) body.embeds = embeds
-
-    // 3s is ample for Discord; the prior 10s timeout kept void-called
-    // sendAlert() Promises alive until the Vercel function budget expired,
-    // producing unhandled TimeoutError events (JAVASCRIPT-NEXTJS-56).
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(3_000),
-    })
-
-    if (!res.ok) {
-      console.error(`[discord-webhook] ${channel} POST failed (${res.status})`)
-      return false
-    }
-
-    return true
-  } catch (err) {
-    // Fail-open: Discord alerts are non-critical notifications. Log only; do not
-    // forward to Sentry because fire-and-forget callers would create misleading
-    // error attribution (the active request scope is unrelated to Discord health).
-    console.error(`[discord-webhook] ${channel} send failed:`, err instanceof Error ? err.message : 'unknown')
-    return false
-  }
+  return postToWebhook(url, channel, content, embeds)
 }
 
 /** Backwards-compatible alias for #ops-alerts. */
@@ -308,6 +505,7 @@ export function formatUserSignalEmbed(opts: {
   message?: string
   email?: string
   name?: string
+  feedbackId?: string
 }): DiscordEmbed {
   const titles: Record<string, string> = {
     feedback: ':speech_balloon: User Feedback',
@@ -329,10 +527,12 @@ export function formatUserSignalEmbed(opts: {
   if (opts.category) fields.push({ name: 'Category', value: opts.category, inline: true })
   if (opts.email) fields.push({ name: 'Email', value: opts.email, inline: true })
   if (opts.name) fields.push({ name: 'Name', value: opts.name, inline: true })
+  if (opts.feedbackId) fields.push({ name: 'Ref', value: opts.feedbackId, inline: true })
 
   return {
     title: titles[opts.type] ?? opts.type,
-    description: opts.message ? opts.message.slice(0, 500) : undefined,
+    // #user-signals is admin-only, so carry the full report (Discord embed cap is 4096).
+    description: opts.message ? opts.message.slice(0, 4000) : undefined,
     color: colors[opts.type] ?? COLORS.blue,
     fields,
     footer: { text: 'airwaylab.app' },

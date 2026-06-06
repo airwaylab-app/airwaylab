@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const detail = issue ? `${issue.path.join('.')}: ${issue.message}` : 'unknown';
+      console.error('[files/presign] Validation error:', detail, { userId: user.id });
+      captureApiError(new Error(`Presign validation: ${detail}`), { route: 'files/presign', context: 'validation', userId: user.id });
       return NextResponse.json({ error: `Invalid request data: ${detail}` }, { status: 400 });
     }
 

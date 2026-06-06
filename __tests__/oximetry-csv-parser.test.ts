@@ -5,6 +5,7 @@ import {
   parseO2RingLine,
   parseOximetryCSV,
 } from '@/lib/parsers/oximetry-csv-parser';
+import { computeOximetry, hasUsableOximetry } from '@/lib/analyzers/oximetry-engine';
 
 // ── Format detection ──────────────────────────────────────────
 
@@ -234,5 +235,82 @@ describe('parseOximetryCSV — Checkme format regression', () => {
     const result = parseOximetryCSV(csv);
     // 11:45 PM → hour >= 18 → nightDate = startTime → 2025-01-15
     expect(result.dateStr).toBe('2025-01-15');
+  });
+});
+
+// ── Regression: silent-failure path (issue #988) ──────────────
+// A real-format CSV can parse cleanly yet produce no usable analysis. The bug
+// was that this still showed "Oximetry data added" with every stat 0.0. These
+// lock the boundary the worker now gates on (parse OK → computeOximetry →
+// hasUsableOximetry) and confirm a broken file throws so the worker can surface it.
+
+describe('parseOximetryCSV → computeOximetry — silent-failure regression', () => {
+  // ViHealth/Checkme 1s export, matching the format in the user report.
+  function makeCheckme1sCSV(sampleCount: number): string {
+    const header = 'Time, Oxygen Level, Pulse Rate, Motion, O2 Reminder, PR Reminder';
+    const lines = [header];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const base = new Date(2026, 5, 3, 22, 50, 7); // Jun 3 2026 22:50:07
+    for (let i = 0; i < sampleCount; i++) {
+      const t = new Date(base.getTime() + i * 1000); // 1s sampling (O2Ring S)
+      const hh = String(t.getHours()).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      const ss = String(t.getSeconds()).padStart(2, '0');
+      const mon = months[t.getMonth()];
+      const day = String(t.getDate()).padStart(2, '0');
+      lines.push(`${hh}:${mm}:${ss} ${mon} ${day} ${t.getFullYear()}, 96, 89, 0, 0, 0`);
+    }
+    return lines.join('\n');
+  }
+
+  it('parses a short recording but yields NO usable oximetry', () => {
+    // 90 seconds of data → wiped by the 15min+5min buffer trim.
+    const csv = makeCheckme1sCSV(90);
+    const parsed = parseOximetryCSV(csv);
+
+    // Parse genuinely succeeds — this is the trap.
+    expect(parsed.samples.length).toBe(90);
+
+    const result = computeOximetry(parsed.samples, parsed.intervalSeconds);
+    expect(hasUsableOximetry(result)).toBe(false);
+    expect(result.spo2Mean).toBe(0);
+  });
+
+  it('throws on a header-only file so the worker can surface it', () => {
+    const csv = 'Time, Oxygen Level, Pulse Rate, Motion, O2 Reminder, PR Reminder';
+    expect(() => parseOximetryCSV(csv)).toThrow();
+  });
+
+  // O2 Insight Pro export: quoted 12h timestamp, unpadded day, trailing comma,
+  // 1s sampling — matching the real reported file structure.
+  function makeO2Ring1sCSV(sampleCount: number): string {
+    const header = 'Time,SpO2(%),Pulse Rate(bpm),Motion,SpO2 Reminder,PR Reminder,';
+    const lines = [header];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const base = new Date(2026, 5, 4, 22, 48, 53); // Jun 4 2026 22:48:53
+    for (let i = 0; i < sampleCount; i++) {
+      const t = new Date(base.getTime() + i * 1000);
+      const hours = t.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      const hh = String(h12).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      const ss = String(t.getSeconds()).padStart(2, '0');
+      lines.push(`"${hh}:${mm}:${ss}${ampm} ${months[t.getMonth()]} ${t.getDate()}, ${t.getFullYear()}",96,89,0,0,0,`);
+    }
+    return lines.join('\n');
+  }
+
+  it('full-night file in BOTH real formats yields usable oximetry (the reported files reproduce green)', () => {
+    // ~90 min at 1s sampling survives the 15min+5min buffer trim with thousands of samples.
+    const checkme = parseOximetryCSV(makeCheckme1sCSV(90 * 60));
+    expect(checkme.samples.length).toBe(90 * 60);
+    expect(hasUsableOximetry(computeOximetry(checkme.samples, checkme.intervalSeconds))).toBe(true);
+
+    const o2ring = parseOximetryCSV(makeO2Ring1sCSV(90 * 60));
+    expect(o2ring.samples.length).toBe(90 * 60);
+    expect(hasUsableOximetry(computeOximetry(o2ring.samples, o2ring.intervalSeconds))).toBe(true);
   });
 });

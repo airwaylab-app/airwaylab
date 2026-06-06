@@ -90,7 +90,7 @@ airwaylab/
 ├── hooks/                  → Custom React hooks (client-side only)
 ├── __tests__/              → Vitest test files
 │   ├── setup.ts            → Test setup (@testing-library/jest-dom)
-│   └── *.test.ts           → 16 test files covering engines, exports, insights, etc.
+│   └── *.test.ts           → Vitest test files covering engines, exports, insights, etc.
 ├── supabase/
 │   └── migrations/         → Database migrations (append-only, never edit existing)
 │       └── NEXT_MIGRATION  → Next available migration number (increment in same commit as new migration)
@@ -138,9 +138,9 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 1. **Privacy-first with opt-in sharing.** Core analysis is browser-only. Server features require explicit consent. This is a non-negotiable architectural constraint, not a preference.
 
-2. **Two-tier architecture.** Free tier (Tier 1) is complete — all engines, insights, exports, persistence. Premium tier (Tier 2) adds AI-powered analysis via Claude Haiku behind the `ailab-beta-2026` feature gate. Premium funds development; it does not gate essential analysis.
+2. **Two-tier architecture.** Free tier (Tier 1) is complete — all engines, insights, exports, persistence. Premium tier (Tier 2) adds AI-powered analysis behind the `ailab-beta-2026` feature gate. Premium funds development; it does not gate essential analysis.
 
-3. **Haiku over Sonnet/Opus.** Cost constraint for a side project with a 2hr/week maintenance budget. Haiku is sufficient for structured sleep data analysis. Do not upgrade model without discussion.
+3. **Tiered models, cost-constrained.** Community insights use Claude Haiku; premium uses Claude Sonnet 4.6 for higher-quality analysis (`app/api/ai-insights/route.ts`). Cost constraint for a side project with a 2hr/week maintenance budget. Do not change models without discussion.
 
 4. **localStorage persistence.** Results persist for 30 days under `airwaylab_results` key with a 4MB cap. Bulk data (per-breath arrays) is stripped before serialisation. Date objects are restored on load. Migration guards handle schema evolution (e.g., `estimatedArousalIndex` added in v0.6.0).
 
@@ -185,7 +185,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 `spec → build → test → review → verify (human) → merge → post-deploy check`
 
-Full process details are in `prompts/spec.md` and `prompts/build.md`. This section defines the rules; the prompts define the how.
+Full process details live in the internal pipeline prompts (`prompts/spec.md`, `prompts/build.md`), kept local and out of this public repo. This section defines the rules; the prompts define the how.
 
 ### Scope Gates
 
@@ -226,6 +226,14 @@ Remote Claude sessions (launched via `claude --dangerously-skip-permissions` or 
 2. **Revert first, investigate second.** `git revert <commit> && git push`.
 3. **Hotfix via light spec.** Review + all 5 checks + preview verification. No shortcuts.
 4. **Post-incident note** on the PR: what broke, why, what the spec/review missed.
+
+**Database rollback is different, code revert alone is not enough.**
+
+- **Migrations are additive and forward-only.** Never write a destructive down-migration to roll back. If a migration is wrong, the fix is a new forward migration, not editing or deleting the applied one. Merged `supabase/migrations/` files are immutable.
+- **Code vs schema order.** Because migrations are additive-first (schema lands before the code that needs it), a bad CODE deploy reverts cleanly with `git revert` while the harmless extra schema stays. A bad MIGRATION needs a forward corrective migration, applied and real-path-verified via the `awl-migration` skill before the corrective code merges.
+- **Destructive change (drop/rename/backfill).** Stop and escalate. Not revertible by `git revert`. Recover from a backup or point-in-time restore (verify which is enabled for the project) against a fresh branch DB, verify, then cut over. Never run a destructive statement on prod without a tested restore path.
+- **Verify the real path, not HTTP 200.** Confirm recovery through the real consumer path (a real event reaching terminal good state), per `scripts/awl-smoke.sh --confirmed` and the `verify-real-path-post-deploy` lesson.
+- **Ownership and rehearsal.** Demian owns the rollback decision. Rehearse the restore-to-branch path once on a non-incident day so it is not first attempted under fire.
 
 ### Post-Deploy Verification
 

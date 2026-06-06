@@ -2,9 +2,150 @@ import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import Stripe from 'stripe';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRole } from '@/lib/supabase/server';
 import { sendAlert, COLORS } from '@/lib/discord-webhook';
 import { syncRole, isDiscordConfigured } from '@/lib/discord';
+import { runStripeJob, STALE_PROCESSING_MS, MAX_ATTEMPTS } from '@/app/api/webhooks/stripe/route';
+
+/** Cap re-drives per run so one bad event can't exhaust the cron's runtime. */
+const REDRIVE_BATCH_LIMIT = 25;
+
+interface RedriveResult {
+  picked: number;
+  recovered: number;
+  stillFailed: number;
+  /** Rows that were stuck `pending` past the stale window (G3 health signal). */
+  strandedPending: number;
+}
+
+/**
+ * ST1 re-drive: the webhook returns 200 to Stripe BEFORE processing, so Stripe
+ * never retries a failed event on its own. This step is what actually retries.
+ *
+ * It scans stripe_events for rows the webhook could not complete:
+ *   - status = 'failed'      (processing threw; row was kept, not deleted)
+ *   - status = 'pending'     AND updated_at older than STALE_PROCESSING_MS
+ *                            (G1: stranded — the webhook's inline claim never ran,
+ *                            e.g. the claim itself errored before flipping status.
+ *                            A fresh `pending` row is mid-flight and left alone.)
+ *   - status = 'processing'  AND updated_at older than STALE_PROCESSING_MS
+ *                            (the worker died mid-flight)
+ * and EXCLUDES rows with attempts >= MAX_ATTEMPTS (HIGH 3): a poison event that
+ * always throws is parked in the terminal `dead` state by runStripeJob and must
+ * never re-drive again. `dead` rows are also excluded because they match neither
+ * `failed` nor `processing`.
+ *
+ * For each, it refetches the full event from Stripe (we only persist the id +
+ * type, not the payload) and re-runs runStripeJob, whose ATOMIC claim flips the
+ * row pending|failed|stale-processing -> processing and tells us if THIS run won
+ * it. processStripeEvent is idempotent (upserts on stripe_subscription_id, tier
+ * writes are last-write-wins) and its non-idempotent side effects only fire when
+ * the claim is won, so reprocessing a partially-applied event is safe. A
+ * successful re-drive flips the row to 'done'.
+ */
+async function redriveStripeEvents(
+  stripe: Stripe | null,
+  supabase: SupabaseClient
+): Promise<RedriveResult> {
+  const result: RedriveResult = { picked: 0, recovered: 0, stillFailed: 0, strandedPending: 0 };
+  if (!stripe) return result;
+
+  const staleCutoff = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+
+  // failed rows: always eligible. stale pending + stale processing rows: only
+  // past the cutoff (G1 — a `pending` row older than the stale window means the
+  // webhook's inline claim never completed; a fresh `pending` row is mid-flight
+  // and left alone). attempts >= MAX_ATTEMPTS are excluded so a poison event
+  // cannot re-drive forever (it has been parked `dead` with its own ops alert).
+  const { data: rows, error: queryErr } = await supabase
+    .from('stripe_events')
+    .select('event_id, event_type, status, attempts, updated_at')
+    .lt('attempts', MAX_ATTEMPTS)
+    .or(`status.eq.failed,and(status.eq.pending,updated_at.lt.${staleCutoff}),and(status.eq.processing,updated_at.lt.${staleCutoff})`)
+    .order('updated_at', { ascending: true })
+    .limit(REDRIVE_BATCH_LIMIT);
+
+  if (queryErr) {
+    console.error('[subscription-drift] re-drive query failed:', queryErr);
+    Sentry.captureException(queryErr, {
+      tags: { route: 'cron-subscription-drift', action: 'redrive-query' },
+    });
+    return result;
+  }
+
+  for (const row of rows ?? []) {
+    result.picked++;
+    if ((row as { status?: string }).status === 'pending') result.strandedPending++;
+    const attemptsBefore = (row as { attempts?: number }).attempts ?? 0;
+    try {
+      // Refetch the event payload from Stripe — we only stored id + type.
+      const event = await stripe.events.retrieve((row as { event_id: string }).event_id);
+      // runStripeJob re-applies the state machine and marks done|failed itself.
+      await runStripeJob(stripe, supabase, event, attemptsBefore);
+
+      // Confirm the terminal state to bucket the run for the ops alert.
+      const { data: after } = await supabase
+        .from('stripe_events')
+        .select('status')
+        .eq('event_id', (row as { event_id: string }).event_id)
+        .maybeSingle();
+      if ((after as { status?: string } | null)?.status === 'done') result.recovered++;
+      else result.stillFailed++;
+    } catch (err) {
+      // retrieve() itself failed (e.g. event aged out of Stripe, network).
+      // runStripeJob never ran, so the row keeps its prior status AND its
+      // attempts were not incremented by the claim — do it here. Park as `dead`
+      // at the cap so a permanently-unretrievable event stops re-driving.
+      result.stillFailed++;
+      const attemptsNow = attemptsBefore + 1;
+      const terminal = attemptsNow >= MAX_ATTEMPTS;
+      console.error(
+        `[subscription-drift] re-drive failed for ${(row as { event_id: string }).event_id}:`,
+        err
+      );
+      Sentry.captureException(err, {
+        tags: { route: 'cron-subscription-drift', action: 'redrive-event' },
+        extra: { event_id: (row as { event_id: string }).event_id },
+      });
+      // Guard: never clobber a row another worker already completed. retrieve()
+      // failed before runStripeJob's atomic claim, so this caller does not own the
+      // row — if a concurrent run (or the webhook) drove it to `done` meanwhile,
+      // leave it. `.neq('status','done')` is a plain filter, safe on a mutation
+      // (an `or` filter is NOT — see migration 063 / claim_stripe_event).
+      await supabase
+        .from('stripe_events')
+        .update({
+          status: terminal ? 'dead' : 'failed',
+          last_error: err instanceof Error ? err.message : String(err),
+          attempts: attemptsNow,
+        })
+        .eq('event_id', (row as { event_id: string }).event_id)
+        .neq('status', 'done');
+      if (terminal) {
+        Sentry.captureMessage('Stripe event hit max attempts — parked as dead', {
+          level: 'error',
+          fingerprint: ['stripe-event-dead', (row as { event_id: string }).event_id],
+          tags: { route: 'cron-subscription-drift', action: 'dead-letter' },
+          extra: { event_id: (row as { event_id: string }).event_id, attempts: attemptsNow },
+        });
+        await sendAlert('ops', '', [{
+          title: ':skull: Stripe event parked (dead-letter)',
+          description: `Event \`${(row as { event_id: string }).event_id}\` (${(row as { event_type?: string }).event_type ?? 'unknown'}) could not be retrieved/processed after ${attemptsNow} attempts and will no longer be re-driven. Manual review required.`,
+          color: COLORS.red,
+          fields: [
+            { name: 'Event ID', value: (row as { event_id: string }).event_id, inline: true },
+            { name: 'Attempts', value: String(attemptsNow), inline: true },
+            { name: 'Last error', value: (err instanceof Error ? err.message : String(err)).slice(0, 1000) },
+          ],
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+    }
+  }
+
+  return result;
+}
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let _stripe: Stripe | null = null;
@@ -437,15 +578,46 @@ export async function GET(request: NextRequest) {
       (communityWithSubs?.length ?? 0) +
       (webhookBlindProfiles?.length ?? 0);
 
-    // 6. Send Discord ops alert if any drift was found
-    if (mismatches.length > 0) {
+    // 5b. Re-drive Stripe webhook jobs the route could not complete (ST1).
+    // This is the real retry path: Stripe got 200 before processing, so failed
+    // events are only recovered here.
+    const redrive = await redriveStripeEvents(getStripe(), supabase);
+
+    // 5c. G3: rows stranded `pending` past the stale window mean the webhook's
+    // inline atomic claim is not completing (it should within seconds of insert).
+    // The re-drive sweeps them, but the fact they stranded is a regression signal
+    // — alert with its own fingerprint, independent of tier-drift.
+    if (redrive.strandedPending > 0) {
+      Sentry.captureMessage(`stripe stranded pending: ${redrive.strandedPending}`, {
+        level: 'error',
+        fingerprint: ['stripe-stranded-pending'],
+        tags: { route: 'cron-subscription-drift', action: 'stranded-pending' },
+        extra: { strandedPending: redrive.strandedPending, recovered: redrive.recovered },
+      });
+      await sendAlert('ops', '', [
+        {
+          title: ':rotating_light: Stripe events stranded in pending',
+          description: `${redrive.strandedPending} stripe_events row(s) were stuck \`pending\` past the stale window — the webhook's inline claim is not completing. The re-drive swept them (${redrive.recovered} recovered this run). Investigate the webhook claim path.`,
+          color: COLORS.red,
+          fields: [
+            { name: 'Stranded pending', value: String(redrive.strandedPending), inline: true },
+            { name: 'Recovered this run', value: String(redrive.recovered), inline: true },
+          ],
+          footer: { text: 'subscription-drift cron' },
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+
+    // 6. Send Discord ops alert if any drift OR webhook re-drive activity occurred
+    if (mismatches.length > 0 || redrive.picked > 0) {
       const downgradeMissed = mismatches.filter((m) => m.drift_type === 'downgrade_missed').length;
       const upgradeMissed = mismatches.filter((m) => m.drift_type === 'upgrade_missed').length;
 
       await sendAlert('ops', '', [
         {
           title: ':warning: Subscription Tier Drift Detected',
-          description: `Found ${mismatches.length} profile(s) where tier does not match subscription status. ${fixed} auto-fixed.`,
+          description: `Found ${mismatches.length} profile(s) where tier does not match subscription status. ${fixed} auto-fixed. Re-drove ${redrive.picked} webhook job(s), ${redrive.recovered} recovered.`,
           color: COLORS.amber,
           fields: [
             { name: 'Checked', value: String(checked), inline: true },
@@ -455,6 +627,9 @@ export async function GET(request: NextRequest) {
             { name: 'Upgrade missed', value: String(upgradeMissed), inline: true },
             { name: 'Webhook never ran (manual review)', value: String(webhookNeverRanCount), inline: true },
             { name: 'Stripe auto-recovered', value: String(stripeRecovered), inline: true },
+            { name: 'Webhook jobs re-driven', value: String(redrive.picked), inline: true },
+            { name: 'Webhook jobs recovered', value: String(redrive.recovered), inline: true },
+            { name: 'Webhook jobs still failed', value: String(redrive.stillFailed), inline: true },
           ],
           footer: { text: 'subscription-drift cron' },
           timestamp: new Date().toISOString(),
@@ -469,7 +644,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.error(
-      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, stripe_recovered=${stripeRecovered}`
+      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, stripe_recovered=${stripeRecovered}, redrive_picked=${redrive.picked}, redrive_recovered=${redrive.recovered}, redrive_still_failed=${redrive.stillFailed}, redrive_stranded_pending=${redrive.strandedPending}`
     );
 
     return NextResponse.json({
@@ -479,6 +654,10 @@ export async function GET(request: NextRequest) {
       fixed,
       webhook_never_ran: webhookNeverRanCount,
       stripe_recovered: stripeRecovered,
+      redrive_picked: redrive.picked,
+      redrive_recovered: redrive.recovered,
+      redrive_still_failed: redrive.stillFailed,
+      redrive_stranded_pending: redrive.strandedPending,
     });
   } catch (err) {
     console.error('[subscription-drift] Cron failed:', err);

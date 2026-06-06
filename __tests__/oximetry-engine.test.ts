@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { computeOximetry } from '@/lib/analyzers/oximetry-engine';
+import {
+  computeOximetry,
+  hasUsableOximetry,
+  MIN_USABLE_OXIMETRY_SAMPLES,
+} from '@/lib/analyzers/oximetry-engine';
 import type { OximetrySample } from '@/lib/parsers/oximetry-csv-parser';
 
 // Helper: generate normal SpO2/HR samples over a period
@@ -127,6 +131,60 @@ describe('Oximetry Engine', () => {
       expect(result.tBelow90).toBeLessThanOrEqual(100);
       expect(result.tBelow94).toBeGreaterThanOrEqual(0);
       expect(result.tBelow94).toBeLessThanOrEqual(100);
+    });
+  });
+
+  // Regression guard for the silent-failure bug: a CSV that parses but yields
+  // too little usable data collapses to an all-zero emptyResults() object. That
+  // object is truthy, so the old `!!night.oximetry` gate showed "Oximetry data
+  // added" with every stat 0.0. hasUsableOximetry() must reject it.
+  describe('hasUsableOximetry — silent-failure guard', () => {
+    it('threshold mirrors the engine guard (60)', () => {
+      expect(MIN_USABLE_OXIMETRY_SAMPLES).toBe(60);
+    });
+
+    it('rejects null / undefined', () => {
+      expect(hasUsableOximetry(null)).toBe(false);
+      expect(hasUsableOximetry(undefined)).toBe(false);
+    });
+
+    it('rejects the all-zero result from an insufficient recording', () => {
+      // 1 minute → wiped out by the 15min+5min buffer trim → emptyResults()
+      const result = computeOximetry(makeNormalSamples(1));
+
+      // The object is truthy (the trap the old gate fell into) ...
+      expect(result).toBeTruthy();
+      expect(result.retainedSamples).toBeLessThan(MIN_USABLE_OXIMETRY_SAMPLES);
+      expect(result.spo2Mean).toBe(0);
+      // ... but it must NOT be treated as usable oximetry.
+      expect(hasUsableOximetry(result)).toBe(false);
+    });
+
+    it('accepts a full night with real metrics', () => {
+      const result = computeOximetry(makeNormalSamples(120));
+
+      expect(result.retainedSamples).toBeGreaterThanOrEqual(MIN_USABLE_OXIMETRY_SAMPLES);
+      expect(result.spo2Mean).toBeGreaterThan(0);
+      expect(hasUsableOximetry(result)).toBe(true);
+    });
+
+    it('judges an empty/placeholder SA2 (all-invalid samples) as not usable', () => {
+      // parseSA2 emits spo2=-1, valid=false for out-of-range placeholder data.
+      // This is the empty-SA2 signature that was masking the real uploaded CSV
+      // (#988): a full night of these still has 0 retained samples, so a usable
+      // uploaded CSV must win over it.
+      const start = new Date('2026-06-06T22:00:00Z');
+      const emptySA2: OximetrySample[] = Array.from({ length: 5000 }, (_, i) => ({
+        time: new Date(start.getTime() + i * 1000),
+        spo2: -1,
+        hr: -1,
+        motion: 0,
+        valid: false,
+      }));
+
+      const result = computeOximetry(emptySA2, 1);
+      expect(result.retainedSamples).toBe(0);
+      expect(hasUsableOximetry(result)).toBe(false);
     });
   });
 });

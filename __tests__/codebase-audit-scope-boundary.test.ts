@@ -142,15 +142,19 @@ describe('Rate limit tightening', () => {
 // ── Item 5: Stripe webhook atomicity ────────────────────────────
 
 describe('Stripe webhook transaction atomicity', () => {
-  it('outer catch deletes idempotency row before returning 500', () => {
+  it('keeps the idempotency row on failure and re-drives it (ST1 — never deletes)', () => {
     const content = fs.readFileSync(
       path.resolve(process.cwd(), 'app/api/webhooks/stripe/route.ts'),
       'utf-8'
     );
 
-    // The catch block should delete from stripe_events before returning 500
-    // Look for the compensating delete pattern
-    expect(content).toMatch(/\.from\('stripe_events'\)\s*\.delete\(\)/);
+    // ST1 replaced the old compensating-delete with a durable job-state record:
+    // the row is kept and marked failed/dead so the subscription-drift cron can
+    // re-drive it (Stripe already got 200 and will not retry on its own).
+    // Deleting the row would silently drop the billing event — it must NOT happen.
+    expect(content).not.toMatch(/\.from\('stripe_events'\)\s*\.delete\(\)/);
+    // The failure path marks the row failed (or dead at the attempt cap).
+    expect(content).toMatch(/status:\s*terminal\s*\?\s*'dead'\s*:\s*'failed'/);
     expect(content).toContain("eq('event_id', event.id)");
   });
 

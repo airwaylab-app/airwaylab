@@ -394,25 +394,27 @@ describe('POST /api/files/confirm', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns 404 and cleans up when file not in storage', async () => {
+  it('returns 503 without deleting metadata when file not in storage after all retries', async () => {
     setupAuthenticatedUser();
+    const deleteMock = vi.fn(() => chain);
     const chain = createChain({
       data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
       error: null,
     });
-    // delete().eq() for cleanup
-    chain.delete = vi.fn(() => chain);
+    chain.delete = deleteMock;
     mockFrom.mockReturnValue(chain);
 
-    // Storage list returns empty (file not in storage)
+    // Storage list consistently returns empty (propagation not yet complete)
     mockStorageFrom.mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [], error: null }),
     });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
     const body = await res.json();
-    expect(body.error).toContain('not found in storage');
+    expect(body.error).toContain('not yet visible');
+    // Metadata must NOT be deleted — stale orphan cleanup in presign handles this
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it('confirms upload when file exists in storage', async () => {
@@ -427,6 +429,72 @@ describe('POST /api/files/confirm', () => {
     // Storage list returns the file
     mockStorageFrom.mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [{ name: 'BRP.edf' }], error: null }),
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.confirmed).toBe(true);
+  });
+
+  it('rejects with 413 and cleans up when stored object exceeds declared size', async () => {
+    setupAuthenticatedUser();
+    const { captureApiError } = await import('@/lib/sentry-utils');
+    const deleteMock = vi.fn(() => chain);
+    const chain = createChain({
+      data: {
+        id: validBody.fileId,
+        storage_path: 'user-123/2026-01-01/BRP.edf',
+        user_id: 'user-123',
+        file_size: 1024,
+      },
+      error: null,
+    });
+    chain.delete = deleteMock;
+    mockFrom.mockReturnValue(chain);
+
+    const removeMock = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockStorageFrom.mockReturnValue({
+      // Actual object is far larger than the declared 1024 bytes
+      list: vi.fn().mockResolvedValue({
+        data: [{ name: 'BRP.edf', metadata: { size: 200 * 1024 * 1024 } }],
+        error: null,
+      }),
+      remove: removeMock,
+    });
+
+    const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toContain('larger than declared');
+    // Oversized object and metadata row must both be removed
+    expect(removeMock).toHaveBeenCalledWith(['user-123/2026-01-01/BRP.edf']);
+    expect(deleteMock).toHaveBeenCalled();
+    expect(captureApiError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ context: 'size_mismatch', fileId: validBody.fileId })
+    );
+  });
+
+  it('confirms upload when stored object is within declared size', async () => {
+    setupAuthenticatedUser();
+    const chain = createChain({
+      data: {
+        id: validBody.fileId,
+        storage_path: 'user-123/2026-01-01/BRP.edf',
+        user_id: 'user-123',
+        file_size: 50 * 1024 * 1024,
+      },
+      error: null,
+    });
+    chain.update = vi.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({
+        data: [{ name: 'BRP.edf', metadata: { size: 1024 } }],
+        error: null,
+      }),
     });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
@@ -468,7 +536,6 @@ describe('POST /api/files/confirm', () => {
       data: { id: validBody.fileId, storage_path: 'user-123/2026-01-01/BRP.edf', user_id: 'user-123' },
       error: null,
     });
-    chain.delete = vi.fn(() => chain);
     mockFrom.mockReturnValue(chain);
 
     mockStorageFrom.mockReturnValue({
@@ -476,7 +543,7 @@ describe('POST /api/files/confirm', () => {
     });
 
     const res = await callConfirm(makePostRequest('/api/files/confirm', validBody));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
     expect(captureApiError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ context: 'storage_list_empty', fileId: validBody.fileId })

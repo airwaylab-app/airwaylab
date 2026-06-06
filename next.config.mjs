@@ -89,11 +89,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.plausible.io https://plausible.io",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://eu-assets.i.posthog.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://cdn.plausible.io https://plausible.io https://checkout.stripe.com https://api.stripe.com https://*.ingest.de.sentry.io",
+              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://checkout.stripe.com https://api.stripe.com https://*.ingest.de.sentry.io https://eu.i.posthog.com https://eu-assets.i.posthog.com",
               "frame-src https://checkout.stripe.com https://js.stripe.com",
               "worker-src 'self' blob:",
             ].join('; '),
@@ -108,6 +108,8 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
+  // EU-hosted org — source map uploads must target de.sentry.io, not sentry.io
+  sentryUrl: 'https://de.sentry.io/',
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
 

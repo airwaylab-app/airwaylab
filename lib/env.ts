@@ -9,10 +9,6 @@
 
 // ─── Client (NEXT_PUBLIC_*) ──────────────────────────────────────────
 const env = {
-  /** Plausible Analytics domain (omit to disable analytics) */
-  NEXT_PUBLIC_PLAUSIBLE_DOMAIN:
-    process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN ?? undefined,
-
   /** URL for the AI Insights API route */
   NEXT_PUBLIC_AI_INSIGHTS_URL:
     process.env.NEXT_PUBLIC_AI_INSIGHTS_URL ?? undefined,

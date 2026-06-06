@@ -7,6 +7,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { getSupabaseServiceRole } from '@/lib/supabase/server';
 
 /**
  * Validate the `next` redirect parameter to prevent open redirect attacks.
@@ -96,6 +97,46 @@ export async function GET(request: NextRequest) {
       level: 'warning',
       tags: { checkpoint: 'auth_ghost_session', route: 'auth-callback' },
     });
+  }
+
+  // Fallback: ensure a profile row exists even if the DB trigger failed.
+  // The trigger (handle_new_user) is the primary path; this is the safety net
+  // for PKCE cross-context signups, transient DB errors, or trigger misfire.
+  // Uses service role to bypass RLS.
+  //
+  // CONSENT GUARD: storage_consent is set ONLY when this insert creates a
+  // brand-new profile row. `ignoreDuplicates: true` compiles to
+  // `INSERT ... ON CONFLICT DO NOTHING`, so for an EXISTING profile (e.g. a
+  // returning user re-authenticating) this is a no-op and the stored
+  // storage_consent / storage_consent_at are left untouched. We never silently
+  // (re-)grant consent on re-auth. The `true` here only mirrors the trigger's
+  // signup auto-grant (migration 056 / 027) for the genuine new-row case.
+  // DO NOT switch to `ignoreDuplicates: false` (merge) — that would overwrite
+  // an existing user's revoked consent back to true on every login.
+  if (user) {
+    const adminClient = getSupabaseServiceRole();
+    if (adminClient) {
+      const { error: upsertError } = await adminClient
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? '',
+            // Insert-only (see CONSENT GUARD above): never reached for existing rows.
+            storage_consent: true,
+            storage_consent_at: new Date().toISOString(),
+          },
+          { onConflict: 'id', ignoreDuplicates: true }
+        );
+      if (upsertError) {
+        console.error('[auth/callback] Profile upsert fallback failed:', upsertError.message);
+        Sentry.captureMessage('Auth callback profile upsert fallback failed', {
+          level: 'warning',
+          tags: { route: 'auth-callback', step: 'profile-fallback' },
+          extra: { userId: user.id },
+        });
+      }
+    }
   }
 
   // Detect new signups (account created within the last 60 seconds)

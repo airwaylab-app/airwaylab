@@ -1,0 +1,60 @@
+name: Clinical Gate
+
+# Hard gate for clinically-validated modules (lib/parsers, lib/analyzers, workers).
+# A change to these paths requires a deliberate `clinical-signoff` label. This is a
+# STATUS CHECK, so it cannot be satisfied by the auto-approve bot (which only adds a
+# review). Sibling to mdr-string-check.yml: that guards user-facing copy, this guards
+# algorithm logic.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  clinical-gate:
+    name: clinical-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: No-op on merge_group (no PR label context here)
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event — clinical gate evaluated on the PR; passing."
+
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require clinical-signoff for clinical-module changes
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+
+          CHANGED=$(git diff --name-only "origin/${BASE_BRANCH}...HEAD")
+
+          if echo "$CHANGED" | grep -Eq '^(lib/parsers|lib/analyzers|workers)/'; then
+            echo "Clinically-validated paths changed:"
+            echo "$CHANGED" | grep -E '^(lib/parsers|lib/analyzers|workers)/'
+
+            # Query CURRENT labels at runtime — the event payload is stale on synchronize.
+            LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+
+            if echo "$LABELS" | grep -qx 'clinical-signoff'; then
+              echo "clinical-signoff label present — sign-off recorded, gate passes."
+            else
+              echo "::error::This PR changes clinically-validated logic (lib/parsers, lib/analyzers, or workers) without a 'clinical-signoff' label. Apply the label to record deliberate sign-off, or revert the clinical-path changes."
+              exit 1
+            fi
+          else
+            echo "No clinically-validated paths changed — gate passes."
+          fi

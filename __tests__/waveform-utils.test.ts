@@ -488,4 +488,12 @@ describe('formatWallClockTime', () => {
     });
     expect(result).toContain(expectedTime);
   });
+
+  it('falls back to elapsed-only when recordingDate is a string (JSON-deserialized)', () => {
+    // Regression guard for AIR-2043: cloud-fetched nights had date as string.
+    // formatWallClockTime must not throw when passed a string; returns elapsed only.
+    const stringDate = '2026-05-11T23:00:00.000Z' as unknown as Date;
+    expect(() => formatWallClockTime(stringDate, 3600)).not.toThrow();
+    expect(formatWallClockTime(stringDate, 3661)).toBe('1:01:01');
+  });
 });

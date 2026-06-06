@@ -56,7 +56,7 @@ interface ComparisonRow {
 
 const comparisonData: ComparisonRow[] = [
   { feature: 'Flow limitation scoring', oscar: 'no', sleephq: 'no', myair: 'no', airwaylab: '4 engines' },
-  { feature: 'RERA detection', oscar: 'no', sleephq: 'no', myair: 'no', airwaylab: 'yes' },
+  { feature: 'Effort-pattern analysis', oscar: 'no', sleephq: 'no', myair: 'no', airwaylab: 'yes' },
   { feature: 'Glasgow Index', oscar: 'no', sleephq: 'no', myair: 'no', airwaylab: 'yes' },
   { feature: 'AI-powered insights', oscar: 'no', sleephq: 'no', myair: 'no', airwaylab: 'opt-in' },
   { feature: 'Interactive waveform zoom', oscar: 'yes', sleephq: 'basic', myair: 'no', airwaylab: 'Viewer' },
@@ -135,7 +135,7 @@ const tools = [
     bgColor: 'bg-emerald-500/5',
     strengths: [
       'Four independent flow limitation engines',
-      'RERA detection and Glasgow Index',
+      'Effort-pattern analysis and Glasgow Index',
       'Browser-only -- data never leaves your device',
       'Open source (GPL-3.0)',
     ],
@@ -288,7 +288,7 @@ export default function ComparePage() {
         <h3 className="text-lg font-bold">Try AirwayLab Free</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload your ResMed SD card and get flow limitation analysis in minutes. Four research-grade
-          engines, composite metrics, RERA detection, and trend tracking. No installation, no account
+          engines, composite metrics, progressive effort-pattern analysis, and trend tracking. No installation, no account
           required, 100% private.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">

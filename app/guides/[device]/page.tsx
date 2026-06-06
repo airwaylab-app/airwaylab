@@ -295,7 +295,7 @@ export default async function DeviceGuidePage({ params }: PageProps) {
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
             Upload your SD card and see flow limitation scores, breath shape
-            analysis, and RERA detection in seconds. Free and private.
+            analysis, and effort-pattern analysis in seconds. Free and private.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/analyze">

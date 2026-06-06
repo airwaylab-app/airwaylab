@@ -7,6 +7,24 @@
 import type { OximetryResults } from '../types';
 import type { OximetrySample } from '../parsers/oximetry-csv-parser';
 
+// ── Usability gate ───────────────────────────────────────────
+
+/**
+ * Minimum cleaned samples for the engine to produce real metrics. Mirrors the
+ * guard in computeOximetry: below this, computeOximetry returns an all-zero
+ * emptyResults() placeholder that must never be presented as a successful analysis.
+ */
+export const MIN_USABLE_OXIMETRY_SAMPLES = 60;
+
+/**
+ * True when an oximetry result is backed by enough cleaned data to be meaningful.
+ * A result below the threshold is an emptyResults() placeholder (all metrics 0) —
+ * callers must treat it as "not analysed", not as oximetry data that attached.
+ */
+export function hasUsableOximetry(result: OximetryResults | null | undefined): boolean {
+  return !!result && result.retainedSamples >= MIN_USABLE_OXIMETRY_SAMPLES;
+}
+
 // ── Cleaning ─────────────────────────────────────────────────
 
 interface CleanedData {
@@ -349,7 +367,7 @@ export function computeOximetry(rawSamples: OximetrySample[], intervalSeconds: n
 
   const iv = intervalSeconds;
 
-  if (samples.length < 60) {
+  if (samples.length < MIN_USABLE_OXIMETRY_SAMPLES) {
     // Not enough data for meaningful analysis
     return emptyResults(totalSamples, retainedSamples, doubleTrackingCorrected);
   }

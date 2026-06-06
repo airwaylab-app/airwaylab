@@ -153,8 +153,9 @@ export function FlowAnalysisTab({ selectedNight, previousNight, nights = [] }: P
             label="RERA Count"
             value={n.ned.reraCount}
             format="int"
+            unit="events"
             previousValue={p?.ned.reraCount}
-            tooltip="Total number of detected RERA events during the entire session."
+            tooltip="Total number of RERA events for the whole night. This is the raw count -- the per-hour rate is shown as RERA Index above."
             onClick={clickable ? () => openMetric('RERA Count', (x) => x.ned.reraCount) : undefined}
           />
           <MetricCard

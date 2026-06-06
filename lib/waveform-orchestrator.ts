@@ -24,6 +24,43 @@ export interface WaveformState {
 
 const WORKER_TIMEOUT_MS = 60_000; // 60 seconds (increased from 30 for large SD cards)
 
+/**
+ * Patient-safety input guard (orchestrator boundary).
+ *
+ * A malformed EDF can decode to samplingRate <= 0 / NaN, a bad recordDuration,
+ * or an empty/NaN sample array. If we let those numbers reach the analyzers they
+ * (a) drive the WAT engine's stepSize = floor(5 * samplingRate) to 0, which loops
+ * forever and hangs the worker, and (b) NaN-propagate into Glasgow/WAT/NED so the
+ * clinical numbers come out silently wrong.
+ *
+ * This rejects a parsed waveform result before it is cached, persisted, or shown.
+ * Returns null when valid, or a human-readable reason string when it must be skipped.
+ *
+ * NOTE: this guards the values the parser EXPOSES. It does NOT fix the upstream
+ * cause flagged for clinician/maintainer review: lib/parsers/edf-parser.ts does not
+ * validate headerBytes against (256 + numSignals * 256), so an under-reported header
+ * decodes header bytes AS flow samples — that produces plausible-but-wrong numbers
+ * here and cannot be detected at this boundary. See PR body. (Protected module — not
+ * edited here.)
+ */
+function validateWaveformInputs(result: {
+  sampleRate: number;
+  durationSeconds: number;
+  flow: Float32Array | null;
+}): string | null {
+  if (!Number.isFinite(result.sampleRate) || result.sampleRate <= 0) {
+    return `invalid sampling rate (${result.sampleRate})`;
+  }
+  if (!Number.isFinite(result.durationSeconds) || result.durationSeconds <= 0) {
+    return `invalid record duration (${result.durationSeconds}s)`;
+  }
+  const sampleCount = result.flow?.length ?? 0;
+  if (!Number.isInteger(sampleCount) || sampleCount <= 0) {
+    return `invalid sample count (${sampleCount})`;
+  }
+  return null;
+}
+
 class WaveformOrchestrator {
   private worker: Worker | null = null;
   private state: WaveformState = { status: 'idle', waveform: null, error: null };
@@ -138,6 +175,24 @@ class WaveformOrchestrator {
 
       // Run worker — now returns raw Float32Arrays
       const result = await this.runWorker(fileBuffers, targetDate, reraTimestamps);
+
+      // ── Patient-safety input guard ──
+      // Reject non-finite / non-positive parser outputs before they are cached,
+      // persisted, or shown. A bad samplingRate would hang the WAT engine and
+      // NaN-propagate into the clinical metrics. Surface, do not silently drop.
+      if (result) {
+        const invalidReason = validateWaveformInputs(result);
+        if (invalidReason) {
+          const error = `Flow data for this night could not be analysed: ${invalidReason}. The file may be corrupt or incomplete.`;
+          console.error('[waveform] rejected invalid parser output:', error);
+          Sentry.captureMessage(error, {
+            level: 'warning',
+            tags: { context: 'waveform-input-guard' },
+          });
+          this.setState({ status: 'error', waveform: null, error });
+          return null;
+        }
+      }
 
       if (result && result.flow) {
         const stored: StoredWaveform = {

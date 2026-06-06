@@ -6,6 +6,7 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit'
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard'
 import { resultToResponse } from '@/lib/errors'
 import { submitContactForm } from '@/lib/services/contact-service'
+import { trackSignalCount } from '@/lib/signal-tracker'
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 })
 
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await submitContactForm(parsed.data)
+    void trackSignalCount('contact', 'Contact Form')
     return resultToResponse(result)
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'contact' } })
