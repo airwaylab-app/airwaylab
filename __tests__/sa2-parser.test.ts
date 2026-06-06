@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseSA2 } from '@/lib/parsers/sa2-parser';
 import { filterSA2Files } from '@/lib/parsers/night-grouper';
+import { computeOximetry, hasUsableOximetry } from '@/lib/analyzers/oximetry-engine';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -163,6 +164,31 @@ describe('parseSA2', () => {
     expect(result.samples[1]!.spo2).toBe(-1);
     expect(result.samples[2]!.valid).toBe(false);
     expect(result.samples[3]!.valid).toBe(true);
+  });
+
+  // ── Regression: empty/placeholder SA2 is unusable (#988) ──
+  // Reproduces the reported file (verified: ~2940 samples, all SpO2 out of range).
+  // Some machines write SA2.edf with no real oximetry. It must NOT mask an
+  // uploaded CSV: it parses (so it lands in oximetryByDate and the combined path
+  // used to skip the CSV), but it is unusable, so a usable uploaded CSV now wins.
+
+  it('treats an all-out-of-range SA2 as unusable oximetry, not a reason to skip the CSV', () => {
+    const buffer = buildSA2Buffer({
+      signals: [
+        { label: 'SpO2', physicalDimension: '%', physicalMin: 0, physicalMax: 100, digitalMin: 0, digitalMax: 100, numSamples: 1 },
+        { label: 'Pulse', physicalDimension: 'BPM', physicalMin: 0, physicalMax: 250, digitalMin: 0, digitalMax: 250, numSamples: 1 },
+      ],
+      dataRecords: Array.from({ length: 300 }, () => [0, 0]), // SpO2=0 → out of range
+    });
+
+    const result = parseSA2(buffer, 'DATALOG/20260311/20260311_230000_SA2.edf');
+
+    // Parses without throwing and yields samples (why it landed in oximetryByDate)...
+    expect(result.samples.length).toBe(300);
+    expect(result.samples.every((s) => !s.valid)).toBe(true);
+
+    // ...but it is not usable oximetry, so a usable uploaded CSV must override it.
+    expect(hasUsableOximetry(computeOximetry(result.samples, result.intervalSeconds))).toBe(false);
   });
 
   // ── Test 3: No SpO2 signal → throws ───────────────────────
