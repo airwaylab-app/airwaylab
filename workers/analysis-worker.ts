@@ -17,7 +17,7 @@ import { parseBMCFiles, bmcSessionNightDate } from '../lib/parsers/bmc-parser';
 import { computeNightGlasgow } from '../lib/analyzers/glasgow-index';
 import { computeWAT } from '../lib/analyzers/wat-engine';
 import { computeNED } from '../lib/analyzers/ned-engine';
-import { computeOximetry } from '../lib/analyzers/oximetry-engine';
+import { computeOximetry, hasUsableOximetry, MIN_USABLE_OXIMETRY_SAMPLES } from '../lib/analyzers/oximetry-engine';
 import { computeSettingsMetrics } from '../lib/analyzers/settings-engine';
 import { computeCrossDevice } from '../lib/analyzers/cross-device-engine';
 import { buildOximetryTrace } from '../lib/oximetry-trace';
@@ -90,6 +90,56 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 function postProgress(current: number, total: number, stage: string): void {
   const msg: WorkerProgress = { type: 'PROGRESS', current, total, stage };
   self.postMessage(msg);
+}
+
+/**
+ * Surface an oximetry CSV that could not be read. Sanitized: no filename or raw
+ * parser message (either may carry PII) — only a generic, actionable reason.
+ * The orchestrator routes WARNING to Sentry + the UI warnings list.
+ */
+function postOximetryParseFailedWarning(): void {
+  const warning: WorkerWarning = {
+    type: 'WARNING',
+    checkpoint: 'oximetry_parse_failed',
+    detail:
+      'An oximetry file could not be read and was skipped. Check it is a valid pulse-oximeter CSV export (e.g. ViHealth or O2 Insight Pro) and try uploading it again.',
+    tags: {},
+  };
+  self.postMessage(warning);
+}
+
+/**
+ * Compute oximetry for one night and gate it on usability. A CSV that parsed but
+ * yielded too little usable data after cleaning collapses to an all-zero
+ * emptyResults() — attaching that produced the silent "data added but every stat
+ * 0.0" bug. Here it is dropped (oximetry stays null) and a sanitized WARNING is
+ * emitted instead. Returns null/null when there is no oximetry for the night.
+ */
+function computeNightOximetry(
+  oxData: ReturnType<typeof parseOximetryCSV> | undefined,
+  nightDate: string
+): { oximetry: OximetryResults | null; oximetryTrace: OximetryTraceData | null } {
+  if (!oxData) return { oximetry: null, oximetryTrace: null };
+
+  const result = computeOximetry(oxData.samples, oxData.intervalSeconds ?? 2);
+  if (!hasUsableOximetry(result)) {
+    const warning: WorkerWarning = {
+      type: 'WARNING',
+      checkpoint: 'oximetry_insufficient_samples',
+      detail:
+        `An oximetry file for night ${nightDate} was read but had too little usable data after cleaning to analyse ` +
+        `(under ${MIN_USABLE_OXIMETRY_SAMPLES} samples). It may be truncated, mostly motion-flagged, or have unreadable timestamps.`,
+      tags: {
+        night_date: nightDate,
+        retained_samples: result.retainedSamples,
+        total_samples: result.totalSamples,
+      },
+    };
+    self.postMessage(warning);
+    return { oximetry: null, oximetryTrace: null };
+  }
+
+  return { oximetry: result, oximetryTrace: buildOximetryTrace(oxData.samples) };
 }
 
 /**
@@ -451,9 +501,9 @@ async function processFiles(
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
         }
-      // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; worker continues processing remaining files and reports results via postMessage.
       } catch (err) {
         console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
+        postOximetryParseFailedWarning();
       }
     }
   }
@@ -465,6 +515,17 @@ async function processFiles(
     const matched = oxDates.filter((d) => nightDates.includes(d));
     if (matched.length === 0) {
       console.error(`[oximetry] No date matches. Oximetry dates: [${oxDates.join(', ')}], Night dates: [${nightDates.slice(0, 5).join(', ')}${nightDates.length > 5 ? '...' : ''}]`);
+      // Surface the no-match case to the user. The oximetry-only re-upload path
+      // already warns here; the combined upload path previously only console.logged,
+      // so a date-mismatched oximetry file was silently ignored (issue #988).
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'oximetry_no_night_match',
+        detail:
+          'Oximetry data was uploaded but could not be matched to any analysed night. Check that the recording date in your oximetry export lines up with one of your therapy nights.',
+        tags: { oximetry_dates: oxDates.length, night_count: nightDates.length },
+      };
+      self.postMessage(warning);
     } else {
       console.debug(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
     }
@@ -582,11 +643,11 @@ async function processFiles(
       ? computeSettingsMetrics(combinedFlow, combinedPressure, avgSamplingRate)
       : null;
 
-    // Oximetry: match by night date
+    // Oximetry: match by night date. computeNightOximetry drops unusable data
+    // (and warns) instead of attaching an all-zero result as if it succeeded.
     const oxData = oximetryByDate.get(group.nightDate);
     const oxInterval = oxData?.intervalSeconds ?? 2;
-    const oximetry = oxData ? computeOximetry(oxData.samples, oxInterval) : null;
-    const oximetryTrace = oxData ? buildOximetryTrace(oxData.samples) : null;
+    const { oximetry, oximetryTrace } = computeNightOximetry(oxData, group.nightDate);
 
     // Cross-device RERA-arousal matching
     let crossDevice: CrossDeviceResults | null = null;
@@ -700,9 +761,9 @@ async function processBMCFiles(
       try {
         const parsed = parseOximetryCSV(csv);
         oximetryByDate.set(parsed.dateStr, parsed);
-      // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; loop continues. Results reported via postMessage.
       } catch (err) {
         console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
+        postOximetryParseFailedWarning();
       }
     }
   }
@@ -784,11 +845,11 @@ async function processBMCFiles(
       ? computeSettingsMetrics(combinedFlow, combinedPressure, avgSamplingRate)
       : null;
 
-    // Oximetry
+    // Oximetry. computeNightOximetry drops unusable data (and warns) instead of
+    // attaching an all-zero result as if it succeeded.
     const oxData = oximetryByDate.get(nightDate);
     const oxInterval = oxData?.intervalSeconds ?? 2;
-    const oximetry = oxData ? computeOximetry(oxData.samples, oxInterval) : null;
-    const oximetryTrace = oxData ? buildOximetryTrace(oxData.samples) : null;
+    const { oximetry, oximetryTrace } = computeNightOximetry(oxData, nightDate);
 
     // Cross-device matching
     let crossDevice: CrossDeviceResults | null = null;
@@ -847,14 +908,16 @@ function processOximetryOnly(oximetryCSVs: string[]): {
   for (const csv of oximetryCSVs) {
     try {
       const parsed = parseOximetryCSV(csv);
-      metrics[parsed.dateStr] = computeOximetry(parsed.samples, parsed.intervalSeconds);
-      const trace = buildOximetryTrace(parsed.samples);
-      if (trace) {
-        traces[parsed.dateStr] = trace;
+      const { oximetry, oximetryTrace } = computeNightOximetry(parsed, parsed.dateStr);
+      if (oximetry) {
+        metrics[parsed.dateStr] = oximetry;
+        if (oximetryTrace) {
+          traces[parsed.dateStr] = oximetryTrace;
+        }
       }
-    // eslint-disable-next-line airwaylab/no-silent-catch -- Individual CSV parse failures are non-fatal; loop continues. Caller aggregates results.
     } catch (err) {
       console.error('[oximetry] Failed to parse CSV:', err instanceof Error ? err.message : String(err));
+      postOximetryParseFailedWarning();
     }
   }
 
