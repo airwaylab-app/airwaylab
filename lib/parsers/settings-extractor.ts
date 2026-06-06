@@ -30,25 +30,18 @@ const SENSITIVITY_MAP: Record<number, string> = {
   0: 'very low',
 };
 
-/** AirCurve 11 (BiPAP) uses a 1-5 sensitivity scale instead of 0-4. AirSense 11 (CPAP) does not have trigger/cycle settings. */
-const SENSITIVITY_MAP_AIRCURVE11: Record<number, string> = {
-  5: 'very high',
-  4: 'high',
-  3: 'medium',
-  2: 'low',
-  1: 'very low',
-};
-
 const MASK_MAP: Record<number, string> = {
   0: 'Pillows',
   1: 'Full Face',
   2: 'Nasal',
 };
 
-export function sensitivityLabel(value: number | undefined, isAirCurve11 = false): string {
+// Trigger/Cycle sensitivity uses the same 0-4 scale on AirCurve 10 and 11.
+// A prior AirCurve-11-specific 1-5 remap shifted every label down one step:
+// a real AirCurve 11 VAuto set to High stores raw 3 and was shown as "medium" (#975).
+export function sensitivityLabel(value: number | undefined): string {
   if (value === undefined || value === null) return 'N/A';
-  const map = isAirCurve11 ? SENSITIVITY_MAP_AIRCURVE11 : SENSITIVITY_MAP;
-  return map[value] ?? String(value);
+  return SENSITIVITY_MAP[value] ?? String(value);
 }
 
 /** Signals already handled by typed fields — excluded from extendedSettings */
@@ -79,7 +72,6 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
   const allLabels = signals.map((s) => s.label);
   console.error(`[settings] STR.edf signals (${allLabels.length}): ${allLabels.join(', ')}`);
 
-  const isAirCurve11 = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve11');
   // AirCurve devices (10 and 11) share VAuto signal names; used for S.VA.* signal selection
   const isAirCurveDevice = deviceModel.replace(/\s/g, '').toLowerCase().includes('aircurve');
   // VAuto devices use mode 8 for VAuto; AirCurve 10 ST-A uses mode 8 for iVAPS (different firmware)
@@ -249,8 +241,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       pressureSupport: Math.round((ipap - epap) * 10) / 10,
       papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
-      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined, isAirCurve11),
-      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined, isAirCurve11),
+      trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined),
+      cycle: sensitivityLabel(cycleRaw !== undefined ? Math.round(cycleRaw) : undefined),
       easyBreathe: easyBreatheOn,
       rampEnabled: rampEnableRaw !== undefined ? Math.round(rampEnableRaw) !== 0 : null,
       rampTime: rampTimeRaw !== undefined ? Math.round(rampTimeRaw) : null,
