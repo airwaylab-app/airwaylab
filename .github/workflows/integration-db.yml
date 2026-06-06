@@ -36,17 +36,20 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
-      # PostgREST connects as `authenticator` (created by ci-db-preshim.sql) and
-      # SET ROLEs into anon/service_role per the request JWT. It boots before the
-      # schema exists and retries the connection with backoff; the test runner
-      # waits for readiness and issues `NOTIFY pgrst, 'reload schema'` once the
-      # baseline is applied. The JWT secret is a throwaway CI value (a local,
-      # ephemeral container — not a real credential); it is duplicated in the test
-      # step env below because the `env:` context is not available to services.
+      # PostgREST connects as the `postgres` superuser (it exists from container
+      # init, so it connects immediately — no cold-start race with the schema
+      # apply) and SET ROLEs into anon/service_role per the request JWT
+      # (db-anon-role=anon). Every request switches role, so no query runs as the
+      # superuser and the per-role boundaries the tests assert hold. It boots
+      # against an empty DB; the test runner issues `NOTIFY pgrst, 'reload schema'`
+      # once the baseline is applied. The JWT secret is a throwaway CI value (a
+      # local, ephemeral container — not a real credential); it is duplicated in
+      # the test step env below because the `env:` context is not available to
+      # services.
       postgrest:
         image: postgrest/postgrest:v13.0.8
         env:
-          PGRST_DB_URI: postgres://authenticator:postgres@postgres:5432/airwaylab_test
+          PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/airwaylab_test
           PGRST_DB_SCHEMAS: public
           PGRST_DB_ANON_ROLE: anon
           PGRST_JWT_SECRET: ci-only-not-a-real-secret-pgrst-jwt-0123456789

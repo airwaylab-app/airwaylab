@@ -24,10 +24,11 @@ create or replace function auth.role() returns text language sql stable as $$
 $$;
 
 -- standard Supabase roles (the baseline's policies/grants reference these).
--- `authenticator` is the role PostgREST logs in as; it is NOINHERIT and member
--- of the three API roles so PostgREST can SET ROLE into them per the JWT `role`
--- claim (anon when unauthenticated). This mirrors the Supabase platform setup
--- and is what lets the G5 client tests hit real per-role permission boundaries.
+-- PostgREST connects as the `postgres` superuser in CI (it exists from container
+-- init, so there is no cold-start race while this shim runs) and SET ROLEs into
+-- anon / service_role per the request JWT (PGRST_DB_ANON_ROLE=anon). Role
+-- switching, not the login identity, is what the G5 client tests exercise, so the
+-- per-role permission boundaries are faithful regardless of the login role.
 do $$
 begin
   if not exists (select from pg_roles where rolname = 'anon') then
@@ -39,10 +40,4 @@ begin
   if not exists (select from pg_roles where rolname = 'service_role') then
     create role service_role nologin noinherit bypassrls;
   end if;
-  if not exists (select from pg_roles where rolname = 'authenticator') then
-    -- password matches the PGRST_DB_URI in .github/workflows/integration-db.yml
-    create role authenticator login noinherit password 'postgres';
-  end if;
 end $$;
-
-grant anon, authenticated, service_role to authenticator;
