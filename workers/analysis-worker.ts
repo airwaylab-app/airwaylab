@@ -515,6 +515,17 @@ async function processFiles(
     const matched = oxDates.filter((d) => nightDates.includes(d));
     if (matched.length === 0) {
       console.error(`[oximetry] No date matches. Oximetry dates: [${oxDates.join(', ')}], Night dates: [${nightDates.slice(0, 5).join(', ')}${nightDates.length > 5 ? '...' : ''}]`);
+      // Surface the no-match case to the user. The oximetry-only re-upload path
+      // already warns here; the combined upload path previously only console.logged,
+      // so a date-mismatched oximetry file was silently ignored (issue #988).
+      const warning: WorkerWarning = {
+        type: 'WARNING',
+        checkpoint: 'oximetry_no_night_match',
+        detail:
+          'Oximetry data was uploaded but could not be matched to any analysed night. Check that the recording date in your oximetry export lines up with one of your therapy nights.',
+        tags: { oximetry_dates: oxDates.length, night_count: nightDates.length },
+      };
+      self.postMessage(warning);
     } else {
       console.debug(`[oximetry] Matched ${matched.length}/${oxDates.length} oximetry files to nights`);
     }
