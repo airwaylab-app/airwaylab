@@ -14,7 +14,10 @@ const confirmSchema = z.object({
 
 /**
  * Confirms a file upload completed successfully.
- * Verifies the file exists in storage. If not, cleans up the metadata row.
+ * Verifies the file exists in storage. Returns 503 (retriable) if the storage
+ * list does not yet show the object — the client retries confirm, giving the
+ * eventually-consistent storage list more time to propagate. Rows that remain
+ * unconfirmed > 10 minutes are cleaned up by the stale orphan logic in presign.
  */
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Verify the file belongs to this user
     const { data: fileRow, error: fetchError } = await serviceRole
       .from('user_files')
-      .select('id, storage_path, user_id')
+      .select('id, storage_path, user_id, file_size')
       .eq('id', fileId)
       .single();
 
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     // both transient list errors and propagation-delay empty results.
     const storageFolder = fileRow.storage_path.split('/').slice(0, -1).join('/');
     const storageFileName = fileRow.storage_path.split('/').pop();
-    let storageFile: { name: string }[] | null = null;
+    let storageFile: { name: string; metadata?: { size?: number } | null }[] | null = null;
     let listError: unknown = null;
     const LIST_DELAYS_MS = [0, 150, 300, 450];
 
@@ -104,15 +107,51 @@ export async function POST(request: NextRequest) {
     }
 
     if (!storageFile || storageFile.length === 0) {
-      // File absent from storage despite PUT succeeding — capture for diagnosis before cleanup
+      // Storage list returned empty after all retries — the object may not have
+      // propagated yet. Capture for diagnosis but do NOT delete the metadata row;
+      // the client retries confirm on 5xx, extending the propagation window.
+      // Stale unconfirmed rows (> 10 min) are cleaned up in /api/files/presign.
       captureApiError(new Error('File absent from storage at confirm step'), {
         route: 'files/confirm',
         context: 'storage_list_empty',
         fileId,
         storagePath: fileRow.storage_path,
       });
+      return NextResponse.json(
+        { error: 'File not yet visible in storage. Please retry.' },
+        { status: 503 }
+      );
+    }
+
+    // Reconcile actual stored size against the client-declared size.
+    // Signed PUTs let a client declare a small `file_size` to pass the
+    // upload-time Zod/API cap, then push a far larger object. Storage now
+    // carries a bucket-level file_size_limit (migration 052), but we also
+    // reject here when the listed object size exceeds what was declared.
+    // Fail open when size metadata is unavailable (Storage list does not
+    // always populate it, e.g. right after a propagation-delayed PUT).
+    const actualSize = storageFile[0]?.metadata?.size;
+    const declaredSize = fileRow.file_size;
+    if (
+      typeof actualSize === 'number' &&
+      typeof declaredSize === 'number' &&
+      actualSize > declaredSize
+    ) {
+      captureApiError(new Error('Uploaded object exceeds declared file_size'), {
+        route: 'files/confirm',
+        context: 'size_mismatch',
+        fileId,
+        storagePath: fileRow.storage_path,
+        declaredSize: String(declaredSize),
+        actualSize: String(actualSize),
+      });
+      // Remove the oversized object and its metadata row so it is not served.
+      await serviceRole.storage.from(STORAGE_BUCKET).remove([fileRow.storage_path]);
       await serviceRole.from('user_files').delete().eq('id', fileId);
-      return NextResponse.json({ error: 'Upload not found in storage. Metadata cleaned up.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Uploaded file is larger than declared. Upload rejected.' },
+        { status: 413 }
+      );
     }
 
     // Mark upload as confirmed — only confirmed rows are returned by check-hashes

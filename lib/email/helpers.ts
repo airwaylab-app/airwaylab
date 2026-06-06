@@ -8,7 +8,8 @@
 export const BASE_URL = 'https://airwaylab.app'
 
 /** CAN-SPAM §7704(a)(5): physical postal address shown in every commercial email footer. */
-export const SENDER_PHYSICAL_ADDRESS = process.env.SENDER_PHYSICAL_ADDRESS ?? ''
+export const SENDER_PHYSICAL_ADDRESS =
+  process.env.SENDER_PHYSICAL_ADDRESS ?? 'AirwayLab B.V., Helperpark 274-6, 9723 ZA Groningen, Netherlands'
 
 export function ctaButton(text: string, href: string): string {
   return `<div style="margin:24px 0;">

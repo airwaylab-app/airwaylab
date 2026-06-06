@@ -50,6 +50,18 @@ describe('extractNightDate', () => {
   it('handles 8-digit folder with non-YYYYMMDD-looking content', () => {
     expect(extractNightDate('SD/DATALOG/20260301/file.edf')).toBe('2026-03-01');
   });
+
+  it('returns null for invalid calendar date (month > 12)', () => {
+    expect(extractNightDate('DATALOG/20261504/test.EDF')).toBeNull();
+  });
+
+  it('returns null for DDMMYYYY-format folder (rejected as invalid date)', () => {
+    expect(extractNightDate('DATALOG/04062026/test.EDF')).toBeNull();
+  });
+
+  it('returns valid date string for well-formed YYYYMMDD folder', () => {
+    expect(extractNightDate('DATALOG/20260603/test.EDF')).toBe('2026-06-03');
+  });
 });
 
 describe('buildManifest', () => {

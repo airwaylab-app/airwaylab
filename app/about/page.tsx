@@ -51,7 +51,7 @@ const faqData = [
   {
     question: 'Is my data safe?',
     answer:
-      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data stays on your device by default. No cookies are used. We use Plausible for privacy-first, cookie-free page-view analytics that collect zero personal data. Optional features like AI-powered insights, cloud storage, or data contribution require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
+      'Yes. All core analysis runs entirely in your browser using Web Workers \u2014 your sleep data stays on your device by default. No cookies are used. We use PostHog for privacy-safe, cookie-free page-view analytics that collect zero personal data and are GDPR-compliant. Optional features like AI-powered insights, cloud storage, or data contribution require your explicit consent before any data is sent to a server, and raw waveform data is never transmitted. The source code is open for inspection.',
   },
   {
     question: 'What pulse oximeters are supported?',
@@ -66,7 +66,7 @@ const faqData = [
   {
     question: 'What is the difference between Glasgow, WAT, and NED?',
     answer:
-      'These are three independent methods of detecting flow limitation, each with different strengths. Glasgow scores breath shapes holistically (9 descriptors). WAT analyzes population-level patterns (regularity, periodicity). NED measures the specific ratio of peak-to-mid flow that indicates airway narrowing, plus automated RERA event detection. Using all three together gives a more complete picture than any single metric.',
+      'These are three independent methods of detecting flow limitation, each with different strengths. Glasgow scores breath shapes holistically (9 descriptors). WAT analyzes population-level patterns (regularity, periodicity). NED measures the specific ratio of peak-to-mid flow that indicates airway narrowing, plus automated progressive effort-pattern analysis. Using all three together gives a more complete picture than any single metric.',
   },
   {
     question: 'Why can Glasgow and NED be low but FL Score high (or vice versa)?',
@@ -156,14 +156,14 @@ const engines = [
     borderColor: 'border-amber-500/20',
     bgColor: 'bg-amber-500/5',
     description:
-      'Breath-by-breath analysis of flow limitation using the ratio of peak inspiratory flow to mid-inspiratory flow, with automated RERA event detection.',
+      'Breath-by-breath analysis of flow limitation using the ratio of peak inspiratory flow to mid-inspiratory flow, with automated progressive effort-pattern analysis.',
     methodology: [
       'NED = (Qpeak \u2212 Qmid) / Qpeak, where Qpeak is peak inspiratory flow and Qmid is flow at 50% of inspiratory time. Higher NED indicates more flow limitation.',
       'Flatness Index (FI) measures how flat the inspiratory flow plateau is. FI \u2265 0.85 indicates significant flow limitation.',
       'M-shape detection identifies breaths with a characteristic mid-inspiratory dip showing oscillation in the flow waveform.',
-      'RERA detection: sequences of \u22653 breaths with progressively rising NED slope, terminated by a recovery breath with sudden NED drop. Reported as events per hour.',
+      'Progressive NED run detection: sequences of \u22653 breaths with progressively rising NED slope, terminated by a recovery breath with sudden NED drop. Reported as events per hour.',
     ],
-    reference: 'NED concept from Tamisier et al. RERA detection adapted from clinical scoring criteria.',
+    reference: 'NED concept from Tamisier et al. Progressive effort-pattern detection adapted from respiratory scoring criteria.',
     link: null,
   },
   {
@@ -207,7 +207,7 @@ export default function AboutPage() {
           PAP machines collect detailed breath-by-breath data every night — but most of it stays
           locked on an SD card, invisible to patients and ignored by clinicians who only check AHI.
           Millions of people are &ldquo;treated&rdquo; with AHI under 5 but still wake up exhausted because
-          flow limitation, RERAs, and breathing pattern instability go undetected.
+          flow limitation, effort-related patterns, and breathing pattern instability go undetected.
         </p>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           We believe your breathing data belongs to you. AirwayLab makes that data visible,
@@ -287,7 +287,7 @@ export default function AboutPage() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 PAP machines collect rich breath-by-breath flow data every night, but most of it stays invisible —
                 locked on an SD card, inaccessible to the people it belongs to. AirwayLab makes that data visible
-                and understandable. Four research-grade engines analyse flow limitation, RERAs, and breathing
+                and understandable. Four research-grade engines analyse flow limitation, effort-related patterns, and breathing
                 patterns that standard AHI metrics miss. Everything runs in your browser, so your data stays yours.
               </p>
             </div>
@@ -456,8 +456,9 @@ export default function AboutPage() {
           <FAQItem question="Is my data safe?">
             Yes. All core analysis runs entirely in your browser using Web
             Workers &mdash; your sleep data stays on your device by default.
-            No cookies are used. We use Plausible for privacy-first, cookie-free
-            page-view analytics that collect zero personal data. Optional
+            No cookies are used. We use PostHog for privacy-safe, cookie-free
+            page-view analytics that collect zero personal data and are
+            GDPR-compliant. Optional
             features like AI-powered insights or cloud storage require your
             explicit consent before any data is sent to a server, and raw
             waveform data is never transmitted. The source code is open for
@@ -491,7 +492,7 @@ export default function AboutPage() {
             <strong className="text-foreground">WAT</strong> analyzes population-level patterns
             (regularity, periodicity). <strong className="text-foreground">NED</strong> measures
             the specific ratio of peak-to-mid flow that indicates airway
-            narrowing, plus automated RERA event detection. Using all three
+            narrowing, plus automated progressive effort-pattern analysis. Using all three
             together gives a more complete picture than any single metric.
           </FAQItem>
 
@@ -656,9 +657,9 @@ export default function AboutPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />
-              No cookies, no fingerprinting. Optional privacy-first analytics
-              (Plausible) collect zero personal data. AirwayLab does not know
-              who you are.
+              No cookies, no fingerprinting. Optional privacy-safe analytics
+              (PostHog, GDPR-compliant) collect zero personal data. AirwayLab
+              does not know who you are.
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500/60" />

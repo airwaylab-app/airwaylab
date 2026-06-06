@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
 // ── Mocks ─────────────────────────────────────────────────────────────
@@ -14,7 +14,22 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 
 const mockCaptureException = vi.fn();
-vi.mock('@sentry/nextjs', () => ({ captureException: (...args: unknown[]) => mockCaptureException(...args) }));
+const mockCaptureMessage = vi.fn();
+vi.mock('@sentry/nextjs', () => ({
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
+}));
+
+const mockSubscriptionsCancel = vi.fn();
+const mockSubscriptionsList = vi.fn();
+vi.mock('stripe', () => ({
+  default: class MockStripe {
+    subscriptions = {
+      cancel: (...a: unknown[]) => mockSubscriptionsCancel(...a),
+      list: (...a: unknown[]) => mockSubscriptionsList(...a),
+    };
+  },
+}));
 
 const mockDeleteUser = vi.fn();
 const mockStorageFrom = vi.fn();
@@ -46,11 +61,14 @@ function makeRequest(): NextRequest {
 function mockSuccessfulDeletion() {
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123', email: 'test@example.com' } }, error: null });
   mockStorageFrom.mockReturnValue({ list: vi.fn().mockResolvedValue({ data: [], error: null }) });
-  const mockTable = {
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockResolvedValue({ error: null }),
+  const deleteTable = { delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) };
+  // Step 0 always looks up profiles.stripe_customer_id; null => no billing => skip Stripe.
+  const profilesBuilder = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { stripe_customer_id: null }, error: null }),
   };
-  mockFrom.mockReturnValue(mockTable);
+  mockFrom.mockImplementation((table: string) => (table === 'profiles' ? profilesBuilder : deleteTable));
   mockDeleteUser.mockResolvedValue({ error: null });
 }
 
@@ -60,6 +78,11 @@ describe('POST /api/delete-user-data', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsLimited.mockReturnValue(false);
+    // These tests cover the no-Stripe path: STRIPE_SECRET_KEY unset → getStripe()
+    // returns null → the cancel step is skipped. resetModules so the route module
+    // re-reads the env each test.
+    delete process.env.STRIPE_SECRET_KEY;
+    vi.resetModules();
   });
 
   it('returns 200 and deletes all user data including auth user', async () => {
@@ -116,7 +139,12 @@ describe('POST /api/delete-user-data', () => {
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockResolvedValue({ error: { message: 'DB error', code: '500' } }),
     };
-    mockFrom.mockReturnValue(failingTable);
+    const profilesBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { stripe_customer_id: null }, error: null }),
+    };
+    mockFrom.mockImplementation((table: string) => (table === 'profiles' ? profilesBuilder : failingTable));
     mockDeleteUser.mockResolvedValue({ error: null });
 
     const { POST } = await import('@/app/api/delete-user-data/route');
@@ -163,5 +191,168 @@ describe('POST /api/delete-user-data', () => {
 
     const calls = mockFrom.mock.calls.map((args: unknown[]) => args[0] as string);
     expect(calls).toContain('user_nights');
+  });
+});
+
+describe('POST /api/delete-user-data — Stripe cancellation (fail-safe, Stripe-authoritative)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsLimited.mockReturnValue(false);
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    vi.resetModules();
+  });
+  afterEach(() => {
+    delete process.env.STRIPE_SECRET_KEY;
+    vi.resetModules();
+  });
+
+  function setup(opts: { customerId?: string | null; stripeSubs?: Array<{ id: string; status: string }>; hasMore?: boolean } = {}) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123', email: 'test@example.com' } }, error: null });
+    mockStorageFrom.mockReturnValue({ list: vi.fn().mockResolvedValue({ data: [], error: null }) });
+    const deleteTable = { delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) };
+    const profilesBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { stripe_customer_id: opts.customerId ?? null }, error: null }),
+    };
+    const eventsBuilder = { upsert: vi.fn().mockResolvedValue({ error: null }) };
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') return profilesBuilder;
+      if (table === 'subscription_events') return eventsBuilder;
+      return deleteTable;
+    });
+    mockSubscriptionsList.mockResolvedValue({ data: opts.stripeSubs ?? [], has_more: opts.hasMore ?? false });
+    mockDeleteUser.mockResolvedValue({ error: null });
+    return { eventsBuilder };
+  }
+
+  it('cancels the live Stripe sub BEFORE deleting the account (order enforced)', async () => {
+    setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_active', status: 'active' }] });
+    mockSubscriptionsCancel.mockResolvedValue({});
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(mockSubscriptionsList).toHaveBeenCalledWith(expect.objectContaining({ customer: 'cus_x', status: 'all' }));
+    expect(mockSubscriptionsCancel).toHaveBeenCalledWith('sub_active');
+    expect(mockDeleteUser).toHaveBeenCalledWith('user-123');
+    // cancel must precede auth deletion
+    expect(mockSubscriptionsCancel.mock.invocationCallOrder[0]!).toBeLessThan(mockDeleteUser.mock.invocationCallOrder[0]!);
+  });
+
+  it('records a cancellation churn event for each cancelled sub', async () => {
+    const { eventsBuilder } = setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_active', status: 'active' }] });
+    mockSubscriptionsCancel.mockResolvedValue({});
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    await POST(makeRequest());
+
+    expect(eventsBuilder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: 'cancelled', stripe_subscription_id: 'sub_active', mrr_cents: 0 }),
+      expect.objectContaining({ onConflict: 'stripe_event_id', ignoreDuplicates: true }),
+    );
+  });
+
+  it('ABORTS with 502 and deletes NOTHING when a cancellation fails', async () => {
+    setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_active', status: 'active' }] });
+    mockSubscriptionsCancel.mockRejectedValue({ code: 'api_error', message: 'Stripe down' });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(502);
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockStorageFrom).not.toHaveBeenCalled(); // never reached storage/table deletion
+  });
+
+  it('ABORTS with 502 and deletes NOTHING when listing subscriptions fails', async () => {
+    setup({ customerId: 'cus_x' });
+    mockSubscriptionsList.mockRejectedValue({ code: 'api_error', message: 'list failed' });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(502);
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockStorageFrom).not.toHaveBeenCalled();
+  });
+
+  it('treats resource_missing as success and proceeds with deletion', async () => {
+    setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_gone', status: 'active' }] });
+    mockSubscriptionsCancel.mockRejectedValue({ code: 'resource_missing', message: 'No such subscription' });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(mockDeleteUser).toHaveBeenCalledWith('user-123');
+  });
+
+  it('multiple subs: a later failure aborts, but the earlier cancellation kept its churn', async () => {
+    const { eventsBuilder } = setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_a', status: 'active' }, { id: 'sub_b', status: 'active' }] });
+    mockSubscriptionsCancel.mockResolvedValueOnce({}).mockRejectedValueOnce({ code: 'api_error', message: 'boom' });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(502);
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ extra: expect.objectContaining({ failedSubscriptionId: 'sub_b', cancelledSoFar: 1 }) }),
+    );
+    // sub_a's churn was recorded BEFORE the abort (not lost)
+    expect(eventsBuilder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ stripe_subscription_id: 'sub_a' }),
+      expect.anything(),
+    );
+  });
+
+  it('ABORTS with 502 when the customer has more than one page of subscriptions', async () => {
+    setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_a', status: 'active' }], hasMore: true });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(502);
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockSubscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  it('does not cancel already-canceled Stripe subs', async () => {
+    setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_old', status: 'canceled' }] });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(mockSubscriptionsCancel).not.toHaveBeenCalled();
+    expect(mockDeleteUser).toHaveBeenCalledWith('user-123');
+  });
+
+  it('ABORTS with 503 when the user has a stripe_customer_id but Stripe is not configured', async () => {
+    setup({ customerId: 'cus_x' });
+    delete process.env.STRIPE_SECRET_KEY; // simulate config regression
+    vi.resetModules();
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(503);
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(mockSubscriptionsList).not.toHaveBeenCalled();
+  });
+
+  it('skips Stripe entirely when the user has no stripe_customer_id', async () => {
+    setup({ customerId: null });
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(mockSubscriptionsList).not.toHaveBeenCalled();
+    expect(mockSubscriptionsCancel).not.toHaveBeenCalled();
+    expect(mockDeleteUser).toHaveBeenCalledWith('user-123');
   });
 });

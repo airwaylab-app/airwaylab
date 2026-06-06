@@ -88,4 +88,32 @@ describe('sendEmail Sentry captures', () => {
     const ctx2 = vi.mocked(Sentry.captureException).mock.calls[0]?.[1]
     expect(ctx2).toMatchObject({ tags: { subsystem: 'email-log-insert' } })
   })
+
+  it('strips newlines from subject before sending to Resend API', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    vi.mocked(fetch).mockImplementationOnce(async (_url, init) => {
+      capturedBody = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>
+      return { ok: true, json: async () => ({ id: 'resend-456' }) } as Response
+    })
+
+    const { sendEmail } = await import('@/lib/email/send')
+    await sendEmail({ to: 'user@example.com', subject: 'Hello\nWorld\r\nBye', text: 'body' })
+
+    expect(capturedBody).not.toBeNull()
+    expect(capturedBody!['subject']).toBe('Hello World Bye')
+    expect(capturedBody!['subject']).not.toMatch(/[\r\n]/)
+  })
+
+  it('trims leading/trailing whitespace from subject after newline replacement', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    vi.mocked(fetch).mockImplementationOnce(async (_url, init) => {
+      capturedBody = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>
+      return { ok: true, json: async () => ({ id: 'resend-789' }) } as Response
+    })
+
+    const { sendEmail } = await import('@/lib/email/send')
+    await sendEmail({ to: 'user@example.com', subject: '\n\nContact form message\n', text: 'body' })
+
+    expect(capturedBody!['subject']).toBe('Contact form message')
+  })
 })

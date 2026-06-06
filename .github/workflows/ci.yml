@@ -7,15 +7,23 @@ on:
     branches: [main]
   merge_group:
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -23,11 +31,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
       - run: npm test
@@ -35,25 +44,21 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
 
-  build:
-    name: Build
+  env-check:
+    name: env-check
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
       - name: Verify auth env vars are paired
         run: |
           if [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
@@ -64,17 +69,31 @@ jobs:
             echo "::error::NEXT_PUBLIC_SUPABASE_ANON_KEY is set but NEXT_PUBLIC_SUPABASE_URL is missing"
             exit 1
           fi
-      - run: npm run build
 
-  e2e:
-    name: E2E Tests
+  mutation-guard:
+    name: Supabase mutation guard
     runs-on: ubuntu-latest
-    needs: [build]
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
+      # No deps: pure node + git. Fails on any `.update/.delete/.upsert().or()`
+      # (PostgREST 42703 on or-mutations — 2026-06-04 billing incident).
+      - run: node scripts/check-no-mutation-or.mjs
+
+  # Single build lives here: `npx playwright test` starts the built app via
+  # playwright.config.ts webServer (`npm run start`, reuseExistingServer=false on CI).
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium

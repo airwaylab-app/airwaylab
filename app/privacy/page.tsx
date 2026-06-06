@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 30 April 2026
+          Last updated: 31 May 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -36,11 +36,19 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2>1. Who We Are</h2>
           <p>
-            AirwayLab (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is an open-source
-            sleep and airway analysis tool operated under the domain airwaylab.app. AirwayLab is
+            <strong>AirwayLab B.V.</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is an open-source
+            sleep and airway analysis tool operated under the domain airwaylab.app. AirwayLab B.V. is
             not a medical device and is not cleared or approved by the FDA, CE, TGA, or any
             regulatory body. It is provided for educational and informational purposes only.
           </p>
+          <div className="my-3 rounded-lg border border-border bg-card/50 p-4 text-xs">
+            <p className="font-semibold text-foreground">Data Controller (GDPR Art. 13/14)</p>
+            <p className="mt-1 leading-relaxed">
+              AirwayLab B.V.<br />
+              Helperpark 274-6, 9723 ZA Groningen, Netherlands<br />
+              Registered: 2026-05-20
+            </p>
+          </div>
           <p>
             For privacy questions,{' '}
             <a href="/contact?category=privacy">contact us via our contact form</a>.
@@ -169,9 +177,9 @@ export default function PrivacyPolicyPage() {
           <h3 className="mt-4">3.5 Automatically Collected Data</h3>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              <strong>Page views &amp; conversion events:</strong> Collected by Plausible Analytics
-              (privacy-first, cookie-free, no personal data) and PostHog (product analytics and
-              session replay). PostHog session recording is disabled on all health-data pages.
+              <strong>Page views &amp; conversion events:</strong> Collected by PostHog (product
+              analytics and session replay, privacy-first, cookie-free, no personal data).
+              PostHog session recording is disabled on all health-data pages.
               No health data is included in any analytics event.
             </li>
             <li>
@@ -196,7 +204,7 @@ export default function PrivacyPolicyPage() {
           <ul className="ml-4 list-disc space-y-1">
             <li>Cookies (we use none)</li>
             <li>Browser fingerprints</li>
-            <li>IP addresses for tracking (Plausible does not store IPs)</li>
+            <li>IP addresses for tracking (PostHog does not store IPs)</li>
             <li>Raw sleep waveforms (never transmitted unless you explicitly contribute them for research -- see section 3.4)</li>
             <li>Device serial numbers or user names from PAP machines</li>
           </ul>
@@ -205,6 +213,10 @@ export default function PrivacyPolicyPage() {
         {/* 4. Legal Basis */}
         <section>
           <h2>4. Legal Basis for Processing (GDPR)</h2>
+          <p>
+            The data controller for all personal data processed by this service is{' '}
+            <strong>AirwayLab B.V.</strong>, Helperpark 274-6, 9723 ZA Groningen, Netherlands.
+          </p>
           <p>If you are in the European Economic Area, we process your data under:</p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
@@ -217,7 +229,7 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Legitimate interest (Art. 6(1)(f)):</strong> Error monitoring (Sentry),
-              anonymous usage analytics (Plausible), and security protections.
+              anonymous usage analytics (PostHog), and security protections.
             </li>
           </ul>
         </section>
@@ -246,7 +258,7 @@ export default function PrivacyPolicyPage() {
               account deletion.
             </li>
             <li>
-              <strong>Analytics (Plausible):</strong> Aggregate data only, no personal data
+              <strong>Analytics (PostHog):</strong> Aggregate data only, no personal data
               retained.
             </li>
             <li>
@@ -303,16 +315,10 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2">HTTP requests (no health data)</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">Plausible</td>
-                  <td className="py-2 pr-4">Privacy-first analytics</td>
-                  <td className="py-2 pr-4">EU</td>
-                  <td className="py-2">Page views only, no personal data</td>
-                </tr>
-                <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">PostHog</td>
                   <td className="py-2 pr-4">Product analytics &amp; session replay</td>
-                  <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes).</td>
+                  <td className="py-2 pr-4">EU</td>
+                  <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes). No personal data or IPs stored.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Sentry</td>
@@ -409,7 +415,7 @@ export default function PrivacyPolicyPage() {
               dashboard. You can also contact us to request full account deletion.
             </li>
             <li>
-              <strong>Opt out of analytics:</strong> Plausible respects your browser&rsquo;s
+              <strong>Opt out of analytics:</strong> PostHog respects your browser&rsquo;s
               Do Not Track setting. You can also use a browser extension to block analytics.
             </li>
           </ul>
@@ -457,10 +463,10 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2>11. International Data Transfers</h2>
           <p>
-            Our primary database is hosted in the EU (Supabase EU-West region). Some services
-            (Anthropic, Sentry, Resend, Upstash, Google) process data in the US. For EU users,
-            these transfers are governed by Standard Contractual Clauses (SCCs) or the EU-US
-            Data Privacy Framework where applicable.
+            AirwayLab B.V. is incorporated in the Netherlands (EU). Our primary database is hosted
+            in the EU (Supabase EU-West region). Some services (Anthropic, Sentry, Resend, Upstash,
+            Google) process data in the US. For EU users, these transfers are governed by Standard
+            Contractual Clauses (SCCs) or the EU-US Data Privacy Framework where applicable.
           </p>
           <p>
             AI insights are opt-in. If you choose not to use AI features, no health-related data
