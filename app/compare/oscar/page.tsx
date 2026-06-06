@@ -56,7 +56,7 @@ const faqData = [
   {
     question: 'Should I switch from OSCAR to AirwayLab?',
     answer:
-      'No -- use both. OSCAR excels at interactive waveform inspection and supports many devices. AirwayLab adds automated flow limitation scoring, RERA detection, and composite metrics that OSCAR does not compute. They solve different problems and work best together.',
+      'No -- use both. OSCAR excels at interactive waveform inspection and supports many devices. AirwayLab adds automated flow limitation scoring, progressive effort-pattern analysis, and composite metrics that OSCAR does not compute. They solve different problems and work best together.',
   },
   {
     question: 'Does AirwayLab support all the same devices as OSCAR?',
@@ -200,7 +200,7 @@ export default function CompareOscarPage() {
               </p>
             </div>
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-              <p className="text-sm font-semibold text-emerald-400">RERA Detection</p>
+              <p className="text-sm font-semibold text-emerald-400">Progressive Effort Patterns</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 AirwayLab&apos;s NED engine identifies sequences of flow-limited breaths that end in
                 arousals, estimating a RERA index and Respiratory Disturbance Index that OSCAR cannot
@@ -263,7 +263,7 @@ export default function CompareOscarPage() {
                 <td className="px-4 py-2.5 text-center text-emerald-400">4 engines</td>
               </tr>
               <tr className="border-b border-border/30">
-                <td className="py-2.5 pr-4">RERA detection</td>
+                <td className="py-2.5 pr-4">Effort-pattern analysis</td>
                 <td className="px-4 py-2.5 text-center text-muted-foreground/60">No</td>
                 <td className="px-4 py-2.5 text-center text-emerald-400">Yes (NED)</td>
               </tr>
