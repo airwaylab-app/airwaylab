@@ -17,7 +17,12 @@ set -euo pipefail
 run() { psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q "$@"; }
 
 if [ -f supabase/baseline.sql ]; then
-  echo ">> GATE mode: applying schema baseline (supabase/baseline.sql)"
+  echo ">> GATE mode: pre-shim (Supabase env) + schema baseline"
+  # the baseline assumes the Supabase platform (roles, auth.users/auth.uid,
+  # extensions); ci-db-preshim.sql provides a minimal stand-in. search_path
+  # matches prod so unqualified references resolve.
+  export PGOPTIONS="-c search_path=public,auth,storage,extensions"
+  run -f scripts/ci-db-preshim.sql
   run -f supabase/baseline.sql
   cut="$(cat supabase/baseline.cut 2>/dev/null || echo 000)"
   echo ">> applying migrations newer than baseline cut ${cut}"
