@@ -32,6 +32,13 @@ if [ -f supabase/baseline.sql ]; then
     n="$(basename "$f" | grep -oE '^[0-9]+' || echo 000)"
     if [ "$n" \> "$cut" ]; then echo "   apply $(basename "$f")"; run -f "$f"; fi
   done
+  # Role GRANTs (the structure-only baseline excludes them). Applied last so they
+  # cover whatever the migrations left in place; required for the PostgREST tests
+  # to hit real per-role permission boundaries (anon vs service_role).
+  if [ -f supabase/baseline.grants.sql ]; then
+    echo ">> applying role grants (supabase/baseline.grants.sql)"
+    run -f supabase/baseline.grants.sql
+  fi
 else
   echo ">> AUDIT mode: no baseline; shim + full replay (expects history defects, see PR #984)"
   run -f scripts/ci-db-bootstrap.sql
