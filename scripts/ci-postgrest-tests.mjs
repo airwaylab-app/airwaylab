@@ -14,9 +14,11 @@
  *      EXECUTE on the RPC from PUBLIC — replicated in baseline.grants.sql).
  *   4. schema-cache reload semantics (a new function is invisible until
  *      `NOTIFY pgrst, 'reload schema'`).
- *   5. the 2026-06-04 billing incident: `.update().or()` is rejected by PostgREST
- *      with PG 42703, proven observable end-to-end. Defense-in-depth to the
- *      static `scripts/check-no-mutation-or.mjs` guard.
+ *   5. DIAGNOSTIC — the 2026-06-04 `.update().or()` billing incident. Logs the
+ *      live or-on-mutation behaviour (not asserted): upstream PostgREST has since
+ *      fixed it, so the 42703 symptom no longer reproduces on v12.2.x / v13.x. The
+ *      version-independent static `scripts/check-no-mutation-or.mjs` guard is the
+ *      real defense; this records what the live stack actually does.
  *
  * No npm dependencies: built-in fetch + crypto for the (HS256) JWT, and psql
  * (already installed in the job) for the DDL/NOTIFY a PostgREST client can't do.
@@ -171,35 +173,34 @@ async function run() {
   psql(`drop function if exists public.__g5_reload_probe()`);
   await reloadSchema();
 
-  // 5) the billing incident: `.update().or()` → PostgREST 42703 (undefined_column).
-  //    This is the EXACT claim filter from the 057/#945 webhook (see migration
-  //    063): .eq('event_id',…).or('status.in.(pending,failed),and(status.eq.processing,updated_at.lt.<cutoff>)')
-  //    which serialises to the URL below. Upstream PostgREST has since fixed a
-  //    FLAT `or` on a mutation, but this NESTED logic tree (an `and(...)` inside
-  //    the `or(...)`) is what stranded every checkout — PostgREST reports
-  //    "column stripe_events.status does not exist" (42703). The same filter on a
-  //    SELECT works fine. Defense-in-depth to the static check-no-mutation-or.mjs.
+  // 5) DIAGNOSTIC (not asserted): `.update().or()` — the 2026-06-04 billing
+  //    incident pattern. The 057/#945 webhook claimed events with
+  //    .eq('event_id',…).or('status.in.(pending,failed),and(status.eq.processing,updated_at.lt.<cutoff>)')
+  //    and PostgREST rejected it with PG 42703 "column stripe_events.status does
+  //    not exist", stranding every checkout (fix: the claim_stripe_event RPC,
+  //    migration 063). VERIFIED HERE: upstream PostgREST has since fixed `or` on a
+  //    mutation — BOTH the flat and the exact nested incident filter return 200 on
+  //    v12.2.x / v13.x (they apply the filter correctly). So the 42703 symptom is
+  //    no longer reproducible on these versions; we log the live behavior for the
+  //    record rather than assert it. The version-INDEPENDENT defense is the static
+  //    scripts/check-no-mutation-or.mjs guard, which blocks the pattern in code —
+  //    important because the failure mode is now SILENT (a wrong filter would
+  //    mis-update quietly) rather than a loud 42703.
   const incidentOr =
     `or=(status.in.(pending,failed),and(status.eq.processing,updated_at.lt.${encodeURIComponent(cutoff)}))`;
-  const orUpdate = await req(
-    'PATCH',
-    `/stripe_events?event_id=eq.${EV}&${incidentOr}`,
+  const nestedOr = await req(
+    'PATCH', `/stripe_events?event_id=eq.${EV}&${incidentOr}`,
     { jwt: SERVICE, prefer: 'return=representation', body: { attempts: 99 } },
   );
-  check('.update().or() is rejected, not a silent success', orUpdate.status >= 400,
-    `status=${orUpdate.status} body=${JSON.stringify(orUpdate.body)}`);
-  check('.update().or() fails with PG 42703 (undefined_column)', orUpdate.body?.code === '42703',
-    `status=${orUpdate.status} code=${orUpdate.body?.code} body=${JSON.stringify(orUpdate.body)}`);
-  console.log(
-    `     .update().or() → status=${orUpdate.status}, code=${orUpdate.body?.code}, message=${JSON.stringify(orUpdate.body?.message)}`,
-  );
-  // Diagnostic only (not asserted): how a FLAT `or` on the same mutation behaves
-  // on this PostgREST version — fixed upstream, so this is expected to be 200.
   const flatOr = await req(
     'PATCH', `/stripe_events?event_id=eq.${EV}&or=(status.eq.pending,status.eq.failed)`,
     { jwt: SERVICE, prefer: 'return=representation', body: { attempts: 98 } },
   );
-  console.log(`     (flat .or() → status=${flatOr.status}, code=${flatOr.body?.code ?? 'n/a'})`);
+  console.log(
+    `  diag .update().or() incident(nested) → status=${nestedOr.status}, code=${nestedOr.body?.code ?? 'n/a'}` +
+    `; flat → status=${flatOr.status}, code=${flatOr.body?.code ?? 'n/a'} ` +
+    `(42703 here = incident reproduced; 200 = or-on-mutation fixed upstream — static guard remains the defense)`,
+  );
 
   psql(`delete from public.stripe_events where event_id like '__g5_pgrst%'`);
 
