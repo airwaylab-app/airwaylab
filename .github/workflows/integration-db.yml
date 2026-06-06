@@ -1,9 +1,11 @@
 name: Integration DB
 
-# Replays the full migration history into a throwaway Postgres and runs the SQL
-# contract tests. NON-REQUIRED for now (see ruleset) — promote to a required
-# check once it is reliably green. Runs on PRs + manual dispatch (not in the
-# merge queue, to avoid slowing it while this is being stabilised).
+# Builds a throwaway Postgres from the prod schema baseline (GATE mode) and runs
+# the SQL contract tests, then stands up a real PostgREST in front of it and runs
+# the G5 client tests (per-role permission boundaries, the claim_stripe_event RPC,
+# schema-cache reload, and the `.update().or()` 42703 billing-incident pattern).
+# NON-REQUIRED for now (see ruleset) — promote to a required check once it is
+# reliably green. Runs on PRs + manual dispatch (not in the merge queue).
 on:
   pull_request:
     branches: [main]
@@ -34,11 +36,48 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+      # PostgREST connects as the `postgres` superuser (it exists from container
+      # init, so it connects immediately — no cold-start race with the schema
+      # apply) and SET ROLEs into anon/service_role per the request JWT
+      # (db-anon-role=anon). Every request switches role, so no query runs as the
+      # superuser and the per-role boundaries the tests assert hold. It boots
+      # against an empty DB; the test runner issues `NOTIFY pgrst, 'reload schema'`
+      # once the baseline is applied. The JWT secret is a throwaway CI value (a
+      # local, ephemeral container — not a real credential); it is duplicated in
+      # the test step env below because the `env:` context is not available to
+      # services.
+      # Pinned to the Supabase GA PostgREST line (v12.2.x) for prod fidelity of the
+      # RPC / permission / schema-reload behaviour the tests assert. NOTE on the
+      # 2026-06-04 `.update().or()` → 42703 incident: upstream PostgREST has since
+      # fixed `or` on mutations (both the flat and the exact nested incident filter
+      # return 200 on v12.2.x / v13.x), so that symptom is no longer reproducible
+      # here — the test logs the live behaviour as a diagnostic, and the
+      # version-independent static check-no-mutation-or.mjs guard is the defense.
+      # Track Supabase's PostgREST version when bumping.
+      postgrest:
+        image: postgrest/postgrest:v12.2.12
+        env:
+          PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/airwaylab_test
+          PGRST_DB_SCHEMAS: public
+          PGRST_DB_ANON_ROLE: anon
+          PGRST_JWT_SECRET: ci-only-not-a-real-secret-pgrst-jwt-0123456789
+          PGRST_DB_CHANNEL_ENABLED: "true"
+          PGRST_LOG_LEVEL: info
+        ports:
+          - 3000:3000
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/airwaylab_test
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Install psql client
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
-      - name: Replay migrations + SQL contract tests
+      - name: Replay baseline + migrations + grants + SQL contract tests
         run: bash scripts/db-replay.sh
+      - name: PostgREST client tests (G5)
+        env:
+          PGRST_URL: http://localhost:3000
+          PGRST_JWT_SECRET: ci-only-not-a-real-secret-pgrst-jwt-0123456789
+        run: node scripts/ci-postgrest-tests.mjs

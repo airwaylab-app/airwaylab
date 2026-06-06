@@ -23,7 +23,12 @@ create or replace function auth.role() returns text language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon');
 $$;
 
--- standard Supabase roles (the baseline's policies/grants reference these)
+-- standard Supabase roles (the baseline's policies/grants reference these).
+-- PostgREST connects as the `postgres` superuser in CI (it exists from container
+-- init, so there is no cold-start race while this shim runs) and SET ROLEs into
+-- anon / service_role per the request JWT (PGRST_DB_ANON_ROLE=anon). Role
+-- switching, not the login identity, is what the G5 client tests exercise, so the
+-- per-role permission boundaries are faithful regardless of the login role.
 do $$
 begin
   if not exists (select from pg_roles where rolname = 'anon') then
