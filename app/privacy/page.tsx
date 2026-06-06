@@ -348,7 +348,13 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4 font-medium text-foreground">Discord</td>
                   <td className="py-2 pr-4">Community (opt-in, paid subscribers only)</td>
                   <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Discord user ID and username only. No health data is sent to Discord.</td>
+                  <td className="py-2">Discord user ID and username only. No health data is sent to Discord via this channel.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 font-medium text-foreground">Discord (admin webhook)</td>
+                  <td className="py-2 pr-4">Internal feedback triage &amp; operational alerts (admin-only channel)</td>
+                  <td className="py-2 pr-4">US</td>
+                  <td className="py-2">Feedback message text, submitter email (if provided), app metadata (page, tier, browser). No raw therapy data. Message text may contain health context provided voluntarily by the user.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Google (Gmail API)</td>
