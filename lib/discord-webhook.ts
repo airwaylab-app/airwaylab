@@ -82,6 +82,7 @@ export type AlertType =
   // → #platform-health
   | 'sentry_spike'
   | 'deploy_to_prod'
+  | 'supported_device_extraction_failed' // a device we support produced an empty-settings diagnostic
   // → #audit-log
   | 'account_deletion'
   // → weekly-digest accumulator (no live Discord push)
@@ -147,6 +148,7 @@ const ALERT_ROUTING: Record<AlertType, RoutingDecision> = {
   // #platform-health
   sentry_spike: { action: 'send', channel: 'platform-health' },
   deploy_to_prod: { action: 'send', channel: 'platform-health' },
+  supported_device_extraction_failed: { action: 'send', channel: 'platform-health' },
   // #audit-log
   account_deletion: { action: 'send', channel: 'audit-log' },
   // weekly-digest accumulator — no live Discord push
