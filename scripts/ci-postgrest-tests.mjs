@@ -172,12 +172,18 @@ async function run() {
   await reloadSchema();
 
   // 5) the billing incident: `.update().or()` → PostgREST 42703 (undefined_column).
-  //    Mirrors the supabase-js wire format exactly: .eq('event_id',…).or('status…')
-  //    serialises to ?event_id=eq.…&or=(status…). The same `or` on a SELECT works;
-  //    on a MUTATION PostgREST reports "column stripe_events.status does not exist".
+  //    This is the EXACT claim filter from the 057/#945 webhook (see migration
+  //    063): .eq('event_id',…).or('status.in.(pending,failed),and(status.eq.processing,updated_at.lt.<cutoff>)')
+  //    which serialises to the URL below. Upstream PostgREST has since fixed a
+  //    FLAT `or` on a mutation, but this NESTED logic tree (an `and(...)` inside
+  //    the `or(...)`) is what stranded every checkout — PostgREST reports
+  //    "column stripe_events.status does not exist" (42703). The same filter on a
+  //    SELECT works fine. Defense-in-depth to the static check-no-mutation-or.mjs.
+  const incidentOr =
+    `or=(status.in.(pending,failed),and(status.eq.processing,updated_at.lt.${encodeURIComponent(cutoff)}))`;
   const orUpdate = await req(
     'PATCH',
-    `/stripe_events?event_id=eq.${EV}&or=(status.eq.pending,status.eq.failed)`,
+    `/stripe_events?event_id=eq.${EV}&${incidentOr}`,
     { jwt: SERVICE, prefer: 'return=representation', body: { attempts: 99 } },
   );
   check('.update().or() is rejected, not a silent success', orUpdate.status >= 400,
@@ -187,6 +193,13 @@ async function run() {
   console.log(
     `     .update().or() → status=${orUpdate.status}, code=${orUpdate.body?.code}, message=${JSON.stringify(orUpdate.body?.message)}`,
   );
+  // Diagnostic only (not asserted): how a FLAT `or` on the same mutation behaves
+  // on this PostgREST version — fixed upstream, so this is expected to be 200.
+  const flatOr = await req(
+    'PATCH', `/stripe_events?event_id=eq.${EV}&or=(status.eq.pending,status.eq.failed)`,
+    { jwt: SERVICE, prefer: 'return=representation', body: { attempts: 98 } },
+  );
+  console.log(`     (flat .or() → status=${flatOr.status}, code=${flatOr.body?.code ?? 'n/a'})`);
 
   psql(`delete from public.stripe_events where event_id like '__g5_pgrst%'`);
 
