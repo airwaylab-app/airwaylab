@@ -157,7 +157,7 @@ const landingFaqData = [
   {
     question: 'What is AirwayLab?',
     answer:
-      'AirwayLab is a free, open-source web tool that analyses ResMed CPAP and BiPAP SD card data using four research-grade engines: Glasgow Index (breath shape scoring), WAT (flow limitation and periodicity), NED (negative effort dependence and RERA detection), and Oximetry (SpO2 and heart rate analysis). All analysis runs entirely in your browser. No data is uploaded to any server unless you choose to share it.',
+      'AirwayLab is a free, open-source web tool that analyses ResMed CPAP and BiPAP SD card data using four research-grade engines: Glasgow Index (breath shape scoring), WAT (flow limitation and periodicity), NED (negative effort dependence and effort-pattern analysis), and Oximetry (SpO2 and heart rate analysis). All analysis runs entirely in your browser. No data is uploaded to any server unless you choose to share it.',
   },
   {
     question: 'Is AirwayLab free?',

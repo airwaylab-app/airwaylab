@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'For Researchers — AirwayLab',
     description:
-      'Large-scale anonymised PAP therapy dataset for sleep science research. Collaborate with us on flow limitation, RERA detection, and breathing pattern analysis.',
+      'Large-scale anonymised PAP therapy dataset for sleep science research. Collaborate with us on flow limitation, effort-pattern analysis, and breathing pattern analysis.',
   },
   alternates: {
     canonical: 'https://airwaylab.app/research',
@@ -168,7 +168,7 @@ const pipelineSteps = [
 const collaborationItems = [
   'Access to anonymised, aggregate breathing metrics from thousands of real-world therapy nights',
   'Validation partnerships for our analysis engines (Glasgow Index, WAT, NED) against clinical gold-standard measurements',
-  'Joint research on flow limitation patterns, RERA detection, and the relationship between breathing metrics and patient outcomes',
+  'Joint research on flow limitation patterns, effort-pattern analysis, and the relationship between breathing metrics and patient outcomes',
   'Open-source codebase (GPL-3.0) \u2014 adapt our algorithms for your research, contribute improvements back',
 ];
 

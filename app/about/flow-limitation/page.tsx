@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     'PAP partial obstruction', 'UARS', 'RERA', 'ResMed flow data',
     'PAP pressure too low', 'flow limitation treatment',
     'OSCAR flow limitation', 'PAP therapy optimisation',
-    'WAT analysis', 'NED analysis', 'RERA detection', 'flow limitation PAP',
+    'WAT analysis', 'NED analysis', 'effort-pattern analysis', 'flow limitation PAP',
   ],
   alternates: {
     canonical: 'https://airwaylab.app/about/flow-limitation',
@@ -101,7 +101,7 @@ const detectionMethods = [
     borderColor: 'border-amber-500/20',
     bgColor: 'bg-amber-500/5',
     approach:
-      'Measures the ratio of peak-to-mid inspiratory flow (Negative Effort Dependence) to quantify airway narrowing. Also detects M-shaped breaths and automated RERA event sequences.',
+      'Measures the ratio of peak-to-mid inspiratory flow (Negative Effort Dependence) to quantify airway narrowing. Also identifies M-shaped breaths and progressive effort-related breathing patterns.',
     link: '/about',
   },
 ];
