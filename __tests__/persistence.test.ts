@@ -118,6 +118,37 @@ describe('persistence', () => {
       expect(parsed.nights[0].ned.reras).toBeUndefined();
     });
 
+    it('preserves ned.reraTimestamps through persistResults → loadPersistedResults round-trip', () => {
+      const reraTimestamps = [
+        { startSec: 100, durationSec: 30 },
+        { startSec: 250, durationSec: 25 },
+        { startSec: 410, durationSec: 28 },
+      ];
+      const nightWithTimestamps = {
+        ...SAMPLE_NIGHTS[0]!,
+        ned: {
+          ...SAMPLE_NIGHTS[0]!.ned,
+          reraCount: 3,
+          reras: reraTimestamps.map((t, i) => ({
+            startBreathIdx: i * 10, endBreathIdx: i * 10 + 8, breathCount: 8,
+            nedSlope: 1.0, hasRecovery: true, hasSigh: false, maxNED: 40,
+            startSec: t.startSec, durationSec: t.durationSec,
+          })),
+          reraTimestamps,
+        },
+      };
+      persistResults([nightWithTimestamps] as unknown as typeof SAMPLE_NIGHTS, null);
+      const loaded = loadPersistedResults();
+      expect(loaded).not.toBeNull();
+      const loadedNight = loaded!.nights[0]!;
+      // Full reras stripped — only compact timestamps kept
+      expect(loadedNight.ned.reras).toBeUndefined();
+      expect(loadedNight.ned.reraTimestamps).toHaveLength(3);
+      expect(loadedNight.ned.reraTimestamps).toEqual(reraTimestamps);
+      // Timestamps length matches reraCount
+      expect(loadedNight.ned.reraTimestamps!.length).toBe(loadedNight.ned.reraCount);
+    });
+
     it('strips csl.episodes from persisted data but keeps aggregate stats', () => {
       const nightWithCSL = {
         ...SAMPLE_NIGHTS[0]!,

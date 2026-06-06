@@ -39,6 +39,7 @@ function stripBulkData(nights: NightResult[]): NightResult[] {
         ...n.ned,
         breaths: [], // Per-breath data stored in IndexedDB (breath-data-idb.ts), not localStorage
         reras: undefined, // RERA candidate list not needed for display; can be large for heavy RERA users
+        reraTimestamps: n.ned.reraTimestamps, // compact timestamps kept for graph overlay alignment
       },
       oximetryTrace: null, // trace data too large for localStorage — re-extract on demand
       // CSL episodes accumulate for severe CSR patients; keep aggregate stats, drop the episode list
