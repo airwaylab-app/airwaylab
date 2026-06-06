@@ -44,7 +44,7 @@ create table storage.objects (
   updated_at timestamp with time zone default now(),
   last_accessed_at timestamp with time zone default now(),
   metadata jsonb,
-  path_tokens text[] default string_to_array(name, '/'::text),
+  path_tokens text[] generated always as (string_to_array(name, '/'::text)) stored,
   version text,
   owner_id text,
   user_metadata jsonb
