@@ -46,8 +46,15 @@ jobs:
       # local, ephemeral container — not a real credential); it is duplicated in
       # the test step env below because the `env:` context is not available to
       # services.
+      # Pinned to the Supabase GA PostgREST line (v12.2.x). This MATTERS: the
+      # `.update().or()` → 42703 billing-incident behaviour is version-specific —
+      # upstream PostgREST fixed `or` on mutations by v13.0.x (it now applies the
+      # filter and returns 200), so a v13 image would NOT reproduce the incident.
+      # The 2026-06-04 incident hit prod (same PostgREST that runs now), so the
+      # gate must run a prod-era version to faithfully catch the 42703 class.
+      # Track Supabase's PostgREST version when bumping.
       postgrest:
-        image: postgrest/postgrest:v13.0.8
+        image: postgrest/postgrest:v12.2.12
         env:
           PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/airwaylab_test
           PGRST_DB_SCHEMAS: public
