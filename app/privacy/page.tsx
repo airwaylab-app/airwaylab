@@ -177,9 +177,9 @@ export default function PrivacyPolicyPage() {
           <h3 className="mt-4">3.5 Automatically Collected Data</h3>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              <strong>Page views &amp; conversion events:</strong> Collected by Plausible Analytics
-              (privacy-first, cookie-free, no personal data) and PostHog (product analytics and
-              session replay). PostHog session recording is disabled on all health-data pages.
+              <strong>Page views &amp; conversion events:</strong> Collected by PostHog (product
+              analytics and session replay, privacy-first, cookie-free, no personal data).
+              PostHog session recording is disabled on all health-data pages.
               No health data is included in any analytics event.
             </li>
             <li>
@@ -204,7 +204,7 @@ export default function PrivacyPolicyPage() {
           <ul className="ml-4 list-disc space-y-1">
             <li>Cookies (we use none)</li>
             <li>Browser fingerprints</li>
-            <li>IP addresses for tracking (Plausible does not store IPs)</li>
+            <li>IP addresses for tracking (PostHog does not store IPs)</li>
             <li>Raw sleep waveforms (never transmitted unless you explicitly contribute them for research -- see section 3.4)</li>
             <li>Device serial numbers or user names from PAP machines</li>
           </ul>
@@ -229,7 +229,7 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Legitimate interest (Art. 6(1)(f)):</strong> Error monitoring (Sentry),
-              anonymous usage analytics (Plausible), and security protections.
+              anonymous usage analytics (PostHog), and security protections.
             </li>
           </ul>
         </section>
@@ -258,7 +258,7 @@ export default function PrivacyPolicyPage() {
               account deletion.
             </li>
             <li>
-              <strong>Analytics (Plausible):</strong> Aggregate data only, no personal data
+              <strong>Analytics (PostHog):</strong> Aggregate data only, no personal data
               retained.
             </li>
             <li>
@@ -315,16 +315,10 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2">HTTP requests (no health data)</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-foreground">Plausible</td>
-                  <td className="py-2 pr-4">Privacy-first analytics</td>
-                  <td className="py-2 pr-4">EU</td>
-                  <td className="py-2">Page views only, no personal data</td>
-                </tr>
-                <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">PostHog</td>
                   <td className="py-2 pr-4">Product analytics &amp; session replay</td>
-                  <td className="py-2 pr-4">US</td>
-                  <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes).</td>
+                  <td className="py-2 pr-4">EU</td>
+                  <td className="py-2">Page views, conversion events, and anonymised session recordings. Session recording is disabled on all health-data pages (/analyze routes). No personal data or IPs stored.</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Sentry</td>
@@ -421,7 +415,7 @@ export default function PrivacyPolicyPage() {
               dashboard. You can also contact us to request full account deletion.
             </li>
             <li>
-              <strong>Opt out of analytics:</strong> Plausible respects your browser&rsquo;s
+              <strong>Opt out of analytics:</strong> PostHog respects your browser&rsquo;s
               Do Not Track setting. You can also use a browser extension to block analytics.
             </li>
           </ul>

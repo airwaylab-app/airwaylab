@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Suspense } from 'react';
@@ -11,8 +10,6 @@ import { VersionChecker } from '@/components/common/version-checker';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { PostHogProvider } from '@/components/analytics/posthog-provider';
 import { PostHogPageview } from '@/components/analytics/posthog-pageview';
-
-const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -120,14 +117,6 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
-        {plausibleDomain && (
-          <Script
-            defer
-            data-domain={plausibleDomain}
-            src="https://plausible.io/js/script.js"
-            strategy="afterInteractive"
-          />
-        )}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
