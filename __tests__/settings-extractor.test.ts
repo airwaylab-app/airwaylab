@@ -194,8 +194,8 @@ describe('parseIdentification — AirCurve 11 nested JSON', () => {
   });
 });
 
-describe('sensitivityLabel — AirCurve 11 scale', () => {
-  it('maps old scale (0-4) correctly by default', () => {
+describe('sensitivityLabel — shared 0-4 scale (AirCurve 10 and 11)', () => {
+  it('maps the 0-4 scale', () => {
     expect(sensitivityLabel(0)).toBe('very low');
     expect(sensitivityLabel(1)).toBe('low');
     expect(sensitivityLabel(2)).toBe('medium');
@@ -203,27 +203,18 @@ describe('sensitivityLabel — AirCurve 11 scale', () => {
     expect(sensitivityLabel(4)).toBe('very high');
   });
 
-  it('maps AirCurve 11 scale (1-5) when isAirCurve11 is true', () => {
-    expect(sensitivityLabel(1, true)).toBe('very low');
-    expect(sensitivityLabel(2, true)).toBe('low');
-    expect(sensitivityLabel(3, true)).toBe('medium');
-    expect(sensitivityLabel(4, true)).toBe('high');
-    expect(sensitivityLabel(5, true)).toBe('very high');
-  });
-
-  it('old scale value 3 = "high" but AC11 scale value 3 = "medium"', () => {
-    expect(sensitivityLabel(3, false)).toBe('high');
-    expect(sensitivityLabel(3, true)).toBe('medium');
+  it('AirCurve 11 uses the same 0-4 scale: raw 3 = "high" (#975)', () => {
+    // Regression: a real AirCurve 11 VAuto set to High stores raw 3. The old
+    // AC11-specific 1-5 remap mislabelled it "medium".
+    expect(sensitivityLabel(3)).toBe('high');
   });
 
   it('returns N/A for undefined', () => {
     expect(sensitivityLabel(undefined)).toBe('N/A');
-    expect(sensitivityLabel(undefined, true)).toBe('N/A');
   });
 
-  it('returns raw number for unmapped values', () => {
+  it('returns the raw number for unmapped values', () => {
     expect(sensitivityLabel(7)).toBe('7');
-    expect(sensitivityLabel(0, true)).toBe('0');
   });
 });
 
@@ -563,7 +554,7 @@ describe('extractSettings — AirSense 11 CPAP', () => {
 // ============================================================
 
 describe('extractSettings — AirCurve 11 VAuto', () => {
-  it('uses S.VA.Trigger for trigger signal and AC11 1-5 sensitivity scale', () => {
+  it('uses S.VA.Trigger for trigger signal, shared 0-4 sensitivity scale', () => {
     const buf = buildSTRBuffer([
       { label: 'Date',         values: [0],  physMin: 0,  physMax: 36500 },
       { label: 'TgtIPAP.50',   values: [14], physMin: 4,  physMax: 25 },
@@ -577,10 +568,10 @@ describe('extractSettings — AirCurve 11 VAuto', () => {
     const result = extractSettings(buf, 'AirCurve11VAuto');
     const day = result[Object.keys(result)[0]!]!;
     expect(day.papMode).toBe('BiPAP Auto');
-    // AC11 scale: 3 = medium (not "high" as in old scale)
-    expect(day.trigger).toBe('medium');
-    // AC11 scale: 2 = low
-    expect(day.cycle).toBe('low');
+    // 0-4 scale (AirCurve 10 and 11 alike): raw 3 = high (#975)
+    expect(day.trigger).toBe('high');
+    // raw 2 = medium
+    expect(day.cycle).toBe('medium');
   });
 
   it('remaps mode 8 to VAuto for AirCurve 11', () => {
@@ -612,9 +603,9 @@ describe('extractSettings — AirCurve 11 VAuto', () => {
     ]);
     const result = extractSettings(buf, 'AirCurve11VAuto');
     const day = result[Object.keys(result)[0]!]!;
-    // AC11 scale: 4 = high
-    expect(day.trigger).toBe('high');
-    // AC11 scale: 1 = very low
-    expect(day.cycle).toBe('very low');
+    // 0-4 scale: raw 4 = very high
+    expect(day.trigger).toBe('very high');
+    // raw 1 = low
+    expect(day.cycle).toBe('low');
   });
 });
