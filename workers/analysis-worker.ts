@@ -491,13 +491,25 @@ async function processFiles(
     }
   }
 
-  // Step 5: Parse oximetry CSVs (SA2 takes priority — skip CSV if SA2 already present)
+  // Step 5: Parse oximetry CSVs. A device SA2 file is normally preferred, but some
+  // machines emit empty/placeholder SA2.edf files that parse to all-invalid samples
+  // (issue #988). Those must not mask an explicitly-uploaded CSV. So a *usable*
+  // uploaded CSV overrides an existing SA2 entry for the same night — the user
+  // deliberately uploaded it, and this survives empty SA2 regardless of its
+  // internal structure. computeNightOximetry later drops anything still unusable.
   if (oximetryCSVs) {
     for (const csv of oximetryCSVs) {
       try {
         const parsed = parseOximetryCSV(csv);
-        if (oximetryByDate.has(parsed.dateStr)) {
-          console.debug(`[oximetry] SA2 data available for night ${parsed.dateStr}, skipping CSV`);
+        const existing = oximetryByDate.get(parsed.dateStr);
+        if (existing) {
+          const csvUsable = hasUsableOximetry(computeOximetry(parsed.samples, parsed.intervalSeconds));
+          if (csvUsable) {
+            oximetryByDate.set(parsed.dateStr, parsed);
+            console.debug(`[oximetry] uploaded CSV overrides device SA2 for night ${parsed.dateStr}`);
+          } else {
+            console.debug(`[oximetry] keeping device SA2 for night ${parsed.dateStr} (uploaded CSV not usable)`);
+          }
         } else {
           oximetryByDate.set(parsed.dateStr, parsed);
         }

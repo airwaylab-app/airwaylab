@@ -167,5 +167,24 @@ describe('Oximetry Engine', () => {
       expect(result.spo2Mean).toBeGreaterThan(0);
       expect(hasUsableOximetry(result)).toBe(true);
     });
+
+    it('judges an empty/placeholder SA2 (all-invalid samples) as not usable', () => {
+      // parseSA2 emits spo2=-1, valid=false for out-of-range placeholder data.
+      // This is the empty-SA2 signature that was masking the real uploaded CSV
+      // (#988): a full night of these still has 0 retained samples, so a usable
+      // uploaded CSV must win over it.
+      const start = new Date('2026-06-06T22:00:00Z');
+      const emptySA2: OximetrySample[] = Array.from({ length: 5000 }, (_, i) => ({
+        time: new Date(start.getTime() + i * 1000),
+        spo2: -1,
+        hr: -1,
+        motion: 0,
+        valid: false,
+      }));
+
+      const result = computeOximetry(emptySA2, 1);
+      expect(result.retainedSamples).toBe(0);
+      expect(hasUsableOximetry(result)).toBe(false);
+    });
   });
 });
