@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights, persistNightsIncremental } from '@/lib/persistence';
+import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights, persistNightsIncremental, mergeNightsByDate } from '@/lib/persistence';
 import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 import type { NightResult } from '@/lib/types';
@@ -549,5 +549,41 @@ describe('filterNightsToTierWindow', () => {
     ];
     const result = filterNightsToTierWindow(nights, 'community');
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('mergeNightsByDate', () => {
+  const night = (dateStr: string, tag = 'x'): NightResult =>
+    ({ ...SAMPLE_NIGHTS[0]!, dateStr, _tag: tag } as unknown as NightResult);
+
+  it('unions disjoint lists, most-recent first', () => {
+    const merged = mergeNightsByDate(
+      [night('2025-02-01')],
+      [night('2025-01-01'), night('2025-03-01')],
+    );
+    expect(merged.map((n) => n.dateStr)).toEqual(['2025-03-01', '2025-02-01', '2025-01-01']);
+  });
+
+  it('primary wins on a date conflict', () => {
+    const merged = mergeNightsByDate(
+      [night('2025-01-01', 'fresh')],
+      [night('2025-01-01', 'stale')],
+    );
+    expect(merged).toHaveLength(1);
+    expect((merged[0] as unknown as { _tag: string })._tag).toBe('fresh');
+  });
+
+  it('keeps the fresh upload AND the prior history together (the #978 case)', () => {
+    const upload = [night('2025-03-08')];                       // new BiPAP night
+    const history = [night('2025-01-01'), night('2025-01-02')]; // earlier CPAP nights
+    const merged = mergeNightsByDate(upload, history);
+    expect(merged).toHaveLength(3);
+    expect(merged[0]!.dateStr).toBe('2025-03-08'); // newest first
+  });
+
+  it('handles empty inputs', () => {
+    expect(mergeNightsByDate([], [])).toEqual([]);
+    expect(mergeNightsByDate([night('2025-01-01')], [])).toHaveLength(1);
+    expect(mergeNightsByDate([], [night('2025-01-01')])).toHaveLength(1);
   });
 });

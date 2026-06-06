@@ -42,7 +42,7 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults, clearPersistedNights } from '@/lib/persistence';
+import { loadPersistedResults, clearPersistedNights, mergeNightsByDate } from '@/lib/persistence';
 import { events, capturePostHog, setPostHogPersonProps } from '@/lib/analytics';
 import { useTierHistoryWindowDays } from '@/hooks/use-tier-history-window-days';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
@@ -364,9 +364,15 @@ function AnalyzePageInner() {
           }
         }
 
-        // Orchestrator already calls persistResults internally — don't double-persist.
-        // The persistenceWarning from the orchestrator state will surface any issues.
-        setPersistedData(null);
+        // Keep prior history alongside the fresh upload in the in-memory view, so
+        // a second upload in one session doesn't appear to wipe earlier nights (#978).
+        // The orchestrator already persisted to localStorage; this only accumulates
+        // the dashboard view. mergeNightsByDate prefers the fresh nights on conflict.
+        setPersistedData((prev) => ({
+          nights: mergeNightsByDate(newState.nights, prev?.nights ?? []),
+          therapyChangeDate: newState.therapyChangeDate ?? prev?.therapyChangeDate ?? null,
+          savedAt: Date.now(),
+        }));
 
         // Detect oximetry just added (show confirmation banner)
         const hasOximetry = newState.nights.some((n) => !!n.oximetry);
@@ -583,7 +589,9 @@ function AnalyzePageInner() {
     const raw = isDemo
       ? SAMPLE_NIGHTS
       : state.nights.length > 0
-        ? state.nights
+        // Merge the fresh upload with accumulated history (cloud-hydrated +
+        // prior in-session uploads) so earlier nights stay visible (#978).
+        ? mergeNightsByDate(state.nights, persistedData?.nights ?? [])
         : persistedData?.nights ?? [];
 
     const windowDays = getAnalysisWindowDays(tier);
@@ -891,8 +899,11 @@ function AnalyzePageInner() {
           {/* Community Join Prompt — shown to new users after first analysis */}
           <CommunityJoinPrompt sessionCount={sessionCount} isDemo={isDemo} />
 
-          {/* Restored Session Banner */}
-          {!isDemo && persistedData && (
+          {/* Restored Session Banner — only when loaded from storage, not right
+              after a fresh in-session analysis (which now also sets persistedData
+              to accumulate prior nights, #978). status==='complete' is the
+              fresh-analysis signal; the "Analysis complete" banner owns that case. */}
+          {!isDemo && persistedData && status !== 'complete' && (
             <div className="flex flex-col gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Previous session restored</span>{' '}
@@ -911,8 +922,10 @@ function AnalyzePageInner() {
             </div>
           )}
 
-          {/* Fresh analysis summary — night count + date range */}
-          {!isDemo && !persistedData && status === 'complete' && nights.length > 0 && (
+          {/* Fresh analysis summary — night count + date range. Shown after a
+              fresh analysis regardless of persistedData (#978 now keeps prior
+              nights in persistedData so they stay visible in the merged count). */}
+          {!isDemo && status === 'complete' && nights.length > 0 && (
             <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 animate-fade-in-up">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
               <p className="text-sm text-muted-foreground">
