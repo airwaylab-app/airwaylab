@@ -21,7 +21,9 @@ if [ -f supabase/baseline.sql ]; then
   # the baseline assumes the Supabase platform (roles, auth.users/auth.uid,
   # extensions); ci-db-preshim.sql provides a minimal stand-in. search_path
   # matches prod so unqualified references resolve.
-  export PGOPTIONS="-c search_path=public,auth,storage,extensions"
+  # check_function_bodies=off defers SQL-function body validation so creation
+  # order doesn't matter (pg_dump does the same); search_path matches prod.
+  export PGOPTIONS="-c search_path=public,auth,storage,extensions -c check_function_bodies=off"
   run -f scripts/ci-db-preshim.sql
   run -f supabase/baseline.sql
   cut="$(cat supabase/baseline.cut 2>/dev/null || echo 000)"
