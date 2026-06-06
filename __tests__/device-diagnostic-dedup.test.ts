@@ -14,13 +14,15 @@ const kvStore = new Map<string, KvRow>()
 let _insertFn = vi.fn().mockResolvedValue({ error: null })
 // Shared sendAlert spy delegated to via wrapper — survives vi.resetModules()
 let _sendAlertFn = vi.fn().mockResolvedValue(true)
+// Shared routeAlert spy — the device-diagnostic route now routes via the AIR-1841 taxonomy
+let _routeAlertFn = vi.fn().mockResolvedValue(false)
 
 vi.mock('@/lib/discord-webhook', () => ({
   sendAlert: (...args: unknown[]) => _sendAlertFn(...args),
   formatUserSignalEmbed: vi.fn().mockReturnValue({}),
   COLORS: { green: 0x10b981, amber: 0xf59e0b, red: 0xef4444, blue: 0x3b82f6, purple: 0x8b5cf6, teal: 0x14b8a6 },
   _budget: { date: '', count: 0 },
-  routeAlert: vi.fn().mockResolvedValue(false),
+  routeAlert: (...args: unknown[]) => _routeAlertFn(...args),
   sendOpsAlert: vi.fn().mockResolvedValue(false),
   sendCriticalAlert: vi.fn().mockResolvedValue(false),
   alertCredentialExpiry: vi.fn().mockResolvedValue(false),
@@ -88,46 +90,51 @@ function makeRequest(deviceModel: string, hasStrFile = false): NextRequest {
   })
 }
 
-describe('device-diagnostic dedup', () => {
+// The loud, deduped engineering alert raised only for SUPPORTED devices that fail extraction.
+const LOUD = 'supported_device_extraction_failed'
+const countType = (t: string) => _routeAlertFn.mock.calls.filter((c) => c[0] === t).length
+
+describe('device-diagnostic dedup + routing', () => {
   beforeEach(() => {
     kvStore.clear()
     _insertFn = vi.fn().mockResolvedValue({ error: null })
     _sendAlertFn = vi.fn().mockResolvedValue(true)
+    _routeAlertFn = vi.fn().mockResolvedValue(false)
   })
 
-  it('fires 1 alert for 10 calls with the same device model', async () => {
+  it('fires 1 platform-health alert for 10 calls with the same supported model', async () => {
     for (let i = 0; i < 10; i++) {
       await POST(makeRequest('ResMed-AirSense10'))
     }
-    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
+    expect(countType(LOUD)).toBe(1)
   })
 
-  it('fires 2 alerts for two distinct device models (5 calls each)', async () => {
+  it('fires 2 alerts for two distinct supported models (5 calls each)', async () => {
     for (let i = 0; i < 5; i++) {
       await POST(makeRequest('ResMed-AirSense10'))
     }
     for (let i = 0; i < 5; i++) {
-      await POST(makeRequest('Philips-DreamStation'))
+      await POST(makeRequest('ResMed-AirCurve10'))
     }
-    expect(_sendAlertFn).toHaveBeenCalledTimes(2)
+    expect(countType(LOUD)).toBe(2)
   })
 
-  it('re-fires alert for same model after 24h TTL elapses', async () => {
+  it('re-fires alert for same supported model after 24h TTL elapses', async () => {
     let fakeNow = Date.now()
     vi.spyOn(Date, 'now').mockImplementation(() => fakeNow)
 
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
+    expect(countType(LOUD)).toBe(1)
 
     // Still within 24h — no second alert
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(_sendAlertFn).toHaveBeenCalledTimes(1)
+    expect(countType(LOUD)).toBe(1)
 
     // Advance past 24h window
     fakeNow += 24 * 60 * 60 * 1000 + 1
 
     await POST(makeRequest('ResMed-AirSense10'))
-    expect(_sendAlertFn).toHaveBeenCalledTimes(2)
+    expect(countType(LOUD)).toBe(2)
 
     vi.restoreAllMocks()
   })
@@ -140,10 +147,22 @@ describe('device-diagnostic dedup', () => {
     expect(_insertFn).toHaveBeenCalledTimes(callCount)
   })
 
+  it('suppresses the live alert for Unknown/unsupported uploads but still captures the row', async () => {
+    for (let i = 0; i < 5; i++) {
+      await POST(makeRequest('Unknown'))
+    }
+    // No loud supported-device alarm for the expected unsupported tail…
+    expect(countType(LOUD)).toBe(0)
+    // …routed to the suppressed taxonomy instead…
+    expect(countType('unsupported_device_unknown')).toBe(5)
+    // …and the row is still written for the support roadmap.
+    expect(_insertFn).toHaveBeenCalledTimes(5)
+  })
+
   it('cold-start simulation: 3 cold-starts × 10 requests produce exactly 1 alert', async () => {
     // Each vi.resetModules() + re-import simulates a Vercel cold-start.
     // kvStore (shared module-level Map) persists across resets, simulating the DB.
-    // _sendAlertFn is a shared reference so calls from all module instances are counted.
+    // _routeAlertFn is a shared reference so calls from all module instances are counted.
     let totalAlerts = 0
 
     for (let coldStart = 0; coldStart < 3; coldStart++) {
@@ -151,11 +170,11 @@ describe('device-diagnostic dedup', () => {
       const { POST: freshPOST } = await import('@/app/api/device-diagnostic/route')
 
       for (let i = 0; i < 10; i++) {
-        await freshPOST(makeRequest('ResMed-ColdStart'))
+        await freshPOST(makeRequest('ResMed-ColdStart-AirSense'))
       }
 
-      totalAlerts += _sendAlertFn.mock.calls.length
-      _sendAlertFn.mockClear()
+      totalAlerts += countType(LOUD)
+      _routeAlertFn.mockClear()
     }
 
     expect(totalAlerts).toBe(1)

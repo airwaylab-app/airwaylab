@@ -4,9 +4,20 @@ import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
-import { sendAlert, formatUserSignalEmbed } from '@/lib/discord-webhook';
+import { routeAlert } from '@/lib/discord-webhook';
 import { checkAndUpdateDedup } from './_dedup';
 import { trackSignalCount } from '@/lib/signal-tracker';
+
+/**
+ * Device families whose settings we actually extract (ResMed AirSense/AirCurve, BMC).
+ * Anything else — including the `Unknown` fallback — is an unsupported or incomplete
+ * upload (non-ResMed hardware or a partial SD card), which is an expected long tail,
+ * not an error worth a live alert.
+ */
+function isSupportedModel(model: string): boolean {
+  const m = model.toLowerCase();
+  return m.includes('airsense') || m.includes('aircurve') || m.includes('bmc');
+}
 
 const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
@@ -90,19 +101,33 @@ export async function POST(request: NextRequest) {
     const now = Date.now();
 
     if (supabase) {
-      const { shouldFire, suppressedCount } = await checkAndUpdateDedup(
-        supabase,
-        deviceModel,
-        new Date(now),
-      );
-      if (shouldFire) {
-        void sendAlert('user-signals', '', [formatUserSignalEmbed({
-          type: 'unsupported_device',
-          message: `Settings extraction failed — model: ${deviceModel}, hasStr: ${hasStrFile} (${suppressedCount} hit${suppressedCount !== 1 ? 's' : ''} in last 24h)`,
-        })]);
+      if (isSupportedModel(deviceModel)) {
+        // A device we DO support produced an empty-settings diagnostic — a genuine
+        // engineering signal worth investigating. Deduped per model and routed to the
+        // quiet #platform-health channel, NOT the user-facing alarm.
+        const { shouldFire, suppressedCount } = await checkAndUpdateDedup(
+          supabase,
+          deviceModel,
+          new Date(now),
+        );
+        if (shouldFire) {
+          void routeAlert(
+            'supported_device_extraction_failed',
+            `:warning: Settings extraction failed for a SUPPORTED device — model: ${deviceModel}, hasStr: ${hasStrFile} (${suppressedCount} hit${suppressedCount !== 1 ? 's' : ''} in last 24h)`,
+          );
+        }
+        void trackSignalCount('supported_device_extraction_failed', 'Supported Device Extraction Failed');
+      } else {
+        // Unsupported or incomplete upload (non-ResMed hardware or a partial card).
+        // Expected long tail — the row is already captured above for the support
+        // roadmap; do NOT raise a live alert (routeAlert suppresses this type).
+        void routeAlert(
+          'unsupported_device_unknown',
+          `Unsupported/incomplete upload — model: ${deviceModel}, hasStr: ${hasStrFile}`,
+        );
+        void trackSignalCount('unsupported_device', 'Unsupported Device');
       }
     }
-    void trackSignalCount('unsupported_device', 'Unsupported Device');
 
     return NextResponse.json({ ok: true });
   } catch (err) {
