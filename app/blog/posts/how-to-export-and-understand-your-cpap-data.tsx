@@ -592,7 +592,7 @@ export default function HowToExportAndUnderstandYourCPAPDataPost() {
           </p>
           <p>
             <Link
-              href="/blog/oscar-alternative"
+              href="/blog/oscar-alternatives-web-cpap-2026"
               className="text-primary hover:text-primary/80"
             >
               AirwayLab vs OSCAR

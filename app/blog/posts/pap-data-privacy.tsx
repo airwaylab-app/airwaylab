@@ -324,7 +324,7 @@ export default function PAPDataPrivacyPost() {
           <div className="mt-4 border-t border-border/30 pt-4">
             <p className="mb-2 text-xs font-semibold text-foreground">Related articles</p>
             <p>
-              <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+              <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
                 AirwayLab vs OSCAR: What Each Tool Does Best
               </Link>{' '}
               -- comparing the two privacy-respecting PAP analysis tools.

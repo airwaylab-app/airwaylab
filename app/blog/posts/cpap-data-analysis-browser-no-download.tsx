@@ -121,7 +121,7 @@ export default function CPAPDataAnalysisBrowserNoDownloadPost() {
           </p>
           <p>
             Read the full comparison:{' '}
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR: How They Complement Each Other
             </Link>
             .

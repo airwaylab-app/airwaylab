@@ -430,7 +430,7 @@ export default function CompareOscarPage() {
         </div>
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               OSCAR vs AirwayLab: A Deeper Dive
             </Link>
             {' -- '}full blog post exploring the relationship between both tools.

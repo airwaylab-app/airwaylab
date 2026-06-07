@@ -308,7 +308,7 @@ export default function CPAPLeakRateMeaning() {
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
               <Link
-                href="/blog/how-to-export-understand-cpap-data"
+                href="/blog/how-to-export-and-understand-your-cpap-data"
                 className="text-primary hover:text-primary/80"
               >
                 How to export and understand your CPAP data

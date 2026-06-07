@@ -45,7 +45,7 @@ export default function FreeCPAPDataAnalysisSoftwarePost() {
               flow limitation levels
             </Link>{' '}
             or{' '}
-            <Link href="/blog/cpap-leak-rate-meaning" className="text-primary hover:text-primary/80">
+            <Link href="/blog/cpap-leak-rate-explained" className="text-primary hover:text-primary/80">
               leak rate trends
             </Link>
             , and have much more informed conversations with your clinician.
