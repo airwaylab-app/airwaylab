@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 31 May 2026
+          Last updated: 7 June 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -175,6 +175,18 @@ export default function PrivacyPolicyPage() {
               anonymised aggregate analysis metrics (device model, PAP mode, pressure range).
               No dates, timestamps, names, or identifiers are included.
             </li>
+            <li>
+              <strong>Device pseudonymisation:</strong> When you upload therapy data, your
+              device&rsquo;s serial number or GUID is used to derive a pseudonymous device key
+              (HMAC-SHA256 hash) and then immediately discarded &mdash; the raw value is never
+              stored. The device key is stored server-side and used for: upload deduplication,
+              distinct-device analytics, and per-device longitudinal research (if you have opted
+              in to data contribution). This is pseudonymous personal data under GDPR Recital 26.
+              Legal basis: legitimate interest (Art.&nbsp;6(1)(f)) for core upload deduplication;
+              consent (Art.&nbsp;6(1)(a)) for per-device ML analytics (covered by data contribution
+              consent). Device keys are deleted when you delete your account or submit an erasure
+              request.
+            </li>
           </ul>
 
           <h3 className="mt-4">3.5 Automatically Collected Data</h3>
@@ -209,7 +221,7 @@ export default function PrivacyPolicyPage() {
             <li>Browser fingerprints</li>
             <li>IP addresses for tracking (PostHog does not store IPs)</li>
             <li>Raw sleep waveforms (never transmitted unless you explicitly contribute them for research -- see section 3.4)</li>
-            <li>Device serial numbers or user names from PAP machines</li>
+            <li>Device serial numbers or user names from PAP machines (raw values are never stored &mdash; see Section 3.4 for device pseudonymisation)</li>
           </ul>
         </section>
 
@@ -232,7 +244,8 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Legitimate interest (Art. 6(1)(f)):</strong> Error monitoring (Sentry),
-              anonymous usage analytics (PostHog), and security protections.
+              anonymous usage analytics (PostHog), security protections, and upload deduplication
+              via pseudonymous device keys.
             </li>
           </ul>
         </section>
@@ -259,6 +272,10 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong>Cloud-stored files:</strong> Retained until you delete them or request
               account deletion.
+            </li>
+            <li>
+              <strong>Device keys (pseudonymous):</strong> Retained until account deletion or
+              DSAR erasure request.
             </li>
             <li>
               <strong>Analytics (PostHog):</strong> Aggregate data only, no personal data
@@ -297,7 +314,7 @@ export default function PrivacyPolicyPage() {
                   <td className="py-2 pr-4 font-medium text-foreground">Supabase</td>
                   <td className="py-2 pr-4">Database &amp; authentication</td>
                   <td className="py-2 pr-4">EU (West)</td>
-                  <td className="py-2">Account data, subscriptions, EDF files, analysis data, contributed metrics, waveforms, and traces</td>
+                  <td className="py-2">Account data, subscriptions, EDF files, analysis data, contributed metrics, waveforms, traces, and pseudonymous device keys</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-medium text-foreground">Anthropic (Claude)</td>
@@ -418,8 +435,8 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Erasure:</strong> Delete all server-stored data instantly from Account
-              Settings. This removes EDF files, analysis data, and contributed metrics. Account
-              deletion requests are processed within 30 days.
+              Settings. This removes EDF files, analysis data, contributed metrics, and
+              pseudonymous device keys. Account deletion requests are processed within 30 days.
             </li>
             <li>
               <strong>Withdraw consent:</strong> Delete all your data at any time from Account
