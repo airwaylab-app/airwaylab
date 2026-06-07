@@ -22,11 +22,13 @@ vi.mock('@sentry/nextjs', () => ({
 
 const mockSubscriptionsCancel = vi.fn();
 const mockSubscriptionsList = vi.fn();
+const mockSubscriptionsUpdate = vi.fn();
 vi.mock('stripe', () => ({
   default: class MockStripe {
     subscriptions = {
       cancel: (...a: unknown[]) => mockSubscriptionsCancel(...a),
       list: (...a: unknown[]) => mockSubscriptionsList(...a),
+      update: (...a: unknown[]) => mockSubscriptionsUpdate(...a),
     };
   },
 }));
@@ -222,9 +224,35 @@ describe('POST /api/delete-user-data — Stripe cancellation (fail-safe, Stripe-
       return deleteTable;
     });
     mockSubscriptionsList.mockResolvedValue({ data: opts.stripeSubs ?? [], has_more: opts.hasMore ?? false });
+    mockSubscriptionsUpdate.mockResolvedValue({});
     mockDeleteUser.mockResolvedValue({ error: null });
     return { eventsBuilder };
   }
+
+  it('tags canceled_via=account_deletion (preserving metadata) BEFORE cancelling, and stamps source on churn', async () => {
+    const { eventsBuilder } = setup({
+      customerId: 'cus_x',
+      stripeSubs: [{ id: 'sub_active', status: 'active', metadata: { supabase_user_id: 'user-123' } } as unknown as { id: string; status: string }],
+    });
+    mockSubscriptionsCancel.mockResolvedValue({});
+
+    const { POST } = await import('@/app/api/delete-user-data/route');
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+
+    // metadata tagged, existing supabase_user_id preserved
+    expect(mockSubscriptionsUpdate).toHaveBeenCalledWith(
+      'sub_active',
+      { metadata: { supabase_user_id: 'user-123', canceled_via: 'account_deletion' } },
+    );
+    // tag must precede the cancel so the webhook sees it
+    expect(mockSubscriptionsUpdate.mock.invocationCallOrder[0]!).toBeLessThan(mockSubscriptionsCancel.mock.invocationCallOrder[0]!);
+    // churn row stamped with source
+    expect(eventsBuilder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: 'cancelled', stripe_subscription_id: 'sub_active', source: 'account_deletion' }),
+      expect.objectContaining({ onConflict: 'stripe_event_id', ignoreDuplicates: true }),
+    );
+  });
 
   it('cancels the live Stripe sub BEFORE deleting the account (order enforced)', async () => {
     setup({ customerId: 'cus_x', stripeSubs: [{ id: 'sub_active', status: 'active' }] });

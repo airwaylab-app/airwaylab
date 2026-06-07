@@ -166,6 +166,28 @@ export async function POST(request: NextRequest) {
     // M3: Use env var for origin, fallback to hardcoded domain
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://airwaylab.app';
 
+    // Single active paid sub per user. A user who already holds an active/trialing
+    // subscription must CHANGE plan via the billing portal (Stripe owns
+    // upgrade/downgrade + interval switch + proration), NOT create a parallel
+    // second subscription (the double-charge bug). Placed immediately before
+    // session creation so it also serves as the concurrency re-check. Service-role
+    // read so RLS can never hide an existing sub and let a duplicate through.
+    const subCheckClient = getSupabaseServiceRole() ?? supabase;
+    const { data: activePaidSubs } = await subCheckClient
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing'])
+      .limit(1);
+
+    if (activePaidSubs && activePaidSubs.length > 0) {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${appUrl}/account`,
+      });
+      return NextResponse.json({ url: portalSession.url, viaPortal: true });
+    }
+
     const sessionMeta: Record<string, string> = { supabase_user_id: user.id };
     if (source) sessionMeta.source = source;
 

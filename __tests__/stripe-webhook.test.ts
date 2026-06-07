@@ -95,6 +95,7 @@ vi.mock('@/lib/supabase/server', () => ({
 // Mock Stripe
 const mockWebhooksConstruct = vi.fn();
 const mockSubscriptionsRetrieve = vi.fn();
+const mockSubscriptionsUpdate = vi.fn();
 
 vi.mock('stripe', () => {
   class MockStripe {
@@ -103,6 +104,7 @@ vi.mock('stripe', () => {
     };
     subscriptions = {
       retrieve: (...args: unknown[]) => mockSubscriptionsRetrieve(...args),
+      update: (...args: unknown[]) => mockSubscriptionsUpdate(...args),
     };
   }
   return { default: MockStripe };
@@ -647,12 +649,14 @@ describe('POST /api/webhooks/stripe', () => {
     expect(builders['subscriptions']!.update).toHaveBeenCalledWith({ status: 'past_due' });
     expect(builders['subscriptions']!.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_test_123');
 
-    // Verify subscription_events log (idempotent upsert)
+    // Verify subscription_events log (idempotent upsert), tagged source=dunning
+    // so a later auto-cancel is attributed to dunning, not a portal cancel.
     expect(builders['subscription_events']!.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'past_due',
         stripe_subscription_id: 'sub_test_123',
         stripe_event_id: 'evt_test_123',
+        source: 'dunning',
       }),
       { onConflict: 'stripe_event_id', ignoreDuplicates: true }
     );
@@ -1699,6 +1703,142 @@ describe('POST /api/webhooks/stripe', () => {
     );
     expect(subBuilder.update).toHaveBeenCalledWith(
       expect.not.objectContaining({ cancel_comment: expect.anything() })
+    );
+  });
+
+  // ---------- 40a. deleted: legible revenue alert (Round 1) ----------
+  // The #revenue cancellation alert must carry the tier churned FROM, MRR lost,
+  // the Stripe reason/feedback, and source=portal — not just the landing tier.
+  it('builds a legible cancellation alert with churned-from tier, MRR lost, reason and source=portal', async () => {
+    const { formatRevenueEmbed } = await import('@/lib/discord-webhook');
+    const subscription = makeSubscriptionObject({
+      cancellation_details: { reason: 'cancellation_requested', feedback: 'too_complex', comment: null },
+    });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') return createQueryBuilder({ data: [], error: null });
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(formatRevenueEmbed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'cancellation',
+        churnedFrom: 'supporter',
+        landingTier: 'community',
+        mrrCents: 900,
+        reason: 'cancellation_requested',
+        feedback: 'too_complex',
+        source: 'portal',
+      })
+    );
+  });
+
+  // ---------- 40b. deleted: source=account_deletion from metadata ----------
+  it('attributes source=account_deletion when canceled_via metadata is set', async () => {
+    const { formatRevenueEmbed } = await import('@/lib/discord-webhook');
+    const subscription = makeSubscriptionObject({
+      metadata: { supabase_user_id: 'user-uuid-1', canceled_via: 'account_deletion' },
+    });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') return createQueryBuilder({ data: [], error: null });
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(formatRevenueEmbed).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'cancellation', source: 'account_deletion', churnedFrom: 'supporter' })
+    );
+  });
+
+  // ---------- 40c. deleted: enriched churn analytics row ----------
+  it('logs the cancelled event with tier, MRR, source and reason for the churn dataset', async () => {
+    const subscription = makeSubscriptionObject({
+      cancellation_details: { reason: 'cancellation_requested', feedback: 'too_complex', comment: null },
+    });
+    const event = makeStripeEvent('customer.subscription.deleted', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions' && !builders[table]) {
+        builders[table] = createQueryBuilder({ data: [], error: null });
+      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+
+    expect(builders['subscription_events']!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'cancelled',
+        tier: 'supporter',
+        mrr_cents: 900,
+        source: 'portal',
+        cancel_reason: 'cancellation_requested',
+        cancel_feedback: 'too_complex',
+        stripe_event_id: 'evt_test_123',
+      }),
+      { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+    );
+  });
+
+  // ---------- 40d. deleted: a thrown alert is NON-FATAL ----------
+  // A Discord/alert failure must NOT bubble out and fail the Stripe job, because
+  // that would re-drive the cancellation email + win-back. The job still marks
+  // the event `done`.
+  it('does not fail the job (no redrive) when the cancellation alert throws', async () => {
+    const { sendAlert } = await import('@/lib/discord-webhook');
+    (sendAlert as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('discord down'));
+
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.deleted', subscription, 'evt_alert_throws');
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    const stripeEventsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'stripe_events') return stripeEventsBuilder;
+      if (table === 'subscriptions') return createQueryBuilder({ data: [], error: null });
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Job completed cleanly despite the alert throwing — marked done, not failed.
+    expect(stripeEventsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'done' })
+    );
+    expect(stripeEventsBuilder.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  // ---------- 40e. payment_failed: tags dunning metadata, preserves existing ----------
+  it('tags the Stripe subscription canceled_via=dunning while preserving existing metadata', async () => {
+    mockSubscriptionsRetrieve.mockResolvedValue({ metadata: { supabase_user_id: 'user-uuid-1' } });
+    const invoice = { parent: { subscription_details: { subscription: 'sub_dun_1' } } };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(mockSubscriptionsUpdate).toHaveBeenCalledWith(
+      'sub_dun_1',
+      { metadata: { supabase_user_id: 'user-uuid-1', canceled_via: 'dunning' } }
     );
   });
 

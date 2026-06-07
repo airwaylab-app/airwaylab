@@ -460,7 +460,31 @@ export function formatMonitorEmbed(
   }
 }
 
-/** Stripe subscription event embed for #revenue. */
+/**
+ * Mask an email address for admin channels. Keeps a short prefix of the local
+ * part and the first label of the domain, so a raw address is never rendered.
+ * e.g. d.voorhagen@gmail.com -> d.***@gm***.com
+ */
+export function maskEmail(email: string): string {
+  const at = email.indexOf('@')
+  if (at < 1) return '***'
+  const local = email.slice(0, at)
+  const domain = email.slice(at + 1)
+  const dot = domain.indexOf('.')
+  const label = dot > 0 ? domain.slice(0, dot) : domain
+  const tld = dot > 0 ? domain.slice(dot) : ''
+  const keep = (s: string, n: number) => s.slice(0, Math.min(n, s.length)) + '***'
+  return `${keep(local, 2)}@${keep(label, 2)}${tld}`
+}
+
+/**
+ * Stripe subscription event embed for #revenue.
+ *
+ * Email is ALWAYS masked here (centralised) so no caller can leak a raw address
+ * to the channel. For cancellations the embed is made legible: it shows the tier
+ * churned FROM, MRR lost, the reason/feedback Stripe captured, and the source
+ * (portal / dunning / account deletion) so two distinct churns never look alike.
+ */
 export function formatRevenueEmbed(opts: {
   event: 'new_subscription' | 'tier_change' | 'cancellation' | 'payment_failed'
   tier?: string
@@ -468,7 +492,15 @@ export function formatRevenueEmbed(opts: {
   mrrCents?: number
   userId?: string
   email?: string
+  // cancellation-specific
+  churnedFrom?: string
+  landingTier?: string
+  reason?: string
+  feedback?: string
+  source?: 'portal' | 'dunning' | 'account_deletion'
 }): DiscordEmbed {
+  const isAccountDeletion = opts.event === 'cancellation' && opts.source === 'account_deletion'
+
   const titles: Record<string, string> = {
     new_subscription: ':tada: New Subscription',
     tier_change: ':arrows_counterclockwise: Tier Change',
@@ -484,13 +516,26 @@ export function formatRevenueEmbed(opts: {
   }
 
   const fields: DiscordEmbedField[] = []
-  if (opts.tier) fields.push({ name: 'Tier', value: opts.tier, inline: true })
-  if (opts.interval) fields.push({ name: 'Interval', value: opts.interval, inline: true })
-  if (opts.mrrCents !== undefined) fields.push({ name: 'MRR', value: `$${(opts.mrrCents / 100).toFixed(2)}`, inline: true })
-  if (opts.email) fields.push({ name: 'Email', value: opts.email, inline: true })
+
+  if (opts.event === 'cancellation') {
+    const churned = opts.churnedFrom ?? opts.tier
+    if (churned) fields.push({ name: 'Churned from', value: churned, inline: true })
+    if (opts.mrrCents !== undefined) fields.push({ name: 'MRR lost', value: `$${(opts.mrrCents / 100).toFixed(2)}`, inline: true })
+    if (opts.interval) fields.push({ name: 'Interval', value: opts.interval, inline: true })
+    if (opts.reason) fields.push({ name: 'Reason', value: opts.reason, inline: true })
+    if (opts.feedback) fields.push({ name: 'Feedback', value: opts.feedback, inline: true })
+    if (opts.source) fields.push({ name: 'Source', value: opts.source, inline: true })
+    if (opts.landingTier) fields.push({ name: 'Now on', value: opts.landingTier, inline: true })
+    if (opts.email) fields.push({ name: 'Email', value: maskEmail(opts.email), inline: true })
+  } else {
+    if (opts.tier) fields.push({ name: 'Tier', value: opts.tier, inline: true })
+    if (opts.interval) fields.push({ name: 'Interval', value: opts.interval, inline: true })
+    if (opts.mrrCents !== undefined) fields.push({ name: 'MRR', value: `$${(opts.mrrCents / 100).toFixed(2)}`, inline: true })
+    if (opts.email) fields.push({ name: 'Email', value: maskEmail(opts.email), inline: true })
+  }
 
   return {
-    title: titles[opts.event] ?? opts.event,
+    title: isAccountDeletion ? ':wastebasket: Cancellation (account deleted)' : (titles[opts.event] ?? opts.event),
     color: colors[opts.event] ?? COLORS.blue,
     fields,
     footer: { text: 'Stripe' },

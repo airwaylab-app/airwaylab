@@ -20,6 +20,7 @@ import {
   sendOpsAlert,
   formatMonitorEmbed,
   formatRevenueEmbed,
+  maskEmail,
   routeAlert,
   _budget,
   COLORS,
@@ -289,6 +290,83 @@ describe('formatRevenueEmbed', () => {
   it('footer text is "Stripe"', () => {
     const embed = formatRevenueEmbed({ event: 'cancellation' });
     expect(embed.footer?.text).toBe('Stripe');
+  });
+});
+
+// ── formatRevenueEmbed: legible cancellation (Round 1) ─────────────────────
+
+describe('formatRevenueEmbed cancellation', () => {
+  const RAW_EMAIL = 'd.voorhagen@gmail.com';
+
+  function cancel(overrides = {}) {
+    return formatRevenueEmbed({
+      event: 'cancellation',
+      churnedFrom: 'supporter',
+      landingTier: 'community',
+      interval: 'month',
+      mrrCents: 900,
+      reason: 'cancellation_requested',
+      feedback: 'too_complex',
+      source: 'portal',
+      email: RAW_EMAIL,
+      ...overrides,
+    });
+  }
+
+  const field = (embed: ReturnType<typeof formatRevenueEmbed>, name: string) =>
+    embed.fields?.find((f) => f.name === name);
+
+  it('shows the tier churned FROM, not the landing tier', () => {
+    const embed = cancel();
+    expect(field(embed, 'Churned from')?.value).toBe('supporter');
+    expect(field(embed, 'Now on')?.value).toBe('community');
+    // never renders a bare "Tier: community" that hides what was lost
+    expect(field(embed, 'Tier')).toBeUndefined();
+  });
+
+  it('shows MRR lost, reason, feedback and source', () => {
+    const embed = cancel();
+    expect(field(embed, 'MRR lost')?.value).toBe('$9.00');
+    expect(field(embed, 'Reason')?.value).toBe('cancellation_requested');
+    expect(field(embed, 'Feedback')?.value).toBe('too_complex');
+    expect(field(embed, 'Source')?.value).toBe('portal');
+  });
+
+  it('NEVER renders a raw email — masking is enforced inside the formatter', () => {
+    const embed = cancel();
+    const emailValue = field(embed, 'Email')?.value ?? '';
+    expect(emailValue).toContain('***');
+    expect(JSON.stringify(embed)).not.toContain(RAW_EMAIL);
+    expect(JSON.stringify(embed)).not.toContain('voorhagen');
+  });
+
+  it('uses a distinct title for account-deletion churn and omits email', () => {
+    const embed = cancel({ source: 'account_deletion', email: undefined });
+    expect(embed.title).toContain('account deleted');
+    expect(field(embed, 'Source')?.value).toBe('account_deletion');
+    expect(field(embed, 'Email')).toBeUndefined();
+  });
+
+  it('a normal portal cancel keeps the plain Cancellation title', () => {
+    expect(cancel().title).toBe(':wave: Cancellation');
+  });
+});
+
+// ── maskEmail ──────────────────────────────────────────────────────────────
+
+describe('maskEmail', () => {
+  it('masks local part and domain label, keeps the TLD', () => {
+    expect(maskEmail('d.voorhagen@gmail.com')).toBe('d.***@gm***.com');
+  });
+
+  it('returns *** for an input without an @', () => {
+    expect(maskEmail('not-an-email')).toBe('***');
+  });
+
+  it('never returns the original address', () => {
+    const raw = 'alice.smith@hospital.co.uk';
+    expect(maskEmail(raw)).not.toBe(raw);
+    expect(maskEmail(raw)).toContain('***');
   });
 });
 
