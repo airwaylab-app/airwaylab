@@ -11,7 +11,7 @@
 import type { OximetryTraceData } from './types';
 import { OXIMETRY_STORE_NAME } from './waveform-idb';
 import { runTx, assertQuota, isQuotaError } from './idb-core';
-import { ENGINE_VERSION } from './engine-version';
+import { OXIMETRY_ENGINE_VERSION } from './engine-version';
 
 const STORE_NAME = OXIMETRY_STORE_NAME;
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -48,7 +48,7 @@ export async function storeOximetryTrace(
       dateStr,
       ...trace,
       storedAt: Date.now(),
-      engineVersion: ENGINE_VERSION,
+      engineVersion: OXIMETRY_ENGINE_VERSION,
     };
     await runTx(STORE_NAME, 'readwrite', (tx) =>
       tx.objectStore(STORE_NAME).put(stored),
@@ -79,8 +79,8 @@ export async function loadOximetryTrace(
       return null;
     }
 
-    // Engine version mismatch → stale data
-    if (result.engineVersion !== ENGINE_VERSION) {
+    // Oximetry engine version mismatch → stale data
+    if (result.engineVersion !== OXIMETRY_ENGINE_VERSION) {
       deleteOximetryTrace(dateStr).catch(() => { /* fire-and-forget stale IDB cleanup */ });
       return null;
     }

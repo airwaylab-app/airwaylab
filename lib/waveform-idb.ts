@@ -10,7 +10,7 @@
 // ============================================================
 
 import type { StoredWaveform } from './waveform-types';
-import { ENGINE_VERSION } from './engine-version';
+import { ENGINE_VERSION, OXIMETRY_ENGINE_VERSION } from './engine-version';
 import {
   getDB,
   runTx,
@@ -146,7 +146,10 @@ async function deleteWaveform(dateStr: string): Promise<void> {
  * Runs through the serialized queue, so it enqueues behind any pending write
  * for the same key (I3 — no longer deletes a freshly-written record).
  */
-async function deleteExpiredFromStore(storeName: string): Promise<void> {
+async function deleteExpiredFromStore(
+  storeName: string,
+  expectedEngineVersion: string = ENGINE_VERSION,
+): Promise<void> {
   await runTx(storeName, 'readwrite', (tx) => {
     const store = tx.objectStore(storeName);
     const request = store.openCursor();
@@ -156,7 +159,7 @@ async function deleteExpiredFromStore(storeName: string): Promise<void> {
         const entry = cursor.value as { storedAt: number; engineVersion: string };
         if (
           Date.now() - entry.storedAt > TTL_MS ||
-          entry.engineVersion !== ENGINE_VERSION
+          entry.engineVersion !== expectedEngineVersion
         ) {
           cursor.delete();
         }
@@ -175,7 +178,8 @@ async function deleteExpiredFromStore(storeName: string): Promise<void> {
 export async function deleteExpired(): Promise<void> {
   try {
     await deleteExpiredFromStore(WAVEFORM_STORE_NAME);
-    await deleteExpiredFromStore(OXIMETRY_STORE_NAME);
+    // Oximetry traces version independently (see OXIMETRY_ENGINE_VERSION).
+    await deleteExpiredFromStore(OXIMETRY_STORE_NAME, OXIMETRY_ENGINE_VERSION);
     await deleteExpiredFromStore(BREATH_DATA_STORE_NAME);
     await deleteExpiredFromStore(PLD_TRACES_STORE_NAME);
   } catch {
