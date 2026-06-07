@@ -503,8 +503,11 @@ class AnalysisOrchestrator {
           case 'WARNING': {
             const isTruncated = msg.detail.includes('Truncated');
             // Truncated EDFs are common on SD cards (power loss, incomplete writes).
-            // Non-truncated warnings are actual parsing issues worth tracking.
-            if (!isTruncated) {
+            // oximetry_insufficient_samples fires once per night when the user's
+            // oximetry data is too sparse — user data quality, not a code bug.
+            // Both are silenced from Sentry; all other warnings are tracked.
+            const isDataQuality = msg.checkpoint === 'oximetry_insufficient_samples';
+            if (!isTruncated && !isDataQuality) {
               Sentry.captureMessage(msg.detail, {
                 level: 'warning',
                 tags: {
@@ -749,7 +752,9 @@ class AnalysisOrchestrator {
             // still returning OXIMETRY_RESULTS. Previously only RESULTS/ERROR were
             // handled, so a partial bad parse looked fully successful. Push the warning
             // to state so the UI can surface it instead of silently dropping it.
-            if (!msg.detail.includes('Truncated')) {
+            // oximetry_insufficient_samples is data quality (user's file is sparse),
+            // not a code bug — skip Sentry, surface to UI only.
+            if (!msg.detail.includes('Truncated') && msg.checkpoint !== 'oximetry_insufficient_samples') {
               Sentry.captureMessage(msg.detail, {
                 level: 'warning',
                 tags: { checkpoint: msg.checkpoint, ...msg.tags },
