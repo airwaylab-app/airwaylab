@@ -92,6 +92,23 @@ export interface WaveformStats {
 }
 
 /**
+ * One mask-on session within a night. A night can hold several when the machine
+ * was powered off (or the mask removed) mid-night. The flow/pressure arrays are
+ * concatenated machine-on-only, so these boundaries are what lets the viewer
+ * place a sample at its true wall-clock time and break the trace across the gap.
+ */
+export interface SessionBoundary {
+  /** Offset of this session's first sample in the concatenated flow array */
+  startSampleIndex: number;
+  /** Number of flow samples in this session */
+  sampleCount: number;
+  /** Wall-clock start of this session (epoch ms, from the EDF recordingDate) */
+  startWallClockMs: number;
+  /** Machine-on duration of this session in seconds */
+  durationSeconds: number;
+}
+
+/**
  * Raw waveform data stored in IndexedDB.
  * Contains full-resolution Float32Arrays for on-demand decimation.
  */
@@ -120,6 +137,12 @@ export interface StoredWaveform {
   storedAt: number;
   /** Engine version for cache invalidation */
   engineVersion: string;
+  /**
+   * Per-session boundaries within the night (gap-aware rendering). Optional so
+   * pre-existing IDB blobs read back gracefully; the ENGINE_VERSION bump that
+   * shipped this field regenerates them on next read.
+   */
+  sessions?: SessionBoundary[];
 }
 
 /** Message sent to the waveform worker */
@@ -154,6 +177,8 @@ export interface RawWaveformResult {
   leak: LeakPoint[];
   /** Night date string */
   dateStr: string;
+  /** Per-session boundaries within the night (for gap-aware rendering) */
+  sessions?: SessionBoundary[];
   /** Error message if extraction failed */
   error?: string;
 }

@@ -12,8 +12,8 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from 'recharts';
-import type { FlowSample, PressurePoint, WaveformEvent } from '@/lib/waveform-types';
-import { formatElapsedTimeShort, formatWallClockTime } from '@/lib/waveform-utils';
+import type { FlowSample, PressurePoint, WaveformEvent, SessionBoundary } from '@/lib/waveform-types';
+import { wallClockForElapsed, wallClockTickShort, sessionBreaks, formatGapDuration, insertBreakRows } from '@/lib/waveform-utils';
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK_FILL, AXIS_LINE_STROKE, withAlpha } from '@/lib/chart-theme';
 import { useSyncedViewport } from '@/hooks/use-synced-viewport';
 import { downsampleForChart } from '@/lib/chart-downsample';
@@ -29,8 +29,12 @@ interface Props {
   events: WaveformEvent[];
   /** Set of visible event types. If undefined, all events are shown. Empty set = no events. */
   visibleEventTypes?: Set<EventType>;
-  /** Recording start time from EDF header — enables wall-clock timestamps in tooltips. */
+  /** Recording start time from EDF header — fallback anchor for wall-clock timestamps. */
   recordingStartTime?: Date | null;
+  /** Per-session boundaries — enables gap breaks + true per-session wall-clock labels. */
+  sessions?: SessionBoundary[];
+  /** Sampling rate (Hz) — needed to map chart-space seconds to session boundaries. */
+  sampleRate?: number;
 }
 
 const EVENT_COLORS: Record<string, { fill: string; stroke: string }> = {
@@ -69,17 +73,19 @@ const ALGORITHM_LEGEND: { type: EventType; label: string; tailwindClass: string 
   { type: 'm-shape', label: 'M', tailwindClass: 'bg-chart-1/25' },
 ];
 
-function FlowTooltipContent({ active, payload, label, recordingStartTime }: {
+function FlowTooltipContent({ active, payload, label, recordingStartTime, sessions, sampleRate }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
   recordingStartTime?: Date | null;
+  sessions?: SessionBoundary[];
+  sampleRate?: number;
 }) {
   if (!active || !payload || payload.length === 0 || label === undefined) return null;
 
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-medium text-foreground">{formatWallClockTime(recordingStartTime, label)}</p>
+      <p className="mb-1 font-medium text-foreground">{wallClockForElapsed(label, sessions, sampleRate ?? 0, recordingStartTime)}</p>
       {payload.map((entry, i) => (
         <p key={i} className="text-muted-foreground">
           <span style={{ color: entry.color }}>{entry.name}:</span>{' '}
@@ -97,9 +103,15 @@ export const FlowWaveform = memo(function FlowWaveform({
   events,
   visibleEventTypes,
   recordingStartTime,
+  sessions,
+  sampleRate,
 }: Props) {
   const viewport = useSyncedViewport();
   const hasPressure = pressure.length > 0;
+  const sampleRateHz = sampleRate ?? 0;
+
+  // Interior machine-off boundaries (empty for single-session nights / old data).
+  const breaks = useMemo(() => sessionBreaks(sessions, sampleRateHz), [sessions, sampleRateHz]);
 
   // Determine which types are active
   const activeTypes: Set<EventType> | null = visibleEventTypes ?? null;
@@ -122,7 +134,21 @@ export const FlowWaveform = memo(function FlowWaveform({
   }, [flow, pressure, hasPressure]);
 
   // Apply downsampleForChart (1,500-point Recharts cap)
-  const data = useMemo(() => downsampleForChart(allData), [allData]);
+  const baseData = useMemo(() => downsampleForChart(allData), [allData]);
+
+  // Machine-off boundaries inside the visible range — drive both the null
+  // trace-break rows and the labelled dividers below.
+  const visibleBreaks = useMemo(() => {
+    if (breaks.length === 0 || baseData.length === 0) return [];
+    const lo = baseData[0]!.t;
+    const hi = baseData[baseData.length - 1]!.t;
+    return breaks.filter((b) => b.tSec > lo && b.tSec < hi);
+  }, [breaks, baseData]);
+
+  const data = useMemo(
+    () => insertBreakRows(baseData, visibleBreaks.map((b) => b.tSec)),
+    [baseData, visibleBreaks],
+  );
 
   // Filter events to visible range + active types, capped to prevent SVG OOM
   const MAX_VISIBLE_EVENTS = 100;
@@ -148,7 +174,10 @@ export const FlowWaveform = memo(function FlowWaveform({
     return types;
   }, [events]);
 
-  const tickFormatter = useCallback((value: number) => formatElapsedTimeShort(value), []);
+  const tickFormatter = useCallback(
+    (value: number) => wallClockTickShort(value, sessions, sampleRateHz, recordingStartTime),
+    [sessions, sampleRateHz, recordingStartTime],
+  );
 
   // Build legend items from types that exist in data and are visible
   const machineItems = MACHINE_LEGEND.filter((item) =>
@@ -246,7 +275,7 @@ export const FlowWaveform = memo(function FlowWaveform({
               />
             )}
             <Tooltip
-              content={<FlowTooltipContent recordingStartTime={recordingStartTime} />}
+              content={<FlowTooltipContent recordingStartTime={recordingStartTime} sessions={sessions} sampleRate={sampleRateHz} />}
               isAnimationActive={false}
             />
 
@@ -257,6 +286,24 @@ export const FlowWaveform = memo(function FlowWaveform({
               strokeDasharray="4 2"
               strokeWidth={0.5}
             />
+
+            {/* Machine-off gap dividers — the trace breaks here; this labels the off-duration */}
+            {visibleBreaks.map((b) => (
+              <ReferenceLine
+                key={`gap-${b.tSec}`}
+                yAxisId="flow"
+                x={b.tSec}
+                stroke="hsl(215 20% 50%)"
+                strokeDasharray="2 3"
+                strokeWidth={1}
+                label={{
+                  value: `Machine off ${formatGapDuration(b.offSeconds)}`,
+                  fill: 'hsl(215 20% 60%)',
+                  fontSize: 8,
+                  position: 'insideTop',
+                }}
+              />
+            ))}
 
             {/* Event overlays */}
             {visibleEvents.map((event) => {
@@ -290,6 +337,7 @@ export const FlowWaveform = memo(function FlowWaveform({
               fill={withAlpha(CHART_COLORS[0], 0.1)}
               strokeWidth={1}
               dot={false}
+              connectNulls={false}
               isAnimationActive={false}
               name="Flow"
             />
@@ -303,6 +351,7 @@ export const FlowWaveform = memo(function FlowWaveform({
                 fill={withAlpha(CHART_COLORS[1], 0.05)}
                 strokeWidth={1.5}
                 dot={false}
+                connectNulls={false}
                 isAnimationActive={false}
                 name="Pressure"
               />

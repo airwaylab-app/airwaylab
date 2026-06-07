@@ -11,5 +11,8 @@
  * - lib/analyzers/ned-engine.ts
  * - lib/analyzers/oximetry-engine.ts
  * - lib/parsers/night-grouper.ts (affects which data goes to which night)
+ *
+ * 0.10.0 — StoredWaveform now carries per-session boundaries (gap-aware flow
+ * graph). Bumped so cached waveforms regenerate with the `sessions` field.
  */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
