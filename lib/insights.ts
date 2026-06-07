@@ -710,7 +710,7 @@ function trendInsights(
         id: 'proxy-outcome-divergence',
         type: 'info',
         title: 'Pattern metrics trending differently from outcome metrics',
-        body: `Your flow limitation proxy metrics are trending higher, but your direct outcome measurements (ODI, SpO₂) remain stable. This divergence is common and does not necessarily indicate a problem — your clinician can help interpret these findings in context.`,
+        body: `Your flow limitation proxy metrics are trending higher, but your direct outcome measurements (ODI, SpO₂) remain stable. This divergence is common and does not necessarily signal concern — your clinician can help interpret these findings in context.`,
         category: 'trend',
       });
     }
