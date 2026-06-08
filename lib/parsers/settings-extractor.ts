@@ -234,6 +234,16 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       papMode = 'VAuto';
     }
 
+    // Known-wrong-path guard (#1036): on AirSense in an auto mode (APAP/AutoSet,
+    // mode 1/2/3) we currently derive the range from S.C.Press (the fixed-CPAP
+    // signal) because we do not yet read the AutoSet min/max signal. The resulting
+    // epap/ipap is NOT the prescribed range, so mark it untrusted instead of
+    // presenting a plausible-wrong value. Scoped to AirSense auto modes only:
+    // fixed-CPAP AirSense (mode 0) reads S.C.Press correctly, and AirCurve reads
+    // real Tgt(I/E)PAP range signals — both stay trusted.
+    const untrustedAutoSetRange =
+      isAirSense && (modeNum === 1 || modeNum === 2 || modeNum === 3);
+
     dailySettings[dateStr] = {
       deviceModel,
       epap,
@@ -255,7 +265,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       tiMax: tiMaxRaw !== undefined ? Math.round(tiMaxRaw * 100) / 100 : null,
       tiMin: tiMinRaw !== undefined ? Math.round(tiMinRaw * 100) / 100 : null,
       extendedSettings: Object.keys(extended).length > 0 ? extended : undefined,
-      settingsSource: 'extracted',
+      settingsSource: untrustedAutoSetRange ? 'unavailable' : 'extracted',
+      ...(untrustedAutoSetRange ? { unavailableReason: 'untrusted_autoset_range' as const } : {}),
     };
   }
 

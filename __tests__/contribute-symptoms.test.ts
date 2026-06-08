@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { bucketPressure, buildContributionPayload } from '@/lib/contribute-symptoms';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { bucketPressure, buildContributionPayload, contributeSymptoms } from '@/lib/contribute-symptoms';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 import type { NightResult, SettingsMetrics } from '@/lib/types';
 
@@ -91,5 +91,31 @@ describe('buildContributionPayload', () => {
     expect(payload.hypopnea_index).toBeUndefined();
     expect(payload.amplitude_cv).toBeUndefined();
     expect(payload.tidal_volume_cv).toBeUndefined();
+  });
+});
+
+describe('contributeSymptoms — untrusted settings gate (#1036)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const nightWith = (settingsSource: 'extracted' | 'unavailable') =>
+    ({
+      ...SAMPLE_NIGHTS[0]!,
+      settings: { ...SAMPLE_NIGHTS[0]!.settings, settingsSource },
+    }) as NightResult;
+
+  it('does not POST and returns false when settings are untrusted', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const ok = await contributeSymptoms(nightWith('unavailable'), 4);
+    expect(ok).toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('POSTs when settings are extracted', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: true } as Response);
+    const ok = await contributeSymptoms(nightWith('extracted'), 4);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(ok).toBe(true);
   });
 });

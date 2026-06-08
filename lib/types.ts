@@ -156,6 +156,14 @@ export interface MachineSettings {
   extendedSettings?: Record<string, number>;
   /** Whether settings were actually extracted from STR.edf or are fallback defaults. */
   settingsSource: 'extracted' | 'unavailable';
+  /**
+   * Why settingsSource is 'unavailable' when it is a known-untrustworthy extraction
+   * rather than simply absent data. 'untrusted_autoset_range': the device ran in an
+   * auto mode whose configured min/max range we cannot yet read (we only have the
+   * fixed-CPAP pressure signal), so the pressure must not be presented as the
+   * prescribed range. Drives the diagnostic harvest, not just the UI gate. See #1036.
+   */
+  unavailableReason?: 'untrusted_autoset_range';
   // BMC-specific settings (optional, only populated for BMC devices)
   /** BMC Reslex (EPR equivalent) level: 0=Off, 1-3 */
   reslexLevel?: number;

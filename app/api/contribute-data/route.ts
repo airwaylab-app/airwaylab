@@ -66,9 +66,14 @@ function anonymiseNight(n: NightResult, index: number, nightContext?: NightConte
     settings: {
       deviceModel: n.settings.deviceModel || 'Unknown',
       papMode: n.settings.papMode,
-      epap: n.settings.epap,
-      ipap: n.settings.ipap,
-      pressureSupport: n.settings.pressureSupport,
+      // Only contribute pressures we trust (#1036). For untrusted/absent settings
+      // (e.g. AirSense auto-mode range we can't yet read) fall back to 0 — the same
+      // sentinel the worker uses for unavailable settings — so the dataset is not
+      // poisoned with a wrong-but-plausible range.
+      epap: n.settings.settingsSource === 'extracted' ? n.settings.epap : 0,
+      ipap: n.settings.settingsSource === 'extracted' ? n.settings.ipap : 0,
+      pressureSupport: n.settings.settingsSource === 'extracted' ? n.settings.pressureSupport : 0,
+      settingsSource: n.settings.settingsSource,
       riseTime: n.settings.riseTime,
       trigger: n.settings.trigger,
       cycle: n.settings.cycle,

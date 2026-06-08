@@ -109,8 +109,11 @@ export const DevicePressureChart = memo(function DevicePressureChart({
             />
             <Tooltip content={<PressureTooltipContent recordingStartTime={recordingStartTime} />} isAnimationActive={false} />
 
-            {/* Reference lines — prescribed (dashed) */}
-            {isCPAP ? (
+            {/* Reference lines — prescribed (dashed). Only when settings are trusted:
+                for an untrusted/absent extraction (e.g. AirSense auto-mode range we
+                can't yet read, #1036) the set values are not the prescribed range, so
+                we omit the lines and keep only the delivered-pressure lines below. */}
+            {settings.settingsSource === 'extracted' && (isCPAP ? (
               <ReferenceLine y={settings.epap} stroke="hsl(142 71% 45% / 0.5)" strokeDasharray="4 2" label={{ value: `Set ${settings.epap}`, fill: 'hsl(142 71% 45%)', fontSize: 9, position: 'right' }} />
             ) : isAPAP ? (
               <>
@@ -122,7 +125,7 @@ export const DevicePressureChart = memo(function DevicePressureChart({
                 <ReferenceLine y={settings.epap} stroke="hsl(142 71% 45% / 0.4)" strokeDasharray="4 2" label={{ value: `EPAP ${settings.epap}`, fill: 'hsl(142 71% 45%)', fontSize: 9, position: 'right' }} />
                 <ReferenceLine y={settings.ipap} stroke="hsl(213 94% 56% / 0.4)" strokeDasharray="4 2" label={{ value: `IPAP ${settings.ipap}`, fill: 'hsl(213 94% 56%)', fontSize: 9, position: 'right' }} />
               </>
-            )}
+            ))}
 
             {/* Reference lines — delivered (solid) */}
             {deliveredP10 != null && (

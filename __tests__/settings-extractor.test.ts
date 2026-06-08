@@ -609,3 +609,57 @@ describe('extractSettings — AirCurve 11 VAuto', () => {
     expect(day.cycle).toBe('low');
   });
 });
+
+// ============================================================
+// extractSettings — AirSense auto-mode range is untrusted (#1036)
+// On AirSense in APAP/AutoSet we only have S.C.Press (fixed-CPAP signal), not the
+// configured min/max range, so the pressure must be marked untrusted rather than
+// presented as a collapsed range. Scoped to AirSense auto modes only.
+// ============================================================
+
+describe('extractSettings — AirSense auto-mode untrusted range (#1036)', () => {
+  const airSenseAuto = (mode: number) =>
+    buildSTRBuffer([
+      { label: 'Date',            values: [0],   physMin: 0, physMax: 36500 },
+      { label: 'S.C.Press',       values: [4.8], physMin: 4, physMax: 20 },
+      { label: 'S.EPR.Level',     values: [0],   physMin: 0, physMax: 3 },
+      { label: 'S.EPR.EPREnable', values: [0],   physMin: 0, physMax: 1 },
+      { label: 'Mode',            values: [mode], physMin: 0, physMax: 10 },
+    ]);
+
+  it('marks AutoSet (mode 2) untrusted with reason, keeps papMode', () => {
+    const day = extractSettings(airSenseAuto(2), 'AirSense 11 AutoSet');
+    const d = day[Object.keys(day)[0]!]!;
+    expect(d.settingsSource).toBe('unavailable');
+    expect(d.unavailableReason).toBe('untrusted_autoset_range');
+    expect(d.papMode).toBe('AutoSet'); // context preserved
+  });
+
+  it('marks APAP (mode 1) untrusted with reason', () => {
+    const day = extractSettings(airSenseAuto(1), 'AirSense 11 AutoSet');
+    const d = day[Object.keys(day)[0]!]!;
+    expect(d.settingsSource).toBe('unavailable');
+    expect(d.unavailableReason).toBe('untrusted_autoset_range');
+  });
+
+  it('leaves fixed CPAP (mode 0) trusted — S.C.Press is correct there', () => {
+    const day = extractSettings(airSenseAuto(0), 'AirSense 11 AutoSet');
+    const d = day[Object.keys(day)[0]!]!;
+    expect(d.settingsSource).toBe('extracted');
+    expect(d.unavailableReason).toBeUndefined();
+    expect(d.papMode).toBe('CPAP');
+  });
+
+  it('does NOT touch AirCurve auto modes — they read real Tgt(I/E)PAP range', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0, physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4, physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4, physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0, physMax: 10 },
+    ]);
+    const day = extractSettings(buf, 'AirCurve 10 VAuto');
+    const d = day[Object.keys(day)[0]!]!;
+    expect(d.settingsSource).toBe('extracted');
+    expect(d.unavailableReason).toBeUndefined();
+  });
+});

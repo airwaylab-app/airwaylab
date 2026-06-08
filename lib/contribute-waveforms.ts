@@ -277,7 +277,7 @@ async function uploadWaveform(
       'X-Duration-Seconds': String(Math.round(durationSeconds * 100) / 100),
       'X-Sample-Count': String(sampleCount),
       'X-Device-Model': night.settings.deviceModel || 'Unknown',
-      'X-Pap-Mode': night.settings.papMode || 'Unknown',
+      'X-Pap-Mode': night.settings.settingsSource === 'extracted' ? (night.settings.papMode || 'Unknown') : 'Unknown',
       'X-Analysis-Results': JSON.stringify(anonymiseResults(night)),
       'X-Channel-Count': String(channelCount),
       'X-Format-Version': '2',

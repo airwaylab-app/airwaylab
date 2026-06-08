@@ -163,7 +163,7 @@ export async function contributeOximetryTraceBackground(
           'x-sample-count': String(trace.trace.length),
           'x-duration-seconds': String(trace.durationSeconds),
           'x-device-model': night.settings.deviceModel || 'Unknown',
-          'x-pap-mode': night.settings.papMode || 'Unknown',
+          'x-pap-mode': night.settings.settingsSource === 'extracted' ? (night.settings.papMode || 'Unknown') : 'Unknown',
           'x-oximetry-results': JSON.stringify(anonymiseOximetry(night)),
         },
         body: compressed,
