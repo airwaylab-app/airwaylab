@@ -121,11 +121,17 @@ describe('Step 5: Account settings', () => {
     expect(src).toContain('Your Data');
   });
 
-  it('account page has data deletion flow', () => {
+  it('account page has account deletion flow', () => {
     const src = readSource('app/account/page.tsx');
-    expect(src).toContain('Delete all my data');
+    expect(src).toContain('Delete my account');
     expect(src).toContain('showDeleteConfirm');
     expect(src).toContain('handleDeleteData');
+  });
+
+  it('account deletion confirm warns it cancels the subscription for paid users', () => {
+    const src = readSource('app/account/page.tsx');
+    expect(src).toContain('subscription will be');
+    expect(src).toContain('deletes your entire account');
   });
 
   it('user menu has account settings link', () => {
