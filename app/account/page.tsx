@@ -84,6 +84,7 @@ export default function AccountPage() {
   const [portalError, setPortalError] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
   const [deleteState, setDeleteState] = useState<
     'idle' | 'deleting' | 'success' | 'error'
   >('idle');
@@ -123,6 +124,11 @@ export default function AccountPage() {
       setShowDeleteConfirm(false);
       setStats({ fileCount: 0, totalBytes: 0, nightCount: 0 });
       events.dataDeletionCompleted();
+      // The auth user no longer exists — this session is now invalid. Send the
+      // user home rather than leave them on a page logged into a deleted account.
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2500);
     } catch (err) {
       Sentry.captureException(err, { tags: { action: 'delete-user-data' } });
       setDeleteState('error');
@@ -288,7 +294,7 @@ export default function AccountPage() {
             {deleteState === 'success' && (
               <div className="flex items-center gap-2 text-emerald-400 text-sm">
                 <CheckCircle2 className="h-4 w-4" />
-                All server-side data has been deleted.
+                Your account has been deleted. Redirecting...
               </div>
             )}
 
@@ -299,7 +305,7 @@ export default function AccountPage() {
               </div>
             )}
 
-            {!showDeleteConfirm && deleteState !== 'deleting' && (
+            {!showDeleteConfirm && deleteState !== 'deleting' && deleteState !== 'success' && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -307,7 +313,7 @@ export default function AccountPage() {
                 className="w-full"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete all my data
+                Delete my account
               </Button>
             )}
 
@@ -315,19 +321,53 @@ export default function AccountPage() {
               <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 space-y-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    This permanently deletes your health data from our servers
-                    &mdash; uploaded EDF files and stored analysis results.
-                    Anonymised research contributions are not affected.
-                    Browser-local data is not affected. This cannot be undone.
-                  </p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">
+                      This deletes your entire account, not just files.
+                    </p>
+                    <p>
+                      It permanently removes your AirwayLab account and all health
+                      data on our servers &mdash; uploaded EDF files and stored
+                      analysis results. You would need to sign up again to return.
+                    </p>
+                    {isPaid && (
+                      <p className="font-medium text-red-400">
+                        Your active {tierConfig.label} subscription will be
+                        cancelled &mdash; paid features end immediately, you will
+                        not be billed again, and you would need to subscribe again
+                        to restore it.
+                      </p>
+                    )}
+                    <p>
+                      Anonymised research contributions are not affected. This does
+                      not clear your browser-local data, so it will not fix a
+                      &ldquo;Storage limit reached&rdquo; message (that is your
+                      browser&rsquo;s cache, not your account). This cannot be undone.
+                    </p>
+                  </div>
                 </div>
+                {isPaid && (
+                  <div className="space-y-1">
+                    <label htmlFor="delete-confirm" className="text-xs text-muted-foreground">
+                      Type <span className="font-mono font-semibold text-foreground">DELETE</span> to confirm
+                    </label>
+                    <input
+                      id="delete-confirm"
+                      type="text"
+                      autoComplete="off"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      disabled={deleteState === 'deleting'}
+                      className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={handleDeleteData}
-                    disabled={deleteState === 'deleting'}
+                    disabled={deleteState === 'deleting' || (isPaid && confirmText.trim().toUpperCase() !== 'DELETE')}
                     className="flex-1"
                   >
                     {deleteState === 'deleting' ? (
@@ -336,7 +376,7 @@ export default function AccountPage() {
                         Deleting...
                       </>
                     ) : (
-                      'Delete my data'
+                      'Delete my account'
                     )}
                   </Button>
                   <Button
@@ -344,12 +384,13 @@ export default function AccountPage() {
                     size="sm"
                     onClick={() => {
                       setShowDeleteConfirm(false);
+                      setConfirmText('');
                       setDeleteState('idle');
                     }}
                     disabled={deleteState === 'deleting'}
                     className="flex-1"
                   >
-                    Keep my data
+                    Keep my account
                   </Button>
                 </div>
               </div>
