@@ -4,12 +4,14 @@ name: Integration DB
 # the SQL contract tests, then stands up a real PostgREST in front of it and runs
 # the G5 client tests (per-role permission boundaries, the claim_stripe_event RPC,
 # schema-cache reload, and the `.update().or()` 42703 billing-incident pattern).
-# NON-REQUIRED for now (see ruleset) — promote to a required check once it is
-# reliably green. Runs on PRs + manual dispatch (not in the merge queue).
+# Runs the full replay on PRs + manual dispatch. On merge_group it passes as a
+# no-op (the replay already ran on the PR head) so it can be a REQUIRED check
+# without stalling the queue — sibling pattern to clinical-gate.yml.
 on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  merge_group: {}
 
 concurrency:
   group: intdb-${{ github.event.pull_request.number || github.ref }}
@@ -68,15 +70,26 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/airwaylab_test
     steps:
+      # merge_group carries no PR diff and the replay already ran on the PR head,
+      # so pass as a no-op here. Real steps below are guarded to non-merge_group
+      # events (pull_request AND workflow_dispatch).
+      - name: No-op on merge_group (db-contract evaluated on the PR; passing)
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event — db-contract ran on the PR; passing."
       - uses: actions/checkout@v4
+        if: github.event_name != 'merge_group'
       - uses: actions/setup-node@v4
+        if: github.event_name != 'merge_group'
         with:
           node-version-file: .nvmrc
       - name: Install psql client
+        if: github.event_name != 'merge_group'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
       - name: Replay baseline + migrations + grants + SQL contract tests
+        if: github.event_name != 'merge_group'
         run: bash scripts/db-replay.sh
       - name: PostgREST client tests (G5)
+        if: github.event_name != 'merge_group'
         env:
           PGRST_URL: http://localhost:3000
           PGRST_JWT_SECRET: ci-only-not-a-real-secret-pgrst-jwt-0123456789
