@@ -51,14 +51,14 @@ describe('oximetry-only reanalysis', () => {
   });
 
   describe('oximetry data persistence', () => {
-    it('persists all 17 oximetry metrics + H1/H2 splits + cleaning stats', () => {
+    it('persists all 17 oximetry metrics + H1/H2 splits + cleaning stats', async () => {
       const ox = makeOximetryResults();
       const nights: NightResult[] = SAMPLE_NIGHTS.map((n, i) =>
         i === 0 ? { ...n, oximetry: ox } : n
       );
 
-      persistResults(nights, null);
-      const loaded = loadPersistedResults();
+      await persistResults(nights, null);
+      const loaded = await loadPersistedResults();
       expect(loaded).not.toBeNull();
 
       const loadedOx = loaded!.nights.find((n) => n.dateStr === nights[0]!.dateStr)?.oximetry;
@@ -93,39 +93,39 @@ describe('oximetry-only reanalysis', () => {
       expect(loadedOx!.doubleTrackingCorrected).toBe(ox.doubleTrackingCorrected);
     });
 
-    it('preserves null oximetry for nights without oximetry data', () => {
+    it('preserves null oximetry for nights without oximetry data', async () => {
       const nights = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
-      persistResults(nights, null);
-      const loaded = loadPersistedResults();
+      await persistResults(nights, null);
+      const loaded = await loadPersistedResults();
       expect(loaded).not.toBeNull();
       for (const night of loaded!.nights) {
         expect(night.oximetry).toBeNull();
       }
     });
 
-    it('replaces existing oximetry when re-uploading', () => {
+    it('replaces existing oximetry when re-uploading', async () => {
       // First save with oximetry
       const ox1 = makeOximetryResults({ odi3: 5.0 });
       const nights1: NightResult[] = SAMPLE_NIGHTS.map((n, i) =>
         i === 0 ? { ...n, oximetry: ox1 } : n
       );
-      persistResults(nights1, null);
+      await persistResults(nights1, null);
 
       // Now save with updated oximetry
       const ox2 = makeOximetryResults({ odi3: 7.5 });
       const nights2: NightResult[] = SAMPLE_NIGHTS.map((n, i) =>
         i === 0 ? { ...n, oximetry: ox2 } : n
       );
-      persistResults(nights2, null);
+      await persistResults(nights2, null);
 
-      const loaded = loadPersistedResults();
+      const loaded = await loadPersistedResults();
       const loadedOx = loaded!.nights.find((n) => n.dateStr === nights2[0]!.dateStr)?.oximetry;
       expect(loadedOx!.odi3).toBe(7.5);
     });
   });
 
   describe('type definitions', () => {
-    it('WorkerMessage discriminated union includes ANALYZE_OXIMETRY', () => {
+    it('WorkerMessage discriminated union includes ANALYZE_OXIMETRY', async () => {
       // Type-level test — if this compiles, the types are correct
       const msg: import('@/lib/types').WorkerMessage = {
         type: 'ANALYZE_OXIMETRY',
@@ -134,7 +134,7 @@ describe('oximetry-only reanalysis', () => {
       expect(msg.type).toBe('ANALYZE_OXIMETRY');
     });
 
-    it('WorkerResponse union includes OXIMETRY_RESULTS', () => {
+    it('WorkerResponse union includes OXIMETRY_RESULTS', async () => {
       const response: import('@/lib/types').WorkerResponse = {
         type: 'OXIMETRY_RESULTS',
         oximetryByDate: {
@@ -147,7 +147,7 @@ describe('oximetry-only reanalysis', () => {
   });
 
   describe('oximetry merge logic', () => {
-    it('merges oximetry into matching cached nights by date', () => {
+    it('merges oximetry into matching cached nights by date', async () => {
       // Simulate the merge logic from analyzeOximetryOnly
       const cachedNights = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
       const targetDate = cachedNights[0]!.dateStr;
@@ -174,7 +174,7 @@ describe('oximetry-only reanalysis', () => {
       }
     });
 
-    it('handles oximetry date mismatch gracefully', () => {
+    it('handles oximetry date mismatch gracefully', async () => {
       const cachedNights = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
       const oximetryByDate: Record<string, OximetryResults> = {
         '1999-12-31': makeOximetryResults(), // date that doesn't match any night
@@ -198,7 +198,7 @@ describe('oximetry-only reanalysis', () => {
       expect(matchedCount).toBe(0);
     });
 
-    it('matches multiple oximetry CSVs to multiple nights', () => {
+    it('matches multiple oximetry CSVs to multiple nights', async () => {
       const cachedNights = SAMPLE_NIGHTS.map((n) => ({ ...n, oximetry: null }));
       const ox1 = makeOximetryResults({ odi3: 3.0 });
       const ox2 = makeOximetryResults({ odi3: 7.0 });
@@ -218,7 +218,7 @@ describe('oximetry-only reanalysis', () => {
       expect(merged[1]!.oximetry!.odi3).toBe(7.0);
     });
 
-    it('does not modify unmatched nights', () => {
+    it('does not modify unmatched nights', async () => {
       const originalOx = makeOximetryResults({ odi3: 99 });
       const cachedNights = SAMPLE_NIGHTS.map((n, i) =>
         i === 2 ? { ...n, oximetry: originalOx } : { ...n, oximetry: null }

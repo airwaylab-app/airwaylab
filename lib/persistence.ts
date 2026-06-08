@@ -6,10 +6,22 @@
 import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
 import { ENGINE_VERSION, OXIMETRY_ENGINE_VERSION } from './engine-version';
+import { isQuotaError } from './idb-core';
+import { saveSummaryRecord, readSummaryRecord, clearSummaryRecord } from './summary-idb';
 
 const STORAGE_KEY = 'airwaylab_results';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const MAX_STORAGE_BYTES = 4 * 1024 * 1024; // 4 MB safety margin (most browsers allow 5-10 MB)
+const MAX_STORAGE_BYTES = 4 * 1024 * 1024; // 4 MB cap for the localStorage MIRROR/fallback only
+
+/** Whether IndexedDB is usable here. False under SSR and in test/jsdom (no IDB
+ *  driver), so we transparently skip IDB and use the localStorage path. */
+function idbAvailable(): boolean {
+  try {
+    return typeof indexedDB !== 'undefined' && indexedDB !== null && typeof indexedDB.open === 'function';
+  } catch {
+    return false;
+  }
+}
 
 interface PersistResult {
   saved: boolean;
@@ -95,17 +107,77 @@ function trySerialise(
 }
 
 /**
- * Save analysis results to localStorage.
+ * Serialise the FULL (bulk-stripped) summary as JSON, with no size cap. Used for
+ * the IndexedDB primary store. Returns null only if JSON.stringify throws
+ * (V8's ~512 MB string limit) so the caller can fall back to the capped path.
+ */
+function serialiseFullJson(
+  nights: NightResult[],
+  therapyChangeDate: string | null
+): { json: string; savedAt: number } | null {
+  const savedAt = Date.now();
+  const data: PersistedData = {
+    nights: stripBulkData(nights),
+    therapyChangeDate,
+    savedAt,
+    engineVersion: ENGINE_VERSION,
+    oximetryEngineVersion: OXIMETRY_ENGINE_VERSION,
+  };
+  try {
+    return { json: JSON.stringify(data), savedAt };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save analysis results. PRIMARY store is IndexedDB (no 4 MB cap, so the full
+ * history persists and "Storage limit reached" no longer fires for large
+ * datasets). A capped subset is mirrored to localStorage best-effort so a reload
+ * before the async IDB read — and any legacy/offline path — still finds data.
+ *
+ * Falls back to the localStorage binary-search-drop path (with the user warning)
+ * only on genuine IndexedDB quota pressure or when IDB is unavailable.
+ */
+export async function persistResults(
+  nights: NightResult[],
+  therapyChangeDate: string | null
+): Promise<PersistResult> {
+  Sentry.addBreadcrumb({ message: 'Results persisted', category: 'persistence', data: { nightCount: nights.length } });
+
+  const full = idbAvailable() ? serialiseFullJson(nights, therapyChangeDate) : null;
+  if (full) {
+    try {
+      await saveSummaryRecord(full.json, full.savedAt);
+      // Best-effort localStorage mirror (capped). Dropped nights here are NOT
+      // surfaced as a warning — IndexedDB holds the full history.
+      try {
+        persistToLocalStorage(nights, therapyChangeDate);
+      } catch {
+        // Mirror is best-effort.
+      }
+      return { saved: true, nightsSaved: nights.length, nightsDropped: 0 };
+    } catch (err) {
+      if (!isQuotaError(err)) {
+        Sentry.captureException(err, { extra: { context: 'persistResults:idb', totalNights: nights.length } });
+      }
+      // Fall through to the localStorage path.
+    }
+  }
+
+  return persistToLocalStorage(nights, therapyChangeDate);
+}
+
+/**
+ * Save analysis results to localStorage (mirror + fallback path).
  * Strips bulk data to stay within quota. If the full dataset exceeds
  * 4 MB, progressively drops the oldest nights until it fits.
  * Returns details about what was saved so the UI can warn the user.
  */
-export function persistResults(
+function persistToLocalStorage(
   nights: NightResult[],
   therapyChangeDate: string | null
 ): PersistResult {
-  Sentry.addBreadcrumb({ message: 'Results persisted', category: 'persistence', data: { nightCount: nights.length } });
-
   try {
     // Try full dataset first
     const full = trySerialise(nights, therapyChangeDate);
@@ -201,41 +273,79 @@ export function persistResults(
 }
 
 /**
- * Load persisted results from localStorage.
+ * Clear the persisted summary from BOTH the IndexedDB primary and the
+ * localStorage mirror. Best-effort on each.
+ */
+async function clearSummaryAll(): Promise<void> {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore — storage may be unavailable
+  }
+  if (idbAvailable()) {
+    try {
+      await clearSummaryRecord();
+    } catch {
+      // ignore — IDB may be unavailable
+    }
+  }
+}
+
+/**
+ * Load persisted results. Reads the IndexedDB primary first; if absent, falls
+ * back to the legacy localStorage blob and migrates it into IndexedDB on read.
  * Returns null if nothing is saved, data is too old, or parsing fails.
  * Returns { engineUpgraded: true } if data exists but was analyzed with an
  * older engine version — the UI should prompt re-upload instead of showing
  * an empty dashboard.
  */
-export function loadPersistedResults(): {
+export async function loadPersistedResults(): Promise<{
   nights: NightResult[];
   therapyChangeDate: string | null;
   savedAt?: number;
   engineUpgraded?: boolean;
   oximetryUpgraded?: boolean;
-} | null {
+} | null> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    // Primary: IndexedDB. Fallback: legacy localStorage (migrated on read).
+    let raw: string | null = null;
+    let fromLegacy = false;
+    if (idbAvailable()) {
+      try {
+        const rec = await readSummaryRecord();
+        if (rec) raw = rec.json;
+      } catch {
+        // IDB read failed — fall back to localStorage below.
+      }
+    }
+    if (raw === null) {
+      try {
+        raw = localStorage.getItem(STORAGE_KEY);
+      } catch {
+        raw = null;
+      }
+      if (raw !== null) fromLegacy = true;
+    }
+    if (raw === null) return null;
 
     const data = JSON.parse(raw);
 
     // Validate basic shape
     if (!data || typeof data !== 'object' || typeof data.savedAt !== 'number') {
-      localStorage.removeItem(STORAGE_KEY);
+      await clearSummaryAll();
       return null;
     }
 
     // Expire after MAX_AGE_MS
     if (Date.now() - data.savedAt > MAX_AGE_MS) {
-      localStorage.removeItem(STORAGE_KEY);
+      await clearSummaryAll();
       return null;
     }
 
     // Engine version mismatch: clear stale data but signal to UI (FB-22)
     if (data.engineVersion && data.engineVersion !== ENGINE_VERSION) {
       const nightCount = Array.isArray(data.nights) ? data.nights.length : 0;
-      localStorage.removeItem(STORAGE_KEY);
+      await clearSummaryAll();
       if (nightCount > 0) {
         return { nights: [], therapyChangeDate: null, engineUpgraded: true };
       }
@@ -257,8 +367,16 @@ export function loadPersistedResults(): {
       !firstNight.ned
     ) {
       console.warn('[persistence] Corrupted data detected, clearing');
-      localStorage.removeItem(STORAGE_KEY);
+      await clearSummaryAll();
       return null;
+    }
+
+    // Valid data sourced from the legacy localStorage blob — migrate it into
+    // IndexedDB so future loads are IDB-backed (best-effort, original JSON).
+    if (fromLegacy && idbAvailable()) {
+      void saveSummaryRecord(raw, data.savedAt).catch(() => {
+        // Best-effort migration — the localStorage copy still serves this load.
+      });
     }
 
     // Restore Date objects and migrate missing fields
@@ -333,7 +451,7 @@ export function loadPersistedResults(): {
         night.oximetry = null;
         night.oximetryTrace = null;
       }
-      persistResults(data.nights, data.therapyChangeDate);
+      await persistResults(data.nights, data.therapyChangeDate);
       return {
         nights: data.nights,
         therapyChangeDate: data.therapyChangeDate,
@@ -375,8 +493,8 @@ export function mergeNightsByDate(
  * New nights replace existing ones by dateStr; unknown dates are appended.
  * Uses the same 4MB cap handling as persistResults().
  */
-export function persistNightsIncremental(nights: NightResult[]): PersistResult {
-  const existing = loadPersistedResults();
+export async function persistNightsIncremental(nights: NightResult[]): Promise<PersistResult> {
+  const existing = await loadPersistedResults();
   const therapyChangeDate = existing?.therapyChangeDate ?? null;
   const merged = mergeNightsByDate(nights, existing?.nights ?? []);
   return persistResults(merged, therapyChangeDate);

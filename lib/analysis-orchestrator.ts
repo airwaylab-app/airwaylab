@@ -140,7 +140,7 @@ class AnalysisOrchestrator {
       Sentry.addBreadcrumb({ message: 'Analysis started', category: 'analysis', data: { fileCount: sdArr.length } });
 
       // ── Incremental check: use manifest diffing for smarter dedup ──
-      const cached = loadPersistedResults();
+      const cached = await loadPersistedResults();
       const cachedNights = cached?.nights ?? [];
       const cachedDateSet = new Set(cachedNights.map((n) => n.dateStr));
       const hasNewOximetry = oximetryFiles && oximetryFiles.length > 0;
@@ -328,7 +328,7 @@ class AnalysisOrchestrator {
       // Persist ALL analyzed nights — tier-gating is display-only (visibleNights in page.tsx).
       // Filtering here caused permanent data loss: sequential SD-card uploads re-applied the
       // cutoff to current time, silently dropping nights that aged past the community window.
-      const persistResult = persistResults(merged, therapyChangeDate);
+      const persistResult = await persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
       persistBreathData(merged);
       persistPLDTraces(merged);
@@ -350,7 +350,7 @@ class AnalysisOrchestrator {
       // Best-effort persist of whatever we have so far
       if (this.incrementalNights.length > 0) {
         try {
-          persistNightsIncremental(this.incrementalNights);
+          await persistNightsIncremental(this.incrementalNights);
         } catch {
           // Non-critical — don't mask the original error
         }
@@ -627,7 +627,7 @@ class AnalysisOrchestrator {
     this.currentTier = tier;
     this.terminate();
 
-    const cached = loadPersistedResults();
+    const cached = await loadPersistedResults();
     if (!cached || cached.nights.length === 0) {
       const error = 'Upload your SD card first, then add oximetry data.';
       this.setState({ status: 'error', error });
@@ -675,7 +675,7 @@ class AnalysisOrchestrator {
 
       // Persist updated results (all nights — tier-gating is display-only)
       const therapyChangeDate = detectTherapyChange(merged);
-      const persistResult = persistResults(merged, therapyChangeDate);
+      const persistResult = await persistResults(merged, therapyChangeDate);
       persistOximetryTraces(merged);
 
       this.setState({
@@ -821,7 +821,9 @@ class AnalysisOrchestrator {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       if (this.incrementalNights.length > 0) {
-        persistNightsIncremental(this.incrementalNights);
+        void persistNightsIncremental(this.incrementalNights).catch(() => {
+          // Best-effort background persist.
+        });
       }
     }, 2000);
   }
@@ -839,11 +841,13 @@ class AnalysisOrchestrator {
     this.removeBeforeUnload();
     this.boundBeforeUnload = () => {
       if (this.incrementalNights.length > 0) {
-        try {
-          persistNightsIncremental(this.incrementalNights);
-        } catch {
-          // Best effort — page is closing
-        }
+        // Best effort — the page is closing, so an async IndexedDB write may not
+        // flush. That is acceptable: on the next upload the orchestrator
+        // re-processes nights missing from the cache (manifest-diff), so a missed
+        // flush re-processes rather than loses data.
+        void persistNightsIncremental(this.incrementalNights).catch(() => {
+          // Page is closing — nothing to recover to; next upload re-processes.
+        });
       }
     };
     if (typeof window !== 'undefined') {

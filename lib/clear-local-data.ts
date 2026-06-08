@@ -4,13 +4,14 @@ import {
   OXIMETRY_STORE_NAME,
   BREATH_DATA_STORE_NAME,
   PLD_TRACES_STORE_NAME,
+  DASHBOARD_SUMMARY_STORE_NAME,
 } from '@/lib/idb-core';
 import { clearPersistedNights } from '@/lib/persistence';
 
 /**
  * Wipe ALL browser-local AirwayLab data on this device: the localStorage
- * dashboard summary (+ file manifest) AND every IndexedDB store
- * (waveforms, oximetry traces, breath data, PLD traces).
+ * dashboard summary (+ file manifest) AND every IndexedDB store (waveforms,
+ * oximetry traces, breath data, PLD traces, dashboard summary).
  *
  * This is the non-destructive way to free local space and clear a
  * "Storage limit reached" message. It does NOT touch the user's account
@@ -28,13 +29,20 @@ export async function clearAllLocalData(): Promise<void> {
 
   // Clear every store in a single transaction (one DB, one connection).
   await runTx(
-    [WAVEFORM_STORE_NAME, OXIMETRY_STORE_NAME, BREATH_DATA_STORE_NAME, PLD_TRACES_STORE_NAME],
+    [
+      WAVEFORM_STORE_NAME,
+      OXIMETRY_STORE_NAME,
+      BREATH_DATA_STORE_NAME,
+      PLD_TRACES_STORE_NAME,
+      DASHBOARD_SUMMARY_STORE_NAME,
+    ],
     'readwrite',
     (tx) => [
       tx.objectStore(WAVEFORM_STORE_NAME).clear(),
       tx.objectStore(OXIMETRY_STORE_NAME).clear(),
       tx.objectStore(BREATH_DATA_STORE_NAME).clear(),
       tx.objectStore(PLD_TRACES_STORE_NAME).clear(),
+      tx.objectStore(DASHBOARD_SUMMARY_STORE_NAME).clear(),
     ],
   );
 }
