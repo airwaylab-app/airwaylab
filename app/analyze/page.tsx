@@ -42,7 +42,8 @@ import { Button } from '@/components/ui/button';
 import { orchestrator } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS, SAMPLE_THERAPY_CHANGE_DATE } from '@/lib/sample-data';
 import type { AnalysisState, NightResult } from '@/lib/types';
-import { loadPersistedResults, clearPersistedNights, mergeNightsByDate } from '@/lib/persistence';
+import { loadPersistedResults, mergeNightsByDate } from '@/lib/persistence';
+import { clearAllLocalData } from '@/lib/clear-local-data';
 import { events, capturePostHog, setPostHogPersonProps } from '@/lib/analytics';
 import { useTierHistoryWindowDays } from '@/hooks/use-tier-history-window-days';
 import { contributeNights, trackContributedDates } from '@/lib/contribute';
@@ -584,8 +585,14 @@ function AnalyzePageInner() {
     }
   }, [isDemo]);
 
-  const handleClearLocalData = useCallback(() => {
-    clearPersistedNights();
+  const handleClearLocalData = useCallback(async () => {
+    // Clears the localStorage summary AND all IndexedDB stores (the bulk of
+    // the local footprint) — frees space without touching the account/server.
+    try {
+      await clearAllLocalData();
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'clear-local-data' } });
+    }
     orchestrator.reset();
     setPersistedData(null);
     setLocalDataCleared(true);
@@ -999,9 +1006,9 @@ function AnalyzePageInner() {
                     variant="ghost"
                     size="sm"
                     className="h-7 shrink-0 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                    onClick={handleClearLocalData}
+                    onClick={() => { void handleClearLocalData(); }}
                   >
-                    Clear saved data
+                    Free up space
                   </Button>
                 )}
               </div>
