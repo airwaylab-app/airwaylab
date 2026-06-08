@@ -61,7 +61,7 @@ export default function WhatIsGlasgowIndexCPAP() {
             means more breath shape irregularities were detected.
           </p>
           <p>
-            AirwayLab&apos;s implementation is an open-source port of the DaveSkvn/Glasgow-Index
+            AirwayLab&apos;s implementation is an open-source port of the DaveSkvn/GlasgowIndex
             algorithm (GPL-3.0). The code is publicly auditable -- you can verify exactly what it
             calculates.
           </p>
@@ -168,7 +168,7 @@ export default function WhatIsGlasgowIndexCPAP() {
         <div className="mt-4 text-sm text-muted-foreground">
           <p>
             AirwayLab implements an open-source port of the{' '}
-            <strong className="text-foreground">DaveSkvn/Glasgow-Index</strong> algorithm
+            <strong className="text-foreground">DaveSkvn/GlasgowIndex</strong> algorithm
             (GPL-3.0). The algorithm was developed to score nine features of the inspiratory flow
             waveform. Code is publicly auditable on GitHub.
           </p>

@@ -102,7 +102,7 @@ airwaylab/
 ## Analysis Engines
 
 ### Glasgow Index (`lib/analyzers/glasgow-index.ts`)
-Ported from DaveSkvn/Glasgow-Index (GPL-3.0). Scores inspiratory flow shapes on 9 components (0–1 each): skew, spike, flatTop, topHeavy, multiPeak, noPause, inspirRate, multiBreath, variableAmp. Overall score = sum of all 9 components, range 0–9. Pipeline: findMins → findInspirations → calcCycleBasedIndicators → inspirationAmplitude → prepIndices. Multi-session nights use duration-weighted averaging.
+Ported from DaveSkvn/GlasgowIndex (GPL-3.0). Scores inspiratory flow shapes on 9 components (0–1 each): skew, spike, flatTop, topHeavy, multiPeak, noPause, inspirRate, multiBreath, variableAmp. Overall score = sum of all 9 components, range 0–9. Pipeline: findMins → findInspirations → calcCycleBasedIndicators → inspirationAmplitude → prepIndices. Multi-session nights use duration-weighted averaging.
 
 ### WAT — Wobble Analysis Tool (`lib/analyzers/wat-engine.ts`)
 Three metrics: FL Score (inspiratory flatness, 0–100, higher = worse), Regularity (Sample Entropy on minute ventilation, higher = more irregular), Periodicity Index (FFT power in 0.01–0.03 Hz band, detects periodic breathing at 30–100s cycles). Includes a Cooley-Tukey radix-2 FFT implementation.
@@ -150,7 +150,7 @@ Per-breath analysis: NED = (Qpeak − Qmid) / Qpeak × 100, Flatness Index = mea
 
 7. **Supabase EU region.** GDPR requirement. RLS must be enabled on every table before use. Auth is Supabase Auth only — no OAuth/social login.
 
-8. **Open-core model (GPL-3.0).** The Glasgow Index engine is ported from DaveSkvn/Glasgow-Index (GPL-3.0), which requires the entire project to be GPL-3.0. This aligns with the mission: open data, open code, verifiable trust.
+8. **Open-core model (GPL-3.0).** The Glasgow Index engine is ported from DaveSkvn/GlasgowIndex (GPL-3.0), which requires the entire project to be GPL-3.0. This aligns with the mission: open data, open code, verifiable trust.
 
 9. **Dark-default theme with light option.** Dark is the default clinical aesthetic. A light theme is available via Settings > Display Preferences for accessibility. Both themes use HSL CSS variables defined in `globals.css` (`:root` for dark, `[data-theme="light"]` for light) and referenced in `tailwind.config.ts`. Preference persists in `airwaylab_theme` localStorage key.
 

@@ -1147,7 +1147,7 @@ function AnalyzePageInner() {
                   <TabsTrigger value="glasgow" className="gap-1.5">
                     <Activity className="h-3.5 w-3.5" />
                     <span className="sm:hidden text-[11px]">Glasgow</span>
-                    <span className="hidden sm:inline">Glasgow</span>
+                    <span className="hidden sm:inline">Glasgow Index</span>
                   </TabsTrigger>
                   <TabsTrigger value="flow" className="gap-1.5">
                     <Waves className="h-3.5 w-3.5" />
