@@ -12,11 +12,13 @@ import {
   computeTidalVolume,
   computeRespiratoryRate,
   detectMShapeInWorker,
+  buildSessionBoundaries,
 } from './waveform-utils';
 import type {
   WaveformWorkerMessage,
   RawWaveformResult,
   WaveformEvent,
+  SessionBoundary,
 } from './waveform-types';
 import type { EDFFile } from './types';
 
@@ -42,6 +44,7 @@ self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
         respiratoryRate: [],
         leak: [],
         dateStr: targetDate,
+        sessions: [],
       };
       self.postMessage(response);
     }
@@ -58,6 +61,7 @@ self.onmessage = (e: MessageEvent<WaveformWorkerMessage>) => {
       respiratoryRate: [],
       leak: [],
       dateStr: e.data.targetDate,
+      sessions: [],
       error: err instanceof Error ? err.message : String(err),
     };
     self.postMessage(response);
@@ -99,10 +103,14 @@ function extractWaveform(
 
   if (!targetGroup) return null;
 
-  // Concatenate flow data from all sessions
+  // Concatenate flow data from all sessions. Sessions are concatenated machine-on
+  // only (the mid-night off period carries no samples), so we record each session's
+  // boundary + wall-clock start here — the one place that still knows them — so the
+  // viewer can place samples at true wall-clock time and break the trace across gaps.
   const sessions = targetGroup.sessions;
   const totalFlowSamples = sessions.reduce((sum, s) => sum + s.flowData.length, 0);
   const combinedFlow = new Float32Array(totalFlowSamples);
+  const sessionBoundaries: SessionBoundary[] = buildSessionBoundaries(sessions);
   let offset = 0;
   let avgSamplingRate = 0;
   let hasPressure = true;
@@ -193,6 +201,7 @@ function extractWaveform(
     respiratoryRate,
     leak,
     dateStr: targetDate,
+    sessions: sessionBoundaries,
   };
 }
 

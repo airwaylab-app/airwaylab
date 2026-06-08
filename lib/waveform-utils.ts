@@ -13,6 +13,7 @@ import type {
   TidalVolumePoint,
   RespiratoryRatePoint,
   StoredWaveform,
+  SessionBoundary,
 } from './waveform-types';
 import { ENGINE_VERSION } from './engine-version';
 
@@ -762,6 +763,146 @@ export function formatWallClockTime(recordingDate: Date | undefined | null, elap
   const elapsedLabel = h > 0 ? `${h}h ${m}m in` : `${m}m in`;
 
   return `${timeStr} (${elapsedLabel})`;
+}
+
+// ── Multi-session (machine-off gap) helpers ─────────────────
+//
+// The flow array is concatenated machine-on only, so chart-space time `t` is
+// "machine-on elapsed seconds" and has no notion of a mid-night gap. These
+// helpers use the per-session boundaries to (a) place a sample at its true
+// wall-clock time and (b) break the trace where the machine was off.
+
+/**
+ * Resolve a chart-space elapsed time to the wall-clock anchor of the session it
+ * falls in, plus the local elapsed within that session. Falls back to a single
+ * anchor (today's behaviour) when boundaries are absent.
+ */
+function resolveSessionAnchor(
+  elapsedSec: number,
+  sessions: SessionBoundary[] | undefined,
+  sampleRate: number,
+  fallbackStart?: Date | null,
+): { anchor: Date | null; localSec: number } {
+  if (sessions && sessions.length > 0 && sampleRate > 0) {
+    let s = sessions[0]!;
+    for (const cand of sessions) {
+      if (cand.startSampleIndex / sampleRate <= elapsedSec + 1e-6) s = cand;
+      else break;
+    }
+    const startSec = s.startSampleIndex / sampleRate;
+    return { anchor: new Date(s.startWallClockMs), localSec: elapsedSec - startSec };
+  }
+  return { anchor: fallbackStart ?? null, localSec: elapsedSec };
+}
+
+/**
+ * Wall-clock label for a chart-space elapsed time, session-aware.
+ * Returns e.g. "2:18 AM (3h 15m in)" anchored to the correct session.
+ */
+export function wallClockForElapsed(
+  elapsedSec: number,
+  sessions: SessionBoundary[] | undefined,
+  sampleRate: number,
+  fallbackStart?: Date | null,
+): string {
+  const { anchor, localSec } = resolveSessionAnchor(elapsedSec, sessions, sampleRate, fallbackStart);
+  return formatWallClockTime(anchor, localSec);
+}
+
+/**
+ * Short HH:MM wall-clock tick label, session-aware. Falls back to elapsed H:MM
+ * when no wall-clock anchor is available (old data / single-anchor unset).
+ */
+export function wallClockTickShort(
+  elapsedSec: number,
+  sessions: SessionBoundary[] | undefined,
+  sampleRate: number,
+  fallbackStart?: Date | null,
+): string {
+  const { anchor, localSec } = resolveSessionAnchor(elapsedSec, sessions, sampleRate, fallbackStart);
+  if (!anchor || !(anchor instanceof Date)) return formatElapsedTimeShort(elapsedSec);
+  const wc = new Date(anchor.getTime() + localSec * 1000);
+  return wc.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+/**
+ * Interior session boundaries as chart-space break points. Each is the
+ * machine-on elapsed time where a later session begins, plus the real
+ * (wall-clock) off-duration that preceded it. Empty for single-session nights.
+ */
+export function sessionBreaks(
+  sessions: SessionBoundary[] | undefined,
+  sampleRate: number,
+): { tSec: number; offSeconds: number }[] {
+  if (!sessions || sessions.length < 2 || sampleRate <= 0) return [];
+  const breaks: { tSec: number; offSeconds: number }[] = [];
+  for (let k = 1; k < sessions.length; k++) {
+    const prev = sessions[k - 1]!;
+    const cur = sessions[k]!;
+    const prevEndMs = prev.startWallClockMs + prev.durationSeconds * 1000;
+    breaks.push({
+      tSec: +(cur.startSampleIndex / sampleRate).toFixed(3),
+      offSeconds: Math.max(0, (cur.startWallClockMs - prevEndMs) / 1000),
+    });
+  }
+  return breaks;
+}
+
+/**
+ * Build per-session boundaries from the night's ordered sessions. The flow array
+ * is concatenated machine-on only, so `startSampleIndex` is the running sample
+ * offset; `startWallClockMs` keeps the real start so gaps can be reconstructed.
+ */
+export function buildSessionBoundaries(
+  sessions: { flowData: { length: number }; recordingDate: Date; durationSeconds: number }[],
+): SessionBoundary[] {
+  const out: SessionBoundary[] = [];
+  let offset = 0;
+  for (const s of sessions) {
+    out.push({
+      startSampleIndex: offset,
+      sampleCount: s.flowData.length,
+      startWallClockMs: s.recordingDate.getTime(),
+      durationSeconds: s.durationSeconds,
+    });
+    offset += s.flowData.length;
+  }
+  return out;
+}
+
+/** Format a machine-off gap duration compactly, e.g. "2h 13m" or "8m". */
+export function formatGapDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.round((total % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/** A null row used to break a Recharts trace across a machine-off gap. */
+export interface ChartBreakRow { t: number; flow: null; pressure: null }
+
+/**
+ * Insert null break rows at the given chart-space times so a trace with
+ * connectNulls={false} breaks across each machine-off gap. Each break is placed
+ * just before the first point at/after its time. Returns the data unchanged when
+ * there are no breaks.
+ */
+export function insertBreakRows<T extends { t: number }>(
+  data: T[],
+  breakTimes: number[],
+): (T | ChartBreakRow)[] {
+  if (breakTimes.length === 0 || data.length === 0) return data;
+  const sorted = [...breakTimes].sort((a, b) => a - b);
+  const out: (T | ChartBreakRow)[] = [];
+  let bi = 0;
+  for (const point of data) {
+    while (bi < sorted.length && sorted[bi]! <= point.t) {
+      out.push({ t: sorted[bi]!, flow: null, pressure: null });
+      bi++;
+    }
+    out.push(point);
+  }
+  return out;
 }
 
 /**

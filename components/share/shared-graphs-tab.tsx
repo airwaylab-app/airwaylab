@@ -285,8 +285,9 @@ function SharedWaveformCharts({
         flow={flowData}
         pressure={pressureData}
         events={waveform.events}
-
         visibleEventTypes={visibleTypes}
+        sessions={waveform.sessions}
+        sampleRate={waveform.sampleRate}
       />
     </div>
   );

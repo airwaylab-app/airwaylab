@@ -139,6 +139,8 @@ function WaveformCharts({
             events={storedWaveform.events}
             visibleEventTypes={visibleTypes}
             recordingStartTime={selectedNight.sessionStartTime}
+            sessions={storedWaveform.sessions}
+            sampleRate={storedWaveform.sampleRate}
           />
         </ErrorBoundary>
 
