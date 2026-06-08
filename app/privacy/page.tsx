@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 31 May 2026
+          Last updated: 8 June 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -96,10 +96,14 @@ export default function PrivacyPolicyPage() {
             <li>Subscription tier and billing status (via Stripe)</li>
             <li>
               <strong>Feedback submissions:</strong> When you submit feedback through the app,
-              your feedback text is stored in our database (Supabase, EU-West). When you submit
-              feedback and <strong>consent to follow-up contact</strong>, your email address and
-              feedback text may also be consolidated into internal Gmail drafts for team review
-              (via Google Gmail API). No health data is included in feedback submissions.
+              your feedback text is stored in our database (Supabase, EU-West). All feedback
+              submissions are also forwarded to an internal admin-only Discord channel for
+              operational triage, regardless of contact consent. When you submit feedback and{' '}
+              <strong>consent to follow-up contact</strong>, your email address and feedback text
+              may also be consolidated into internal Gmail drafts for team review (via Google
+              Gmail API). No raw analysis or therapy data is included in feedback submissions,
+              though user-authored feedback text may contain health context you have chosen to
+              share.
             </li>
           </ul>
 
@@ -477,7 +481,7 @@ export default function PrivacyPolicyPage() {
           <p>
             AirwayLab B.V. is incorporated in the Netherlands (EU). Our primary database is hosted
             in the EU (Supabase EU-West region). Some services (Anthropic, Sentry, Resend, Upstash,
-            Google) process data in the US. For EU users, these transfers are governed by Standard
+            Google, Discord) process data in the US. For EU users, these transfers are governed by Standard
             Contractual Clauses (SCCs) or the EU-US Data Privacy Framework where applicable.
           </p>
           <p>
