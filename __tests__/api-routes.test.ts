@@ -205,6 +205,8 @@ describe('POST /api/create-checkout-session', () => {
     const chainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnValue({ data: [], error: null }), // no active sub → checkout proceeds
       maybeSingle: vi.fn().mockReturnValue({ data: { stripe_customer_id: null }, error: null }),
       update: vi.fn().mockReturnThis(),
     };

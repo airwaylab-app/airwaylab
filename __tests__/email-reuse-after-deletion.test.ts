@@ -135,6 +135,8 @@ describe('email-reuse-after-deletion: re-registered user gets a clean profile', 
     const freshProfileChainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }), // no active sub → checkout proceeds
       maybeSingle: vi.fn().mockResolvedValue({
         data: { stripe_customer_id: null },
         error: null,
@@ -171,6 +173,8 @@ describe('email-reuse-after-deletion: re-registered user gets a clean profile', 
     const cleanChainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }), // no active sub → checkout proceeds
       maybeSingle: vi.fn().mockResolvedValue({
         data: { stripe_customer_id: null },
         error: null,

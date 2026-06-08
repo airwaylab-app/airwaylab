@@ -44,6 +44,7 @@ vi.mock('@/lib/supabase/server', () => ({
 const mockCustomersCreate = vi.fn();
 const mockCustomersRetrieve = vi.fn();
 const mockCheckoutCreate = vi.fn();
+const mockBillingPortalCreate = vi.fn();
 
 vi.mock('stripe', () => {
   class MockStripe {
@@ -53,6 +54,9 @@ vi.mock('stripe', () => {
     };
     checkout = {
       sessions: { create: (...args: unknown[]) => mockCheckoutCreate(...args) },
+    };
+    billingPortal = {
+      sessions: { create: (...args: unknown[]) => mockBillingPortalCreate(...args) },
     };
   }
   return { default: MockStripe };
@@ -163,6 +167,9 @@ describe('checkout-profile-race: no profile row for authenticated user (AIR-1873
     const existingProfileChainable = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      // subscriptions guard: .limit(1) resolves to [] (no active paid sub) → checkout proceeds
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
       maybeSingle: vi.fn().mockResolvedValue({
         data: { stripe_customer_id: 'cus_existing' },
         error: null,
@@ -177,5 +184,35 @@ describe('checkout-profile-race: no profile row for authenticated user (AIR-1873
     expect(res.status).toBe(200);
     expect((await res.json()).url).toBe('https://checkout.stripe.com/sess');
     expect(mockCustomersCreate).not.toHaveBeenCalled(); // reused existing customer
+  });
+});
+
+// ── Single active sub + upgrade path (Round 1) ─────────────────────────────
+
+describe('checkout single-active-sub guard: routes existing subscribers to the portal', () => {
+  it('routes an active-paid user to the billing portal and does NOT create a 2nd checkout session', async () => {
+    const chainable = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      // active paid sub exists → guard fires
+      limit: vi.fn().mockResolvedValue({ data: [{ id: 'sub_existing' }], error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { stripe_customer_id: 'cus_existing' }, error: null }),
+      update: vi.fn().mockReturnThis(),
+    };
+    mockFrom.mockReturnValue(chainable);
+    mockBillingPortalCreate.mockResolvedValue({ url: 'https://billing.stripe.com/portal/abc' });
+
+    const res = await callRoute({ priceId: 'price_champ_m' });
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.url).toBe('https://billing.stripe.com/portal/abc');
+    expect(json.viaPortal).toBe(true);
+    // The duplicate-charge bug: a second subscription must NOT be created
+    expect(mockCheckoutCreate).not.toHaveBeenCalled();
+    expect(mockBillingPortalCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: 'cus_existing' })
+    );
   });
 });

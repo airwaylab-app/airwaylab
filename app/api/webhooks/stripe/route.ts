@@ -65,6 +65,9 @@ async function logSubscriptionEvent(
     stripeSubscriptionId?: string;
     mrrCents?: number;
     stripeEventId?: string;
+    source?: string;
+    cancelReason?: string;
+    cancelFeedback?: string;
   }
 ) {
   const { error } = await supabase.from('subscription_events').upsert(
@@ -76,6 +79,9 @@ async function logSubscriptionEvent(
       stripe_subscription_id: params.stripeSubscriptionId ?? null,
       mrr_cents: params.mrrCents ?? null,
       stripe_event_id: params.stripeEventId ?? null,
+      source: params.source ?? null,
+      cancel_reason: params.cancelReason ?? null,
+      cancel_feedback: params.cancelFeedback ?? null,
     },
     { onConflict: 'stripe_event_id', ignoreDuplicates: true }
   );
@@ -457,6 +463,45 @@ async function processStripeEvent(
       const userId = subscription.metadata?.supabase_user_id;
       const deletedCancelDetails = subscription.cancellation_details;
 
+      // The tier the user actually churned FROM, and the MRR lost. Computed from
+      // the Stripe object (not the post-cancel landing tier). Sum ALL recurring
+      // items so a multi-item sub is not under-reported; warn if there is >1
+      // (checkout only ever creates single-item subs).
+      const deletedItem = subscription.items.data[0];
+      const churnedPriceId = deletedItem?.price.id;
+      const churnedFrom = churnedPriceId ? getTierFromPrice(churnedPriceId) : 'supporter';
+      const churnedInterval = deletedItem?.price.recurring?.interval ?? 'unknown';
+      if (subscription.items.data.length > 1) {
+        Sentry.captureMessage('Cancellation subscription has multiple items — MRR summed across all', {
+          level: 'warning',
+          tags: { route: 'stripe-webhook', event_type: event.type },
+          extra: { subscriptionId: subscription.id, itemCount: subscription.items.data.length },
+        });
+      }
+      const mrrCentsLost = subscription.items.data.reduce(
+        (sum, it) => sum + computeMrrCents(it.price.unit_amount ?? 0, it.price.recurring?.interval ?? 'month'),
+        0,
+      );
+
+      // Read the prior LOCAL status before we flip to canceled — lets us attribute
+      // a dunning auto-cancel even when no metadata propagated.
+      const { data: priorSub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('stripe_subscription_id', subscription.id)
+        .maybeSingle();
+
+      // Source attribution: explicit metadata wins (account deletion sets this
+      // before cancelling; dunning sets it on payment_failed), then infer dunning
+      // from a prior past_due/unpaid local status, else it was a portal cancel.
+      const canceledVia = subscription.metadata?.canceled_via;
+      const source: 'portal' | 'dunning' | 'account_deletion' =
+        canceledVia === 'account_deletion'
+          ? 'account_deletion'
+          : canceledVia === 'dunning' || priorSub?.status === 'past_due' || priorSub?.status === 'unpaid'
+            ? 'dunning'
+            : 'portal';
+
       // Mark subscription as canceled, capturing churn reason for analysis
       const { error: cancelErr } = await supabase
         .from('subscriptions')
@@ -508,18 +553,40 @@ async function processStripeEvent(
         // Sync Discord role (revoke if downgraded to community)
         await syncDiscordForUser(supabase, userId, newTier, event.id);
 
-        // Discord #revenue alert
-        await sendAlert('revenue', '', [formatRevenueEmbed({
-          event: 'cancellation',
-          tier: newTier,
-        })]);
+        // Legible #revenue alert. Wrapped non-fatally: a notification failure must
+        // never bubble out and fail the Stripe job, which would re-drive the
+        // cancellation email + win-back. Email is looked up only for portal cancels
+        // (an account-deleted user's profile is already gone) and masked downstream.
+        try {
+          const email = source === 'portal' ? await getUserEmail(supabase, userId) : null;
+          await sendAlert('revenue', '', [formatRevenueEmbed({
+            event: 'cancellation',
+            churnedFrom,
+            landingTier: newTier,
+            interval: churnedInterval,
+            mrrCents: mrrCentsLost,
+            reason: deletedCancelDetails?.reason ?? undefined,
+            feedback: deletedCancelDetails?.feedback ?? undefined,
+            email: email ?? undefined,
+            source,
+          })]);
+        } catch (alertErr) {
+          console.error('[stripe-webhook] Cancellation alert failed (non-fatal):', alertErr);
+          Sentry.captureException(alertErr, { tags: { route: 'stripe-webhook', event_type: event.type, action: 'cancellation-alert' } });
+        }
       }
 
       await logSubscriptionEvent(supabase, {
         userId,
         eventType: 'cancelled',
+        tier: churnedFrom,
+        interval: churnedInterval,
+        mrrCents: mrrCentsLost,
         stripeSubscriptionId: subscription.id,
         stripeEventId: event.id,
+        source,
+        cancelReason: deletedCancelDetails?.reason ?? undefined,
+        cancelFeedback: deletedCancelDetails?.feedback ?? undefined,
       });
 
       break;
@@ -538,11 +605,25 @@ async function processStripeEvent(
           .update({ status: 'past_due' })
           .eq('stripe_subscription_id', subscriptionId);
 
+        // Tag the Stripe subscription so a later auto-cancel is attributed to
+        // dunning, not a user-initiated portal cancel. Retrieve-then-spread keeps
+        // the existing metadata (e.g. supabase_user_id) intact. Non-fatal.
+        try {
+          const existing = await stripe.subscriptions.retrieve(subscriptionId);
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: { ...existing.metadata, canceled_via: 'dunning' },
+          });
+        } catch (metaErr) {
+          console.error('[stripe-webhook] Failed to tag dunning metadata (non-fatal):', metaErr);
+          Sentry.captureException(metaErr, { tags: { route: 'stripe-webhook', event_type: event.type, action: 'dunning-metadata' } });
+        }
+
         await logSubscriptionEvent(supabase, {
           userId: undefined,
           eventType: 'past_due',
           stripeSubscriptionId: subscriptionId,
           stripeEventId: event.id,
+          source: 'dunning',
         });
 
         // Critical alert: Discord #critical + email to ops

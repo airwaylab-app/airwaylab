@@ -122,6 +122,22 @@ export async function POST(request: NextRequest) {
       const cancellable = subs.filter((s) => s.status !== 'canceled' && s.status !== 'incomplete_expired');
       let cancelledCount = 0;
       for (const sub of cancellable) {
+        // Attribute this cancellation to account deletion BEFORE cancelling, so the
+        // resulting customer.subscription.deleted webhook labels the #revenue alert
+        // as account_deletion (not a user portal cancel). Spread keeps existing
+        // metadata (e.g. supabase_user_id) intact. Best-effort — never block deletion.
+        try {
+          await stripe.subscriptions.update(sub.id, {
+            metadata: { ...sub.metadata, canceled_via: 'account_deletion' },
+          });
+        } catch (metaErr) {
+          Sentry.captureException(metaErr, {
+            level: 'warning',
+            fingerprint: ['delete-cancel-metadata-failed'],
+            tags: { route: 'delete-user-data', action: 'cancel-subscription' },
+            extra: { userId: user.id, subscriptionId: sub.id },
+          });
+        }
         try {
           await stripe.subscriptions.cancel(sub.id);
         } catch (err) {
@@ -154,6 +170,7 @@ export async function POST(request: NextRequest) {
             mrr_cents: 0,
             stripe_subscription_id: sub.id,
             stripe_event_id: `account_deletion:${user.id}:${sub.id}`,
+            source: 'account_deletion',
           },
           { onConflict: 'stripe_event_id', ignoreDuplicates: true }
         );
