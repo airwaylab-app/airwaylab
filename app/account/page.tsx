@@ -20,7 +20,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  HardDrive,
 } from 'lucide-react';
+import { clearAllLocalData } from '@/lib/clear-local-data';
 
 const TIER_CONFIG = {
   community: { label: 'Community', color: 'text-muted-foreground' },
@@ -88,6 +90,19 @@ export default function AccountPage() {
   const [deleteState, setDeleteState] = useState<
     'idle' | 'deleting' | 'success' | 'error'
   >('idle');
+
+  const [clearState, setClearState] = useState<'idle' | 'clearing' | 'cleared' | 'error'>('idle');
+
+  async function handleClearLocal() {
+    setClearState('clearing');
+    try {
+      await clearAllLocalData();
+      setClearState('cleared');
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'clear-local-data-account' } });
+      setClearState('error');
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -289,6 +304,47 @@ export default function AccountPage() {
               </div>
             </div>
           )}
+
+          {/* Free up space — non-destructive, clears browser-local data only */}
+          <div className="border-t border-border pt-4 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <HardDrive className="h-4 w-4" />
+                  Browser storage
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Frees local space on this device and fixes a &ldquo;Storage limit
+                  reached&rdquo; message. Does <span className="font-medium">not</span> delete
+                  your account or your data on our servers.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={handleClearLocal}
+                disabled={clearState === 'clearing'}
+              >
+                {clearState === 'clearing' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Clearing...
+                  </>
+                ) : (
+                  'Clear browser storage'
+                )}
+              </Button>
+            </div>
+            {clearState === 'cleared' && (
+              <p className="text-xs text-emerald-400">
+                Browser storage cleared. Re-upload your SD card to view your data again.
+              </p>
+            )}
+            {clearState === 'error' && (
+              <p className="text-xs text-red-400">Could not clear browser storage. Please try again.</p>
+            )}
+          </div>
 
           <div className="border-t border-border pt-4 space-y-3">
             {deleteState === 'success' && (
