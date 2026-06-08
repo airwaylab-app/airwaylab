@@ -55,8 +55,10 @@ export const SUPPORTED_EXTENSIONS = new Set([
   '.edf', '.csv', '.json', '.dat', '.crc',
 ]);
 
-/** Max file size: 50MB (Supabase Storage default) */
-export const MAX_FILE_SIZE = 50 * 1024 * 1024;
+/** Max file size: 200MB. Tracks the user-files bucket file_size_limit
+ *  (migration 066) so the API cap and Storage gate cannot diverge. High-res
+ *  ResMed BRP.edf files can exceed 50MB for full SD-card sessions. */
+export const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 /** Storage bucket name */
 export const STORAGE_BUCKET = 'user-files';
