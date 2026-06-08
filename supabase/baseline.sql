@@ -2222,3 +2222,39 @@ create policy service_role_delete_shared_files on storage.objects as PERMISSIVE 
 create policy service_role_insert_shared_files on storage.objects as PERMISSIVE for INSERT to service_role with check ((bucket_id = 'shared-files'::text));
 create policy service_role_only on public.unsupported_device_submissions as PERMISSIVE for ALL to service_role using (true);
 create policy service_role_select_shared_files on storage.objects as PERMISSIVE for SELECT to service_role using ((bucket_id = 'shared-files'::text));
+
+-- ── MCP patch (2026-06-08): objects the structure-only dump dropped ──────────
+-- A canonical `supabase db dump` was unavailable (no local DB creds), so these
+-- were extracted from prod via the Supabase MCP to close the baseline↔prod gap
+-- (the share_analytics reporting view + two serial sequences). None are exercised
+-- by the current GATE tests; a future canonical dump supersedes this block.
+create sequence if not exists public.ai_insights_log_id_seq as bigint start with 1 increment by 1 minvalue 1 maxvalue 9223372036854775807 no cycle;
+create sequence if not exists public.symptom_contributions_id_seq as bigint start with 1 increment by 1 minvalue 1 maxvalue 9223372036854775807 no cycle;
+create view public.share_analytics as  SELECT date_trunc('day'::text, created_at) AS day,
+    count(*) AS shares_created,
+    sum(
+        CASE
+            WHEN share_scope = 'single'::text THEN 1
+            ELSE 0
+        END) AS single_night_shares,
+    sum(
+        CASE
+            WHEN share_scope = 'all'::text THEN 1
+            ELSE 0
+        END) AS all_nights_shares,
+    avg(nights_count) AS avg_nights_per_share,
+    sum(access_count) AS total_views,
+    avg(access_count) AS avg_views_per_share,
+    count(
+        CASE
+            WHEN access_count > 0 THEN 1
+            ELSE NULL::integer
+        END) AS shares_actually_viewed,
+    round(count(
+        CASE
+            WHEN access_count > 0 THEN 1
+            ELSE NULL::integer
+        END)::numeric / NULLIF(count(*), 0)::numeric * 100::numeric, 1) AS view_rate_pct
+   FROM shared_analyses
+  GROUP BY (date_trunc('day'::text, created_at))
+  ORDER BY (date_trunc('day'::text, created_at)) DESC;

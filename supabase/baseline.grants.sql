@@ -13,11 +13,11 @@
 --   table grants:    information_schema.role_table_grants  (schema=public, grantee in the 3 roles)
 --   function grants:  pg_proc + aclexplode(proacl)         (EXECUTE; PUBLIC = grantee oid 0)
 --
--- NOT replicated (absent from the structure-only baseline, and untouched by the
--- current tests): the share_analytics VIEW, and the serial sequences
--- ai_insights_log_id_seq / symptom_contributions_id_seq (the dump rendered those
--- id columns as bare bigint, dropping the owned sequences). Flagged as a baseline
--- gap on the G5 PR; add their grants here if/when the baseline regains them.
+-- The share_analytics VIEW + the serial sequences ai_insights_log_id_seq /
+-- symptom_contributions_id_seq were restored to supabase/baseline.sql via the same
+-- MCP extraction (2026-06-08), so their grants are now included (see the bottom
+-- of this file). None are exercised by the current GATE tests; a future canonical
+-- `supabase db dump` supersedes both the baseline patch and these grants.
 
 set search_path to public, auth, storage, extensions;
 
@@ -114,3 +114,8 @@ grant execute on function public.update_storage_usage() to anon, authenticated, 
 grant execute on function public.update_symptom_contributions_updated_at() to anon, authenticated, service_role;
 grant execute on function public.update_updated_at() to anon, authenticated, service_role;
 
+
+-- ── Restored objects (MCP patch 2026-06-08): share_analytics view + sequences ──
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.share_analytics to anon, authenticated, service_role;
+grant SELECT, UPDATE, USAGE on sequence public.ai_insights_log_id_seq to anon, authenticated, service_role;
+grant SELECT, UPDATE, USAGE on sequence public.symptom_contributions_id_seq to anon, authenticated, service_role;
