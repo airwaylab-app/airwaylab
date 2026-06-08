@@ -11,10 +11,13 @@
  * - lib/analyzers/ned-engine.ts
  * - lib/parsers/night-grouper.ts (affects which data goes to which night)
  *
- * Oximetry has its own version below so an oximetry-only change does not
- * invalidate every user's CPAP results — see OXIMETRY_ENGINE_VERSION.
+ * Oximetry has its own version below, so an oximetry-only change does not
+ * invalidate every user's CPAP results (see OXIMETRY_ENGINE_VERSION).
+ *
+ * 0.10.0 — StoredWaveform now carries per-session boundaries (gap-aware flow
+ * graph). Bumped so cached waveforms regenerate with the `sessions` field.
  */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 /**
  * Oximetry analysis version, decoupled from ENGINE_VERSION. Bump ONLY when
@@ -25,7 +28,8 @@ export const ENGINE_VERSION = '0.9.0';
  *
  * Bumping this re-prompts ONLY users who have oximetry data (their CPAP results
  * are preserved) and re-tags oximetry IDB traces + research contributions.
- * Initialised to the current ENGINE_VERSION value so introducing it is seamless
- * (existing oximetry traces tagged with ENGINE_VERSION still match).
+ * Held at 0.9.0 (the value existing oximetry IDB traces carry) and deliberately
+ * NOT bumped alongside ENGINE_VERSION 0.10.0, since that waveform change did not
+ * affect oximetry.
  */
 export const OXIMETRY_ENGINE_VERSION = '0.9.0';

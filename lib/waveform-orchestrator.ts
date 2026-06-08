@@ -208,6 +208,7 @@ class WaveformOrchestrator {
           leak: result.leak,
           storedAt: Date.now(),
           engineVersion: ENGINE_VERSION,
+          sessions: result.sessions ?? [],
         };
 
         this.cache.set(targetDate, stored);
