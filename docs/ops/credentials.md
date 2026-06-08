@@ -115,10 +115,3 @@ curl -s -o /dev/null -w "%{http_code}" \
 | `#user-signals` | `DISCORD_USER_SIGNALS_WEBHOOK_URL` |
 | `#platform-health` | `DISCORD_PLATFORM_HEALTH_WEBHOOK_URL` |
 
----
-
-## Test Entry (dry-run only — remove after AIR-931 verification)
-
-| Name | Owner | Stored In | Cadence | Last Rotated | Next Rotation Due | Status |
-|------|-------|-----------|---------|--------------|-------------------|--------|
-| `DRY_RUN_TEST_TOKEN` | CTO | test-only | 90 days | 2026-02-05 | 2026-05-06 | test |
