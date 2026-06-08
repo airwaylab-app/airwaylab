@@ -16,8 +16,12 @@
  *
  * 0.10.0 — StoredWaveform now carries per-session boundaries (gap-aware flow
  * graph). Bumped so cached waveforms regenerate with the `sessions` field.
+ * 0.11.0 — AirSense auto modes (APAP/AutoSet) now mark settings untrusted
+ * (settingsSource 'unavailable', unavailableReason 'untrusted_autoset_range')
+ * instead of presenting the fixed-CPAP pressure as the range (#1036). Bumped so
+ * cached results re-run and stop showing the collapsed range + false warning.
  */
-export const ENGINE_VERSION = '0.10.0';
+export const ENGINE_VERSION = '0.11.0';
 
 /**
  * Oximetry analysis version, decoupled from ENGINE_VERSION. Bump ONLY when

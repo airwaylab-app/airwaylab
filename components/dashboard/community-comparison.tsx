@@ -28,6 +28,12 @@ export function CommunityComparison({ night, symptomRating, isContributeConsente
 
   useEffect(() => {
     if (!isContributeConsented) return;
+    // Skip when we don't trust the night's settings (#1036): the pressure_bucket
+    // would be derived from an untrustworthy pressure, giving a wrong comparison.
+    if (night.settings.settingsSource !== 'extracted') {
+      setInsufficient(true);
+      return;
+    }
 
     setLoading(true);
     setInsufficient(false);

@@ -86,6 +86,10 @@ export async function contributeSymptoms(
   symptomRating: number,
   signal?: AbortSignal
 ): Promise<boolean> {
+  // Do not contribute nights whose settings we don't trust (#1036): the
+  // pressure_bucket would be derived from an untrustworthy pressure and poison
+  // the dataset, and the server's pressure_bucket enum can't represent "unknown".
+  if (night.settings.settingsSource !== 'extracted') return false;
   try {
     const payload = buildContributionPayload(night, symptomRating);
     const res = await fetch('/api/contribute-symptoms', {
