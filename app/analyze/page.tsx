@@ -132,6 +132,7 @@ function AnalyzePageInner() {
   const [_isIOS, setIsIOS] = useState(false);
   const [analyzeAuthModalOpen, setAnalyzeAuthModalOpen] = useState(false);
   const [engineUpgraded, setEngineUpgraded] = useState(false);
+  const [oximetryUpgraded, setOximetryUpgraded] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const tabScrollRef = useRef<HTMLDivElement>(null);
   const overviewPanelRef = useRef<HTMLDivElement>(null);
@@ -321,6 +322,10 @@ function AnalyzePageInner() {
         if (saved.engineUpgraded) {
           // Engine version changed — old results cleared, prompt re-upload (FB-22)
           setEngineUpgraded(true);
+        } else if (saved.oximetryUpgraded) {
+          // Oximetry analysis improved — CPAP nights kept, stale oximetry dropped;
+          // prompt re-upload of oximetry only (#988 follow-up).
+          setOximetryUpgraded(true);
         } else if (saved.nights.length === 0) {
           // Persisted data existed but contained 0 nights — data loss
           console.error('[persistence] Restored session has 0 nights — serving empty dashboard');
@@ -780,6 +785,22 @@ function AnalyzePageInner() {
               <p className="mt-0.5">
                 Your previous results were analyzed with an older engine version.
                 Re-upload your SD card to get improved analysis with the latest algorithms.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Oximetry upgrade banner — shown when oximetry analysis improved but CPAP results were kept */}
+      {oximetryUpgraded && status === 'idle' && !isDemo && (
+        <div className="mx-auto mb-4 max-w-lg">
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+            <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium text-amber-400">Oximetry analysis improved</p>
+              <p className="mt-0.5">
+                We&apos;ve improved how we analyze oximetry data. Re-upload your oximetry data
+                to refresh your SpO2 and heart-rate results. Your CPAP results are unchanged.
               </p>
             </div>
           </div>

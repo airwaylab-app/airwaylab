@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { persistResults, loadPersistedResults, clearPersistedResults, clearPersistedNights, persistNightsIncremental, mergeNightsByDate } from '@/lib/persistence';
 import { filterNightsToTierWindow } from '@/lib/analysis-orchestrator';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
+import { OXIMETRY_ENGINE_VERSION } from '@/lib/engine-version';
 import type { NightResult } from '@/lib/types';
 
 vi.mock('@sentry/nextjs', () => ({
@@ -440,6 +441,59 @@ describe('persistence', () => {
       localStorage.setItem('airwaylab_file_manifest', '{"manifests":[],"savedAt":1}');
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
+    });
+  });
+
+  // Oximetry-scoped cache invalidation (decoupled from the global ENGINE_VERSION).
+  // A future OXIMETRY_ENGINE_VERSION bump must refresh ONLY oximetry — drop the stale
+  // oximetry, keep CPAP, prompt re-upload — and only for users who have oximetry and a
+  // PRESENT-but-mismatched tag (existing caches without the tag must not be disturbed).
+  describe('loadPersistedResults — oximetry-scoped invalidation', () => {
+    beforeEach(() => {
+      storage.clear();
+      vi.clearAllMocks();
+    });
+
+    function seed(opts: { oximetryEngineVersion?: string | null; withOximetry?: boolean }): void {
+      persistResults(SAMPLE_NIGHTS, null);
+      const parsed = JSON.parse(storage.get('airwaylab_results')!);
+      for (const n of parsed.nights) {
+        n.oximetry = opts.withOximetry === false ? null : { spo2Mean: 95, odi3: 5, retainedSamples: 1000 };
+      }
+      if (opts.oximetryEngineVersion === null) delete parsed.oximetryEngineVersion;
+      else if (opts.oximetryEngineVersion !== undefined) parsed.oximetryEngineVersion = opts.oximetryEngineVersion;
+      storage.set('airwaylab_results', JSON.stringify(parsed));
+    }
+
+    it('drops stale oximetry, keeps CPAP, and flags oximetryUpgraded on a tag mismatch', () => {
+      seed({ oximetryEngineVersion: 'stale-0.0.0' });
+
+      const result = loadPersistedResults();
+      expect(result).not.toBeNull();
+      expect(result!.oximetryUpgraded).toBe(true);
+      expect(result!.nights).toHaveLength(SAMPLE_NIGHTS.length); // CPAP preserved
+      expect(result!.nights.every((n) => n.oximetry === null)).toBe(true);
+
+      // Re-persisted with the current oximetry tag → does not re-fire next load.
+      const reparsed = JSON.parse(storage.get('airwaylab_results')!);
+      expect(reparsed.oximetryEngineVersion).toBe(OXIMETRY_ENGINE_VERSION);
+      const second = loadPersistedResults();
+      expect(second!.oximetryUpgraded).toBeUndefined();
+    });
+
+    it('does NOT prompt when the oximetry tag is missing (existing caches; no extra prompt now)', () => {
+      seed({ oximetryEngineVersion: null });
+
+      const result = loadPersistedResults();
+      expect(result!.oximetryUpgraded).toBeUndefined();
+      expect(result!.nights[0]!.oximetry).not.toBeNull();
+    });
+
+    it('does NOT prompt when there is no cached oximetry, even on a tag mismatch', () => {
+      seed({ withOximetry: false, oximetryEngineVersion: 'stale-0.0.0' });
+
+      const result = loadPersistedResults();
+      expect(result!.oximetryUpgraded).toBeUndefined();
     });
   });
 });

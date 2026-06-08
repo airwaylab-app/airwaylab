@@ -5,7 +5,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
-import { ENGINE_VERSION } from './engine-version';
+import { ENGINE_VERSION, OXIMETRY_ENGINE_VERSION } from './engine-version';
 
 const STORAGE_KEY = 'airwaylab_results';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -23,6 +23,9 @@ interface PersistedData {
   therapyChangeDate: string | null;
   savedAt: number;
   engineVersion?: string;
+  /** Oximetry analysis version, decoupled from engineVersion. Lets an oximetry-only
+   *  change refresh just the oximetry (keeping CPAP results) — see loadPersistedResults. */
+  oximetryEngineVersion?: string;
 }
 
 /**
@@ -72,6 +75,7 @@ function trySerialise(
     therapyChangeDate,
     savedAt: Date.now(),
     engineVersion: ENGINE_VERSION,
+    oximetryEngineVersion: OXIMETRY_ENGINE_VERSION,
   };
 
   let json: string;
@@ -208,6 +212,7 @@ export function loadPersistedResults(): {
   therapyChangeDate: string | null;
   savedAt?: number;
   engineUpgraded?: boolean;
+  oximetryUpgraded?: boolean;
 } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -309,6 +314,32 @@ export function loadPersistedResults(): {
         night.ned.amplitudeCvMedianEpoch = 0;
         night.ned.unstableEpochPct = 0;
       }
+    }
+
+    // Oximetry-scoped invalidation (separate from the global ENGINE_VERSION check above).
+    // Fires ONLY when the oximetry tag is PRESENT and mismatches, so existing caches
+    // (no tag yet) never trigger an extra prompt — only a future OXIMETRY_ENGINE_VERSION
+    // bump does. Drops just the stale oximetry, preserving CPAP/other-engine results, and
+    // re-persists with the current tag so it does not re-fire on the next load.
+    const hasOximetry = data.nights.some(
+      (n: NightResult) => n.oximetry !== null && n.oximetry !== undefined
+    );
+    if (
+      hasOximetry &&
+      data.oximetryEngineVersion &&
+      data.oximetryEngineVersion !== OXIMETRY_ENGINE_VERSION
+    ) {
+      for (const night of data.nights as NightResult[]) {
+        night.oximetry = null;
+        night.oximetryTrace = null;
+      }
+      persistResults(data.nights, data.therapyChangeDate);
+      return {
+        nights: data.nights,
+        therapyChangeDate: data.therapyChangeDate,
+        savedAt: data.savedAt,
+        oximetryUpgraded: true,
+      };
     }
 
     return {

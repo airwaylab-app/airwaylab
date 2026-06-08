@@ -6,7 +6,7 @@
 // ============================================================
 
 import * as Sentry from '@sentry/nextjs';
-import { ENGINE_VERSION } from './engine-version';
+import { OXIMETRY_ENGINE_VERSION } from './engine-version';
 import {
   getContributedOximetryDates,
   trackContributedOximetryDate,
@@ -123,7 +123,7 @@ export async function contributeOximetryTraceBackground(
 
   // Check engine version
   const lastEngine = getContributedOximetryEngine();
-  if (lastEngine !== null && lastEngine !== ENGINE_VERSION) {
+  if (lastEngine !== null && lastEngine !== OXIMETRY_ENGINE_VERSION) {
     clearContributedOximetryDates();
   }
 
@@ -159,7 +159,7 @@ export async function contributeOximetryTraceBackground(
           ...(isCompressed && { 'Content-Encoding': 'gzip' }),
           'x-night-date': night.dateStr,
           'x-contribution-id': contributionId,
-          'x-engine-version': ENGINE_VERSION,
+          'x-engine-version': OXIMETRY_ENGINE_VERSION,
           'x-sample-count': String(trace.trace.length),
           'x-duration-seconds': String(trace.durationSeconds),
           'x-device-model': night.settings.deviceModel || 'Unknown',
@@ -185,5 +185,5 @@ export async function contributeOximetryTraceBackground(
     }
   }
 
-  setContributedOximetryEngine(ENGINE_VERSION);
+  setContributedOximetryEngine(OXIMETRY_ENGINE_VERSION);
 }

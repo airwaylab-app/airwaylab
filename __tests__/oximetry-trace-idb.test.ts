@@ -63,11 +63,12 @@ describe('oximetry-trace-idb load non-existent', () => {
 // ── Test 3: Engine version check exists ──────────────────────
 
 describe('oximetry-trace-idb engine version check', () => {
-  it('Test 3: loadOximetryTrace checks ENGINE_VERSION', async () => {
+  it('Test 3: loadOximetryTrace checks OXIMETRY_ENGINE_VERSION', async () => {
     const { readFileSync } = await import('fs');
     const { resolve } = await import('path');
     const source = readFileSync(resolve(__dirname, '../lib/oximetry-trace-idb.ts'), 'utf-8');
-    expect(source).toContain('result.engineVersion !== ENGINE_VERSION');
+    // Oximetry traces version independently of the global ENGINE_VERSION (#988 follow-up).
+    expect(source).toContain('result.engineVersion !== OXIMETRY_ENGINE_VERSION');
   });
 });
 
