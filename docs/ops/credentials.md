@@ -64,9 +64,13 @@ Used by: feedback-processor cron (`/api/cron/feedback-processor`, 07:00 UTC dail
 **Re-issue refresh token** (required if token is revoked or after secret rotation):
 
 1. Re-run the OAuth consent flow for `dev@airwaylab.app` in Google OAuth Playground or equivalent
-2. Exchange auth code for a new refresh token (scope: `https://www.googleapis.com/auth/gmail.compose`)
+2. Exchange auth code for a new refresh token with **only these two scopes**:
+   - `https://www.googleapis.com/auth/gmail.modify`
+   - `https://www.googleapis.com/auth/gmail.labels`
+   - Do NOT include `gmail.compose` (prohibited by AIR-742) or `gmail.settings.basic` (no use case)
 3. File a board approval before updating Vercel
 4. After approval: update `GMAIL_REFRESH_TOKEN` in Vercel (Production + Preview + Development)
+5. Also update Cortis gmail-mcp token: `~/tools/gmail-mcp/instances/airwaylab/accounts/airwaylab/token.json`
 
 **Verify** by triggering `GET /api/cron/feedback-processor` (with `CRON_SECRET` header) and confirming the response is `{ ok: true }`, not `{ skipped: true }`.
 
