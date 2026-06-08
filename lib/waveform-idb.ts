@@ -23,7 +23,10 @@ export const WAVEFORM_STORE_NAME = 'waveforms';
 export const OXIMETRY_STORE_NAME = 'oximetry-traces';
 export const BREATH_DATA_STORE_NAME = 'breath-data';
 export const PLD_TRACES_STORE_NAME = 'pld-traces';
-export const DB_VERSION = 3;
+// Dashboard summary (bulk-stripped NightResult JSON) — migrated off localStorage
+// to remove the ~4 MB browser cap that surfaced as "Storage limit reached".
+export const DASHBOARD_SUMMARY_STORE_NAME = 'dashboard-summary';
+export const DB_VERSION = 4;
 
 // Local alias kept for readability in this file's store ops.
 const STORE_NAME = WAVEFORM_STORE_NAME;
@@ -59,6 +62,10 @@ export function upgradeSchema(db: IDBDatabase): void {
   }
   if (!db.objectStoreNames.contains(PLD_TRACES_STORE_NAME)) {
     db.createObjectStore(PLD_TRACES_STORE_NAME, { keyPath: 'dateStr' });
+  }
+  // v4: single-record store for the dashboard summary (keyPath 'id', id='current').
+  if (!db.objectStoreNames.contains(DASHBOARD_SUMMARY_STORE_NAME)) {
+    db.createObjectStore(DASHBOARD_SUMMARY_STORE_NAME, { keyPath: 'id' });
   }
 }
 

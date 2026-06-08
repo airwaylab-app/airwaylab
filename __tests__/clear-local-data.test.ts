@@ -25,6 +25,7 @@ vi.mock('@/lib/idb-core', () => ({
   OXIMETRY_STORE_NAME: 'oximetry-traces',
   BREATH_DATA_STORE_NAME: 'breath-data',
   PLD_TRACES_STORE_NAME: 'pld-traces',
+  DASHBOARD_SUMMARY_STORE_NAME: 'dashboard-summary',
 }));
 
 vi.mock('@/lib/persistence', () => ({
@@ -51,9 +52,10 @@ describe('clearAllLocalData', () => {
       'oximetry-traces',
       'breath-data',
       'pld-traces',
+      'dashboard-summary',
     ]);
     expect(h.runTxMock.mock.calls[0]![1]).toBe('readwrite');
-    expect(h.clearSpy).toHaveBeenCalledTimes(4);
+    expect(h.clearSpy).toHaveBeenCalledTimes(5);
   });
 
   it('still clears IndexedDB when the localStorage clear throws', async () => {
@@ -63,6 +65,6 @@ describe('clearAllLocalData', () => {
 
     await expect(clearAllLocalData()).resolves.toBeUndefined();
     expect(h.runTxMock).toHaveBeenCalledTimes(1);
-    expect(h.clearSpy).toHaveBeenCalledTimes(4);
+    expect(h.clearSpy).toHaveBeenCalledTimes(5);
   });
 });

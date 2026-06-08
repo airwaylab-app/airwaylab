@@ -33,16 +33,16 @@ describe('persistence', () => {
   });
 
   describe('persistResults', () => {
-    it('saves results to localStorage', () => {
-      const result = persistResults(SAMPLE_NIGHTS, null);
+    it('saves results to localStorage', async () => {
+      const result = await persistResults(SAMPLE_NIGHTS, null);
       expect(result.saved).toBe(true);
       expect(result.nightsSaved).toBe(SAMPLE_NIGHTS.length);
       expect(result.nightsDropped).toBe(0);
       expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
     });
 
-    it('strips bulk data (breath arrays) before saving', () => {
-      persistResults(SAMPLE_NIGHTS, null);
+    it('strips bulk data (breath arrays) before saving', async () => {
+      await persistResults(SAMPLE_NIGHTS, null);
       const saved = storage.get('airwaylab_results');
       expect(saved).toBeDefined();
       const parsed = JSON.parse(saved!);
@@ -52,16 +52,16 @@ describe('persistence', () => {
       }
     });
 
-    it('saves therapyChangeDate', () => {
-      persistResults(SAMPLE_NIGHTS, '2025-01-14');
+    it('saves therapyChangeDate', async () => {
+      await persistResults(SAMPLE_NIGHTS, '2025-01-14');
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
       expect(parsed.therapyChangeDate).toBe('2025-01-14');
     });
 
-    it('saves a timestamp', () => {
+    it('saves a timestamp', async () => {
       const before = Date.now();
-      persistResults(SAMPLE_NIGHTS, null);
+      await persistResults(SAMPLE_NIGHTS, null);
       const after = Date.now();
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
@@ -69,7 +69,7 @@ describe('persistence', () => {
       expect(parsed.savedAt).toBeLessThanOrEqual(after);
     });
 
-    it('saves all nights when stripped data fits within limit', () => {
+    it('saves all nights when stripped data fits within limit', async () => {
       // Create a large nights array — breaths are stripped so should still fit
       const manyNights = Array.from({ length: 500 }, (_, i) => ({
         ...SAMPLE_NIGHTS[0],
@@ -79,21 +79,21 @@ describe('persistence', () => {
           breaths: new Array(5000).fill({ nedPct: 10, fi: 0.5, tpeak: 0.3 }),
         },
       }));
-      const result = persistResults(manyNights as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = await persistResults(manyNights as unknown as typeof SAMPLE_NIGHTS, null);
       // With stripped data, 500 nights should still be within 4MB
       expect(result.saved).toBe(true);
       expect(result.nightsSaved).toBe(500);
       expect(result.nightsDropped).toBe(0);
     });
 
-    it('returns failure when localStorage throws', () => {
+    it('returns failure when localStorage throws', async () => {
       // Simulate QuotaExceededError — must persist across all setItem calls
       // so the progressive fallback also fails
       const originalSetItem = localStorageMock.setItem;
       (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = vi.fn(() => {
         throw new DOMException('quota exceeded', 'QuotaExceededError');
       });
-      const result = persistResults(SAMPLE_NIGHTS, null);
+      const result = await persistResults(SAMPLE_NIGHTS, null);
       expect(result.saved).toBe(false);
       expect(result.nightsSaved).toBe(0);
       expect(result.nightsDropped).toBe(SAMPLE_NIGHTS.length);
@@ -102,7 +102,7 @@ describe('persistence', () => {
       (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = originalSetItem;
     });
 
-    it('strips ned.reras from persisted data', () => {
+    it('strips ned.reras from persisted data', async () => {
       const nightWithReras = {
         ...SAMPLE_NIGHTS[0]!,
         ned: {
@@ -113,13 +113,13 @@ describe('persistence', () => {
           ],
         },
       };
-      persistResults([nightWithReras] as unknown as typeof SAMPLE_NIGHTS, null);
+      await persistResults([nightWithReras] as unknown as typeof SAMPLE_NIGHTS, null);
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
       expect(parsed.nights[0].ned.reras).toBeUndefined();
     });
 
-    it('preserves ned.reraTimestamps through persistResults → loadPersistedResults round-trip', () => {
+    it('preserves ned.reraTimestamps through persistResults → loadPersistedResults round-trip', async () => {
       const reraTimestamps = [
         { startSec: 100, durationSec: 30 },
         { startSec: 250, durationSec: 25 },
@@ -138,8 +138,8 @@ describe('persistence', () => {
           reraTimestamps,
         },
       };
-      persistResults([nightWithTimestamps] as unknown as typeof SAMPLE_NIGHTS, null);
-      const loaded = loadPersistedResults();
+      await persistResults([nightWithTimestamps] as unknown as typeof SAMPLE_NIGHTS, null);
+      const loaded = await loadPersistedResults();
       expect(loaded).not.toBeNull();
       const loadedNight = loaded!.nights[0]!;
       // Full reras stripped — only compact timestamps kept
@@ -150,7 +150,7 @@ describe('persistence', () => {
       expect(loadedNight.ned.reraTimestamps!.length).toBe(loadedNight.ned.reraCount);
     });
 
-    it('strips csl.episodes from persisted data but keeps aggregate stats', () => {
+    it('strips csl.episodes from persisted data but keeps aggregate stats', async () => {
       const nightWithCSL = {
         ...SAMPLE_NIGHTS[0]!,
         csl: {
@@ -164,7 +164,7 @@ describe('persistence', () => {
           episodeCount: 50,
         },
       };
-      persistResults([nightWithCSL] as unknown as typeof SAMPLE_NIGHTS, null);
+      await persistResults([nightWithCSL] as unknown as typeof SAMPLE_NIGHTS, null);
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
       // Episode list stripped to save space
@@ -175,9 +175,9 @@ describe('persistence', () => {
       expect(parsed.nights[0].csl.totalCSRSeconds).toBe(4500);
     });
 
-    it('preserves null csl when night has no CSL data', () => {
+    it('preserves null csl when night has no CSL data', async () => {
       const nightWithoutCSL = { ...SAMPLE_NIGHTS[0]!, csl: null };
-      persistResults([nightWithoutCSL] as unknown as typeof SAMPLE_NIGHTS, null);
+      await persistResults([nightWithoutCSL] as unknown as typeof SAMPLE_NIGHTS, null);
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
       expect(parsed.nights[0].csl).toBeNull();
@@ -186,21 +186,20 @@ describe('persistence', () => {
     describe('RangeError handling (AIR-1433)', () => {
       afterEach(() => { vi.restoreAllMocks(); });
 
-      it('does not throw when JSON.stringify raises RangeError (V8 string-length overflow)', () => {
+      it('does not throw when JSON.stringify raises RangeError (V8 string-length overflow)', async () => {
         // RangeError: Invalid string length fires inside JSON.stringify before any size guard runs.
         // The outer persistResults catch must handle it gracefully rather than crashing the page.
         vi.spyOn(JSON, 'stringify').mockImplementation(() => {
           throw new RangeError('Invalid string length');
         });
 
-        let result: ReturnType<typeof persistResults>;
-        expect(() => { result = persistResults(SAMPLE_NIGHTS, null); }).not.toThrow();
-        expect(result!.saved).toBe(false);
-        expect(result!.nightsSaved).toBe(0);
-        expect(result!.nightsDropped).toBe(SAMPLE_NIGHTS.length);
+        const result = await persistResults(SAMPLE_NIGHTS, null);
+        expect(result.saved).toBe(false);
+        expect(result.nightsSaved).toBe(0);
+        expect(result.nightsDropped).toBe(SAMPLE_NIGHTS.length);
       });
 
-      it('falls back to binary-search subset when JSON.stringify throws RangeError for large payloads only (AIR-1433 regression)', () => {
+      it('falls back to binary-search subset when JSON.stringify throws RangeError for large payloads only (AIR-1433 regression)', async () => {
         // Root cause of AIR-1433: trySerialise propagates RangeError instead of returning null,
         // which breaks out of the binary search and causes a total save failure even when a
         // smaller subset of nights would have fitted.
@@ -222,7 +221,7 @@ describe('persistence', () => {
           return originalStringify(...args);
         });
 
-        const result = persistResults(SAMPLE_NIGHTS, null);
+        const result = await persistResults(SAMPLE_NIGHTS, null);
 
         // Fixed behaviour: binary search saves the largest subset that serialises (1 night here).
         expect(result.saved).toBe(true);
@@ -231,7 +230,7 @@ describe('persistence', () => {
       });
     });
 
-    it('reports size diagnostics in Sentry on total failure', () => {
+    it('reports size diagnostics in Sentry on total failure', async () => {
       // Force total failure: override trySerialise by making the JSON size check fail.
       // We do this by making the first night have a field that JSON.stringify produces > 4MB.
       // Easiest: temporarily lower the cap by monkey-patching MAX_STORAGE_BYTES.
@@ -244,7 +243,7 @@ describe('persistence', () => {
         settings: { ...SAMPLE_NIGHTS[0]!.settings, extendedSettings: hugeSettings },
       };
       vi.mocked(Sentry.captureMessage).mockClear();
-      persistResults([largeNight] as unknown as typeof SAMPLE_NIGHTS, null);
+      await persistResults([largeNight] as unknown as typeof SAMPLE_NIGHTS, null);
 
       const calls = vi.mocked(Sentry.captureMessage).mock.calls;
       const totalFailureCall = calls.find(
@@ -259,7 +258,7 @@ describe('persistence', () => {
       expect(typeof extra!.totalNights).toBe('number');
     });
 
-    it('strips _compactBreaths dynamically attached by orchestrator (AIR-2060 regression)', () => {
+    it('strips _compactBreaths dynamically attached by orchestrator (AIR-2060 regression)', async () => {
       // Simulate what restoreBreathData() does: attach _compactBreaths to the night object.
       // For a user with a high respiratory rate (16 br/min × 12h = 11,520 breaths), this
       // can exceed the 2 MB char limit and cause total-failure serialisation.
@@ -278,7 +277,7 @@ describe('persistence', () => {
       });
 
       vi.mocked(Sentry.captureMessage).mockClear();
-      const result = persistResults([nightWithIdbData] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = await persistResults([nightWithIdbData] as unknown as typeof SAMPLE_NIGHTS, null);
 
       // Should save successfully — _compactBreaths must be stripped before size check
       expect(result.saved).toBe(true);
@@ -297,7 +296,7 @@ describe('persistence', () => {
       expect(totalFailureCalls).toHaveLength(0);
     });
 
-    it('strips _pldTrace dynamically attached by orchestrator', () => {
+    it('strips _pldTrace dynamically attached by orchestrator', async () => {
       const pldTrace = {
         dateStr: SAMPLE_NIGHTS[0]!.dateStr,
         samplingRate: 0.5,
@@ -309,7 +308,7 @@ describe('persistence', () => {
       };
       const nightWithPld = Object.assign({ ...SAMPLE_NIGHTS[0]! }, { _pldTrace: pldTrace });
 
-      const result = persistResults([nightWithPld] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = await persistResults([nightWithPld] as unknown as typeof SAMPLE_NIGHTS, null);
       expect(result.saved).toBe(true);
 
       const saved = storage.get('airwaylab_results');
@@ -319,22 +318,22 @@ describe('persistence', () => {
   });
 
   describe('loadPersistedResults', () => {
-    it('returns null when nothing is saved', () => {
-      const result = loadPersistedResults();
+    it('returns null when nothing is saved', async () => {
+      const result = await loadPersistedResults();
       expect(result).toBeNull();
     });
 
-    it('loads saved results correctly', () => {
-      persistResults(SAMPLE_NIGHTS, '2025-01-14');
-      const result = loadPersistedResults();
+    it('loads saved results correctly', async () => {
+      await persistResults(SAMPLE_NIGHTS, '2025-01-14');
+      const result = await loadPersistedResults();
       expect(result).not.toBeNull();
       expect(result!.nights).toHaveLength(SAMPLE_NIGHTS.length);
       expect(result!.therapyChangeDate).toBe('2025-01-14');
     });
 
-    it('preserves key night fields', () => {
-      persistResults(SAMPLE_NIGHTS, null);
-      const result = loadPersistedResults();
+    it('preserves key night fields', async () => {
+      await persistResults(SAMPLE_NIGHTS, null);
+      const result = await loadPersistedResults();
       const first = result!.nights[0];
       expect(first!.dateStr).toBe(SAMPLE_NIGHTS[0]!.dateStr);
       expect(first!.durationHours).toBe(SAMPLE_NIGHTS[0]!.durationHours);
@@ -343,101 +342,101 @@ describe('persistence', () => {
       expect(first!.ned.nedMean).toBe(SAMPLE_NIGHTS[0]!.ned.nedMean);
     });
 
-    it('returns null for expired data (>30 days)', () => {
-      persistResults(SAMPLE_NIGHTS, null);
+    it('returns null for expired data (>30 days)', async () => {
+      await persistResults(SAMPLE_NIGHTS, null);
       // Modify the savedAt to be >30 days ago (MAX_AGE_MS = 30 days)
       const saved = storage.get('airwaylab_results');
       const parsed = JSON.parse(saved!);
       parsed.savedAt = Date.now() - 31 * 24 * 60 * 60 * 1000; // 31 days ago
       storage.set('airwaylab_results', JSON.stringify(parsed));
 
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result).toBeNull();
       // Should also have removed the expired data
       expect(localStorageMock.removeItem).toHaveBeenCalled();
     });
 
-    it('returns null for corrupted data', () => {
+    it('returns null for corrupted data', async () => {
       storage.set('airwaylab_results', '{ invalid json }}}');
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result).toBeNull();
     });
 
-    it('returns null for data with empty nights array', () => {
+    it('returns null for data with empty nights array', async () => {
       const data = { nights: [], therapyChangeDate: null, savedAt: Date.now() };
       storage.set('airwaylab_results', JSON.stringify(data));
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result).toBeNull();
     });
 
-    it('returns null for data with invalid night shape', () => {
+    it('returns null for data with invalid night shape', async () => {
       const data = {
         nights: [{ badKey: true }],
         therapyChangeDate: null,
         savedAt: Date.now(),
       };
       storage.set('airwaylab_results', JSON.stringify(data));
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result).toBeNull();
     });
 
-    it('restores Date objects from string serialization', () => {
-      persistResults(SAMPLE_NIGHTS, null);
-      const result = loadPersistedResults();
+    it('restores Date objects from string serialization', async () => {
+      await persistResults(SAMPLE_NIGHTS, null);
+      const result = await loadPersistedResults();
       expect(result!.nights[0]!.date).toBeInstanceOf(Date);
     });
 
-    it('returns savedAt timestamp in the result (recent-restore bypass needs it)', () => {
+    it('returns savedAt timestamp in the result (recent-restore bypass needs it)', async () => {
       const before = Date.now();
-      persistResults(SAMPLE_NIGHTS, null);
+      await persistResults(SAMPLE_NIGHTS, null);
       const after = Date.now();
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result?.savedAt).toBeGreaterThanOrEqual(before);
       expect(result?.savedAt).toBeLessThanOrEqual(after);
     });
 
-    it('restores sessionStartTime as a Date after round-trip through localStorage', () => {
+    it('restores sessionStartTime as a Date after round-trip through localStorage', async () => {
       const startTime = new Date('2025-03-15T22:31:00Z');
       const nightWithStartTime = {
         ...SAMPLE_NIGHTS[0]!,
         sessionStartTime: startTime,
       };
-      persistResults([nightWithStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
-      const result = loadPersistedResults();
+      await persistResults([nightWithStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = await loadPersistedResults();
       expect(result!.nights[0]!.sessionStartTime).toBeInstanceOf(Date);
       expect(result!.nights[0]!.sessionStartTime!.toISOString()).toBe(startTime.toISOString());
     });
 
-    it('tolerates nights without sessionStartTime (legacy data migration)', () => {
+    it('tolerates nights without sessionStartTime (legacy data migration)', async () => {
       const nightWithoutStartTime = { ...SAMPLE_NIGHTS[0]! };
       delete (nightWithoutStartTime as Partial<typeof SAMPLE_NIGHTS[0]>).sessionStartTime;
-      persistResults([nightWithoutStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
-      const result = loadPersistedResults();
+      await persistResults([nightWithoutStartTime] as unknown as typeof SAMPLE_NIGHTS, null);
+      const result = await loadPersistedResults();
       expect(result!.nights[0]!.sessionStartTime).toBeUndefined();
     });
   });
 
   describe('clearPersistedResults', () => {
-    it('removes saved data', () => {
-      persistResults(SAMPLE_NIGHTS, null);
+    it('removes saved data', async () => {
+      await persistResults(SAMPLE_NIGHTS, null);
       expect(storage.has('airwaylab_results')).toBe(true);
       clearPersistedResults();
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('airwaylab_results');
     });
 
-    it('does not throw when nothing is saved', () => {
+    it('does not throw when nothing is saved', async () => {
       expect(() => clearPersistedResults()).not.toThrow();
     });
   });
 
   describe('clearPersistedNights', () => {
-    it('removes airwaylab_results from localStorage', () => {
+    it('removes airwaylab_results from localStorage', async () => {
       localStorage.setItem('airwaylab_results', '{"nights":[],"therapyChangeDate":null,"savedAt":1}');
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_results')).toBeNull();
     });
 
-    it('removes airwaylab_file_manifest from localStorage', () => {
+    it('removes airwaylab_file_manifest from localStorage', async () => {
       localStorage.setItem('airwaylab_file_manifest', '{"manifests":[],"savedAt":1}');
       clearPersistedNights();
       expect(localStorage.getItem('airwaylab_file_manifest')).toBeNull();
@@ -454,8 +453,8 @@ describe('persistence', () => {
       vi.clearAllMocks();
     });
 
-    function seed(opts: { oximetryEngineVersion?: string | null; withOximetry?: boolean }): void {
-      persistResults(SAMPLE_NIGHTS, null);
+    async function seed(opts: { oximetryEngineVersion?: string | null; withOximetry?: boolean }): Promise<void> {
+      await persistResults(SAMPLE_NIGHTS, null);
       const parsed = JSON.parse(storage.get('airwaylab_results')!);
       for (const n of parsed.nights) {
         n.oximetry = opts.withOximetry === false ? null : { spo2Mean: 95, odi3: 5, retainedSamples: 1000 };
@@ -465,10 +464,10 @@ describe('persistence', () => {
       storage.set('airwaylab_results', JSON.stringify(parsed));
     }
 
-    it('drops stale oximetry, keeps CPAP, and flags oximetryUpgraded on a tag mismatch', () => {
-      seed({ oximetryEngineVersion: 'stale-0.0.0' });
+    it('drops stale oximetry, keeps CPAP, and flags oximetryUpgraded on a tag mismatch', async () => {
+      await seed({ oximetryEngineVersion: 'stale-0.0.0' });
 
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result).not.toBeNull();
       expect(result!.oximetryUpgraded).toBe(true);
       expect(result!.nights).toHaveLength(SAMPLE_NIGHTS.length); // CPAP preserved
@@ -477,22 +476,22 @@ describe('persistence', () => {
       // Re-persisted with the current oximetry tag → does not re-fire next load.
       const reparsed = JSON.parse(storage.get('airwaylab_results')!);
       expect(reparsed.oximetryEngineVersion).toBe(OXIMETRY_ENGINE_VERSION);
-      const second = loadPersistedResults();
+      const second = await loadPersistedResults();
       expect(second!.oximetryUpgraded).toBeUndefined();
     });
 
-    it('does NOT prompt when the oximetry tag is missing (existing caches; no extra prompt now)', () => {
-      seed({ oximetryEngineVersion: null });
+    it('does NOT prompt when the oximetry tag is missing (existing caches; no extra prompt now)', async () => {
+      await seed({ oximetryEngineVersion: null });
 
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result!.oximetryUpgraded).toBeUndefined();
       expect(result!.nights[0]!.oximetry).not.toBeNull();
     });
 
-    it('does NOT prompt when there is no cached oximetry, even on a tag mismatch', () => {
-      seed({ withOximetry: false, oximetryEngineVersion: 'stale-0.0.0' });
+    it('does NOT prompt when there is no cached oximetry, even on a tag mismatch', async () => {
+      await seed({ withOximetry: false, oximetryEngineVersion: 'stale-0.0.0' });
 
-      const result = loadPersistedResults();
+      const result = await loadPersistedResults();
       expect(result!.oximetryUpgraded).toBeUndefined();
     });
   });
@@ -507,17 +506,17 @@ describe('persistence', () => {
 describe('persistNightsIncremental', () => {
   beforeEach(() => storage.clear());
 
-  it('merges new nights with existing cached nights (multi-SD-card scenario)', () => {
+  it('merges new nights with existing cached nights (multi-SD-card scenario)', async () => {
     const sdCard1Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(10), date: new Date(daysAgo(10)) } as NightResult;
     const sdCard2Night = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
 
     // Simulate: SD Card 1 analysis complete → all nights saved (no tier filter at persist)
-    persistResults([sdCard1Night], null);
+    await persistResults([sdCard1Night], null);
 
     // Simulate: page refresh → user uploads SD Card 2 → incremental persist
-    persistNightsIncremental([sdCard2Night]);
+    await persistNightsIncremental([sdCard2Night]);
 
-    const loaded = loadPersistedResults();
+    const loaded = await loadPersistedResults();
     expect(loaded).not.toBeNull();
     expect(loaded!.nights).toHaveLength(2);
     const dates = loaded!.nights.map((n) => n.dateStr);
@@ -525,15 +524,15 @@ describe('persistNightsIncremental', () => {
     expect(dates).toContain(sdCard2Night.dateStr);
   });
 
-  it('does not lose SD Card 1 nights when SD Card 2 night is more recent', () => {
+  it('does not lose SD Card 1 nights when SD Card 2 night is more recent', async () => {
     // Regression: before fix, if SD Card 1 had nights outside the 7-day community window,
     // a new analysis run would call filterNightsToTierWindow and drop them permanently.
     const oldNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(20), date: new Date(daysAgo(20)) } as NightResult;
     const recentNight = { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult;
 
-    persistResults([oldNight, recentNight], null);
+    await persistResults([oldNight, recentNight], null);
 
-    const loaded = loadPersistedResults();
+    const loaded = await loadPersistedResults();
     expect(loaded!.nights).toHaveLength(2);
     expect(loaded!.nights.map((n) => n.dateStr)).toContain(oldNight.dateStr);
   });
@@ -543,7 +542,7 @@ describe('persistNightsIncremental', () => {
   // Root cause: filterNightsToTierWindow was applied at persist time — community
   // tier (7-day window) dropped all nights older than 7 days. After tier correction
   // to champion, localStorage already had only 1 night so nothing could be restored.
-  it('single SD card: all nights survive persist regardless of how old they are', () => {
+  it('single SD card: all nights survive persist regardless of how old they are', async () => {
     const nights = [
       { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(1), date: new Date(daysAgo(1)) } as NightResult,
       { ...SAMPLE_NIGHTS[0]!, dateStr: daysAgo(14), date: new Date(daysAgo(14)) } as NightResult,
@@ -551,10 +550,10 @@ describe('persistNightsIncremental', () => {
     ];
 
     // Simulate the authoritative save that the orchestrator performs after analysis
-    persistResults(nights, null);
+    await persistResults(nights, null);
 
     // Simulate page refresh: reload from localStorage
-    const loaded = loadPersistedResults();
+    const loaded = await loadPersistedResults();
     expect(loaded).not.toBeNull();
     expect(loaded!.nights).toHaveLength(3);
     const dates = loaded!.nights.map((n) => n.dateStr);
@@ -563,15 +562,15 @@ describe('persistNightsIncremental', () => {
     expect(dates).toContain(daysAgo(30));
   });
 
-  it('deduplicates by dateStr when the same night appears in both SD cards', () => {
+  it('deduplicates by dateStr when the same night appears in both SD cards', async () => {
     const sharedDate = daysAgo(5);
     const v1 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 1 } as NightResult;
     const v2 = { ...SAMPLE_NIGHTS[0]!, dateStr: sharedDate, date: new Date(sharedDate), sessionCount: 2 } as NightResult;
 
-    persistResults([v1], null);
-    persistNightsIncremental([v2]);
+    await persistResults([v1], null);
+    await persistNightsIncremental([v2]);
 
-    const loaded = loadPersistedResults();
+    const loaded = await loadPersistedResults();
     expect(loaded!.nights).toHaveLength(1);
     // v2 (newer analysis) should win
     expect(loaded!.nights[0]!.sessionCount).toBe(2);
@@ -591,7 +590,7 @@ function daysAgo(n: number): string {
 }
 
 describe('filterNightsToTierWindow', () => {
-  it('community tier keeps nights within 14 days and excludes older ones', () => {
+  it('community tier keeps nights within 14 days and excludes older ones', async () => {
     const nights = [
       makeDatedNight(daysAgo(1)),
       makeDatedNight(daysAgo(3)),
@@ -606,7 +605,7 @@ describe('filterNightsToTierWindow', () => {
     );
   });
 
-  it('supporter tier keeps nights within 90 days and excludes older ones', () => {
+  it('supporter tier keeps nights within 90 days and excludes older ones', async () => {
     const nights = [
       makeDatedNight(daysAgo(1)),
       makeDatedNight(daysAgo(45)),
@@ -617,7 +616,7 @@ describe('filterNightsToTierWindow', () => {
     expect(result).toHaveLength(3);
   });
 
-  it('champion tier keeps all nights regardless of age', () => {
+  it('champion tier keeps all nights regardless of age', async () => {
     const nights = [
       makeDatedNight(daysAgo(1)),
       makeDatedNight(daysAgo(200)),
@@ -627,7 +626,7 @@ describe('filterNightsToTierWindow', () => {
     expect(result).toHaveLength(3);
   });
 
-  it('returns empty array when no nights fall within community window', () => {
+  it('returns empty array when no nights fall within community window', async () => {
     const nights = [
       makeDatedNight(daysAgo(15)),
       makeDatedNight(daysAgo(60)),
@@ -641,7 +640,7 @@ describe('mergeNightsByDate', () => {
   const night = (dateStr: string, tag = 'x'): NightResult =>
     ({ ...SAMPLE_NIGHTS[0]!, dateStr, _tag: tag } as unknown as NightResult);
 
-  it('unions disjoint lists, most-recent first', () => {
+  it('unions disjoint lists, most-recent first', async () => {
     const merged = mergeNightsByDate(
       [night('2025-02-01')],
       [night('2025-01-01'), night('2025-03-01')],
@@ -649,7 +648,7 @@ describe('mergeNightsByDate', () => {
     expect(merged.map((n) => n.dateStr)).toEqual(['2025-03-01', '2025-02-01', '2025-01-01']);
   });
 
-  it('primary wins on a date conflict', () => {
+  it('primary wins on a date conflict', async () => {
     const merged = mergeNightsByDate(
       [night('2025-01-01', 'fresh')],
       [night('2025-01-01', 'stale')],
@@ -658,7 +657,7 @@ describe('mergeNightsByDate', () => {
     expect((merged[0] as unknown as { _tag: string })._tag).toBe('fresh');
   });
 
-  it('keeps the fresh upload AND the prior history together (the #978 case)', () => {
+  it('keeps the fresh upload AND the prior history together (the #978 case)', async () => {
     const upload = [night('2025-03-08')];                       // new BiPAP night
     const history = [night('2025-01-01'), night('2025-01-02')]; // earlier CPAP nights
     const merged = mergeNightsByDate(upload, history);
@@ -666,7 +665,7 @@ describe('mergeNightsByDate', () => {
     expect(merged[0]!.dateStr).toBe('2025-03-08'); // newest first
   });
 
-  it('handles empty inputs', () => {
+  it('handles empty inputs', async () => {
     expect(mergeNightsByDate([], [])).toEqual([]);
     expect(mergeNightsByDate([night('2025-01-01')], [])).toHaveLength(1);
     expect(mergeNightsByDate([], [night('2025-01-01')])).toHaveLength(1);

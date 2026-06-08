@@ -318,28 +318,30 @@ function AnalyzePageInner() {
     if (searchParams.get('demo') !== null && state.status === 'idle') {
       loadDemo();
     } else if (state.status === 'idle') {
-      const saved = loadPersistedResults();
-      if (saved) {
-        if (saved.engineUpgraded) {
-          // Engine version changed — old results cleared, prompt re-upload (FB-22)
-          setEngineUpgraded(true);
-        } else if (saved.oximetryUpgraded) {
-          // Oximetry analysis improved — CPAP nights kept, stale oximetry dropped;
-          // prompt re-upload of oximetry only (#988 follow-up).
-          setOximetryUpgraded(true);
-        } else if (saved.nights.length === 0) {
-          // Persisted data existed but contained 0 nights — data loss
-          console.error('[persistence] Restored session has 0 nights — serving empty dashboard');
-          Sentry.captureMessage('Persistence: restored session has 0 nights', {
-            level: 'warning',
-            extra: { therapyChangeDate: saved.therapyChangeDate },
-          });
+      void (async () => {
+        const saved = await loadPersistedResults();
+        if (saved) {
+          if (saved.engineUpgraded) {
+            // Engine version changed — old results cleared, prompt re-upload (FB-22)
+            setEngineUpgraded(true);
+          } else if (saved.oximetryUpgraded) {
+            // Oximetry analysis improved — CPAP nights kept, stale oximetry dropped;
+            // prompt re-upload of oximetry only (#988 follow-up).
+            setOximetryUpgraded(true);
+          } else if (saved.nights.length === 0) {
+            // Persisted data existed but contained 0 nights — data loss
+            console.error('[persistence] Restored session has 0 nights — serving empty dashboard');
+            Sentry.captureMessage('Persistence: restored session has 0 nights', {
+              level: 'warning',
+              extra: { therapyChangeDate: saved.therapyChangeDate },
+            });
+          }
+          if (saved.nights.length > 0) {
+            setPersistedData(saved);
+            hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
+          }
         }
-        if (saved.nights.length > 0) {
-          setPersistedData(saved);
-          hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
-        }
-      }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -575,8 +577,9 @@ function AnalyzePageInner() {
 
     if (wasDemo) {
       // Exiting demo: restore previously persisted data if it exists
-      const saved = loadPersistedResults();
-      setPersistedData(saved);
+      void loadPersistedResults().then((saved) => {
+        setPersistedData(saved);
+      });
     } else {
       // Resetting real analysis: clear React state so upload form shows,
       // but keep localStorage cache + manifest so the orchestrator can

@@ -27,7 +27,7 @@ import { persistResults, loadPersistedResults } from '@/lib/persistence';
 import { SAMPLE_NIGHTS } from '@/lib/sample-data';
 
 describe('engine-version', () => {
-  it('exports a version string', () => {
+  it('exports a version string', async () => {
     expect(typeof ENGINE_VERSION).toBe('string');
     expect(ENGINE_VERSION.length).toBeGreaterThan(0);
   });
@@ -39,12 +39,12 @@ describe('waveform date tracking', () => {
     vi.clearAllMocks();
   });
 
-  it('returns empty set when nothing tracked', () => {
+  it('returns empty set when nothing tracked', async () => {
     const dates = getContributedWaveformDates();
     expect(dates.size).toBe(0);
   });
 
-  it('tracks contributed dates', () => {
+  it('tracks contributed dates', async () => {
     trackContributedWaveformDate('2025-01-15');
     trackContributedWaveformDate('2025-01-16');
     const dates = getContributedWaveformDates();
@@ -53,26 +53,26 @@ describe('waveform date tracking', () => {
     expect(dates.size).toBe(2);
   });
 
-  it('deduplicates dates', () => {
+  it('deduplicates dates', async () => {
     trackContributedWaveformDate('2025-01-15');
     trackContributedWaveformDate('2025-01-15');
     const dates = getContributedWaveformDates();
     expect(dates.size).toBe(1);
   });
 
-  it('clears all dates', () => {
+  it('clears all dates', async () => {
     trackContributedWaveformDate('2025-01-15');
     clearContributedWaveformDates();
     const dates = getContributedWaveformDates();
     expect(dates.size).toBe(0);
   });
 
-  it('tracks engine version', () => {
+  it('tracks engine version', async () => {
     setContributedWaveformEngine('0.5.0');
     expect(getContributedWaveformEngine()).toBe('0.5.0');
   });
 
-  it('clears engine version alongside dates', () => {
+  it('clears engine version alongside dates', async () => {
     setContributedWaveformEngine('0.5.0');
     trackContributedWaveformDate('2025-01-15');
     clearContributedWaveformDates();
@@ -87,17 +87,17 @@ describe('waveform failure tracking', () => {
     vi.clearAllMocks();
   });
 
-  it('returns empty set when no failures tracked', () => {
+  it('returns empty set when no failures tracked', async () => {
     expect(getFailedWaveformDates().size).toBe(0);
   });
 
-  it('tracks failed dates', () => {
+  it('tracks failed dates', async () => {
     trackFailedWaveformDate('2025-11-12');
     const failed = getFailedWaveformDates();
     expect(failed.has('2025-11-12')).toBe(true);
   });
 
-  it('expires failures after 24h cooldown', () => {
+  it('expires failures after 24h cooldown', async () => {
     // Write a failure entry with a timestamp 25 hours ago
     const staleEntry = [{ date: '2025-11-12', failedAt: Date.now() - 25 * 60 * 60 * 1000 }];
     storage.set('airwaylab_waveform_upload_failures', JSON.stringify(staleEntry));
@@ -106,7 +106,7 @@ describe('waveform failure tracking', () => {
     expect(failed.has('2025-11-12')).toBe(false);
   });
 
-  it('keeps failures within cooldown window', () => {
+  it('keeps failures within cooldown window', async () => {
     // Write a failure entry with a timestamp 1 hour ago
     const recentEntry = [{ date: '2025-11-12', failedAt: Date.now() - 60 * 60 * 1000 }];
     storage.set('airwaylab_waveform_upload_failures', JSON.stringify(recentEntry));
@@ -115,7 +115,7 @@ describe('waveform failure tracking', () => {
     expect(failed.has('2025-11-12')).toBe(true);
   });
 
-  it('updates timestamp on re-failure', () => {
+  it('updates timestamp on re-failure', async () => {
     trackFailedWaveformDate('2025-11-12');
     const raw1 = JSON.parse(storage.get('airwaylab_waveform_upload_failures')!);
     const ts1 = raw1[0].failedAt;
@@ -134,46 +134,46 @@ describe('persistence engine version', () => {
     vi.clearAllMocks();
   });
 
-  it('stores ENGINE_VERSION alongside cached results', () => {
-    persistResults(SAMPLE_NIGHTS, null);
+  it('stores ENGINE_VERSION alongside cached results', async () => {
+    await persistResults(SAMPLE_NIGHTS, null);
     const raw = storage.get('airwaylab_results');
     expect(raw).toBeDefined();
     const parsed = JSON.parse(raw!);
     expect(parsed.engineVersion).toBe(ENGINE_VERSION);
   });
 
-  it('loads results when engine version matches', () => {
-    persistResults(SAMPLE_NIGHTS, null);
-    const result = loadPersistedResults();
+  it('loads results when engine version matches', async () => {
+    await persistResults(SAMPLE_NIGHTS, null);
+    const result = await loadPersistedResults();
     expect(result).not.toBeNull();
     expect(result!.nights.length).toBe(SAMPLE_NIGHTS.length);
   });
 
-  it('invalidates cache when engine version differs', () => {
-    persistResults(SAMPLE_NIGHTS, null);
+  it('invalidates cache when engine version differs', async () => {
+    await persistResults(SAMPLE_NIGHTS, null);
     // Manually change the stored engine version to simulate a version bump
     const raw = storage.get('airwaylab_results');
     const parsed = JSON.parse(raw!);
     parsed.engineVersion = '0.0.0-old';
     storage.set('airwaylab_results', JSON.stringify(parsed));
 
-    const result = loadPersistedResults();
+    const result = await loadPersistedResults();
     // Should return engineUpgraded signal instead of null (FB-22)
     expect(result).toEqual({ nights: [], therapyChangeDate: null, engineUpgraded: true });
     // Should have removed the stale data from storage
     expect(storage.has('airwaylab_results')).toBe(false);
   });
 
-  it('loads results when engineVersion is missing (pre-upgrade data)', () => {
+  it('loads results when engineVersion is missing (pre-upgrade data)', async () => {
     // Simulate data from before engine versioning was added
-    persistResults(SAMPLE_NIGHTS, null);
+    await persistResults(SAMPLE_NIGHTS, null);
     const raw = storage.get('airwaylab_results');
     const parsed = JSON.parse(raw!);
     delete parsed.engineVersion;
     storage.set('airwaylab_results', JSON.stringify(parsed));
 
     // Should still load — missing version means pre-upgrade, don't invalidate
-    const result = loadPersistedResults();
+    const result = await loadPersistedResults();
     expect(result).not.toBeNull();
   });
 });
