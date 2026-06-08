@@ -12,6 +12,8 @@ const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
 const mockGetUser = vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>(() =>
   Promise.resolve({ data: { user: { id: TEST_USER_ID } } })
 );
+// Mutable so tests can simulate a user without data-contribution consent (403).
+const mockConsent = vi.fn<() => boolean>(() => true);
 
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
@@ -26,9 +28,17 @@ vi.mock('@/lib/supabase/server', () => ({
         remove: mockRemove,
       }),
     },
-    from: () => ({
-      insert: mockInsert,
-    }),
+    from: (table: string) =>
+      table === 'profiles'
+        ? {
+            select: () => ({
+              eq: () => ({
+                single: () =>
+                  Promise.resolve({ data: { data_contribution_consent: mockConsent() }, error: null }),
+              }),
+            }),
+          }
+        : { insert: mockInsert },
   })),
   getSupabaseServer: vi.fn(() =>
     Promise.resolve({
@@ -96,6 +106,8 @@ describe('contribute-waveforms API route', () => {
     mockRemove.mockResolvedValue({ error: null });
     // Default: authenticated user. Individual tests override for the 401 path.
     mockGetUser.mockResolvedValue({ data: { user: { id: TEST_USER_ID } } });
+    // Default: data-contribution consent granted. The 403 test overrides.
+    mockConsent.mockReturnValue(true);
   });
 
   it('returns 401 when the request is not authenticated', async () => {
@@ -108,6 +120,20 @@ describe('contribute-waveforms API route', () => {
 
     expect(response.status).toBe(401);
     // No storage write or DB insert for an unauthenticated request.
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when data-contribution consent is not granted', async () => {
+    const { POST } = await import('@/app/api/contribute-waveforms/route');
+
+    mockConsent.mockReturnValue(false);
+
+    const request = makeRequest();
+    const response = await POST(request as never);
+
+    expect(response.status).toBe(403);
+    // No storage write or DB insert without consent.
     expect(mockUpload).not.toHaveBeenCalled();
     expect(mockInsert).not.toHaveBeenCalled();
   });
