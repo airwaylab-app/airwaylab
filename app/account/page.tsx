@@ -10,6 +10,7 @@ import { Disclaimer } from '@/components/common/disclaimer';
 import * as Sentry from '@sentry/nextjs';
 import { events } from '@/lib/analytics';
 import { CloudSyncToggle } from '@/components/upload/cloud-sync-nudge';
+import { DataContributionToggle } from '@/components/account/data-contribution-toggle';
 import { DiscordCard } from '@/components/auth/discord-card';
 import {
   User,
@@ -280,6 +281,9 @@ export default function AccountPage() {
               </div>
               <div className="flex justify-between items-center pt-1">
                 <CloudSyncToggle />
+              </div>
+              <div className="pt-1">
+                <DataContributionToggle />
               </div>
             </div>
           )}

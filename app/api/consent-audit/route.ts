@@ -74,10 +74,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
   }
 
-  // AI insights is a load-bearing consent gate: the ai-insights route refuses to
-  // send PHI to Anthropic unless profiles.ai_insights_consent is true. Reflect the
-  // grant/withdrawal here so the audit event and the enforced flag stay in sync.
-  if (body.consentType === 'ai_insights') {
+  // Some consent types are also load-bearing enforcement flags on the profile: the
+  // relevant route reads the flag (service-role) and refuses processing when it is
+  // false (ai-insights refuses to send PHI to Anthropic; contribute-* refuses to store
+  // research contributions). Reflect grant/withdrawal onto the flag so the audit event
+  // and the enforced flag stay in sync.
+  const PROFILE_FLAG: Partial<Record<typeof body.consentType, { col: string; atCol: string }>> = {
+    ai_insights: { col: 'ai_insights_consent', atCol: 'ai_insights_consent_at' },
+    data_contribution: { col: 'data_contribution_consent', atCol: 'data_contribution_consent_at' },
+  };
+  const flag = PROFILE_FLAG[body.consentType];
+  if (flag) {
     const granted = body.action === 'granted';
     // profiles UPDATE is service-role-only (migration 055 locks direct authenticated
     // writes to profiles), so use the service-role client for the flag write.
@@ -88,13 +95,13 @@ export async function POST(request: NextRequest) {
     const { error: profileError } = await serviceRole
       .from('profiles')
       .update({
-        ai_insights_consent: granted,
-        ai_insights_consent_at: granted ? new Date().toISOString() : null,
+        [flag.col]: granted,
+        [flag.atCol]: granted ? new Date().toISOString() : null,
       })
       .eq('id', user.id);
 
     if (profileError) {
-      console.error('[consent-audit] AI consent flag update failed:', profileError.message);
+      console.error('[consent-audit] consent flag update failed:', profileError.message);
       captureApiError(profileError, { route: 'consent-audit' });
       return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
     }

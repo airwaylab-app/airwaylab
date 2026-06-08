@@ -90,12 +90,21 @@ export function DataContribution({
   const handleContribute = useCallback(async () => {
     setStatus('sending');
     try {
+      // Record consent server-side BEFORE contributing — the contribute routes now require
+      // the data_contribution_consent flag. Clicking contribute IS the affirmative opt-in.
+      const consentRes = await fetch('/api/consent-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ consentType: 'data_contribution', action: 'granted' }),
+      });
+      if (!consentRes.ok) throw new Error('Failed to record contribution consent');
+      // Persist opt-in so the user isn't prompted again on future visits
+      setConsentState(true);
       await contributeNights(nights);
       setStatus('success');
       events.contributionOptedIn();
       trackContributedDates(nights);
-      // Persist opt-in so the user isn't prompted again on future visits
-      setConsentState(true);
     } catch (err) {
       // Rate limit errors are expected behavior — only report unexpected failures to Sentry
       const isRateLimit = err instanceof Error &&

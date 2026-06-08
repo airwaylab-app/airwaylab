@@ -5,6 +5,7 @@ import { getSupabaseAdmin, getSupabaseServer } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
+import { hasDataContributionConsent } from '@/lib/consent';
 import type { NightResult } from '@/lib/types';
 import { isValidDeviceMode } from '@/lib/device-capabilities';
 
@@ -253,6 +254,17 @@ export async function POST(request: NextRequest) {
     };
     if (!user) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
+    // Server-enforced consent gate (GDPR): contribution requires data_contribution_consent,
+    // the consent of record (granted/withdrawn via /api/consent-audit). Fail closed if we
+    // cannot verify it.
+    const consentAdmin = getSupabaseAdmin();
+    if (!consentAdmin) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+    if (!(await hasDataContributionConsent(consentAdmin, user.id))) {
+      return NextResponse.json({ error: 'Data contribution consent required.' }, { status: 403 });
     }
 
     // Size guard

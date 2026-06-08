@@ -156,7 +156,10 @@ export default function PrivacyPolicyPage() {
               <strong>Data Contribution (Aggregate):</strong> Anonymised aggregate metrics,
               device model, and your self-reported sleep quality rating (1&ndash;5 scale). Used
               for community insights and research. No dates, timestamps, names, or identifiers
-              are included.
+              are included. This requires your affirmative consent, which is enforced on our
+              servers. You can turn data contribution on or off at any time in your account
+              settings; turning it off stops future contributions, while data already
+              contributed is anonymised and is retained.
             </li>
             <li>
               <strong>Waveform &amp; Oximetry Trace Contribution:</strong> If you explicitly

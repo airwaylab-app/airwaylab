@@ -27,6 +27,7 @@ interface Profile {
   discord_id: string | null;
   discord_username: string | null;
   ai_insights_consent: boolean;
+  data_contribution_consent: boolean;
 }
 
 interface Subscription {
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
 
-    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username, ai_insights_consent';
+    const PROFILE_COLS = 'id, email, display_name, tier, stripe_customer_id, show_on_supporters, walkthrough_completed, email_opt_in, discord_id, discord_username, ai_insights_consent, data_contribution_consent';
 
     let profileResult = await supabase
       .from('profiles')
@@ -216,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       discord_id: profileData.discord_id ?? null,
       discord_username: profileData.discord_username ?? null,
       ai_insights_consent: profileData.ai_insights_consent ?? false,
+      data_contribution_consent: profileData.data_contribution_consent ?? false,
     });
     // Successful fetch: entitlement is now confirmed from the server.
     setLastKnownTier(profileTier);

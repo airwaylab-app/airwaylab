@@ -496,7 +496,20 @@ function AnalyzePageInner() {
   const submitContribution = useCallback((nightsToSubmit: NightResult[]) => {
     setAutoSubmitStatus('sending');
     const contributionId = crypto.randomUUID();
-    contributeNights(nightsToSubmit, undefined, contributionId)
+    // Reconcile a pre-existing localStorage opt-in to the server consent flag, which the
+    // contribute routes now require. Only posts when the flag is not already set (exactly
+    // once per device), so it does not pollute the consent audit trail.
+    const ensureConsent: Promise<unknown> =
+      profile && profile.data_contribution_consent !== true
+        ? fetch('/api/consent-audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ consentType: 'data_contribution', action: 'granted' }),
+          }).then((r) => { if (r.ok) void refreshProfile(); })
+        : Promise.resolve();
+    ensureConsent
+      .then(() => contributeNights(nightsToSubmit, undefined, contributionId))
       .then(() => {
         trackContributedDates(nightsToSubmit);
         setAutoSubmitStatus('success');
@@ -518,7 +531,7 @@ function AnalyzePageInner() {
         Sentry.captureException(err, { tags: { action: 'auto-contribution' } });
         setAutoSubmitStatus('error');
       });
-  }, []);
+  }, [profile, refreshProfile]);
 
   const handleNudgeContribute = useCallback(() => {
     // Store opt-in so future analyses auto-contribute without re-prompting
