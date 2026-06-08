@@ -128,7 +128,7 @@ If AirwayLab helps you understand your therapy data:
 
 GPL-3.0. See [LICENSE](LICENSE).
 
-The Glasgow Index engine is based on [DaveSkvn's Glasgow Index](https://github.com/DaveSkvn/Glasgow-Index) (GPL-3.0).
+The Glasgow Index engine is based on [DaveSkvn's Glasgow Index](https://github.com/DaveSkvn/GlasgowIndex) (GPL-3.0).
 
 ## Disclaimer
 
