@@ -258,6 +258,25 @@ async function processFiles(
     }
   }
 
+  // Post diagnostic for known coverage gaps (#1036): a day was extracted but
+  // marked untrusted (AirSense auto-mode range we can't yet read). Emit ONCE per
+  // upload to harvest the real signal labels — NOT on every 'unavailable' night
+  // (empty/unsupported already handled above). The route stores it + dedups by a
+  // server-computed fingerprint and skips the live failure alert.
+  const untrustedDay = Object.values(dailySettings).find(
+    (s) => s.unavailableReason === 'untrusted_autoset_range'
+  );
+  if (untrustedDay) {
+    self.postMessage({
+      type: 'SETTINGS_DIAGNOSTIC',
+      deviceModel,
+      signalLabels: strSignalLabels,
+      identificationText: identificationText ? identificationText.slice(0, 2000) : null,
+      hasStrFile: !!strFileInfo,
+      reason: 'untrusted_autoset_range',
+    } satisfies WorkerSettingsDiagnostic);
+  }
+
   postProgress(1, brpFiles.length + 2, 'Parsing EDF files...');
 
   // Step 3: Parse BRP.edf files in batches, yielding between batches
