@@ -101,7 +101,7 @@ export type UploadErrorCategory = 'auth' | 'consent' | 'hash_worker' | 'network'
  */
 export function classifyUploadError(error: string): UploadErrorCategory {
   if (/sign in again/i.test(error)) return 'auth';
-  if (/not enabled|not available/i.test(error)) return 'consent';
+  if (/not enabled|not available|enable cloud storage/i.test(error)) return 'consent';
   if (/hash (failed|worker)/i.test(error)) return 'hash_worker';
   if (/failed to fetch|networkerror|network timeout/i.test(error)) return 'network';
   return 'unknown';
@@ -322,7 +322,10 @@ class UploadOrchestrator {
     } catch (err) {
       this.releasePageExit();
       const error = err instanceof Error ? err.message : String(err);
-      if (error !== 'Cancelled') {
+      // Skip Sentry for user-initiated cancels: explicit 'Cancelled' throws and
+      // AbortErrors raised by fetch when the AbortController signal fires.
+      const isCancelled = error === 'Cancelled' || (err instanceof Error && err.name === 'AbortError');
+      if (!isCancelled) {
         const errorCategory = classifyUploadError(error);
         console.error('[upload-orchestrator] Upload failed:', error);
         Sentry.captureMessage('cloud_upload_failed', {
