@@ -9,9 +9,13 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/cron/discord-strategy-digest
  *
- * Runs daily at 09:00 CET (08:00 UTC). Aggregates strategy-relevant events
- * from the past 24h and posts a single embed to #strategy-digest via
- * DISCORD_WEBHOOK_STRATEGY_DIGEST. Skips posting if there are zero events.
+ * Runs daily at 09:00 CET (08:00 UTC). The single usage + data digest:
+ * aggregates the past 24h (subscriptions, non-bug feedback, provider interest,
+ * data contributions, account deletions) and posts one embed to #strategy-digest
+ * via DISCORD_WEBHOOK_STRATEGY_DIGEST. Skips posting if there are zero events.
+ *
+ * Fails LOUD: a missing webhook or a failed Discord POST is reported to Sentry,
+ * never swallowed — a silent digest is how this went unnoticed before.
  *
  * Protected by CRON_SECRET.
  */
@@ -32,7 +36,10 @@ export async function GET(request: NextRequest) {
 
   const webhookUrl = process.env.DISCORD_WEBHOOK_STRATEGY_DIGEST
   if (!webhookUrl) {
-    console.error('[cron/discord-strategy-digest] DISCORD_WEBHOOK_STRATEGY_DIGEST not configured — skipping')
+    Sentry.captureMessage(
+      '[cron/discord-strategy-digest] DISCORD_WEBHOOK_STRATEGY_DIGEST not configured — usage+data digest cannot post',
+      'warning',
+    )
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 })
   }
 
@@ -44,7 +51,13 @@ export async function GET(request: NextRequest) {
   try {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-    const [subscriptionEvents, feedbackResult, providerInterestResult] = await Promise.all([
+    const [
+      subscriptionEvents,
+      feedbackResult,
+      providerInterestResult,
+      dataContributionsResult,
+      deletionRequestsResult,
+    ] = await Promise.all([
       supabase
         .from('subscription_events')
         .select('event_type')
@@ -58,6 +71,14 @@ export async function GET(request: NextRequest) {
         .from('provider_interest')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', dayAgo),
+      supabase
+        .from('data_contributions')
+        .select('night_count')
+        .gte('created_at', dayAgo),
+      supabase
+        .from('account_deletion_requests')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', dayAgo),
     ])
 
     const subEvents = subscriptionEvents.data ?? []
@@ -65,8 +86,12 @@ export async function GET(request: NextRequest) {
     const cancellations = subEvents.filter((e) => e.event_type === 'cancelled').length
     const nonBugFeedback = feedbackResult.count ?? 0
     const providerInterest = providerInterestResult.count ?? 0
+    const contributions = dataContributionsResult.data ?? []
+    const totalNights = contributions.reduce((sum, c) => sum + (c.night_count ?? 0), 0)
+    const deletionRequests = deletionRequestsResult.count ?? 0
 
-    const totalEvents = newSubs + cancellations + nonBugFeedback + providerInterest
+    const totalEvents =
+      newSubs + cancellations + nonBugFeedback + providerInterest + contributions.length + deletionRequests
 
     if (totalEvents === 0) {
       console.error('[cron/discord-strategy-digest] no events in last 24h — skipping Discord push')
@@ -81,7 +106,9 @@ export async function GET(request: NextRequest) {
       { name: 'Cancellations', value: String(cancellations), inline: true },
       { name: 'Net', value: `${netSubs >= 0 ? '+' : ''}${netSubs}`, inline: true },
       { name: 'Feedback (non-bug)', value: String(nonBugFeedback), inline: true },
+      { name: 'Data Contributions', value: `${contributions.length} (${totalNights} nights)`, inline: true },
       { name: 'Provider Interest', value: String(providerInterest), inline: true },
+      { name: 'Deletion Requests', value: String(deletionRequests), inline: true },
     ]
 
     const res = await fetch(webhookUrl, {
@@ -89,11 +116,11 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         embeds: [{
-          title: ':bar_chart: Daily Strategy Digest',
+          title: ':bar_chart: Daily Usage & Data Digest',
           description: `24h ending ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`,
           color,
           fields,
-          footer: { text: 'Daily strategy cron' },
+          footer: { text: 'Daily usage & data cron' },
           timestamp: new Date().toISOString(),
         }],
       }),
@@ -101,10 +128,15 @@ export async function GET(request: NextRequest) {
     })
 
     if (!res.ok) {
-      console.error(`[cron/discord-strategy-digest] Discord POST failed (${res.status})`)
+      Sentry.captureMessage(
+        `[cron/discord-strategy-digest] Discord POST failed (${res.status})`,
+        'warning',
+      )
     }
 
-    console.error(`[cron/discord-strategy-digest] newSubs=${newSubs} cancellations=${cancellations} feedback=${nonBugFeedback} providerInterest=${providerInterest}`)
+    console.error(
+      `[cron/discord-strategy-digest] newSubs=${newSubs} cancellations=${cancellations} feedback=${nonBugFeedback} providerInterest=${providerInterest} contributions=${contributions.length} deletions=${deletionRequests}`,
+    )
 
     return NextResponse.json({
       ok: true,
@@ -112,6 +144,9 @@ export async function GET(request: NextRequest) {
       cancellations,
       nonBugFeedback,
       providerInterest,
+      contributions: contributions.length,
+      totalNights,
+      deletionRequests,
       discordPosted: res.ok,
     })
   } catch (err) {
