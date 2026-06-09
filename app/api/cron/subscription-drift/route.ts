@@ -206,7 +206,12 @@ function deriveTierFromSubscriptions(
  *   - downgrade_missed:   profile says supporter/champion, but no active subscription
  *   - upgrade_missed:     active subscription exists, but profile says community
  *   - webhook_never_ran:  community profile has stripe_customer_id but no subscription
- *                         row at all — webhook was never processed (not auto-fixed)
+ *                         row, AND Stripe confirms the customer still holds a real
+ *                         subscription (active/trialing → recovered; past_due/incomplete
+ *                         → surfaced for manual review). A customer with stripe_customer_id
+ *                         but NO subscription in Stripe is an abandoned checkout (the id is
+ *                         stored at checkout-start, before payment) — correctly community,
+ *                         counted as abandoned, NOT a mismatch and NOT alerted.
  *
  * Auto-fixes mismatches and logs each one to Sentry. Sends a Discord
  * ops alert summarising the run if any mismatches were found.
@@ -269,6 +274,11 @@ export async function GET(request: NextRequest) {
     const mismatches: DriftMismatch[] = [];
     let fixed = 0;
     let stripeRecovered = 0;
+    // Webhook-blind profiles whose Stripe customer has NO recoverable subscription:
+    // abandoned checkouts (customer is created + stored at checkout-start, before
+    // payment) or fully-canceled customers. Correctly community, nothing to fix —
+    // tracked for observability, never counted as a mismatch or alerted.
+    let abandonedCheckouts = 0;
 
     // 3. Check paid profiles for missing active subscriptions (downgrade_missed)
     for (const profile of paidProfiles ?? []) {
@@ -459,14 +469,21 @@ export async function GET(request: NextRequest) {
 
     // 5. Detect community profiles with stripe_customer_id but no subscription row.
     //
-    // This is the "webhook_never_ran" blind spot: a user completed Stripe checkout
-    // and received a stripe_customer_id on their profile, but the
-    // checkout.session.completed webhook was never processed (e.g. AIR-1142 signature
-    // failure). Without a subscription row, the upgrade_missed check above cannot
-    // surface them — it filters .not('subscriptions', 'is', null), so users with NO
-    // row at all are invisible. We surface them here for manual review via Sentry.
-    // Do NOT auto-fix: verifying the actual Stripe subscription status requires a
-    // Stripe API call that is out of scope for this detection-only cron.
+    // This is the "webhook_never_ran" blind spot: a user has a stripe_customer_id on
+    // their profile but no subscription row, so the upgrade_missed check above is blind
+    // to them (it filters .not('subscriptions', 'is', null)).
+    //
+    // The id alone does NOT mean a webhook was missed: create-checkout-session creates
+    // and stores the Stripe customer BEFORE payment, so every abandoned checkout leaves
+    // this exact footprint. To tell a real missed webhook from an abandoned checkout we
+    // ask Stripe what the customer actually holds (all statuses):
+    //   - active/trialing sub, no DB row → real missed webhook → recover (upsert + tier)
+    //   - past_due/unpaid/incomplete/paused sub, no DB row → real, but needs a human →
+    //     surface for manual review via Sentry, count as a mismatch
+    //   - no subscription in Stripe (or only canceled) → abandoned checkout / churned →
+    //     correctly community, count as abandoned, do NOT alert
+    // If Stripe is unreachable/unconfigured we cannot classify, so we fail safe and
+    // surface for manual review (the pre-existing behaviour).
     const { data: webhookBlindProfiles, error: webhookBlindError } = await supabase
       .from('profiles')
       .select('id, stripe_customer_id, subscriptions(id)')
@@ -491,84 +508,131 @@ export async function GET(request: NextRequest) {
           fixed: false,
         };
 
-        Sentry.captureMessage('Subscription webhook never ran — manual review required', {
-          level: 'warning',
-          tags: { route: 'cron-subscription-drift', drift_type: 'webhook_never_ran' },
-          extra: {
-            user_id: profile.id,
-            stripe_customer_id: stripeCustomerId,
-          },
-        });
-
-        if (stripe) {
-          try {
-            const stripeSubs = await stripe.subscriptions.list({
-              customer: stripeCustomerId,
-              status: 'active',
-            });
-
-            if (stripeSubs.data.length > 0) {
-              const activeSub = stripeSubs.data[0]!;
-              const firstItem = activeSub.items.data[0];
-              const priceId = firstItem?.price.id;
-              const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
-              const periodEnd = firstItem?.current_period_end;
-
-              const [upsertResult, profileResult] = await Promise.all([
-                supabase.from('subscriptions').upsert(
-                  {
-                    user_id: profile.id,
-                    stripe_subscription_id: activeSub.id,
-                    stripe_price_id: priceId || '',
-                    status: activeSub.status,
-                    tier,
-                    current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-                    cancel_at_period_end: activeSub.cancel_at_period_end,
-                  },
-                  { onConflict: 'stripe_subscription_id' }
-                ),
-                supabase.from('profiles').update({ tier }).eq('id', profile.id),
-              ]);
-
-              if (upsertResult.error) {
-                console.error(`[subscription-drift] Stripe recovery upsert failed for ${profile.id}:`, upsertResult.error);
-                Sentry.captureException(upsertResult.error, {
-                  tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-upsert' },
-                  extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
-                });
-              } else if (profileResult.error) {
-                console.error(`[subscription-drift] Stripe recovery profile update failed for ${profile.id}:`, profileResult.error);
-                Sentry.captureException(profileResult.error, {
-                  tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-profile' },
-                  extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
-                });
-              } else {
-                mismatch.fixed = true;
-                stripeRecovered++;
-                fixed++;
-                Sentry.captureMessage('Stripe subscription recovered via API in drift cron', {
-                  level: 'info',
-                  tags: { route: 'cron-subscription-drift', drift_type: 'stripe_recovered' },
-                  extra: {
-                    user_id: profile.id,
-                    stripe_customer_id: stripeCustomerId,
-                    tier,
-                    subscription_id: activeSub.id,
-                  },
-                });
-              }
-            }
-            // No active subscription found — legitimately community tier, skip
-          } catch (stripeErr) {
-            console.error(`[subscription-drift] Stripe API error for ${profile.id}:`, stripeErr);
-            Sentry.captureException(stripeErr, {
-              tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-api' },
-              extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
-            });
-          }
+        // Without a Stripe client we cannot distinguish an abandoned checkout from a
+        // genuinely missed webhook. Fail safe: surface for manual review (legacy behaviour).
+        if (!stripe) {
+          Sentry.captureMessage('Subscription webhook never ran — manual review required', {
+            level: 'warning',
+            tags: { route: 'cron-subscription-drift', drift_type: 'webhook_never_ran' },
+            extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
+          });
+          mismatches.push(mismatch);
+          continue;
         }
 
-        mismatches.push(mismatch);
+        // Ask Stripe what this customer actually holds (all statuses), then classify.
+        let stripeSubs;
+        try {
+          stripeSubs = await stripe.subscriptions.list({
+            customer: stripeCustomerId,
+            status: 'all',
+            limit: 100,
+          });
+        } catch (stripeErr) {
+          // Can't verify — fail safe: surface for manual review, never suppress on error.
+          console.error(`[subscription-drift] Stripe API error for ${profile.id}:`, stripeErr);
+          Sentry.captureException(stripeErr, {
+            tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-api' },
+            extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
+          });
+          Sentry.captureMessage('Subscription webhook never ran — manual review required', {
+            level: 'warning',
+            tags: { route: 'cron-subscription-drift', drift_type: 'webhook_never_ran' },
+            extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
+          });
+          mismatches.push(mismatch);
+          continue;
+        }
+
+        const recoverable = stripeSubs.data.find(
+          (s) => s.status === 'active' || s.status === 'trialing'
+        );
+        const needsReview = stripeSubs.data.find(
+          (s) =>
+            s.status === 'past_due' ||
+            s.status === 'unpaid' ||
+            s.status === 'incomplete' ||
+            s.status === 'paused'
+        );
+
+        if (recoverable) {
+          // Real missed webhook: Stripe holds a live paid/trialing sub with no DB row. Recover it.
+          const firstItem = recoverable.items.data[0];
+          const priceId = firstItem?.price.id;
+          const tier = priceId ? getTierFromPrice(priceId) : 'supporter';
+          const periodEnd = firstItem?.current_period_end;
+
+          const [upsertResult, profileResult] = await Promise.all([
+            supabase.from('subscriptions').upsert(
+              {
+                user_id: profile.id,
+                stripe_subscription_id: recoverable.id,
+                stripe_price_id: priceId || '',
+                status: recoverable.status,
+                tier,
+                current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+                cancel_at_period_end: recoverable.cancel_at_period_end,
+              },
+              { onConflict: 'stripe_subscription_id' }
+            ),
+            supabase.from('profiles').update({ tier }).eq('id', profile.id),
+          ]);
+
+          if (upsertResult.error) {
+            console.error(`[subscription-drift] Stripe recovery upsert failed for ${profile.id}:`, upsertResult.error);
+            Sentry.captureException(upsertResult.error, {
+              tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-upsert' },
+              extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
+            });
+          } else if (profileResult.error) {
+            console.error(`[subscription-drift] Stripe recovery profile update failed for ${profile.id}:`, profileResult.error);
+            Sentry.captureException(profileResult.error, {
+              tags: { route: 'cron-subscription-drift', action: 'stripe-recovery-profile' },
+              extra: { user_id: profile.id, stripe_customer_id: stripeCustomerId },
+            });
+          } else {
+            mismatch.fixed = true;
+            mismatch.subscription_status = recoverable.status;
+            mismatch.subscription_tier = tier;
+            stripeRecovered++;
+            fixed++;
+            Sentry.captureMessage('Stripe subscription recovered via API in drift cron', {
+              level: 'info',
+              tags: { route: 'cron-subscription-drift', drift_type: 'stripe_recovered' },
+              extra: {
+                user_id: profile.id,
+                stripe_customer_id: stripeCustomerId,
+                tier,
+                subscription_id: recoverable.id,
+              },
+            });
+          }
+          mismatches.push(mismatch);
+        } else if (needsReview) {
+          // Real, but a human must look: Stripe holds a non-paid, non-terminal sub with no DB row.
+          mismatch.subscription_status = needsReview.status;
+          Sentry.captureMessage('Subscription webhook never ran — manual review required', {
+            level: 'warning',
+            tags: { route: 'cron-subscription-drift', drift_type: 'webhook_never_ran' },
+            extra: {
+              user_id: profile.id,
+              stripe_customer_id: stripeCustomerId,
+              stripe_status: needsReview.status,
+            },
+          });
+          mismatches.push(mismatch);
+        } else {
+          // No active/trialing/review sub in Stripe → abandoned checkout or churned.
+          // Profile is correctly community; this is NOT a missed webhook. Record for
+          // observability only — do not count as a mismatch, do not fire the ops alert.
+          abandonedCheckouts++;
+          Sentry.addBreadcrumb({
+            category: 'stripe',
+            level: 'info',
+            message: 'Drift cron: webhook-blind profile has no recoverable Stripe subscription (abandoned checkout)',
+            data: { user_id: profile.id },
+          });
+        }
       }
     }
 
@@ -626,6 +690,7 @@ export async function GET(request: NextRequest) {
             { name: 'Downgrade missed', value: String(downgradeMissed), inline: true },
             { name: 'Upgrade missed', value: String(upgradeMissed), inline: true },
             { name: 'Webhook never ran (manual review)', value: String(webhookNeverRanCount), inline: true },
+            { name: 'Abandoned checkouts (no action)', value: String(abandonedCheckouts), inline: true },
             { name: 'Stripe auto-recovered', value: String(stripeRecovered), inline: true },
             { name: 'Webhook jobs re-driven', value: String(redrive.picked), inline: true },
             { name: 'Webhook jobs recovered', value: String(redrive.recovered), inline: true },
@@ -644,7 +709,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.error(
-      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, stripe_recovered=${stripeRecovered}, redrive_picked=${redrive.picked}, redrive_recovered=${redrive.recovered}, redrive_still_failed=${redrive.stillFailed}, redrive_stranded_pending=${redrive.strandedPending}`
+      `[subscription-drift] completed: checked=${checked}, mismatches=${mismatches.length}, fixed=${fixed}, webhook_never_ran=${webhookNeverRanCount}, abandoned_checkouts=${abandonedCheckouts}, stripe_recovered=${stripeRecovered}, redrive_picked=${redrive.picked}, redrive_recovered=${redrive.recovered}, redrive_still_failed=${redrive.stillFailed}, redrive_stranded_pending=${redrive.strandedPending}`
     );
 
     return NextResponse.json({
@@ -653,6 +718,7 @@ export async function GET(request: NextRequest) {
       mismatches: mismatches.length,
       fixed,
       webhook_never_ran: webhookNeverRanCount,
+      abandoned_checkouts: abandonedCheckouts,
       stripe_recovered: stripeRecovered,
       redrive_picked: redrive.picked,
       redrive_recovered: redrive.recovered,
