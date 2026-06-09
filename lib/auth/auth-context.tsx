@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
     }
 
-    const { data: profileData, error: profileError } = profileResult;
+    const { data: fetchedProfileData, error: profileError } = profileResult;
 
     if (profileError) {
       // A1: a failed profile fetch must NOT silently downgrade a paid user.
@@ -184,17 +184,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // A1: the subscription row is the server-side source of truth for paid
       // access and may be readable even when the profile read failed, so a
-      // previously-unseen paid user is not locked out on cold start.
+      // previously-unseen paid user is not logged out on cold start.
       await fetchSubscriptionTier(userId);
       return;
     }
 
+    // If no profile row, attempt a server-side repair then re-fetch once.
+    // Covers users with existing sessions whose profile row was never created
+    // (trigger gap, PKCE cross-context signup, stale pre-fix session).
+    let profileData = fetchedProfileData;
     if (!profileData) {
-      // Profile row missing — auth trigger may not have fired for this user.
-      // Treat as unknown (not a confirmed downgrade) so a paid user with a
-      // transiently-missing row keeps their last-known / subscription entitlement.
-      setEntitlementStatus('unknown');
       console.error('[auth-context] No profile row found for user:', userId);
+      try {
+        const repairRes = await fetch('/api/auth/ensure-profile', {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+        if (repairRes.ok) {
+          const retryResult = await supabase
+            .from('profiles')
+            .select(PROFILE_COLS)
+            .eq('id', userId)
+            .maybeSingle();
+          profileData = retryResult.data ?? null;
+        }
+      } catch {
+        // network error during repair — subscription fallback runs below
+      }
+    }
+
+    if (!profileData) {
+      // Repair failed or retry still found no row — treat as unknown so a paid
+      // user keeps their last-known entitlement.
+      setEntitlementStatus('unknown');
       Sentry.captureMessage('Profile row missing for authenticated user', {
         level: 'warning',
         tags: { context: 'auth-profile-fetch' },
