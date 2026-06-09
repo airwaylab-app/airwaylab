@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
@@ -7,6 +8,17 @@ import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { routeAlert } from '@/lib/discord-webhook';
 import { checkAndUpdateDedup } from './_dedup';
 import { trackSignalCount } from '@/lib/signal-tracker';
+
+/**
+ * Stable fingerprint for a coverage gap: same (device model + reason + signal-label
+ * set) → same key, so the table dedups to ~one row per distinct firmware/gap and the
+ * coverage-issue sweep opens exactly one issue per gap. Computed server-side so the
+ * key is canonical regardless of client.
+ */
+function coverageFingerprint(deviceModel: string, reason: string, signalLabels: string[]): string {
+  const canonical = `${deviceModel}|${reason}|${[...signalLabels].sort().join(',')}`;
+  return createHash('sha256').update(canonical).digest('hex').slice(0, 32);
+}
 
 /**
  * Device families whose settings we actually extract (ResMed AirSense/AirCurve, BMC).
@@ -23,10 +35,13 @@ const limiter = new RateLimiter({ windowMs: 3_600_000, max: 5 });
 
 const BodySchema = z.object({
   deviceModel: z.string().max(200),
-  signalLabels: z.array(z.string().max(100)).max(200),
+  // Printable-ASCII only (blocks binary/control-char abuse) and bounded count +
+  // length — EDF signal labels are ≤16 chars, so 64 is safe headroom.
+  signalLabels: z.array(z.string().regex(/^[\x20-\x7E]+$/).max(64)).max(256),
   identificationText: z.string().max(2000).nullable(),
   hasStrFile: z.boolean(),
-});
+  reason: z.enum(['untrusted_autoset_range']).optional(),
+}).strict();
 
 /**
  * POST /api/device-diagnostic
@@ -52,7 +67,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    const { deviceModel, signalLabels, identificationText, hasStrFile } = parsed.data;
+    const { deviceModel, signalLabels, identificationText, hasStrFile, reason } = parsed.data;
+    const fingerprint = reason ? coverageFingerprint(deviceModel, reason, signalLabels) : null;
 
     const supabase = getSupabaseAdmin();
     if (!supabase) {
@@ -61,7 +77,20 @@ export async function POST(request: NextRequest) {
         tags: { route: 'device-diagnostic' },
       });
     }
-    if (supabase) {
+    // Coverage-gap harvests (reason set) dedup by fingerprint: keep ~one row per
+    // distinct (model + reason + signal-set) instead of one per upload (AutoSet is
+    // a high-volume mode). The existing empty-settings path is unchanged.
+    let alreadyCaptured = false;
+    if (supabase && reason && fingerprint) {
+      const { data: existing } = await supabase
+        .from('device_diagnostics')
+        .select('id')
+        .eq('fingerprint', fingerprint)
+        .limit(1)
+        .maybeSingle();
+      alreadyCaptured = !!existing;
+    }
+    if (supabase && !alreadyCaptured) {
       try {
         let timeoutHandle: ReturnType<typeof setTimeout>;
         const timeoutPromise = new Promise<never>(
@@ -81,6 +110,8 @@ export async function POST(request: NextRequest) {
             signal_labels: signalLabels,
             identification_text: identificationText,
             has_str_file: hasStrFile,
+            reason,
+            fingerprint,
           }),
           timeoutPromise,
         ]).finally(() => clearTimeout(timeoutHandle));
@@ -100,7 +131,10 @@ export async function POST(request: NextRequest) {
 
     const now = Date.now();
 
-    if (supabase) {
+    // Coverage-gap harvests (reason set) are NOT a per-upload alarm — the row is
+    // captured above and the coverage-issue sweep opens/maintains one GitHub issue
+    // per fingerprint. Only the empty-settings/unsupported path raises a live alert.
+    if (supabase && !reason) {
       if (isSupportedModel(deviceModel)) {
         // A device we DO support produced an empty-settings diagnostic — a genuine
         // engineering signal worth investigating. Deduped per model and routed to the

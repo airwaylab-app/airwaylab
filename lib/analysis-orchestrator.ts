@@ -535,6 +535,7 @@ class AnalysisOrchestrator {
                 signalLabels: msg.signalLabels,
                 identificationText: msg.identificationText,
                 hasStrFile: msg.hasStrFile,
+                ...(msg.reason ? { reason: msg.reason } : {}),
               }),
             }).catch(() => { /* fire-and-forget */ });
             break;

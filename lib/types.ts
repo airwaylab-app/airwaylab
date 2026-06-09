@@ -685,6 +685,14 @@ export interface WorkerSettingsDiagnostic {
   signalLabels: string[];
   identificationText: string | null;
   hasStrFile: boolean;
+  /**
+   * Why this diagnostic fired, when it is a known coverage gap rather than a
+   * plain empty-settings/unsupported-device failure. 'untrusted_autoset_range':
+   * AirSense auto mode where we have S.C.Press but not the AutoSet min/max range
+   * (#1036). Drives the coverage-issue sweep + harvests the real signal labels.
+   * Omitted for the existing empty-settings / AirCurve-partial diagnostics.
+   */
+  reason?: 'untrusted_autoset_range';
 }
 
 export type WorkerResponse = WorkerProgress | WorkerResult | WorkerNightResult | WorkerOximetryResult | WorkerError | WorkerWarning | WorkerSettingsDiagnostic;
