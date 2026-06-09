@@ -13,6 +13,7 @@ import {
   computeRespiratoryRate,
   detectMShapeInWorker,
   buildSessionBoundaries,
+  isEdfRelevantForNight,
 } from './waveform-utils';
 import type {
   WaveformWorkerMessage,
@@ -82,13 +83,18 @@ function extractWaveform(
 
   const brpFiles = filterBRPFiles(fileList);
 
-  // Parse all BRP files
+  // Parse BRP files — skip those from unrelated nights to prevent OOM.
+  // When the orchestrator's date-path filter finds no matches it falls back to
+  // sending all BRP files; for users with years of data that can be gigabytes.
+  // isEdfRelevantForNight limits parsing to the target date + next calendar day
+  // (the next day covers early-morning sessions grouped into the target night).
   const parsedEdfs: EDFFile[] = [];
   for (const brp of brpFiles) {
     const fileData = files.find((f) => f.path === brp.path);
     if (!fileData) continue;
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
+      if (!isEdfRelevantForNight(edf.recordingDate, targetDate)) continue;
       parsedEdfs.push(edf);
     } catch {
       // Skip unparseable files

@@ -952,3 +952,29 @@ export function detectMShapeInWorker(inspFlow: Float32Array, qPeak: number): boo
 
   return false;
 }
+
+// ── Night-date helpers used by the waveform worker ───────────
+
+/** YYYY-MM-DD in local time (mirrors night-grouper.ts localDateStr, not exported there). */
+export function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Whether an EDF file's recording date falls within the calendar window that
+ * could contribute to the given target night.
+ *
+ * The night grouper assigns sessions starting before noon on day+1 to the
+ * target night (they belong to the early-morning portion of the same sleep
+ * period). Accepting both calendar days ensures we don't discard those files.
+ *
+ * Used in the waveform worker to skip EDF files from unrelated nights when
+ * the orchestrator falls back to sending all BRP files (OOM guard).
+ */
+export function isEdfRelevantForNight(recordingDate: Date, targetDate: string): boolean {
+  const dateStr = localDateStr(recordingDate);
+  if (dateStr === targetDate) return true;
+  const [tyStr, tmStr, tdStr] = targetDate.split('-');
+  const nextDay = new Date(parseInt(tyStr!, 10), parseInt(tmStr!, 10) - 1, parseInt(tdStr!, 10) + 1);
+  return dateStr === localDateStr(nextDay);
+}
