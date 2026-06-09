@@ -1,12 +1,15 @@
 /**
  * Unit tests for Stripe API recovery in app/api/cron/subscription-drift/route.ts
  *
- * Covers the webhook_never_ran → Stripe recovery path:
+ * Covers the webhook_never_ran → Stripe classification path:
  *   1. Active sub found: subscription upserted, profile tier updated, stripe_recovered++
- *   2. No active sub: profile stays community, stripe_recovered = 0
- *   3. Stripe API error: captureException called, no crash
- *   4. Subscription upsert fails: captureException called, mismatch not fixed
- *   5. Profile update fails: captureException called, mismatch not fixed
+ *   2. Trialing sub found: recovered (treated as paid)
+ *   3. No sub in Stripe: abandoned checkout — NOT a mismatch, NOT alerted
+ *   4. Canceled-only customer: abandoned checkout — NOT a mismatch
+ *   5. past_due sub found: surfaced for manual review, not auto-fixed
+ *   6. Stripe API error: captureException called, no crash, surfaced for manual review
+ *   7. Subscription upsert fails: captureException called, mismatch not fixed
+ *   8. Profile update fails: captureException called, mismatch not fixed
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -16,6 +19,7 @@ import type { NextRequest } from 'next/server';
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  addBreadcrumb: vi.fn(),
 }));
 
 vi.mock('@/lib/discord', () => ({
@@ -87,6 +91,11 @@ function makeActiveSub(overrides: Record<string, unknown> = {}) {
     },
     ...overrides,
   };
+}
+
+/** Same shape as makeActiveSub but with an explicit Stripe status. */
+function makeSub(status: string, overrides: Record<string, unknown> = {}) {
+  return makeActiveSub({ status, ...overrides });
 }
 
 /**
@@ -184,7 +193,31 @@ describe('subscription-drift cron — Stripe API recovery for webhook_never_ran'
     );
   });
 
-  it('skips recovery when no active subscription found — profile stays community', async () => {
+  it('queries Stripe across all statuses (not active-only) so trialing/past_due are visible', async () => {
+    mockStripeSubsList.mockResolvedValue({ data: [makeActiveSub()] });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    await GET(makeRequest());
+
+    expect(mockStripeSubsList).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: 'cus_abc123', status: 'all' })
+    );
+  });
+
+  it('recovers a trialing subscription (treated as paid)', async () => {
+    mockStripeSubsList.mockResolvedValue({ data: [makeSub('trialing')] });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.stripe_recovered).toBe(1);
+    expect(body.fixed).toBe(1);
+    expect(mockSubscriptionsUpsert).toHaveBeenCalledTimes(1);
+    expect(mockProfilesUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a customer with no subscription as an abandoned checkout — no mismatch, no alert', async () => {
     mockStripeSubsList.mockResolvedValue({ data: [] });
 
     const { GET } = await import('@/app/api/cron/subscription-drift/route');
@@ -193,8 +226,47 @@ describe('subscription-drift cron — Stripe API recovery for webhook_never_ran'
 
     expect(body.stripe_recovered).toBe(0);
     expect(body.fixed).toBe(0);
+    expect(body.mismatches).toBe(0);
+    expect(body.webhook_never_ran).toBe(0);
+    expect(body.abandoned_checkouts).toBe(1);
     expect(mockSubscriptionsUpsert).not.toHaveBeenCalled();
     expect(mockProfilesUpdate).not.toHaveBeenCalled();
+    // No mismatch + no re-drive activity → the daily ops alert must NOT fire.
+    expect(mockSendAlert).not.toHaveBeenCalled();
+  });
+
+  it('treats a fully-canceled customer as an abandoned checkout — no mismatch', async () => {
+    mockStripeSubsList.mockResolvedValue({ data: [makeSub('canceled')] });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.mismatches).toBe(0);
+    expect(body.abandoned_checkouts).toBe(1);
+    expect(mockSubscriptionsUpsert).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a past_due subscription for manual review without auto-fixing', async () => {
+    const Sentry = await import('@sentry/nextjs');
+    mockStripeSubsList.mockResolvedValue({ data: [makeSub('past_due')] });
+
+    const { GET } = await import('@/app/api/cron/subscription-drift/route');
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.stripe_recovered).toBe(0);
+    expect(body.fixed).toBe(0);
+    expect(body.webhook_never_ran).toBe(1);
+    expect(body.abandoned_checkouts).toBe(0);
+    expect(mockSubscriptionsUpsert).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'Subscription webhook never ran — manual review required',
+      expect.objectContaining({
+        tags: expect.objectContaining({ drift_type: 'webhook_never_ran' }),
+        extra: expect.objectContaining({ user_id: 'user-blind', stripe_status: 'past_due' }),
+      })
+    );
   });
 
   it('captures exception and does not crash when Stripe API call fails', async () => {
