@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles, classifyUploadError } from '@/lib/storage/upload-orchestrator';
+import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles, classifyUploadError, parseRetryAfterMs } from '@/lib/storage/upload-orchestrator';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -183,5 +183,32 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('CLOUD SYNC REQUIRES AN ACTIVE SESSION. PLEASE SIGN IN AGAIN.')).toBe('auth');
     expect(classifyUploadError('HASH FAILED for file 1: error')).toBe('hash_worker');
     expect(classifyUploadError('FAILED TO FETCH')).toBe('network');
+  });
+});
+
+describe('parseRetryAfterMs', () => {
+  it('parses delta-seconds into milliseconds', () => {
+    expect(parseRetryAfterMs('5')).toBe(5000);
+    expect(parseRetryAfterMs('0')).toBe(0);
+    expect(parseRetryAfterMs('120')).toBe(120000);
+  });
+
+  it('returns undefined for a missing or empty header', () => {
+    expect(parseRetryAfterMs(null)).toBeUndefined();
+    expect(parseRetryAfterMs('')).toBeUndefined();
+  });
+
+  it('returns undefined for an unparseable value', () => {
+    expect(parseRetryAfterMs('soon')).toBeUndefined();
+  });
+
+  it('clamps negative deltas to zero', () => {
+    expect(parseRetryAfterMs('-10')).toBe(0);
+  });
+
+  it('parses an HTTP-date into a non-negative delay', () => {
+    const ms = parseRetryAfterMs(new Date(Date.now() + 30_000).toUTCString());
+    expect(ms).toBeGreaterThanOrEqual(0);
+    expect(ms).toBeLessThanOrEqual(31_000);
   });
 });

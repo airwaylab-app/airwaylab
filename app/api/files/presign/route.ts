@@ -5,10 +5,18 @@ import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server
 import { RateLimiter, getUserRateLimitKey } from '@/lib/rate-limit';
 import { validateOrigin } from '@/lib/csrf';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
+import { upstreamErrorResponse } from '@/lib/api/upstream-error';
 import { hasStorageConsent } from '@/lib/storage/quota';
 import { STORAGE_BUCKET, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from '@/lib/storage/types';
 
+// Long-window guard: an upper bound on a single user's total presign volume.
 const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5000, persistent: true });
+
+// Short-window burst backstop: defence-in-depth behind the Vercel edge limit.
+// At client concurrency 4 a legit bulk sync peaks well under 6 req/s, so 60/10s
+// never trips a real user but caps a runaway client across serverless instances.
+// Upstash-backed and fails open, so it can never itself cause an outage.
+const burstLimiter = new RateLimiter({ windowMs: 10_000, max: 60, persistent: true });
 
 const presignSchema = z.object({
   filePath: z.string().min(1).max(500),
@@ -49,6 +57,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Too many upload requests. Please wait a few minutes and try again.' },
       { status: 429 }
+    );
+  }
+
+  // Burst backstop — distinct Upstash key so it can't collide with the hourly bucket.
+  if (await burstLimiter.isLimited(`${getUserRateLimitKey(user.id)}:burst`)) {
+    return NextResponse.json(
+      { error: 'Too many upload requests. Please wait a few minutes and try again.' },
+      { status: 429, headers: { 'Retry-After': '10' } }
     );
   }
 
@@ -192,6 +208,12 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error('[files/presign] Error:', err);
     captureApiError(err, { route: 'files/presign' });
-    return NextResponse.json({ error: 'Failed to prepare upload' }, { status: 500 });
+    // A transient Storage 5xx (createSignedUploadUrl) maps to 503 + Retry-After
+    // so the client backs off and retries instead of treating it as fatal and
+    // tripping the fail-fast abort. Genuine internal errors stay 500.
+    return upstreamErrorResponse(err, {
+      retryable: 'Upload service is busy. Please retry shortly.',
+      fatal: 'Failed to prepare upload',
+    });
   }
 }

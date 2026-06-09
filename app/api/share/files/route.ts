@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getSupabaseServer, getSupabaseServiceRole } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getUserRateLimitKey, getRateLimitKey } from '@/lib/rate-limit';
+import { upstreamErrorResponse } from '@/lib/api/upstream-error';
 
 const SHARED_FILES_BUCKET = 'shared-files';
 const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB per file (ResMed BRP.edf can exceed 100 MB for full SD cards)
@@ -152,10 +153,11 @@ export async function POST(request: NextRequest) {
       if (signError || !signedData) {
         console.error(`[share/files] Failed to create upload URL for ${storagePath}:`, signError?.message);
         Sentry.captureException(signError, { tags: { route: 'share-files-presign' } });
-        return NextResponse.json(
-          { error: 'Could not prepare file upload. Please try again.' },
-          { status: 500 }
-        );
+        // Transient Storage 5xx → 503 + Retry-After; genuine failures stay 500.
+        return upstreamErrorResponse(signError, {
+          retryable: 'Upload service is busy. Please try again shortly.',
+          fatal: 'Could not prepare file upload. Please try again.',
+        });
       }
 
       uploadUrls.push({
@@ -168,10 +170,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ uploadUrls }, { status: 200 });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'share-files-presign' } });
-    return NextResponse.json(
-      { error: 'Something went wrong. Please try again.' },
-      { status: 500 }
-    );
+    return upstreamErrorResponse(err, {
+      retryable: 'Upload service is busy. Please try again shortly.',
+      fatal: 'Something went wrong. Please try again.',
+    });
   }
 }
 

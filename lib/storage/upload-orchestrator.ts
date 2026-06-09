@@ -19,7 +19,10 @@ import { hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
 
 type UploadListener = (state: UploadState) => void;
 
-const CONCURRENCY = 10;
+// Lowered from 10 to 4 after a single user's multi-month backlog at 10-wide
+// overwhelmed Supabase Storage (502/504) and Vercel functions (5xx burst).
+// 4 keeps bulk sync reliable and is the everyday governor at the source.
+const CONCURRENCY = 4;
 const RETRY_DELAY_MS = 2000;
 /** Base delay for rate limit backoff (doubles each time) */
 const RATE_LIMIT_BASE_DELAY_MS = 5000;
@@ -29,13 +32,59 @@ const RATE_LIMIT_MAX_RETRIES = 4;
 const TRANSIENT_MAX_RETRIES = 3;
 /** Abort after this many consecutive failures with the same error */
 const FAIL_FAST_THRESHOLD = 3;
+/** Hard ceiling on total wall-clock spent retrying a single file across all
+ *  backoff attempts. Stops a slow-healing upstream from stalling the whole
+ *  bulk sync on one file. */
+const RETRY_WALL_CAP_MS = 120_000;
+/** Single-wait ceiling so a large Retry-After can't park a file for minutes. */
+const MAX_SINGLE_BACKOFF_MS = 60_000;
+/** HTTP statuses that are transient/upstream and safe to retry with backoff. */
+const TRANSIENT_RETRY_STATUSES = new Set([502, 503, 504, 520]);
 
 /**
  * Check if an error message indicates a transient server error.
  * These are typically CDN/proxy-level failures that resolve on retry.
+ * Message-based fallback used only when no typed HTTP status is available.
  */
 export function isTransientServerError(errorMessage: string): boolean {
   return /\b(502|503|504|520)\b/.test(errorMessage);
+}
+
+/**
+ * Parse a Retry-After header (delta-seconds or HTTP-date) into milliseconds.
+ * Returns undefined when absent or unparseable.
+ */
+export function parseRetryAfterMs(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const when = Date.parse(value);
+  if (!Number.isNaN(when)) return Math.max(0, when - Date.now());
+  return undefined;
+}
+
+/** Read the HTTP status an upload error was tagged with, if any. */
+function errorStatus(err: unknown): number | undefined {
+  return err instanceof Error ? (err as Error & { httpStatus?: number }).httpStatus : undefined;
+}
+
+/** Read the Retry-After (ms) an upload error was tagged with, if any. */
+function errorRetryAfterMs(err: unknown): number | undefined {
+  return err instanceof Error ? (err as Error & { retryAfterMs?: number }).retryAfterMs : undefined;
+}
+
+/**
+ * Whether an upload error is a transient/upstream server failure worth retrying.
+ * Prefers the typed HTTP status the server set (robust); falls back to scanning
+ * the message for a status code only when no status was tagged. Status-based
+ * classification is the structural fix for the regex-over-free-text bug where a
+ * 500-from-Storage slipped past the transient check.
+ */
+function isTransientServerErrorFor(err: unknown): boolean {
+  const status = errorStatus(err);
+  if (status !== undefined) return TRANSIENT_RETRY_STATUSES.has(status);
+  const msg = err instanceof Error ? err.message : String(err);
+  return isTransientServerError(msg);
 }
 
 /**
@@ -531,17 +580,24 @@ class UploadOrchestrator {
       } catch (firstErr) {
         // Rate limit: exponential backoff with multiple retries
         const isRateLimit = firstErr instanceof Error && (firstErr as Error & { isRateLimit?: boolean }).isRateLimit === true;
-        // Transient 5xx (502, 503, 504, 520): same exponential backoff but capped at fewer retries
-        const firstErrMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
-        const isTransient = !isRateLimit && isTransientServerError(firstErrMsg);
+        // Transient 5xx (502, 503, 504, 520): classify on the typed HTTP status
+        // the server set, not a regex over the message text.
+        const isTransient = !isRateLimit && isTransientServerErrorFor(firstErr);
         if (isRateLimit || isTransient) {
           const maxRetries = isRateLimit ? RATE_LIMIT_MAX_RETRIES : TRANSIENT_MAX_RETRIES;
           const retryLabel = isRateLimit ? 'Rate limited' : 'Transient server error';
+          const retryStart = Date.now();
+          // Honor a server Retry-After when present, else exponential backoff.
+          let nextRetryAfterMs = errorRetryAfterMs(firstErr);
           let uploaded = false;
           for (let attempt = 0; attempt < maxRetries; attempt++) {
-            const delay = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
+            const backoff = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 1000;
+            const delay = Math.min(nextRetryAfterMs ?? backoff, MAX_SINGLE_BACKOFF_MS);
             await new Promise(r => setTimeout(r, delay));
             if (signal.aborted) break;
+            // Stop retrying this file once the total retry budget is spent, so one
+            // slow-healing file can't stall the whole bulk sync.
+            if (Date.now() - retryStart > RETRY_WALL_CAP_MS) break;
             try {
               const ok = await this.uploadSingleFile(file, filePath, fileName, hash, nightDate, signal);
               if (ok) result.uploaded++;
@@ -554,7 +610,7 @@ class UploadOrchestrator {
               const retryErrMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
               const stillRetryable = isRateLimit
                 ? retryErr instanceof Error && (retryErr as Error & { isRateLimit?: boolean }).isRateLimit === true
-                : isTransientServerError(retryErrMsg);
+                : isTransientServerErrorFor(retryErr);
               if (!stillRetryable) {
                 // Different error — record and stop retrying this file
                 result.failed++;
@@ -562,7 +618,8 @@ class UploadOrchestrator {
                 uploaded = true; // prevent double-counting
                 break;
               }
-              // Still retryable — continue backoff
+              // Still retryable — refresh Retry-After for the next backoff iteration
+              nextRetryAfterMs = errorRetryAfterMs(retryErr);
             }
           }
           if (!uploaded) {
@@ -676,6 +733,10 @@ class UploadOrchestrator {
       (error as Error & { isRateLimit?: boolean }).isRateLimit = presignRes.status === 429;
       // Tag validation errors (400) so fail-fast can distinguish them from systemic failures
       (error as Error & { isValidation?: boolean }).isValidation = presignRes.status === 400;
+      // Tag the HTTP status so retry classification keys on it, not a message regex
+      (error as Error & { httpStatus?: number }).httpStatus = presignRes.status;
+      const retryAfterMs = parseRetryAfterMs(presignRes.headers.get('retry-after'));
+      if (retryAfterMs !== undefined) (error as Error & { retryAfterMs?: number }).retryAfterMs = retryAfterMs;
       // Attach parsed response body for Sentry context in reportFailures
       (error as Error & { presignBody?: unknown }).presignBody = { status: presignRes.status, body: err };
       throw error;
@@ -704,7 +765,13 @@ class UploadOrchestrator {
         credentials: 'same-origin',
         body: JSON.stringify({ fileId: presignData.fileId }),
       }).catch(() => { /* best effort cleanup */ });
-      throw new Error(`Upload failed: ${uploadRes.status}`);
+      const uploadErr = new Error(`Upload failed: ${uploadRes.status}`);
+      // Tag the HTTP status + Retry-After so a transient Storage PUT 5xx retries
+      // with backoff instead of being misread as a non-transient failure.
+      (uploadErr as Error & { httpStatus?: number }).httpStatus = uploadRes.status;
+      const putRetryAfterMs = parseRetryAfterMs(uploadRes.headers.get('retry-after'));
+      if (putRetryAfterMs !== undefined) (uploadErr as Error & { retryAfterMs?: number }).retryAfterMs = putRetryAfterMs;
+      throw uploadErr;
     }
 
     // Step 3: Confirm upload — marks the file as upload_confirmed in the DB.

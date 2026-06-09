@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { validateOrigin } from '@/lib/csrf';
 import { RateLimiter, getRateLimitKey } from '@/lib/rate-limit';
 import { exceedsPayloadLimit } from '@/lib/api/payload-guard';
+import { upstreamErrorResponse } from '@/lib/api/upstream-error';
 
 const OximetryMetadataSchema = z.object({
   nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid night date format.'),
@@ -113,7 +114,11 @@ export async function POST(request: NextRequest) {
       }
       console.error('[contribute-oximetry-trace] Storage error:', storageError.message);
       Sentry.captureException(storageError, { tags: { route: 'contribute-oximetry-trace' } });
-      return NextResponse.json({ error: 'Storage error.' }, { status: 500 });
+      // Transient Storage 5xx → 503 + Retry-After; genuine failures stay 500.
+      return upstreamErrorResponse(storageError, {
+        retryable: 'Storage temporarily unavailable. Please try again shortly.',
+        fatal: 'Storage error.',
+      });
     }
 
     const { error: dbError } = await supabase.from('oximetry_trace_contributions').insert({
