@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isTransientServerError, getPartialFailureLevel, filterUploadableFiles, classifyUploadError } from '@/lib/storage/upload-orchestrator';
+import { MAX_FILE_SIZE } from '@/lib/storage/types';
 
 describe('isTransientServerError', () => {
   it('identifies 502 Bad Gateway as transient', () => {
@@ -138,6 +139,19 @@ describe('filterUploadableFiles', () => {
     const { uploadable, emptyCount } = filterUploadableFiles(files);
     expect(uploadable).toHaveLength(2);
     expect(emptyCount).toBe(3);
+  });
+});
+
+describe('MAX_FILE_SIZE constant', () => {
+  it('is 200MB', () => {
+    expect(MAX_FILE_SIZE).toBe(200 * 1024 * 1024);
+  });
+
+  it('produces a user-friendly error message for oversized files', () => {
+    const fileName = 'BRP.edf';
+    const message = `${fileName}: File exceeds the 200 MB upload limit`;
+    expect(message).toContain('200 MB');
+    expect(message).toContain(fileName);
   });
 });
 

@@ -13,7 +13,7 @@ const rateLimiter = new RateLimiter({ windowMs: 3_600_000, max: 5000, persistent
 const presignSchema = z.object({
   filePath: z.string().min(1).max(500),
   fileName: z.string().min(1).max(255),
-  fileSize: z.number().int().positive().max(MAX_FILE_SIZE),
+  fileSize: z.number().int().positive().max(MAX_FILE_SIZE, 'File exceeds the 200 MB upload limit'),
   fileHash: z.string().length(64),
   nightDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(
     (d) => { const t = new Date(d); return !isNaN(t.getTime()) && t.toISOString().startsWith(d); },
