@@ -36,6 +36,22 @@ const nextConfig = {
         destination: '/blog/understanding-flow-limitation',
         permanent: true,
       },
+      // Wave 2 duplicate-slug 301s (AIR-2695, post AIR-1754 content merge 2026-06-04)
+      {
+        source: '/blog/cpap-leak-rate-meaning',
+        destination: '/blog/cpap-leak-rate-explained',
+        permanent: true,
+      },
+      {
+        source: '/blog/oscar-alternative',
+        destination: '/blog/oscar-alternatives-web-cpap-2026',
+        permanent: true,
+      },
+      {
+        source: '/blog/how-to-export-understand-cpap-data',
+        destination: '/blog/how-to-export-and-understand-your-cpap-data',
+        permanent: true,
+      },
     ];
   },
 
