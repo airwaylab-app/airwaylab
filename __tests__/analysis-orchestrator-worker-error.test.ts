@@ -623,6 +623,103 @@ describe('analysis-orchestrator worker error handling', () => {
     });
   });
 
+  // ── runWorker — blob URL fallback (content blocker bypass, AIR-2662) ────────
+  //
+  // Some content blockers intercept Worker-type script requests but allow fetch/XHR.
+  // On an opaque load failure (empty onerror), the orchestrator now fetches the worker
+  // script as a regular request, creates a blob URL, and passes it to the retry. This
+  // bypasses URL-based blockers so users with ad blockers can still run analysis.
+
+  describe('runWorker — blob URL fallback on content-blocker load failure', () => {
+    it('creates and revokes a blob URL on retry when fetch succeeds', async () => {
+      const fakeBlobUrl = 'blob:https://airwaylab.app/fake-blob-url';
+      const fakeBlob = new Blob(['worker code']);
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(fakeBlob) }));
+      const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue(fakeBlobUrl);
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+      const { Ctor } = makeSequentialWorkerCtor([
+        'onerror-empty',
+        { type: 'results', nights: [] },
+      ]);
+      vi.stubGlobal('Worker', Ctor);
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+      const result = await (orchestrator as unknown as {
+        runWorker: (files: unknown[]) => Promise<unknown>
+      }).runWorker([]);
+
+      expect(result).toEqual([]);
+      expect(createObjectURLSpy).toHaveBeenCalledWith(fakeBlob);
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith(fakeBlobUrl);
+
+      createObjectURLSpy.mockRestore();
+      revokeObjectURLSpy.mockRestore();
+      vi.unstubAllGlobals();
+    });
+
+    it('still retries (without blob URL) when fetch fails', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
+
+      const { Ctor, getCallCount } = makeSequentialWorkerCtor([
+        'onerror-empty',
+        { type: 'results', nights: [] },
+      ]);
+      vi.stubGlobal('Worker', Ctor);
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+
+      const result = await (orchestrator as unknown as {
+        runWorker: (files: unknown[]) => Promise<unknown>
+      }).runWorker([]);
+
+      expect(result).toEqual([]);
+      expect(getCallCount()).toBe(2);
+
+      vi.unstubAllGlobals();
+    });
+
+    it('reports blobFallback: true in Sentry when blob URL was used and retry also fails', async () => {
+      const fakeBlobUrl = 'blob:https://airwaylab.app/fake-blob-url';
+      const fakeBlob = new Blob(['worker code']);
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(fakeBlob) }));
+      const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue(fakeBlobUrl);
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+      // Both attempts fail; second uses the blob URL
+      const { Ctor } = makeSequentialWorkerCtor(['onerror-empty', 'onerror-empty']);
+      vi.stubGlobal('Worker', Ctor);
+
+      const { orchestrator } = await import('@/lib/analysis-orchestrator');
+      const Sentry = await import('@sentry/nextjs');
+
+      try {
+        await (orchestrator as unknown as {
+          runWorker: (files: unknown[]) => Promise<unknown>
+        }).runWorker([]);
+      } catch {
+        // expected
+      }
+
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            workerLoadAttempt: '2',
+            blobFallback: 'true',
+          }),
+        })
+      );
+
+      createObjectURLSpy.mockRestore();
+      revokeObjectURLSpy.mockRestore();
+      vi.unstubAllGlobals();
+    });
+  });
+
   // ── analyze — NotReadableError during file read ───────────────────────────
 
   describe('analyze — NotReadableError during file read', () => {

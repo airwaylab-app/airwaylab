@@ -374,7 +374,8 @@ class AnalysisOrchestrator {
     onNightComplete?: (night: NightResult) => void,
     deviceType?: string,
     bmcSerial?: string,
-    attempt = 1
+    attempt = 1,
+    overrideWorkerUrl?: string
   ): Promise<NightResult[]> {
     return new Promise((resolve, reject) => {
       // Progress-aware timeout: resets on any worker message.
@@ -406,15 +407,17 @@ class AnalysisOrchestrator {
       };
 
       try {
-        this.worker = new Worker(
-          new URL('../workers/analysis-worker.ts', import.meta.url)
-        );
+        // Use a pre-fetched blob URL when provided (blob fallback path); otherwise
+        // use the standard URL so webpack can resolve the worker chunk at build time.
+        const workerSrc = overrideWorkerUrl ?? new URL('../workers/analysis-worker.ts', import.meta.url);
+        this.worker = new Worker(workerSrc as string | URL);
       } catch (err) {
         settle();
         Sentry.captureException(err, {
           extra: {
             context: 'analysis-worker-init',
             attempt,
+            blobFallback: !!overrideWorkerUrl,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
             connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
@@ -563,9 +566,32 @@ class AnalysisOrchestrator {
             category: 'analysis',
             level: 'warning',
           });
-          this.runWorker(files, oximetryCSVs, onNightComplete, deviceType, bmcSerial, 2)
-            .then(resolve)
-            .catch(reject);
+          // Attempt 2: try a blob URL so URL-based content blockers (ad blockers that
+          // intercept Worker-type requests but pass fetch/XHR) are bypassed. If fetch
+          // fails or the blob URL also fails to load, runWorker falls through to the
+          // standard rejection path — same outcome as the previous same-URL retry.
+          void (async () => {
+            let blobObjectUrl: string | undefined;
+            try {
+              const scriptUrl = new URL('../workers/analysis-worker.ts', import.meta.url);
+              const resp = await fetch(scriptUrl.href);
+              if (resp.ok) {
+                const blob = await resp.blob();
+                blobObjectUrl = URL.createObjectURL(blob);
+              }
+            } catch { /* fetch unavailable or failed — proceed without blob URL */ }
+            try {
+              const result = await this.runWorker(
+                files, oximetryCSVs, onNightComplete, deviceType, bmcSerial,
+                2, blobObjectUrl
+              );
+              resolve(result);
+            } catch (retryErr) {
+              reject(retryErr);
+            } finally {
+              if (blobObjectUrl) URL.revokeObjectURL(blobObjectUrl);
+            }
+          })();
           return;
         }
 
@@ -578,6 +604,7 @@ class AnalysisOrchestrator {
           tags: {
             workerLoadAttempt: String(attempt),
             workerErrorType: isLoadFailure ? 'load_failure' : 'runtime_error',
+            blobFallback: overrideWorkerUrl ? 'true' : 'false',
           },
           extra: {
             context: 'analysis-worker-onerror',
@@ -586,6 +613,7 @@ class AnalysisOrchestrator {
             colno: err.colno,
             attempt,
             isLoadFailure,
+            blobFallback: !!overrideWorkerUrl,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
             hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 'unknown',
             connectionType: typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? 'unknown' : 'unknown',
