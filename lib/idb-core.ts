@@ -65,6 +65,16 @@ export function isQuotaError(err: unknown): boolean {
   );
 }
 
+/**
+ * True when the browser rejects an IDB write because the underlying filesystem
+ * is read-only or locked (e.g. corrupted Chrome profile, Chrome 149 regression).
+ * This is a browser/OS-level state issue, not a code bug — callers should surface
+ * a user-friendly message rather than reporting it as an unexpected exception.
+ */
+export function isStorageReadOnlyError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'NoModificationAllowedError';
+}
+
 // ── Single memoized connection ──────────────────────────────────────
 // One connection for the whole tab. We never close it per-op (I2).
 // If a newer-version connection is opened elsewhere, onversionchange

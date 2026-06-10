@@ -6,7 +6,7 @@
 import * as Sentry from '@sentry/nextjs';
 import type { NightResult } from './types';
 import { ENGINE_VERSION, OXIMETRY_ENGINE_VERSION } from './engine-version';
-import { isQuotaError } from './idb-core';
+import { isQuotaError, isStorageReadOnlyError } from './idb-core';
 import { saveSummaryRecord, readSummaryRecord, clearSummaryRecord } from './summary-idb';
 
 const STORAGE_KEY = 'airwaylab_results';
@@ -158,7 +158,22 @@ export async function persistResults(
       }
       return { saved: true, nightsSaved: nights.length, nightsDropped: 0 };
     } catch (err) {
-      if (!isQuotaError(err)) {
+      if (isStorageReadOnlyError(err)) {
+        // Browser filesystem is read-only (corrupted Chrome profile, Chrome IDB regression).
+        // This is a browser/OS state issue — log as a warning, not an exception.
+        Sentry.captureMessage('IDB write blocked: storage read-only (NoModificationAllowedError)', {
+          level: 'warning',
+          extra: { context: 'persistResults:idb' },
+        });
+        // Fall back to localStorage and always surface a reason so the user knows
+        // storage is degraded even if the localStorage write succeeds.
+        const lsResult = persistToLocalStorage(nights, therapyChangeDate);
+        return {
+          ...lsResult,
+          reason: lsResult.reason ??
+            'Browser storage is in a restricted state. Your results are available for this session but may not persist after closing the tab. Try restarting your browser or clearing site data for airwaylab.app.',
+        };
+      } else if (!isQuotaError(err)) {
         Sentry.captureException(err, { extra: { context: 'persistResults:idb', totalNights: nights.length } });
       }
       // Fall through to the localStorage path.
