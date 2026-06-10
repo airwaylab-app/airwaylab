@@ -11,7 +11,14 @@ vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }));
 
+vi.mock('@/lib/summary-idb', () => ({
+  saveSummaryRecord: vi.fn().mockResolvedValue(undefined),
+  readSummaryRecord: vi.fn().mockResolvedValue(null),
+  clearSummaryRecord: vi.fn().mockResolvedValue(undefined),
+}));
+
 import * as Sentry from '@sentry/nextjs';
+import * as summaryIdb from '@/lib/summary-idb';
 
 // Mock localStorage
 const storage = new Map<string, string>();
@@ -294,6 +301,55 @@ describe('persistence', () => {
         (c) => c[0] === 'Persistence: total failure — cannot save any nights'
       );
       expect(totalFailureCalls).toHaveLength(0);
+    });
+
+    describe('NoModificationAllowedError (JAVASCRIPT-NEXTJS-88)', () => {
+      afterEach(() => {
+        vi.mocked(summaryIdb.saveSummaryRecord).mockResolvedValue(undefined);
+        // Remove the IDB stub so other tests keep idbAvailable() === false
+        (globalThis as Record<string, unknown>).indexedDB = undefined;
+        vi.clearAllMocks();
+      });
+
+      it('falls back to localStorage and returns a user-visible reason when IDB filesystem is read-only', async () => {
+        // Simulate idbAvailable() returning true by stubbing indexedDB
+        (globalThis as Record<string, unknown>).indexedDB = { open: vi.fn() };
+        vi.mocked(summaryIdb.saveSummaryRecord).mockRejectedValueOnce(
+          new DOMException('filesystem read-only', 'NoModificationAllowedError'),
+        );
+
+        const result = await persistResults(SAMPLE_NIGHTS, null);
+
+        // localStorage fallback should succeed
+        expect(result.saved).toBe(true);
+        // User should always get a reason so they know storage is degraded
+        expect(result.reason).toBeDefined();
+        expect(result.reason).toMatch(/restricted state|site data/i);
+        // Should NOT fire captureException (it's a browser state issue, not a code bug)
+        expect(Sentry.captureException).not.toHaveBeenCalled();
+        // Should fire captureMessage at warning level
+        expect(Sentry.captureMessage).toHaveBeenCalledWith(
+          expect.stringContaining('NoModificationAllowedError'),
+          expect.objectContaining({ level: 'warning' }),
+        );
+      });
+
+      it('preserves existing reason from localStorage when localStorage also fails during read-only IDB', async () => {
+        (globalThis as Record<string, unknown>).indexedDB = { open: vi.fn() };
+        vi.mocked(summaryIdb.saveSummaryRecord).mockRejectedValueOnce(
+          new DOMException('filesystem read-only', 'NoModificationAllowedError'),
+        );
+        const originalSetItem = localStorageMock.setItem;
+        (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = vi.fn(() => {
+          throw new DOMException('quota exceeded', 'QuotaExceededError');
+        });
+
+        const result = await persistResults(SAMPLE_NIGHTS, null);
+
+        expect(result.saved).toBe(false);
+        expect(result.reason).toBeDefined();
+        (localStorageMock as { setItem: typeof localStorageMock.setItem }).setItem = originalSetItem;
+      });
     });
 
     it('strips _pldTrace dynamically attached by orchestrator', async () => {
