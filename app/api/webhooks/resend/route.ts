@@ -21,15 +21,25 @@ import { sendAlert, formatEmailAlertEmbed } from '@/lib/discord-webhook'
  * (opened_at is set once, not updated on re-opens).
  */
 
-const ResendEventSchema = z.object({
-  type: z.string(), // Accept any event type -- future-proof
-  created_at: z.string(),
-  data: z
-    .object({
-      email_id: z.string(),
-    })
-    .passthrough(),
-})
+const ResendEventSchema = z
+  .object({
+    type: z.string(), // Accept any event type -- future-proof
+    created_at: z.string(),
+    // Resend legacy format: data.email_id; newer API format: data.id
+    data: z
+      .object({
+        email_id: z.string().optional(),
+        id: z.string().optional(),
+      })
+      .passthrough()
+      .transform(d => ({
+        ...d,
+        emailId: d.email_id ?? d.id ?? '',
+      }))
+      .refine(d => d.emailId.length > 0, {
+        message: 'Missing email identifier (expected data.email_id or data.id)',
+      }),
+  })
 
 // Map Resend event types to timestamp columns (shared by both tables)
 const EVENT_COLUMN_MAP: Record<string, string> = {
@@ -85,7 +95,7 @@ export async function POST(request: NextRequest) {
       const { data: seqRow } = await supabase
         .from('email_sequences')
         .select('user_id')
-        .eq('resend_id', data.email_id)
+        .eq('resend_id', data.emailId)
         .limit(1)
         .single()
 
@@ -97,7 +107,7 @@ export async function POST(request: NextRequest) {
           await supabase
             .from('email_sequences')
             .update({ complained_at: new Date().toISOString() })
-            .eq('resend_id', data.email_id)
+            .eq('resend_id', data.emailId)
 
           await supabase
             .from('profiles')
@@ -108,15 +118,15 @@ export async function POST(request: NextRequest) {
         // Discord #ops-alerts (fire-and-forget)
         void sendAlert('ops', '', [formatEmailAlertEmbed({
           event: type === 'email.complained' ? 'complaint' : 'bounce',
-          email: data.email_id,
-          resendId: data.email_id,
+          email: data.emailId,
+          resendId: data.emailId,
           userId: seqRow.user_id,
         })])
 
         console.error(
           `[resend-webhook] ${type} for user ${seqRow.user_id}, cancelled pending emails`
         )
-        Sentry.captureMessage(`Email ${type}: ${data.email_id}`, {
+        Sentry.captureMessage(`Email ${type}: ${data.emailId}`, {
           level: 'warning',
           tags: { route: 'resend-webhook', event_type: type },
           extra: { userId: seqRow.user_id },
@@ -128,7 +138,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from('email_log')
           .update({ bounced_at: new Date().toISOString() })
-          .eq('resend_id', data.email_id)
+          .eq('resend_id', data.emailId)
       }
 
       return NextResponse.json({ received: true, tracked: true })
@@ -146,7 +156,7 @@ export async function POST(request: NextRequest) {
     const { data: seqResult } = await supabase
       .from('email_sequences')
       .update({ [column]: now })
-      .eq('resend_id', data.email_id)
+      .eq('resend_id', data.emailId)
       .is(column, null)
       .select('id')
 
@@ -155,12 +165,12 @@ export async function POST(request: NextRequest) {
       const { error } = await supabase
         .from('email_log')
         .update({ [column]: now })
-        .eq('resend_id', data.email_id)
+        .eq('resend_id', data.emailId)
         .is(column, null)
 
       if (error) {
         console.error(
-          `[resend-webhook] Failed to update ${column} for ${data.email_id}:`,
+          `[resend-webhook] Failed to update ${column} for ${data.emailId}:`,
           error.message
         )
         Sentry.captureException(error, {
