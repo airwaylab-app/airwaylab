@@ -19,6 +19,7 @@ export async function checkAndUpdateDedup(
   supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   key: string,
   now: Date,
+  windowMs?: number,
 ): Promise<{ shouldFire: boolean; suppressedCount: number }> {
   const { data: existing } = await supabase
     .from('kv_alert_dedup')
@@ -26,7 +27,7 @@ export async function checkAndUpdateDedup(
     .eq('key', key)
     .single<KvRow>()
 
-  const windowStart = new Date(now.getTime() - DEDUP_WINDOW_MS)
+  const windowStart = new Date(now.getTime() - (windowMs ?? DEDUP_WINDOW_MS))
   const lastFiredAt = existing ? new Date(existing.last_fired_at) : null
   const shouldFire = !lastFiredAt || lastFiredAt < windowStart
 
