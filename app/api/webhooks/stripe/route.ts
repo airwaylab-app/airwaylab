@@ -625,45 +625,77 @@ async function processStripeEvent(
         ? subDetails.subscription
         : subDetails?.subscription?.id;
 
-      if (subscriptionId) {
-        await supabase
-          .from('subscriptions')
-          .update({ status: 'past_due' })
-          .eq('stripe_subscription_id', subscriptionId);
-
-        // Tag the Stripe subscription so a later auto-cancel is attributed to
-        // dunning, not a user-initiated portal cancel. Retrieve-then-spread keeps
-        // the existing metadata (e.g. supabase_user_id) intact. Non-fatal.
-        try {
-          const existing = await stripe.subscriptions.retrieve(subscriptionId);
-          await stripe.subscriptions.update(subscriptionId, {
-            metadata: { ...existing.metadata, canceled_via: 'dunning' },
-          });
-        } catch (metaErr) {
-          console.error('[stripe-webhook] Failed to tag dunning metadata (non-fatal):', metaErr);
-          Sentry.captureException(metaErr, { tags: { route: 'stripe-webhook', event_type: event.type, action: 'dunning-metadata' } });
-        }
-
-        await logSubscriptionEvent(supabase, {
-          userId: undefined,
-          eventType: 'past_due',
-          stripeSubscriptionId: subscriptionId,
-          stripeEventId: event.id,
-          source: 'dunning',
+      if (!subscriptionId) {
+        console.error('[stripe-webhook] invoice.payment_failed: no subscriptionId in event', { invoiceId: invoice.id });
+        Sentry.captureEvent({
+          level: 'warning',
+          message: 'invoice.payment_failed: no subscriptionId in event',
+          tags: { route: 'stripe-webhook', action: 'payment-failed-no-sub-id' },
+          extra: { invoiceId: invoice.id },
         });
-
-        // Right-sized alert: the URGENT email + #critical fire ONLY on Stripe's
-        // final dunning attempt (next_payment_attempt === null, sub about to be
-        // lost). Earlier retries go to #revenue as a calm "retry pending" note.
-        // Every alert carries amount, attempt #, masked customer, next retry.
-        await alertStripePaymentFailed({
+        void alertStripePaymentFailed({
           amountCents: invoice.amount_due,
           attemptCount: invoice.attempt_count ?? undefined,
           nextAttemptAt: invoice.next_payment_attempt,
           customerEmail: invoice.customer_email,
-          subscriptionId,
+        });
+        break;
+      }
+
+      // Tag the Stripe subscription so a later auto-cancel is attributed to
+      // dunning, not a user-initiated portal cancel. Retrieve-then-spread keeps
+      // the existing metadata (e.g. supabase_user_id) intact. Non-fatal.
+      try {
+        const existing = await stripe.subscriptions.retrieve(subscriptionId);
+        await stripe.subscriptions.update(subscriptionId, {
+          metadata: { ...existing.metadata, canceled_via: 'dunning' },
+        });
+      } catch (metaErr) {
+        console.error('[stripe-webhook] Failed to tag dunning metadata (non-fatal):', metaErr);
+        Sentry.captureException(metaErr, { tags: { route: 'stripe-webhook', event_type: event.type, action: 'dunning-metadata' } });
+      }
+
+      const { data: updatedRows, error: updateError } = await supabase
+        .from('subscriptions')
+        .update({ status: 'past_due' })
+        .eq('stripe_subscription_id', subscriptionId)
+        .select('user_id');
+
+      if (updateError) {
+        console.error('[stripe-webhook] invoice.payment_failed: update failed:', updateError);
+        Sentry.captureException(updateError, {
+          tags: { route: 'stripe-webhook', action: 'payment-failed-update' },
+          extra: { stripeSubscriptionId: subscriptionId },
+        });
+      } else if (!updatedRows || updatedRows.length === 0) {
+        console.error('[stripe-webhook] invoice.payment_failed: subscription row missing from DB', { subscriptionId });
+        Sentry.captureEvent({
+          level: 'warning',
+          message: 'invoice.payment_failed: subscription row missing from DB',
+          tags: { route: 'stripe-webhook', action: 'payment-failed-missing-row' },
+          extra: { stripeSubscriptionId: subscriptionId },
         });
       }
+
+      const userId = (updatedRows as Array<{ user_id?: string | null }> | null)?.[0]?.user_id ?? undefined;
+
+      await logSubscriptionEvent(supabase, {
+        userId,
+        eventType: 'past_due',
+        stripeSubscriptionId: subscriptionId,
+        stripeEventId: event.id,
+        source: 'dunning',
+      });
+
+      // Right-sized alert: URGENT email + #critical fire ONLY on Stripe's final dunning
+      // attempt (next_payment_attempt === null). Earlier retries go to #revenue.
+      await alertStripePaymentFailed({
+        amountCents: invoice.amount_due,
+        attemptCount: invoice.attempt_count ?? undefined,
+        nextAttemptAt: invoice.next_payment_attempt,
+        customerEmail: invoice.customer_email,
+        subscriptionId,
+      });
 
       break;
     }
