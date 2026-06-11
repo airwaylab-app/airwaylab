@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: 31 May 2026
+          Last updated: 8 June 2026
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-500">
           <Shield className="h-3.5 w-3.5 shrink-0" />
@@ -425,6 +425,12 @@ export default function PrivacyPolicyPage() {
               <strong>Withdraw consent:</strong> Delete all your data at any time from Account
               Settings. Unsubscribe from emails via the link in each email or from your
               dashboard. You can also contact us to request full account deletion.
+            </li>
+            <li>
+              <strong>Withdraw data contribution consent:</strong> If you have opted in to
+              anonymised research data contribution, you can withdraw consent at any time via
+              Account Settings &gt; Data &amp; Privacy. Withdrawal stops future sharing;
+              already-contributed rows are anonymised and retained (GDPR Art. 7(3)).
             </li>
             <li>
               <strong>Opt out of analytics:</strong> PostHog respects your browser&rsquo;s
