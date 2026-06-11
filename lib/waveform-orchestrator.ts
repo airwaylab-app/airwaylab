@@ -302,6 +302,18 @@ class WaveformOrchestrator {
       this.worker.onerror = (err) => {
         settle();
         this.terminate();
+        // Capture ErrorEvent details before they are lost — onerror fires for
+        // uncaught worker exceptions (including OOM kills) and often carries an
+        // empty message. The captureMessage gives future triage filename/lineno.
+        Sentry.captureMessage('Waveform worker crashed', {
+          level: 'error',
+          extra: {
+            workerErrorMessage: err.message,
+            filename: err.filename,
+            lineno: err.lineno,
+            colno: err.colno,
+          },
+        });
         reject(new Error(err.message || 'Waveform worker failed'));
       };
 
