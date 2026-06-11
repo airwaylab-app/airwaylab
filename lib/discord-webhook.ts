@@ -375,20 +375,66 @@ export async function alertCredentialExpiry(hoursLeft: number, credentialName: s
 }
 
 /**
- * Alert: Stripe payment failed on the board card.
- * Fires to Discord #critical and emails the ops contact.
+ * Alert: a subscription invoice payment failed (dunning).
+ *
+ * Severity is right-sized to Stripe's retry schedule. The URGENT email +
+ * #critical fire ONLY on the FINAL attempt (`nextAttemptAt == null`), when the
+ * subscription is about to be cancelled. Earlier retries are routine — Stripe
+ * keeps retrying and most self-heal — so they post a calm note to #revenue with
+ * NO email. Every alert carries amount, attempt #, masked customer, next retry.
+ *
+ * Called with no args (`{}`) it defaults to the critical path, so any future
+ * caller that omits context still errs on the side of alerting.
  */
-export async function alertStripePaymentFailed(): Promise<boolean> {
-  const subject = `[AirwayLab URGENT] Stripe payment failed`
-  const body = `AirwayLab critical alert\n\nStripe invoice payment failed. Check the Stripe dashboard immediately — active subscriptions may be at risk.\n\nhttps://dashboard.stripe.com`
+export async function alertStripePaymentFailed(opts: {
+  amountCents?: number
+  attemptCount?: number
+  nextAttemptAt?: number | null
+  customerEmail?: string | null
+  subscriptionId?: string
+} = {}): Promise<boolean> {
+  const isFinal = opts.nextAttemptAt == null
+  const amount = opts.amountCents != null ? `$${(opts.amountCents / 100).toFixed(2)}` : 'unknown'
+  const nextRetry = opts.nextAttemptAt != null
+    ? `${new Date(opts.nextAttemptAt * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC`
+    : 'none — final attempt'
+  const customer = opts.customerEmail ? maskEmail(opts.customerEmail) : 'unknown'
+  const dashUrl = opts.subscriptionId
+    ? `https://dashboard.stripe.com/subscriptions/${opts.subscriptionId}`
+    : 'https://dashboard.stripe.com'
+
+  const fields: DiscordEmbedField[] = [
+    { name: 'Amount', value: amount, inline: true },
+    { name: 'Attempt', value: opts.attemptCount != null ? String(opts.attemptCount) : '?', inline: true },
+    { name: 'Customer', value: customer, inline: true },
+    { name: 'Next retry', value: nextRetry, inline: true },
+  ]
+
+  if (isFinal) {
+    // Final attempt — the subscription will be cancelled. Critical: #critical + email.
+    const subject = `[AirwayLab URGENT] Final payment attempt failed — subscription will cancel`
+    const body = `AirwayLab critical alert\n\nStripe's final retry failed (amount ${amount}, customer ${customer}, attempt ${opts.attemptCount ?? '?'}). The subscription will be cancelled.\n\n${dashUrl}`
+    const embed: DiscordEmbed = {
+      title: `:x: Final Payment Attempt Failed`,
+      description: 'Stripe has exhausted retries. The subscription will be cancelled.',
+      color: COLORS.red,
+      fields,
+      footer: { text: 'Stripe webhook' },
+      timestamp: new Date().toISOString(),
+    }
+    return sendCriticalAlert(subject, body, '', [embed])
+  }
+
+  // Non-final retry — routine. Calm note to #revenue, no email.
   const embed: DiscordEmbed = {
-    title: `:x: Stripe Payment Failed`,
-    description: 'Invoice payment failed. Check Stripe dashboard.',
-    color: COLORS.red,
+    title: `:warning: Payment Retry Pending`,
+    description: 'Payment failed; Stripe will retry automatically. No action needed yet.',
+    color: COLORS.amber,
+    fields,
     footer: { text: 'Stripe webhook' },
     timestamp: new Date().toISOString(),
   }
-  return sendCriticalAlert(subject, body, '', [embed])
+  return sendAlert('revenue', '', [embed])
 }
 
 /**
@@ -486,12 +532,14 @@ export function maskEmail(email: string): string {
  * (portal / dunning / account deletion) so two distinct churns never look alike.
  */
 export function formatRevenueEmbed(opts: {
-  event: 'new_subscription' | 'tier_change' | 'cancellation' | 'payment_failed'
+  event: 'new_subscription' | 'tier_change' | 'cancellation' | 'payment_failed' | 'payment_recovered'
   tier?: string
   interval?: string
   mrrCents?: number
   userId?: string
   email?: string
+  // tier_change-specific: the tier the sub moved away from (renders From → To)
+  fromTier?: string
   // cancellation-specific
   churnedFrom?: string
   landingTier?: string
@@ -506,6 +554,7 @@ export function formatRevenueEmbed(opts: {
     tier_change: ':arrows_counterclockwise: Tier Change',
     cancellation: ':wave: Cancellation',
     payment_failed: ':x: Payment Failed',
+    payment_recovered: ':white_check_mark: Payment Recovered',
   }
 
   const colors: Record<string, number> = {
@@ -513,6 +562,7 @@ export function formatRevenueEmbed(opts: {
     tier_change: COLORS.blue,
     cancellation: COLORS.amber,
     payment_failed: COLORS.red,
+    payment_recovered: COLORS.green,
   }
 
   const fields: DiscordEmbedField[] = []
@@ -528,7 +578,12 @@ export function formatRevenueEmbed(opts: {
     if (opts.landingTier) fields.push({ name: 'Now on', value: opts.landingTier, inline: true })
     if (opts.email) fields.push({ name: 'Email', value: maskEmail(opts.email), inline: true })
   } else {
-    if (opts.tier) fields.push({ name: 'Tier', value: opts.tier, inline: true })
+    if (opts.fromTier && opts.fromTier !== opts.tier) {
+      fields.push({ name: 'From', value: opts.fromTier, inline: true })
+      if (opts.tier) fields.push({ name: 'To', value: opts.tier, inline: true })
+    } else if (opts.tier) {
+      fields.push({ name: 'Tier', value: opts.tier, inline: true })
+    }
     if (opts.interval) fields.push({ name: 'Interval', value: opts.interval, inline: true })
     if (opts.mrrCents !== undefined) fields.push({ name: 'MRR', value: `$${(opts.mrrCents / 100).toFixed(2)}`, inline: true })
     if (opts.email) fields.push({ name: 'Email', value: maskEmail(opts.email), inline: true })

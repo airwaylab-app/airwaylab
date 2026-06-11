@@ -2052,4 +2052,150 @@ describe('POST /api/webhooks/stripe', () => {
     expect(sendEmail).not.toHaveBeenCalled();
     expect(sendAlert).not.toHaveBeenCalled();
   });
+
+  // ---------- 46. Alert right-sizing: no false "Tier Change" on a no-op update ----------
+  // Regression lock for the dunning-noise bug: subscription.updated used to fire
+  // a "Tier Change" #revenue alert on EVERY event (renewal period-roll, status
+  // flip, the webhook's own dunning-metadata echo). Now it compares prior state
+  // and stays silent when nothing actually changed.
+  it('does NOT fire a revenue alert on a no-op subscription.updated (regression lock)', async () => {
+    const { formatRevenueEmbed, sendAlert } = await import('@/lib/discord-webhook');
+    const subscription = makeSubscriptionObject(); // supporter / price_supp_m / active
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') {
+        // Prior row identical to the incoming sub — nothing changed.
+        return createQueryBuilder({
+          data: { tier: 'supporter', stripe_price_id: 'price_supp_m', status: 'active' },
+          error: null,
+        });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(formatRevenueEmbed).not.toHaveBeenCalled();
+    expect(sendAlert).not.toHaveBeenCalledWith('revenue', expect.anything(), expect.anything());
+  });
+
+  // ---------- 47. Alert right-sizing: real tier change renders From → To ----------
+  it('fires ONE tier_change alert with From → To when the tier actually changes', async () => {
+    const { formatRevenueEmbed, sendAlert } = await import('@/lib/discord-webhook');
+    const subscription = makeSubscriptionObject({
+      items: {
+        data: [{
+          price: { id: 'price_champ_m', unit_amount: 1900, recurring: { interval: 'month' } },
+          current_period_end: 1700000000,
+        }],
+      },
+    });
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') {
+        return createQueryBuilder({
+          data: { tier: 'supporter', stripe_price_id: 'price_supp_m', status: 'active' },
+          error: null,
+        });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(formatRevenueEmbed).toHaveBeenCalledTimes(1);
+    expect(formatRevenueEmbed).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'tier_change', fromTier: 'supporter', tier: 'champion' })
+    );
+    expect(sendAlert).toHaveBeenCalledWith('revenue', '', expect.any(Array));
+  });
+
+  // ---------- 48. Alert right-sizing: recovery from dunning is good news, fired once ----------
+  it('fires a payment_recovered alert once when a past_due sub returns to active', async () => {
+    const { formatRevenueEmbed, sendAlert } = await import('@/lib/discord-webhook');
+    const subscription = makeSubscriptionObject(); // active, supporter
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscriptions') {
+        // Prior state was past_due; the incoming sub is active → recovery.
+        return createQueryBuilder({
+          data: { tier: 'supporter', stripe_price_id: 'price_supp_m', status: 'past_due' },
+          error: null,
+        });
+      }
+      return createQueryBuilder({ data: null, error: null });
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(formatRevenueEmbed).toHaveBeenCalledTimes(1);
+    expect(formatRevenueEmbed).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'payment_recovered', tier: 'supporter' })
+    );
+    expect(sendAlert).toHaveBeenCalledWith('revenue', '', expect.any(Array));
+  });
+
+  // ---------- 49. Alert right-sizing: non-final dunning attempt passes retry context ----------
+  // The webhook hands full context to alertStripePaymentFailed; the helper decides
+  // severity (calm #revenue note when a retry is pending, see discord-webhook tests).
+  it('passes retry context (nextAttemptAt set) to alertStripePaymentFailed on a non-final attempt', async () => {
+    const { alertStripePaymentFailed } = await import('@/lib/discord-webhook');
+    const invoice = {
+      amount_due: 900,
+      attempt_count: 1,
+      next_payment_attempt: 1900000000, // a retry is scheduled → not the final attempt
+      customer_email: 'patient@example.com',
+      parent: { subscription_details: { subscription: 'sub_test_123' } },
+    };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(alertStripePaymentFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountCents: 900,
+        attemptCount: 1,
+        nextAttemptAt: 1900000000,
+        subscriptionId: 'sub_test_123',
+      })
+    );
+  });
+
+  // ---------- 50. Alert right-sizing: final dunning attempt flagged via nextAttemptAt:null ----------
+  it('passes nextAttemptAt:null to alertStripePaymentFailed on the final dunning attempt', async () => {
+    const { alertStripePaymentFailed } = await import('@/lib/discord-webhook');
+    const invoice = {
+      amount_due: 900,
+      attempt_count: 4,
+      next_payment_attempt: null, // Stripe exhausted retries → the sub will cancel
+      customer_email: 'patient@example.com',
+      parent: { subscription_details: { subscription: 'sub_test_123' } },
+    };
+    const event = makeStripeEvent('invoice.payment_failed', invoice);
+    mockWebhooksConstruct.mockReturnValue(event);
+    mockFrom.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    expect(alertStripePaymentFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextAttemptAt: null,
+        attemptCount: 4,
+        subscriptionId: 'sub_test_123',
+      })
+    );
+  });
 });

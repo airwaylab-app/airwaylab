@@ -44,8 +44,10 @@ describe('critical alert email fallback (AIR-1848)', () => {
   })
 
   describe('alertStripePaymentFailed', () => {
-    it('sends both Discord and Resend email', async () => {
-      await alertStripePaymentFailed()
+    it('sends both Discord and Resend email on the final attempt', async () => {
+      // No args (or nextAttemptAt == null) means the FINAL dunning attempt:
+      // the critical path (Discord #critical + ops email) must fire.
+      await alertStripePaymentFailed({ nextAttemptAt: null })
 
       // Discord fired
       expect(mockFetch).toHaveBeenCalledOnce()
@@ -60,20 +62,41 @@ describe('critical alert email fallback (AIR-1848)', () => {
         text: string
       }
       expect(emailArgs.to).toBe('d.voorhagen@gmail.com')
-      expect(emailArgs.subject).toBe('[AirwayLab URGENT] Stripe payment failed')
+      expect(emailArgs.subject).toBe('[AirwayLab URGENT] Final payment attempt failed — subscription will cancel')
       expect(emailArgs.text).toContain('Stripe')
     })
 
     it('fires email even when Discord webhook is not configured', async () => {
       delete process.env.DISCORD_WEBHOOK_CRITICAL
 
-      await alertStripePaymentFailed()
+      await alertStripePaymentFailed({ nextAttemptAt: null })
 
       // Discord skipped (no URL)
       expect(mockFetch).not.toHaveBeenCalled()
 
       // Email still fires independently
       expect(mockSendEmail).toHaveBeenCalledOnce()
+    })
+
+    it('posts a calm #revenue note with NO email when a retry is still pending', async () => {
+      // nextAttemptAt set = Stripe will retry again. Routine: #revenue only, no email.
+      process.env.DISCORD_REVENUE_WEBHOOK_URL = 'https://discord.com/api/webhooks/test/revenue'
+
+      await alertStripePaymentFailed({
+        amountCents: 900,
+        attemptCount: 1,
+        nextAttemptAt: 1_900_000_000, // far-future epoch seconds
+        customerEmail: 'patient@example.com',
+        subscriptionId: 'sub_abc123',
+      })
+
+      // Posted to #revenue, NOT #critical
+      expect(mockFetch).toHaveBeenCalledOnce()
+      const url = (mockFetch.mock.calls[0] as unknown[])[0] as string
+      expect(url).toBe('https://discord.com/api/webhooks/test/revenue')
+
+      // No ops email on a routine retry
+      expect(mockSendEmail).not.toHaveBeenCalled()
     })
   })
 
