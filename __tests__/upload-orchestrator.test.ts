@@ -173,8 +173,11 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('Network timeout')).toBe('network');
   });
 
+  it('classifies consent-fix POST failures as consent', () => {
+    expect(classifyUploadError('Could not enable cloud storage. Please try again or check Account Settings.')).toBe('consent');
+  });
+
   it('returns unknown for unrecognised errors', () => {
-    expect(classifyUploadError('Could not enable cloud storage. Please try again or check Account Settings.')).toBe('unknown');
     expect(classifyUploadError('Unexpected error')).toBe('unknown');
     expect(classifyUploadError('')).toBe('unknown');
   });
