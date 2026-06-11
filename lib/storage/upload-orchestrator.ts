@@ -13,6 +13,7 @@ import * as Sentry from '@sentry/nextjs';
 import { extractNightDate } from '@/lib/file-manifest';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { UploadState, UploadResult } from './types';
+import { MAX_FILE_SIZE } from './types';
 import type { WorkerMessage } from './hash-worker';
 import { HashCache } from './hash-cache';
 import { hasCloudSyncConsent } from '@/components/upload/cloud-sync-nudge';
@@ -240,18 +241,23 @@ class UploadOrchestrator {
     const nonEmptyFiles = files.filter(f => f.size > 0);
     const emptyFileCount = files.length - nonEmptyFiles.length;
 
-    if (nonEmptyFiles.length === 0) {
-      return { uploaded: 0, skipped: emptyFileCount, failed: 0, errors: [] };
+    // Filter oversized files client-side — prevents unnecessary presign calls and gives a user-friendly message
+    const oversizedFiles = nonEmptyFiles.filter(f => f.size > MAX_FILE_SIZE);
+    const processableFiles = nonEmptyFiles.filter(f => f.size <= MAX_FILE_SIZE);
+    const oversizedErrors = oversizedFiles.map(f => `${f.name}: File exceeds the 200 MB upload limit`);
+
+    if (processableFiles.length === 0) {
+      return { uploaded: 0, skipped: emptyFileCount, failed: oversizedFiles.length, errors: oversizedErrors };
     }
 
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
     this.guardPageExit();
 
-    const totalBytes = nonEmptyFiles.reduce((sum, f) => sum + f.size, 0);
+    const totalBytes = processableFiles.reduce((sum, f) => sum + f.size, 0);
     this.setState({
       status: 'hashing',
-      progress: { current: 0, total: nonEmptyFiles.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
+      progress: { current: 0, total: processableFiles.length, bytesUploaded: 0, bytesTotal: totalBytes, stage: 'hashing', skippedExisting: 0 },
       result: null,
       error: null,
     });
@@ -275,7 +281,7 @@ class UploadOrchestrator {
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 1: Hash all files
-      const fileHashes = await this.hashFiles(nonEmptyFiles, signal);
+      const fileHashes = await this.hashFiles(processableFiles, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 2: Check which files already exist
@@ -284,12 +290,12 @@ class UploadOrchestrator {
         progress: { ...this.state.progress, stage: 'checking' },
       });
 
-      const existingHashes = await this.checkExisting(nonEmptyFiles, fileHashes, signal);
+      const existingHashes = await this.checkExisting(processableFiles, fileHashes, signal);
       if (signal.aborted) throw new Error('Cancelled');
 
       // Step 3: Upload new files
-      const toUpload = nonEmptyFiles.filter((_, i) => !existingHashes.has(fileHashes[i]!));
-      const skipped = nonEmptyFiles.length - toUpload.length;
+      const toUpload = processableFiles.filter((_, i) => !existingHashes.has(fileHashes[i]!));
+      const skipped = processableFiles.length - toUpload.length;
 
       this.setState({
         status: 'uploading',
@@ -303,12 +309,18 @@ class UploadOrchestrator {
         },
       });
 
-      const result = await this.uploadFiles(toUpload, fileHashes, nonEmptyFiles, signal);
+      const result = await this.uploadFiles(toUpload, fileHashes, processableFiles, signal);
       result.skipped = skipped + emptyFileCount;
+
+      // Include oversized file failures in the result
+      if (oversizedFiles.length > 0) {
+        result.failed += oversizedFiles.length;
+        result.errors.push(...oversizedErrors);
+      }
 
       // Report systematic failures to Sentry
       if (result.failed > 0) {
-        this.reportFailures(result, nonEmptyFiles.length);
+        this.reportFailures(result, processableFiles.length);
       }
 
       this.releasePageExit();
@@ -329,11 +341,11 @@ class UploadOrchestrator {
           level: 'error',
           fingerprint: ['cloud_upload_failed', errorCategory],
           tags: { stage: this.state.status, errorCategory },
-          extra: { error, fileCount: nonEmptyFiles.length },
+          extra: { error, fileCount: processableFiles.length },
         });
       }
       this.setState({ status: 'error', error });
-      return { uploaded: 0, skipped: emptyFileCount, failed: nonEmptyFiles.length, errors: [error] };
+      return { uploaded: 0, skipped: emptyFileCount, failed: processableFiles.length + oversizedFiles.length, errors: [error, ...oversizedErrors] };
     }
   }
 
