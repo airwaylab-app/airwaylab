@@ -870,7 +870,7 @@ export async function runStripeJob(
         tags: { route: 'stripe-webhook', event_type: event.type, action: 'dead-letter' },
         extra: { event_id: event.id, attempts: attemptsNow },
       });
-      void sendAlert('ops', '', [{
+      await sendAlert('ops', '', [{
         title: ':skull: Stripe event parked (dead-letter)',
         description: `Event \`${event.id}\` (${event.type}) failed ${attemptsNow} times and will no longer be re-driven. Manual review required.`,
         color: 0xef4444,

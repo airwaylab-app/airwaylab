@@ -645,11 +645,7 @@ describe('analysis-orchestrator worker error handling', () => {
         stream: () => { throw new Error('not implemented'); },
       } as unknown as File;
 
-      try {
-        await orchestrator.analyze([mockFile]);
-      } catch {
-        // analyze re-throws; we inspect state below
-      }
+      await orchestrator.analyze([mockFile]);
 
       const state = orchestrator.getState();
       expect(state.status).toBe('error');
@@ -660,7 +656,7 @@ describe('analysis-orchestrator worker error handling', () => {
       vi.unstubAllGlobals();
     });
 
-    it('still calls Sentry.captureException for NotReadableError', async () => {
+    it('reports NotReadableError to Sentry at info level (user-visible, recoverable)', async () => {
       vi.stubGlobal('Worker', makeThrowingWorkerCtor(new Error('should not reach worker')));
 
       const { orchestrator } = await import('@/lib/analysis-orchestrator');
@@ -679,16 +675,13 @@ describe('analysis-orchestrator worker error handling', () => {
         stream: () => { throw new Error('not implemented'); },
       } as unknown as File;
 
-      try {
-        await orchestrator.analyze([mockFile]);
-      } catch {
-        // expected
-      }
+      await orchestrator.analyze([mockFile]);
 
-      expect(Sentry.captureException).toHaveBeenCalledWith(
-        notReadable,
-        expect.objectContaining({ extra: expect.objectContaining({ context: 'analysis-worker' }) })
+      expect(Sentry.captureMessage).toHaveBeenCalledWith(
+        'File could not be read — please re-select your SD card files and try again',
+        expect.objectContaining({ level: 'info', extra: expect.objectContaining({ domExceptionName: 'NotReadableError' }) })
       );
+      expect(Sentry.captureException).not.toHaveBeenCalled();
 
       vi.unstubAllGlobals();
     });

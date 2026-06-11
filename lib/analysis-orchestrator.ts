@@ -357,14 +357,26 @@ class AnalysisOrchestrator {
       }
       this.clearIncrementalState();
       let error = err instanceof Error ? err.message : String(err);
+      const isUserRecoverableDOMError =
+        err instanceof DOMException &&
+        (err.name === 'NotReadableError' || err.name === 'NotFoundError');
       if (err instanceof DOMException && err.name === 'NotReadableError') {
         error = 'File could not be read — please re-select your SD card files and try again';
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
         error = 'The SD card was removed or became unavailable. Please reconnect and try again.';
       }
-      Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
+      if (isUserRecoverableDOMError) {
+        // User-visible, recoverable file I/O error — log at info level so it doesn't
+        // pollute the Sentry error queue. Error message is already shown in the UI.
+        Sentry.captureMessage(error, { level: 'info', extra: { domExceptionName: (err as DOMException).name } });
+      } else {
+        Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
+      }
       this.setState({ status: 'error', error });
-      throw err;
+      if (!isUserRecoverableDOMError) {
+        throw err;
+      }
+      return [];
     }
   }
 
