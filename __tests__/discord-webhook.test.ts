@@ -291,6 +291,27 @@ describe('formatRevenueEmbed', () => {
     const embed = formatRevenueEmbed({ event: 'cancellation' });
     expect(embed.footer?.text).toBe('Stripe');
   });
+
+  it('uses green color and a recovered title for payment_recovered', () => {
+    const embed = formatRevenueEmbed({ event: 'payment_recovered', tier: 'supporter' });
+    expect(embed.color).toBe(COLORS.green);
+    expect(embed.title).toContain('Payment Recovered');
+  });
+
+  it('renders From → To for a real tier change, not a bare Tier', () => {
+    const embed = formatRevenueEmbed({ event: 'tier_change', fromTier: 'supporter', tier: 'champion' });
+    const field = (name: string) => embed.fields?.find((f) => f.name === name);
+    expect(field('From')?.value).toBe('supporter');
+    expect(field('To')?.value).toBe('champion');
+    expect(field('Tier')).toBeUndefined();
+  });
+
+  it('falls back to a single Tier field when fromTier equals the new tier', () => {
+    const embed = formatRevenueEmbed({ event: 'tier_change', fromTier: 'supporter', tier: 'supporter' });
+    const field = (name: string) => embed.fields?.find((f) => f.name === name);
+    expect(field('Tier')?.value).toBe('supporter');
+    expect(field('From')).toBeUndefined();
+  });
 });
 
 // ── formatRevenueEmbed: legible cancellation (Round 1) ─────────────────────

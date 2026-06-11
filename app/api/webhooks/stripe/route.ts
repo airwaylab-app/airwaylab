@@ -405,6 +405,17 @@ async function processStripeEvent(
         cancel_comment: cancelDetails.comment ?? null,
       } : {};
 
+      // Read prior tier/price/status BEFORE the update so we can tell a genuine
+      // tier change (upgrade/downgrade) apart from the many other reasons Stripe
+      // emits subscription.updated (renewal period-roll, status flips, and our
+      // own dunning-metadata write echoing back). Without this, every update is
+      // mislabelled as a "Tier Change" in #revenue.
+      const { data: priorSub } = await supabase
+        .from('subscriptions')
+        .select('tier, stripe_price_id, status')
+        .eq('stripe_subscription_id', subscription.id)
+        .maybeSingle();
+
       const subUpdatePromise = supabase
         .from('subscriptions')
         .update({
@@ -448,12 +459,27 @@ async function processStripeEvent(
         await syncDiscordForUser(supabase, userId!, tier, event.id);
       }
 
-      await sendAlert('revenue', '', [formatRevenueEmbed({
-        event: 'tier_change',
-        tier,
-        interval: updatedInterval,
-        mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
-      })]);
+      // Alert only on a REAL tier/price change, or a recovery from dunning. A
+      // renewal, a →past_due flip (already covered by the payment_failed alert),
+      // and the dunning-metadata echo all stay silent. Email is masked inside
+      // formatRevenueEmbed; the recovery alert dedupes itself because the next
+      // update reads status='active' from the row we just wrote.
+      const tierChanged = !!priorSub && (priorSub.tier !== tier || priorSub.stripe_price_id !== priceId);
+      const recovered = !!priorSub
+        && (priorSub.status === 'past_due' || priorSub.status === 'unpaid')
+        && subscription.status === 'active';
+
+      if (tierChanged || recovered) {
+        const email = userId ? await getUserEmail(supabase, userId) : null;
+        await sendAlert('revenue', '', [formatRevenueEmbed({
+          event: tierChanged ? 'tier_change' : 'payment_recovered',
+          fromTier: tierChanged ? (priorSub!.tier ?? undefined) : undefined,
+          tier,
+          interval: updatedInterval,
+          mrrCents: computeMrrCents(updatedItem?.price.unit_amount ?? 0, updatedInterval),
+          email: email ?? undefined,
+        })]);
+      }
 
       break;
     }
@@ -626,8 +652,17 @@ async function processStripeEvent(
           source: 'dunning',
         });
 
-        // Critical alert: Discord #critical + email to ops
-        await alertStripePaymentFailed();
+        // Right-sized alert: the URGENT email + #critical fire ONLY on Stripe's
+        // final dunning attempt (next_payment_attempt === null, sub about to be
+        // lost). Earlier retries go to #revenue as a calm "retry pending" note.
+        // Every alert carries amount, attempt #, masked customer, next retry.
+        await alertStripePaymentFailed({
+          amountCents: invoice.amount_due,
+          attemptCount: invoice.attempt_count ?? undefined,
+          nextAttemptAt: invoice.next_payment_attempt,
+          customerEmail: invoice.customer_email,
+          subscriptionId,
+        });
       }
 
       break;
