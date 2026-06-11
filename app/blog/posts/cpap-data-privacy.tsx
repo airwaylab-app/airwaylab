@@ -323,7 +323,7 @@ export default function CPAPDataPrivacyPost() {
             -- a deeper look at who can access your sleep data and your rights.
           </p>
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR
             </Link>{' '}
             -- comparing privacy-first tools for PAP data analysis.

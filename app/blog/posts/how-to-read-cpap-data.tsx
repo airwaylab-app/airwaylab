@@ -304,7 +304,7 @@ export default function HowToReadCPAPDataPost() {
             leaves your device. It complements OSCAR rather than replacing it: OSCAR excels at
             detailed waveform browsing, while AirwayLab adds automated analysis across multiple
             nights.{' '}
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               See how AirwayLab and OSCAR compare
             </Link>{' '}
             if you&apos;re deciding which tools to use.
@@ -362,7 +362,7 @@ export default function HowToReadCPAPDataPost() {
             — the limitations of AHI as a metric and what it misses.
           </p>
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR
             </Link>{' '}
             — how the two open-source PAP tools compare and how to use both together.

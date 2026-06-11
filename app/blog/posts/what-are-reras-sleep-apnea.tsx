@@ -249,7 +249,7 @@ export default function WhatAreRerasSleepApnea() {
               How to Read Your CPAP Data
             </Link>{' '}
             and{' '}
-            <Link href="/blog/how-to-export-understand-cpap-data" className="text-primary hover:text-primary/80">
+            <Link href="/blog/how-to-export-and-understand-your-cpap-data" className="text-primary hover:text-primary/80">
               How to Export and Understand Your CPAP Data
             </Link>{' '}
             are good starting points.

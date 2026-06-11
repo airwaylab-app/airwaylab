@@ -410,7 +410,7 @@ export default function CPAPDataReportWhatDoctorSees() {
           </p>
           <p>
             <Link
-              href="/blog/cpap-leak-rate-meaning"
+              href="/blog/cpap-leak-rate-explained"
               className="text-primary hover:text-primary/80"
             >
               CPAP Leak Rate: What It Means and When to Worry

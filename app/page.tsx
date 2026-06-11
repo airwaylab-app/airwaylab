@@ -146,7 +146,7 @@ const featuredSlugs = [
   'understanding-flow-limitation',
   'ahi-normal-still-tired',
   'pap-data-privacy',
-  'oscar-alternative',
+  'oscar-alternatives-web-cpap-2026',
 ] as const;
 const featuredPosts = featuredSlugs
   .map((slug) => blogPosts.find((p) => p.slug === slug))

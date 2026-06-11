@@ -166,7 +166,7 @@ export default function HowToReadCPAPTherapyReport() {
           </div>
           <p>
             For a detailed look at how leak is calculated and displayed,{' '}
-            <Link href="/blog/cpap-leak-rate-meaning" className="text-primary hover:text-primary/80">
+            <Link href="/blog/cpap-leak-rate-explained" className="text-primary hover:text-primary/80">
               see the CPAP Leak Rate guide
             </Link>
             .

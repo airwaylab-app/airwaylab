@@ -1039,7 +1039,7 @@ export default function HowPAPTherapyWorksPost() {
             -- the evidence that AHI misses the majority of breathing problems.
           </p>
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR
             </Link>{' '}
             -- how to use AirwayLab alongside OSCAR for a complete view of your therapy data.

@@ -198,7 +198,7 @@ export default function ResMedSDCardBrowserAnalysisPost() {
           <p>
             Read more in{' '}
             <Link
-              href="/blog/oscar-alternative"
+              href="/blog/oscar-alternatives-web-cpap-2026"
               className="text-primary hover:text-primary/80"
             >
               AirwayLab vs OSCAR: How They Complement Each Other
@@ -257,7 +257,7 @@ export default function ResMedSDCardBrowserAnalysisPost() {
           </p>
           <p>
             <Link
-              href="/blog/oscar-alternative"
+              href="/blog/oscar-alternatives-web-cpap-2026"
               className="text-primary hover:text-primary/80"
             >
               AirwayLab vs OSCAR

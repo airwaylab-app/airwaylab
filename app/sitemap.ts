@@ -14,10 +14,14 @@ function clampToToday(date: Date): Date {
 // Slugs that now 301-redirect to a canonical winner must be excluded from the
 // sitemap so Google doesn't index the loser URL alongside the winner.
 // Wave 1 redirects (AIR-1609 task 3): no pending content merge, ship immediately.
+// Wave 2 redirects (AIR-2298): content merged into winner articles first (AIR-1751).
 const REDIRECTED_BLOG_SLUGS = new Set([
   'oscar-cpap-software-alternatives',
   'how-to-read-cpap-data',
   'what-is-flow-limitation-cpap',
+  'how-to-export-understand-cpap-data',
+  'oscar-alternative',
+  'cpap-leak-rate-meaning',
 ]);
 
 export default function sitemap(): MetadataRoute.Sitemap {

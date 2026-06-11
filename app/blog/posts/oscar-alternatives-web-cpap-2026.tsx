@@ -384,7 +384,7 @@ export default function OSCARAlternativesWebCPAP2026() {
             Many users run AirwayLab and OSCAR side by side: AirwayLab for the automated overnight
             scores, OSCAR when they want to drill into a specific night that caught their attention.
             See{' '}
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               how AirwayLab compares to OSCAR in detail
             </Link>
             .
@@ -570,7 +570,7 @@ export default function OSCARAlternativesWebCPAP2026() {
         </div>
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR: What Each Tool Does Best
             </Link>{' '}
             &mdash; a detailed comparison of AirwayLab and OSCAR, the long-standing open-source

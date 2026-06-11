@@ -184,7 +184,7 @@ export default function ChangelogPage() {
             <p className="mt-1 text-xs text-muted-foreground">Why AHI alone is not enough.</p>
           </Link>
           <Link
-            href="/blog/oscar-alternative"
+            href="/blog/oscar-alternatives-web-cpap-2026"
             className="group rounded-lg border border-border/50 bg-card/30 p-4 transition-all hover:border-primary/30"
           >
             <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">AirwayLab vs OSCAR</h3>

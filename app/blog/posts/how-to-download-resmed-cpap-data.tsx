@@ -384,7 +384,7 @@ export default function HowToDownloadResMedCPAPData() {
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 See also:{' '}
-                <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+                <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
                   OSCAR Alternative: Browser-Based CPAP Analysis
                 </Link>
               </p>
@@ -495,7 +495,7 @@ export default function HowToDownloadResMedCPAPData() {
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <p>
             <Link
-              href="/blog/how-to-export-understand-cpap-data"
+              href="/blog/how-to-export-and-understand-your-cpap-data"
               className="text-primary hover:text-primary/80"
             >
               How to Export and Understand Your CPAP Data
@@ -521,7 +521,7 @@ export default function HowToDownloadResMedCPAPData() {
             &mdash; the breathing pattern your flow waveform reveals beyond AHI.
           </p>
           <p className="mt-1">
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               OSCAR Alternative: Browser-Based CPAP Analysis
             </Link>{' '}
             &mdash; comparing OSCAR and AirwayLab for ResMed data analysis.
@@ -561,7 +561,7 @@ export default function HowToDownloadResMedCPAPData() {
             Analyse Your CPAP Data <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/blog/how-to-export-understand-cpap-data"
+            href="/blog/how-to-export-and-understand-your-cpap-data"
             className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             How to Export CPAP Data

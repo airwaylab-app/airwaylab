@@ -431,7 +431,7 @@ export default function HowToReadOSCARCPAPChartsPost() {
             — why AHI isn&apos;t the whole story and what metrics to look at next.
           </p>
           <p>
-            <Link href="/blog/oscar-alternative" className="text-primary hover:text-primary/80">
+            <Link href="/blog/oscar-alternatives-web-cpap-2026" className="text-primary hover:text-primary/80">
               AirwayLab vs OSCAR
             </Link>{' '}
             — what each tool does best and how to use both together.
