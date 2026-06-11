@@ -1053,6 +1053,17 @@ function AnalyzePageInner() {
             </div>
           )}
 
+          {/* Settings unavailable banner — STR.edf missing or unreadable */}
+          {!isDemo && currentNight?.settings.settingsSource === 'unavailable' && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 animate-fade-in-up">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Machine settings not found</span>
+                {' '}&mdash; The settings file (STR.edf) wasn&apos;t found in your upload. Mode, pressure, and therapy settings won&apos;t appear, but your breathing data analysis is complete and unaffected. STR.edf is at the SD card root &mdash; re-upload from the card root (not just the DATALOG folder) to include it.
+              </p>
+            </div>
+          )}
+
           {/* Cloud sync progress (non-dismissible, transient) */}
           <StorageProgressBanner />
 

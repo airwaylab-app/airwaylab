@@ -163,7 +163,7 @@ function validateResMedFiles(
     warnings.push('Folder structure doesn\'t look like a typical ResMed SD card. Make sure you selected the SD card itself, not a subfolder.');
   }
   if (!hasSTR) {
-    warnings.push('No STR.edf settings file found. Machine settings won\'t be available.');
+    warnings.push('No STR.edf settings file found — mode, pressure and therapy settings won\'t appear in results. STR.edf is at the SD card root, not inside the DATALOG folder.');
   }
 
   if (!hasFlowData) {
