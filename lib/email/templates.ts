@@ -581,21 +581,33 @@ export function reEngagementStep3(
 
 export function winBackCancelledPaying(unsubscribeUrl: string): { subject: string; html: string } {
   return {
-    subject: 'Still here if you want to come back',
+    subject: 'The community is still here whenever you want to come back',
     html: reEngagementLayout(`
-      ${heading('Your free tools are still here')}
-      ${paragraph('Your AirwayLab subscription ended recently. Your account is still here, and all the free analysis features are available whenever you\'re ready.')}
-      ${paragraph('Here\'s what you still have access to, no subscription needed:')}
+      ${heading('Welcome back whenever you are ready')}
+      ${paragraph('Your AirwayLab Supporter subscription ended recently. Your account is still here, and so is everything you have uploaded so far.')}
+      ${paragraph('Every time a paying member uploads CPAP data, it helps the analysis engines get better — for every user on AirwayLab, not just the person uploading. That contribution does not end when a subscription does. But when you are a Supporter, you tend to upload more consistently, and that helps the whole community.')}
+      <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 16px 0;font-weight:600;">What stays free, always:</p>
       ${bulletList([
-        'Four analysis engines running entirely in your browser',
-        'Flow limitation scoring, breath-shape analysis, and RERA estimates',
-        'Trend charts and session-to-session comparison',
-        'CSV, PDF, and forum-formatted exports for your clinician',
+        'Cloud backup of your SD card data — your sessions are safe',
+        'Four analysis engines running privately in your browser',
+        '14-night history view',
+        'Flow limitation scoring, RERA estimates, and breath-shape analysis',
+        'CSV and PDF exports to share with your clinician',
       ])}
-      ${paragraph('If you\'d like to bring AI-powered insights back, you can reactivate from your account page.')}
-      ${ctaButton('Come Back to AirwayLab', `${BASE_URL}/pricing?utm_source=email&utm_medium=win_back&utm_campaign=win_back`)}
-      ${paragraph(`If you're done for now — that's completely fine. Your data stays in your browser and you're always welcome back later. <a href="${unsubscribeUrl}" style="color:#5eead4;text-decoration:underline;">Unsubscribe here</a> to stop these emails.`)}
-      ${paragraph('<em>AirwayLab is not a medical device. This email contains no health data. Your clinician can help interpret your results in the context of your care.</em>')}
+      <div style="border-left:3px solid #5eead4;padding:12px 16px;margin:0 0 16px 0;background-color:#0d1f1e;">
+        <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0;"><strong style="color:#ffffff;">AirwayLab is not a medical device.</strong> The data and metrics shown are for informational purposes only. Always discuss your therapy data and any treatment decisions with a qualified sleep clinician or physician.</p>
+      </div>
+      <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 16px 0;font-weight:600;">What comes back when you reactivate:</p>
+      ${bulletList([
+        'AirwayLab Discord community — research discussion, troubleshooting, and peer support from fellow CPAP users',
+        'Direct feature request channel on Discord — your feedback goes straight to the team',
+        '90-night history view with full trends',
+        'Enhanced PDF reports with annotations',
+        'Deep AI insights with waveform-level analysis (6–10 per session)',
+        'Supporter badge in community spaces',
+      ])}
+      ${ctaButton('Come back to AirwayLab', `${BASE_URL}/pricing?utm_source=email&utm_medium=win_back&utm_campaign=win_back`)}
+      ${paragraph('Your data stays in your browser regardless. You are always welcome back.')}
     `, unsubscribeUrl),
   };
 }
