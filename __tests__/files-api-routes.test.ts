@@ -359,6 +359,45 @@ describe('POST /api/files/presign', () => {
     expect(body.skipped).toBe(true);
     expect(body.fileId).toBe('existing-id');
   });
+
+  it('deletes recent unconfirmed metadata row but does NOT remove storage object (AIR-2729 regression)', async () => {
+    // A concurrent upload may have already written to the storage path while its
+    // confirm step is still pending. Removing the storage object here would cause
+    // that in-flight confirm to find the file absent and fire JAVASCRIPT-NEXTJS-6F.
+    setupAuthenticatedUser();
+    mockHasStorageConsent.mockResolvedValue(true);
+
+    const recentUnconfirmed = {
+      id: 'in-flight-id',
+      storage_path: 'user-123/2026-01-01/BRP.edf',
+      upload_confirmed: false,
+      uploaded_at: new Date(Date.now() - 60_000).toISOString(), // 1 minute ago — recent
+    };
+    const deleteMock = vi.fn(() => chain);
+    const chain = createChain({ data: recentUnconfirmed, error: null });
+    chain.delete = deleteMock;
+    chain.insert = vi.fn(() => createChain({ data: { id: 'new-file-uuid' }, error: null }));
+    mockFrom.mockReturnValue(chain);
+
+    const removeMock = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockStorageFrom.mockReturnValue({
+      createSignedUploadUrl: vi.fn().mockResolvedValue({
+        data: { signedUrl: 'https://storage.example.com/upload?token=xyz', token: 'xyz' },
+        error: null,
+      }),
+      remove: removeMock,
+    });
+
+    const res = await callPresign(makePostRequest('/api/files/presign', validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.uploadUrl).toBeDefined();
+    // Metadata row must be deleted to unblock the new upload attempt
+    expect(deleteMock).toHaveBeenCalled();
+    // Storage object must NOT be removed — the concurrent in-flight PUT may have
+    // already written to this path; removing it triggers a false-absent Sentry event.
+    expect(removeMock).not.toHaveBeenCalled();
+  });
 });
 
 // ── Confirm ─────────────────────────────────────────────────────

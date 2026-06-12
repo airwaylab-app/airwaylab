@@ -128,10 +128,13 @@ export async function POST(request: NextRequest) {
         await serviceRole.from('user_files').delete().eq('id', existing.id);
       } else {
         // Unconfirmed but recent (< 10 min) — another upload may be in progress.
-        // Delete and re-create to avoid blocking this upload attempt.
-        // Also remove any partial storage object to avoid signed URL conflicts.
+        // Delete the metadata row to unblock this attempt. Do NOT remove the storage
+        // object: a concurrent upload may have already written to that path, and
+        // removing it would cause the in-flight confirm step to find the file absent,
+        // triggering a false-absent Sentry event (JAVASCRIPT-NEXTJS-6F, AIR-2729).
+        // createSignedUploadUrl succeeds regardless of whether the path already has an
+        // object; the subsequent PUT will overwrite it without conflict.
         await serviceRole.from('user_files').delete().eq('id', existing.id);
-        await serviceRole.storage.from(STORAGE_BUCKET).remove([existing.storage_path]);
       }
     }
 
