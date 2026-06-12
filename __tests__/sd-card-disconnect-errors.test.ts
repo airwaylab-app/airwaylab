@@ -121,16 +121,16 @@ describe('WaveformOrchestrator — SD card disconnect errors', () => {
     );
   });
 
-  it('reports NotFoundError to Sentry', async () => {
+  it('adds breadcrumb for NotFoundError without captureException (expected user action)', async () => {
     const { waveformOrchestrator } = await import('@/lib/waveform-orchestrator');
     const Sentry = await import('@sentry/nextjs');
     const file = makeBrpFile(makeNotFoundError());
 
     await waveformOrchestrator.extract([file], '2026-01-01');
 
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'NotFoundError' }),
-      expect.objectContaining({ extra: expect.objectContaining({ context: 'waveform-extraction' }) })
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'warning', category: 'waveform-extraction' })
     );
   });
 });
@@ -168,7 +168,7 @@ describe('AnalysisOrchestrator — SD card disconnect errors', () => {
     );
   });
 
-  it('reports NotFoundError to Sentry with analysis-worker context', async () => {
+  it('adds breadcrumb for NotFoundError without captureException (expected user action)', async () => {
     const { orchestrator } = await import('@/lib/analysis-orchestrator');
     const Sentry = await import('@sentry/nextjs');
     const file = makeEdfFile(makeNotFoundError());
@@ -179,9 +179,9 @@ describe('AnalysisOrchestrator — SD card disconnect errors', () => {
       // expected
     }
 
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'NotFoundError' }),
-      expect.objectContaining({ extra: expect.objectContaining({ context: 'analysis-worker' }) })
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'warning', category: 'analysis' })
     );
   });
 });

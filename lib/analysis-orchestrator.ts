@@ -319,7 +319,13 @@ class AnalysisOrchestrator {
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
         error = 'The SD card was removed or became unavailable. Please reconnect and try again.';
       }
-      Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
+      // NotFoundError = SD card ejected mid-analysis — expected user action, not a bug.
+      // Breadcrumb preserves observability without inflating the Sentry issue counter.
+      if (err instanceof DOMException && err.name === 'NotFoundError') {
+        Sentry.addBreadcrumb({ message: 'SD card removed mid-analysis (NotFoundError)', category: 'analysis', level: 'warning' });
+      } else {
+        Sentry.captureException(err, { extra: { context: 'analysis-worker' } });
+      }
       this.setState({ status: 'error', error });
       throw err;
     }

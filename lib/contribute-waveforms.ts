@@ -206,8 +206,12 @@ async function extractFlowForNight(
       const buffer = await fileData.arrayBuffer();
       const edf = parseEDF(buffer, brp.path);
       parsedEdfs.push(edf);
-    } catch {
-      // Skip unparseable files
+    } catch (parseErr) {
+      if (parseErr instanceof DOMException && parseErr.name === 'NotFoundError') {
+        // SD card ejected before background contribution could read the file.
+        Sentry.addBreadcrumb({ message: `Waveform contribution: SD card removed while reading ${brp.path}`, category: 'waveform-contribution', level: 'warning' });
+      }
+      // Other errors: skip unparseable EDF files without noise
     }
   }
 

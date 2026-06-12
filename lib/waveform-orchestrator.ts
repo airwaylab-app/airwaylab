@@ -182,7 +182,13 @@ class WaveformOrchestrator {
       }
 
       console.error('[waveform] extraction failed:', error);
-      Sentry.captureException(err, { extra: { context: 'waveform-extraction' } });
+      // NotFoundError = SD card ejected mid-extraction — expected user action, not a bug.
+      // Breadcrumb preserves observability without inflating the Sentry issue counter.
+      if (err instanceof DOMException && err.name === 'NotFoundError') {
+        Sentry.addBreadcrumb({ message: 'SD card removed during waveform extraction (NotFoundError)', category: 'waveform-extraction', level: 'warning' });
+      } else {
+        Sentry.captureException(err, { extra: { context: 'waveform-extraction' } });
+      }
       this.setState({ status: 'error', waveform: null, error });
       return null;
     }
