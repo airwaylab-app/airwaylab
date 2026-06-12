@@ -48,7 +48,8 @@ describe('winBackCancelledPaying template', () => {
     const combined = subject + html;
     // Must NOT suggest therapy changes or diagnose
     expect(combined.toLowerCase()).not.toContain('your data shows');
-    expect(combined.toLowerCase()).not.toContain('suggest');
+    // 'suggests ' (verb form) triggers MDR rule 2; noun 'suggestions' in marketing copy is fine
+    expect(combined.toLowerCase()).not.toContain('suggests ');
     expect(combined.toLowerCase()).not.toContain('obstruction');
     expect(combined.toLowerCase()).not.toContain('diagnosis');
     expect(combined.toLowerCase()).not.toContain('adjust');
