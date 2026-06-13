@@ -407,10 +407,16 @@ class AnalysisOrchestrator {
       };
 
       try {
-        // Use a pre-fetched blob URL when provided (blob fallback path); otherwise
-        // use the standard URL so webpack can resolve the worker chunk at build time.
-        const workerSrc = overrideWorkerUrl ?? new URL('../workers/analysis-worker.ts', import.meta.url);
-        this.worker = new Worker(workerSrc as string | URL);
+        // Keep the two branches separate so webpack sees the literal
+        // new Worker(new URL(...)) form on the normal path and can statically
+        // detect and chunk the worker. Merging them into a ternary breaks that.
+        if (overrideWorkerUrl) {
+          this.worker = new Worker(overrideWorkerUrl);
+        } else {
+          this.worker = new Worker(
+            new URL('../workers/analysis-worker.ts', import.meta.url)
+          );
+        }
       } catch (err) {
         settle();
         Sentry.captureException(err, {
