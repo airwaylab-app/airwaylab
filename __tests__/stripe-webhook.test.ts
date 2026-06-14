@@ -2173,7 +2173,69 @@ describe('POST /api/webhooks/stripe', () => {
     );
   });
 
-  // ---------- 50. Alert right-sizing: final dunning attempt flagged via nextAttemptAt:null ----------
+  // ---------- 50. logSubscriptionEvent: FK violation (23503) retries with user_id=null ----------
+  // Root cause: AIR-2576 / JAVASCRIPT-NEXTJS-82. Stripe events for deleted accounts
+  // carry a stale user_id that no longer exists in auth.users, triggering a FK
+  // constraint (PG 23503). Fix: retry with user_id=null so the analytics row is
+  // preserved for MRR/churn without generating a false-positive Sentry alert.
+  it('retries logSubscriptionEvent with user_id=null on 23503 FK violation, no Sentry on success', async () => {
+    const { captureException } = await import('@sentry/nextjs');
+    const subscription = makeSubscriptionObject();
+    const event = makeStripeEvent('customer.subscription.updated', subscription);
+    mockWebhooksConstruct.mockReturnValue(event);
+
+    let subscriptionEventsCallCount = 0;
+    const subscriptionEventsBuilders: ReturnType<typeof createQueryBuilder>[] = [];
+
+    const builders: Record<string, ReturnType<typeof createQueryBuilder>> = {};
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'subscription_events') {
+        subscriptionEventsCallCount++;
+        const builder = createQueryBuilder(
+          subscriptionEventsCallCount === 1
+            ? { data: null, error: { code: '23503', message: 'insert or update on table "subscription_events" violates foreign key constraint' } }
+            : { data: null, error: null }
+        );
+        subscriptionEventsBuilders.push(builder);
+        return builder;
+      }
+      if (!builders[table]) builders[table] = createQueryBuilder({ data: null, error: null });
+      return builders[table];
+    });
+
+    const res = await callRoute(makeRequest('{}', { 'stripe-signature': 'sig_valid' }));
+    expect(res.status).toBe(200);
+
+    // Two calls to subscription_events: original (FK violation) then retry.
+    expect(subscriptionEventsCallCount).toBe(2);
+
+    // First attempt uses the original user_id from Stripe metadata.
+    expect(subscriptionEventsBuilders[0]!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'user-uuid-1' }),
+      { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+    );
+
+    // Retry nulls out user_id to preserve the analytics event.
+    expect(subscriptionEventsBuilders[1]!.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: null,
+        event_type: 'updated',
+        stripe_event_id: 'evt_test_123',
+      }),
+      { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+    );
+
+    // No Sentry noise when the retry succeeds.
+    const fkCalls = (captureException as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (call: unknown[]) => {
+        const ctx = call[1] as { tags?: { action?: string } } | undefined;
+        return ctx?.tags?.action === 'subscription-events-insert';
+      }
+    );
+    expect(fkCalls).toHaveLength(0);
+  });
+
+  // ---------- 51. Alert right-sizing: final dunning attempt flagged via nextAttemptAt:null ----------
   it('passes nextAttemptAt:null to alertStripePaymentFailed on the final dunning attempt', async () => {
     const { alertStripePaymentFailed } = await import('@/lib/discord-webhook');
     const invoice = {

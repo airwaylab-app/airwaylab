@@ -70,22 +70,37 @@ async function logSubscriptionEvent(
     cancelFeedback?: string;
   }
 ) {
+  const row = {
+    user_id: params.userId ?? null,
+    event_type: params.eventType,
+    tier: params.tier ?? null,
+    interval: params.interval ?? null,
+    stripe_subscription_id: params.stripeSubscriptionId ?? null,
+    mrr_cents: params.mrrCents ?? null,
+    stripe_event_id: params.stripeEventId ?? null,
+    source: params.source ?? null,
+    cancel_reason: params.cancelReason ?? null,
+    cancel_feedback: params.cancelFeedback ?? null,
+  };
   const { error } = await supabase.from('subscription_events').upsert(
-    {
-      user_id: params.userId ?? null,
-      event_type: params.eventType,
-      tier: params.tier ?? null,
-      interval: params.interval ?? null,
-      stripe_subscription_id: params.stripeSubscriptionId ?? null,
-      mrr_cents: params.mrrCents ?? null,
-      stripe_event_id: params.stripeEventId ?? null,
-      source: params.source ?? null,
-      cancel_reason: params.cancelReason ?? null,
-      cancel_feedback: params.cancelFeedback ?? null,
-    },
+    row,
     { onConflict: 'stripe_event_id', ignoreDuplicates: true }
   );
   if (error) {
+    // FK violation (23503): user_id no longer exists in auth.users (deleted account
+    // or stale Stripe metadata). Retry with user_id=null to preserve the analytics
+    // row for MRR/churn without surfacing a false-positive Sentry error.
+    if (error.code === '23503' && params.userId) {
+      const { error: retryError } = await supabase.from('subscription_events').upsert(
+        { ...row, user_id: null },
+        { onConflict: 'stripe_event_id', ignoreDuplicates: true }
+      );
+      if (retryError) {
+        console.error('[stripe-webhook] subscription_events retry upsert failed:', retryError);
+        Sentry.captureException(retryError, { tags: { route: 'stripe-webhook', action: 'subscription-events-insert' } });
+      }
+      return;
+    }
     // Non-blocking — log but don't throw
     console.error('[stripe-webhook] subscription_events upsert failed:', error);
     Sentry.captureException(error, { tags: { route: 'stripe-webhook', action: 'subscription-events-insert' } });
