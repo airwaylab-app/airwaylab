@@ -758,13 +758,12 @@ class UploadOrchestrator {
     });
 
     if (!uploadRes.ok) {
-      // Clean up metadata on failed upload
-      await fetch('/api/files/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ fileId: presignData.fileId }),
-      }).catch(() => { /* best effort cleanup */ });
+      // Do NOT call /api/files/confirm here. Calling confirm when the PUT failed
+      // fires a spurious "File absent from storage" Sentry event (JAVASCRIPT-NEXTJS-6F,
+      // AIR-2815) because the file was never written to storage. Confirm no longer
+      // deletes the metadata row (changed in AIR-2729), so this call is purely
+      // harmful. The unconfirmed metadata row will be cleaned up by the stale-orphan
+      // check in /api/files/presign after 10 minutes if the user retries the same file.
       const uploadErr = new Error(`Upload failed: ${uploadRes.status}`);
       // Tag the HTTP status + Retry-After so a transient Storage PUT 5xx retries
       // with backoff instead of being misread as a non-transient failure.
@@ -775,9 +774,11 @@ class UploadOrchestrator {
     }
 
     // Step 3: Confirm upload — marks the file as upload_confirmed in the DB.
-    // Retry up to 2 times for transient 5xx failures before treating as non-fatal.
-    const CONFIRM_RETRIES = 2;
-    const CONFIRM_RETRY_BASE_MS = 300;
+    // Retry up to 3 times for transient 5xx (storage propagation delays). The server
+    // already retries internally 4 times over ~900ms; these client retries extend the
+    // total window to ~9.6s, covering slower Supabase Storage propagation (AIR-2815).
+    const CONFIRM_RETRIES = 3;
+    const CONFIRM_RETRY_BASE_MS = 1000;
     let confirmRes: Response | null = null;
     let confirmAttempts = 0;
 
