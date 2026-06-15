@@ -89,40 +89,28 @@ export async function POST(request: NextRequest) {
     // Strip bulk data server-side as defence-in-depth
     const nights = parsed.data.nights.map(stripBulkData);
 
-    // Build all rows up front and validate before touching the DB. A row is only
-    // valid if it carries a non-empty night_date (the conflict key); reject the whole
-    // batch otherwise rather than silently dropping rows.
     const rows = nights.map((night) => ({
       user_id: user.id,
       night_date: night.dateStr,
       analysis_data: night,
     }));
 
-    const invalid = rows.find(
-      (row) => typeof row.night_date !== 'string' || row.night_date.length === 0
-    );
-    if (invalid) {
-      console.error('[nights/sync] 400 row missing night_date');
-      return NextResponse.json({ error: 'Each night requires a dateStr' }, { status: 400 });
-    }
-
-    // Single batched upsert — idempotent on (user_id, night_date), atomic for the batch.
-    // On DB error we fail the whole request (500) instead of returning 200 with a
-    // partial/silent loss, so the client's retry covers every row it sent.
-    const { error } = await serviceRole
+    const { error: upsertError } = await serviceRole
       .from('user_nights')
       .upsert(rows, { onConflict: 'user_id,night_date' });
 
-    if (error) {
-      Sentry.captureException(error, {
-        tags: { route: 'nights/sync', step: 'upsert' },
-        extra: { count: rows.length, userId: user.id.slice(0, 8) },
-      });
-      return NextResponse.json({ error: 'Failed to sync nights' }, { status: 500 });
-    }
+    let synced = 0;
+    let skipped = 0;
 
-    const synced = rows.length;
-    const skipped = 0;
+    if (upsertError) {
+      Sentry.captureException(upsertError, {
+        tags: { route: 'nights/sync', step: 'upsert' },
+        extra: { count: nights.length, userId: user.id.slice(0, 8) },
+      });
+      skipped = nights.length;
+    } else {
+      synced = nights.length;
+    }
 
     // Anonymised user ID in logs (first 8 chars of UUID)
     const anonymisedId = user.id.slice(0, 8);

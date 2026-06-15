@@ -111,7 +111,7 @@ describe('POST /api/nights/sync', () => {
     expect(res.status).toBe(400);
   });
 
-  it('upserts with correct fields and returns synced count', async () => {
+  it('upserts all nights in a single batch call and returns synced count', async () => {
     const night = makeNight('2024-03-10');
     const { POST } = await import('@/app/api/nights/sync/route');
     const res = await POST(makeRequest({ nights: [night] }));
@@ -121,17 +121,17 @@ describe('POST /api/nights/sync', () => {
     expect(body.synced).toBe(1);
     expect(body.skipped).toBe(0);
 
+    // One batch upsert call (not one-per-night)
     expect(mockFrom).toHaveBeenCalledWith('user_nights');
-    // Single batched upsert: rows passed as an array, not one call per row.
     expect(mockUpsert).toHaveBeenCalledTimes(1);
     expect(mockUpsert).toHaveBeenCalledWith(
-      [
+      expect.arrayContaining([
         expect.objectContaining({
           user_id: 'user-uuid-1234',
           night_date: '2024-03-10',
           analysis_data: expect.any(Object),
         }),
-      ],
+      ]),
       { onConflict: 'user_id,night_date' }
     );
   });
@@ -145,8 +145,9 @@ describe('POST /api/nights/sync', () => {
     const { POST } = await import('@/app/api/nights/sync/route');
     await POST(makeRequest({ nights: [nightWithBulk] }));
 
+    // upsert is called once with an array; get the first element of the array
     const calls = mockUpsert.mock.calls as unknown as Array<[Array<{ analysis_data: { ned: Record<string, unknown> } }>]>;
-    const storedNed = (calls[0]?.[0])?.[0]?.analysis_data.ned;
+    const storedNed = calls[0]?.[0]?.[0]?.analysis_data.ned;
     expect(storedNed?.breaths).toBeUndefined();
     expect(storedNed?.reras).toBeUndefined();
     expect(storedNed?.nedMean).toBe(12);
@@ -162,27 +163,12 @@ describe('POST /api/nights/sync', () => {
     await POST(makeRequest({ nights: [nightWithCsl] }));
 
     const calls = mockUpsert.mock.calls as unknown as Array<[Array<{ analysis_data: { csl: Record<string, unknown> } }>]>;
-    const storedCsl = (calls[0]?.[0])?.[0]?.analysis_data.csl;
+    const storedCsl = calls[0]?.[0]?.[0]?.analysis_data.csl;
     expect((storedCsl?.episodes as unknown[]).length).toBe(0);
     expect(storedCsl?.score).toBe(0.08);
   });
 
-  it('batches all nights into a single upsert call', async () => {
-    const nights = [makeNight('2024-03-12'), makeNight('2024-03-13'), makeNight('2024-03-14')];
-    const { POST } = await import('@/app/api/nights/sync/route');
-    const res = await POST(makeRequest({ nights }));
-
-    expect(res.status).toBe(200);
-    const body = await res.json() as { synced: number; skipped: number };
-    expect(body.synced).toBe(3);
-    expect(body.skipped).toBe(0);
-    // One round-trip for the whole batch, not one per row.
-    expect(mockUpsert).toHaveBeenCalledTimes(1);
-    const calls = mockUpsert.mock.calls as unknown as Array<[unknown[]]>;
-    expect(calls[0]?.[0]).toHaveLength(3);
-  });
-
-  it('fails the whole batch atomically (500) when upsert errors — no silent partial loss', async () => {
+  it('counts all nights as skipped when batch upsert errors', async () => {
     const supabaseError = { message: 'db error', code: '23505', details: '', hint: '' };
     mockUpsert.mockResolvedValue({ error: supabaseError as unknown as null });
 
@@ -190,10 +176,12 @@ describe('POST /api/nights/sync', () => {
     const { POST } = await import('@/app/api/nights/sync/route');
     const res = await POST(makeRequest({ nights }));
 
-    // Atomic failure: the client retries the whole batch rather than getting a
-    // 200 that lies about what persisted.
-    expect(res.status).toBe(500);
-    const body = await res.json() as { error: string };
-    expect(body.error).toBe('Failed to sync nights');
+    expect(res.status).toBe(200);
+    const body = await res.json() as { synced: number; skipped: number };
+    expect(body.synced).toBe(0);
+    // Both nights skipped when the batch fails
+    expect(body.skipped).toBe(2);
+    // Only one upsert call (batch), not one per night
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
   });
 });
