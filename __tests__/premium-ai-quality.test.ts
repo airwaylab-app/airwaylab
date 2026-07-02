@@ -139,7 +139,7 @@ describe('Premium AI Quality — Model Selection', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
-    expect(createArgs.model).toBe('claude-sonnet-4-6');
+    expect(createArgs.model).toBe('claude-sonnet-5');
   });
 
   it('uses Sonnet for champion tier', async () => {
@@ -148,7 +148,7 @@ describe('Premium AI Quality — Model Selection', () => {
     await callRoute(validBody());
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
-    expect(createArgs.model).toBe('claude-sonnet-4-6');
+    expect(createArgs.model).toBe('claude-sonnet-5');
   });
 
   it('uses Sonnet for deep mode paid request', async () => {
@@ -164,7 +164,7 @@ describe('Premium AI Quality — Model Selection', () => {
     }));
 
     const createArgs = mockMessagesCreate.mock.calls[0]![0] as { model: string };
-    expect(createArgs.model).toBe('claude-sonnet-4-6');
+    expect(createArgs.model).toBe('claude-sonnet-5');
   });
 });
 

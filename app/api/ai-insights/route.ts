@@ -94,7 +94,7 @@ Do not include the "context" field on positive or info insights — only on warn
 
 // Model selection based on user tier
 const MODEL_COMMUNITY = 'claude-haiku-4-5-20251001';
-const MODEL_PREMIUM = 'claude-sonnet-4-6';
+const MODEL_PREMIUM = 'claude-sonnet-5';
 
 const SYSTEM_PROMPT = `You are a data pattern summarization assistant that describes patterns in PAP therapy data. You analyse NightResult data from AirwayLab, a tool that processes ResMed PAP (CPAP/BiPAP/ASV) SD card data.
 
