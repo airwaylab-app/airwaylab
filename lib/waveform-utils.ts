@@ -870,6 +870,92 @@ export function buildSessionBoundaries(
   return out;
 }
 
+/**
+ * Find the session a machine-event file (EVE.edf) belongs to, by wall-clock.
+ * Returns the session whose [start, start+duration] window contains `eveStartMs`
+ * (with a small tolerance for header-rounding), nearest start on ties; null when
+ * the EVE start falls outside every session — e.g. it belongs to another night
+ * we aren't rendering, so its events must be dropped, not misplaced.
+ */
+export function matchSessionForWallClock(
+  boundaries: SessionBoundary[],
+  eveStartMs: number,
+): SessionBoundary | null {
+  const TOL_MS = 5 * 60 * 1000; // 5 min slack for header rounding / EVE-vs-BRP skew
+  let best: SessionBoundary | null = null;
+  let bestDelta = Infinity;
+  for (const b of boundaries) {
+    const start = b.startWallClockMs;
+    const end = start + b.durationSeconds * 1000;
+    if (eveStartMs >= start - TOL_MS && eveStartMs <= end + TOL_MS) {
+      const delta = Math.abs(eveStartMs - start);
+      if (delta < bestDelta) {
+        best = b;
+        bestDelta = delta;
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Map a machine event's EVE-relative onset onto the concatenated multi-session
+ * flow timeline (the coordinate the waveform viewer and the flow-derived events
+ * use: seconds from the start of the machine-on concatenated flow).
+ *
+ *   startSec = session offset (preceding sessions' flow)   [places it in the right session]
+ *            + (eveStart − sessionStart)                   [EVE-vs-BRP sub-session skew]
+ *            + onsetSec                                     [event time within its session]
+ *
+ * Single-session nights where EVE and BRP share a start are unchanged
+ * (offset 0, skew 0 -> startSec === onsetSec), so this is a no-op there and only
+ * corrects multi-session / skewed / wrong-night placement.
+ */
+export function machineEventStartSec(
+  onsetSec: number,
+  eveStartMs: number | null,
+  session: SessionBoundary,
+  sampleRate: number,
+): number {
+  const sessionStartSec = sampleRate > 0 ? session.startSampleIndex / sampleRate : 0;
+  const subSessionSkewSec = eveStartMs != null ? (eveStartMs - session.startWallClockMs) / 1000 : 0;
+  return sessionStartSec + subSessionSkewSec + onsetSec;
+}
+
+/**
+ * Place a single machine event onto the concatenated machine-on flow timeline,
+ * re-matching it to the session its OWN wall-clock falls in.
+ *
+ * A single EVE.edf can span several mask-on sessions separated by machine-off
+ * gaps (real ResMed nights write one EVE with night-relative onsets). `onsetSec`
+ * is wall-clock-elapsed and therefore gap-INCLUSIVE, while the chart x-axis is
+ * machine-on seconds (gaps removed). Matching only the EVE *file* to one session
+ * and adding the raw onset (the pre-#266 behaviour) double-counts every
+ * machine-off gap between that anchor session and the event's true session, so
+ * later-session events are drawn tens of minutes too late — boxes over normal
+ * breathing while the real apnea has none.
+ *
+ * Re-matching per event by `eveStartMs + onsetSec*1000` puts each event in its
+ * own session, after which `machineEventStartSec` collapses to
+ * `eventSession.base + (eventWallClock - eventSession.wallStart)` — the correct
+ * machine-on position. Falls back to `fileSession` when the EVE has no header
+ * time, or when the event resolves to no session (e.g. lands inside a
+ * machine-off gap) — no worse than the file-level placement it replaces.
+ */
+export function placeMachineEventStartSec(
+  onsetSec: number,
+  eveStartMs: number | null,
+  boundaries: SessionBoundary[],
+  fileSession: SessionBoundary,
+  sampleRate: number,
+): number {
+  const eventSession =
+    eveStartMs != null
+      ? matchSessionForWallClock(boundaries, eveStartMs + onsetSec * 1000) ?? fileSession
+      : fileSession;
+  return machineEventStartSec(onsetSec, eveStartMs, eventSession, sampleRate);
+}
+
 /** Format a machine-off gap duration compactly, e.g. "2h 13m" or "8m". */
 export function formatGapDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
@@ -951,4 +1037,30 @@ export function detectMShapeInWorker(inspFlow: Float32Array, qPeak: number): boo
   }
 
   return false;
+}
+
+// ── Night-date helpers used by the waveform worker ───────────
+
+/** YYYY-MM-DD in local time (mirrors night-grouper.ts localDateStr, not exported there). */
+export function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Whether an EDF file's recording date falls within the calendar window that
+ * could contribute to the given target night.
+ *
+ * The night grouper assigns sessions starting before noon on day+1 to the
+ * target night (they belong to the early-morning portion of the same sleep
+ * period). Accepting both calendar days ensures we don't discard those files.
+ *
+ * Used in the waveform worker to skip EDF files from unrelated nights when
+ * the orchestrator falls back to sending all BRP files (OOM guard).
+ */
+export function isEdfRelevantForNight(recordingDate: Date, targetDate: string): boolean {
+  const dateStr = localDateStr(recordingDate);
+  if (dateStr === targetDate) return true;
+  const [tyStr, tmStr, tdStr] = targetDate.split('-');
+  const nextDay = new Date(parseInt(tyStr!, 10), parseInt(tmStr!, 10) - 1, parseInt(tdStr!, 10) + 1);
+  return dateStr === localDateStr(nextDay);
 }

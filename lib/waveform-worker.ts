@@ -6,13 +6,16 @@
 
 import { parseEDF } from './parsers/edf-parser';
 import { groupByNight, filterBRPFiles } from './parsers/night-grouper';
-import { parseEVE } from './parsers/eve-parser';
+import { parseEVE, parseEVEStartMs } from './parsers/eve-parser';
 import {
   computeFlowStatsFromRaw,
   computeTidalVolume,
   computeRespiratoryRate,
   detectMShapeInWorker,
   buildSessionBoundaries,
+  matchSessionForWallClock,
+  placeMachineEventStartSec,
+  isEdfRelevantForNight,
 } from './waveform-utils';
 import type {
   WaveformWorkerMessage,
@@ -82,13 +85,18 @@ function extractWaveform(
 
   const brpFiles = filterBRPFiles(fileList);
 
-  // Parse all BRP files
+  // Parse BRP files — skip those from unrelated nights to prevent OOM.
+  // When the orchestrator's date-path filter finds no matches it falls back to
+  // sending all BRP files; for users with years of data that can be gigabytes.
+  // isEdfRelevantForNight limits parsing to the target date + next calendar day
+  // (the next day covers early-morning sessions grouped into the target night).
   const parsedEdfs: EDFFile[] = [];
   for (const brp of brpFiles) {
     const fileData = files.find((f) => f.path === brp.path);
     if (!fileData) continue;
     try {
       const edf = parseEDF(fileData.buffer, fileData.path);
+      if (!isEdfRelevantForNight(edf.recordingDate, targetDate)) continue;
       parsedEdfs.push(edf);
     } catch {
       // Skip unparseable files
@@ -147,16 +155,48 @@ function extractWaveform(
   // Detect events from flow patterns (flatness-based detection)
   const algorithmEvents = detectEventsFromFlow(combinedFlow, avgSamplingRate);
 
-  // Parse machine-recorded events from EVE.edf files (non-fatal — missing EVE is fine)
+  // Parse machine-recorded events from EVE.edf files and place each on the
+  // concatenated multi-session flow timeline (non-fatal — missing EVE is fine).
+  //
+  // EVE onsets are relative to each EVE file's own start, but `combinedFlow` is
+  // concatenated machine-on across sessions. Previously events were pushed with
+  // the raw onset, so on multi-session nights events from later sessions landed
+  // on earlier sessions' flow (boxes over normal breathing; real events appear
+  // missing) — the reported OA-misalignment bug. We now map each EVE file to its
+  // session by wall-clock and offset the onset accordingly. Single-session
+  // nights are unchanged.
   const machineEvents: WaveformEvent[] = [];
   const eveFiles = files.filter((f) => /eve\.edf$/i.test(f.path));
   for (const eveFile of eveFiles) {
     try {
       const parsed = parseEVE(eveFile.buffer);
+      if (parsed.length === 0) continue;
+      const eveStartMs = parseEVEStartMs(eveFile.buffer);
+
+      let session: SessionBoundary | null = null;
+      if (eveStartMs != null) {
+        session = matchSessionForWallClock(sessionBoundaries, eveStartMs);
+      } else if (sessionBoundaries.length === 1) {
+        // No header timestamp but only one session — the raw onset already aligns.
+        session = sessionBoundaries[0]!;
+      }
+      // No resolvable session (e.g. EVE from another night) — drop, don't misplace.
+      if (!session) continue;
+
       for (const me of parsed) {
+        // Place each event by re-matching it to the session its OWN wall-clock falls
+        // in — a single EVE.edf can span several mask-on sessions separated by
+        // machine-off gaps (see placeMachineEventStartSec; #266).
+        const startSec = placeMachineEventStartSec(
+          me.onsetSec,
+          eveStartMs,
+          sessionBoundaries,
+          session,
+          avgSamplingRate,
+        );
         machineEvents.push({
-          startSec: me.onsetSec,
-          endSec: me.onsetSec + me.durationSec,
+          startSec: +startSec.toFixed(1),
+          endSec: +(startSec + me.durationSec).toFixed(1),
           type: me.type,
           label: `${me.rawLabel} (${me.durationSec}s)`,
         });
