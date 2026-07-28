@@ -169,3 +169,37 @@ function readField(buffer: ArrayBuffer, decoder: TextDecoder, offset: number, le
   if (offset + length > buffer.byteLength) return '';
   return decoder.decode(new Uint8Array(buffer, offset, length)).trim();
 }
+
+/**
+ * Read the EVE.edf header start wall-clock as epoch milliseconds, parsed with the
+ * SAME rules as the BRP recording date in lib/parsers/edf-parser (EDF `dd.mm.yy`
+ * 2-digit year: <85 -> 2000s else 1900s; local time). The two MUST match so an
+ * event's EVE-relative onset can be placed on the concatenated multi-session flow
+ * timeline. Returns null when the header date/time can't be read.
+ */
+export function parseEVEStartMs(buffer: ArrayBuffer): number | null {
+  try {
+    if (buffer.byteLength < 256) return null;
+    const decoder = new TextDecoder('ascii');
+    const startDate = readField(buffer, decoder, 168, 8); // dd.mm.yy
+    const startTime = readField(buffer, decoder, 176, 8); // hh.mm.ss
+    const d = startDate.split('.');
+    if (d.length < 3) return null;
+    let year = parseInt(d[2] || '');
+    if (Number.isNaN(year)) return null;
+    if (year < 100) year += year < 85 ? 2000 : 1900;
+    const t = startTime.split('.');
+    const date = new Date(
+      year,
+      (parseInt(d[1] || '1') || 1) - 1,
+      parseInt(d[0] || '1') || 1,
+      parseInt(t[0] || '0') || 0,
+      parseInt(t[1] || '0') || 0,
+      parseInt(t[2] || '0') || 0,
+    );
+    const ms = date.getTime();
+    return Number.isNaN(ms) ? null : ms;
+  } catch {
+    return null;
+  }
+}
