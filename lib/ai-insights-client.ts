@@ -29,9 +29,10 @@ function stripNightForAIPayload(night: NightResult): Record<string, unknown> {
     wat: night.wat,
     ned: nedSummary,
     oximetry: night.oximetry,
+    settingsMetrics: night.settingsMetrics ?? undefined,
     machineSummary: night.machineSummary ?? undefined,
     settingsFingerprint: night.settingsFingerprint ?? undefined,
-    // Explicitly excluded: oximetryTrace, settingsMetrics, crossDevice, csl, pldSummary, date
+    // Explicitly excluded: oximetryTrace, crossDevice, csl, pldSummary, date
   };
 }
 

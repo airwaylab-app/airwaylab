@@ -5,8 +5,8 @@
 
 import type { MachineSettings } from '../types';
 import { parseSTR } from './edf-parser';
-import { parseCustomSettings } from './custom-settings-parser';
-export { parseCustomSettings } from './custom-settings-parser';
+import { parseCustomSettings, parseVAutoGlobalSettings } from './custom-settings-parser';
+export { parseCustomSettings, parseVAutoGlobalSettings } from './custom-settings-parser';
 
 interface DailySettings {
   [date: string]: MachineSettings;
@@ -69,11 +69,13 @@ const TYPED_SIGNAL_LABELS = new Set([
 export function extractSettings(
   strBuffer: ArrayBuffer,
   deviceModel: string,
-  customSettingsText?: string
+  customSettingsText?: string,
+  vautoGlobalSettingsText?: string
 ): DailySettings {
   const { signals, startDateTime } = parseSTR(strBuffer);
   const dailySettings: DailySettings = {};
   const parsedCustomVAuto = customSettingsText ? parseCustomSettings(customSettingsText) : null;
+  const parsedVAutoGlobal = vautoGlobalSettingsText ? parseVAutoGlobalSettings(vautoGlobalSettingsText) : null;
 
   // Log all signal labels for discovery
   const allLabels = signals.map((s) => s.label);
@@ -202,8 +204,8 @@ export function extractSettings(
     const d = new Date(startDateTime.getTime() + daysDiff * 86400000);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    const ipap = ipapValues[i]!;
-    const epap = epapValues[i]!;
+    let ipap = ipapValues[i]!;
+    let epap = epapValues[i]!;
 
     if (isNaN(ipap) || isNaN(epap) || ipap <= 0 || epap <= 0) continue;
 
@@ -259,11 +261,25 @@ export function extractSettings(
     const untrustedAutoSetRange =
       isAirSense && (modeNum === 1 || modeNum === 2 || modeNum === 3);
 
+    // For Custom VAuto (and VAuto with S.VA.* / VGL.tgt), prefer configured bounds
+    // over TgtEPAP.50/TgtIPAP.50 delivered medians so pressure headroom & EPS are accurate.
+    const isLastDay = i === len - 1;
+    let configuredPs = Math.round((ipap - epap) * 10) / 10;
+    if (parsedCustomVAuto?.enabled) {
+      const vaMinEpap = (isLastDay ? parsedVAutoGlobal?.minEpap : undefined) ?? extended['S.VA.MinEPAP'];
+      const vaMaxIpap = (isLastDay ? parsedVAutoGlobal?.maxIpap : undefined) ?? extended['S.VA.MaxIPAP'];
+      const vaPs = (isLastDay ? parsedVAutoGlobal?.pressureSupport : undefined) ?? extended['S.VA.PS'];
+      if (vaMinEpap !== undefined && vaMinEpap > 0) epap = vaMinEpap;
+      if (vaMaxIpap !== undefined && vaMaxIpap > 0) ipap = vaMaxIpap;
+      if (vaPs !== undefined && vaPs > 0) configuredPs = vaPs;
+      else configuredPs = Math.round((ipap - epap) * 10) / 10;
+    }
+
     dailySettings[dateStr] = {
       deviceModel,
       epap,
       ipap,
-      pressureSupport: Math.round((ipap - epap) * 10) / 10,
+      pressureSupport: configuredPs,
       papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
       trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined),

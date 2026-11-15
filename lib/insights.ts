@@ -457,6 +457,35 @@ function singleNightInsights(n: NightResult, prev: NightResult | null, symptomRa
       });
     }
 
+    if (n.settings.customVAuto?.enabled && sm.customVAutoMetrics) {
+      const cvm = sm.customVAutoMetrics;
+      const epsVal = n.settings.customVAuto.eps ?? cvm.epsConfigured ?? 1.0;
+      const shapeLvl = n.settings.customVAuto.exhaleShape ?? cvm.exhaleShape ?? 0;
+      const retentionPct = cvm.expiratoryRetentionPct ?? 37.5;
+      const trough = Math.max(4.0, n.settings.epap - epsVal);
+
+      if (cvm.maxIpapClippedPct > 30) {
+        settingsWarningIds.push('settings-custom-vauto-clipping');
+        insights.push({
+          id: 'settings-custom-vauto-clipping',
+          type: 'actionable',
+          title: 'Custom VAuto adaptive boost clipped by Max IPAP',
+          body: `${fmt(cvm.maxIpapClippedPct, 0)}% of breaths reached the ${fmt(n.settings.ipap)} cmH₂O Max IPAP ceiling (${fmt(cvm.maxIpapHeadroomMedian)} cmH₂O median headroom). Your clinician can help interpret these findings in context.`,
+          category: 'settings',
+        });
+      }
+
+      if (epsVal >= 1.2 && trough <= 7.5 && (n.ned.nedMean >= 6 || n.ned.mShapePct > 2.5)) {
+        insights.push({
+          id: 'settings-custom-vauto-eps',
+          type: 'info',
+          title: 'Custom VAuto expiratory relief lowering trough pressure',
+          body: `Configured EPS (-${fmt(epsVal)} cmH₂O) with Exh. Shape ${shapeLvl} (${fmt(retentionPct, 0)}% expiratory retention) lowers early-expiratory pressure to ${fmt(trough)} cmH₂O alongside elevated flow limitation. Your clinician can help interpret these findings in context.`,
+          category: 'settings',
+        });
+      }
+    }
+
     // Positive insight: only if no warnings/actionable settings insights fired
     if (settingsWarningIds.length === 0 &&
         sm.prematureCyclePct < 2 &&

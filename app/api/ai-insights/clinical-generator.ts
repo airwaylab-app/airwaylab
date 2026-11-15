@@ -19,7 +19,47 @@ interface NightData {
     humidifierLevel?: number | null;
     maskType?: string | null;
     autoSensitivity?: number;
+    customVAuto?: {
+      enabled: boolean;
+      asvMax: number;
+      asvSens: string;
+      asvSensMultiplier: number;
+      eps?: number;
+      exhaleShape?: number;
+      exhaleShapeExponent?: number;
+      customTriggerCycle: boolean;
+      squareWave: boolean;
+      asvBackupRate: boolean;
+    };
   };
+  settingsMetrics?: {
+    epapDetected?: number;
+    ipapDetected?: number;
+    psDetected?: number;
+    autoTriggerPct?: number;
+    lateCyclePct?: number;
+    ipapDwellMedianPct?: number;
+    customVAutoMetrics?: {
+      active: boolean;
+      asvBoostMean: number;
+      asvBoostMax: number;
+      boostedBreathPct: number;
+      maxIpapClippedPct: number;
+      maxIpapExceededPct?: number;
+      epsReliefMean: number;
+      epsReliefMax: number;
+      effectivePsMedian: number;
+      effectivePsP95: number;
+      shortTiUnder07sPct: number;
+      preTriggerAssistPct: number;
+      maxIpapHeadroomMedian: number;
+      epsConfigured?: number;
+      exhaleShape?: number;
+      exhaleShapeExponent?: number;
+      expiratoryRetentionPct?: number;
+      dampenedBreathPct?: number;
+    };
+  } | null;
   glasgow: {
     overall: number;
     skew?: number;
@@ -264,7 +304,45 @@ export function generateClinicalPatternInsights(params: GenerateParams): Insight
     });
   }
 
-  if (settings?.papMode || settings?.epap !== undefined) {
+  const customVAuto = settings?.customVAuto;
+  const cvm = current.settingsMetrics?.customVAutoMetrics;
+  if (customVAuto?.enabled) {
+    const epsVal = customVAuto.eps ?? cvm?.epsConfigured ?? 1.0;
+    const shapeLvl = customVAuto.exhaleShape ?? cvm?.exhaleShape ?? 0;
+    const retentionPct = cvm?.expiratoryRetentionPct ?? (Math.round((0.5 + (-0.75 + 0.25 * shapeLvl) / 6.0) * 1000) / 10);
+    const baseEpap = settings?.epap ?? 0;
+    const troughPress = baseEpap > 0 ? Math.max(4.0, baseEpap - epsVal) : undefined;
+
+    if (epsVal >= 1.2 && troughPress !== undefined && troughPress <= 7.5 && (n.nedMean >= 6 || (n.mShapePct ?? 0) > 2.5)) {
+      insights.push({
+        id: nextId(),
+        type: 'actionable',
+        title: 'Custom VAuto Expiratory Relief & Flow Limitation Correlation',
+        body: `Configured EPS (-${epsVal.toFixed(1)} cmH2O) with Exh. Shape ${shapeLvl} (${retentionPct.toFixed(1)}% retention) lowers early-expiratory pressure to ${troughPress.toFixed(1)} cmH2O alongside elevated flow limitation (NED ${n.nedMean.toFixed(1)}%).`,
+        category: 'correlation',
+        context: 'In airbreak-plus Custom VAuto, EPS lowers expiratory pressure below EPAP after inspirations lasting at least 0.7s, while lower Exh. Shape levels release support faster during expiration. Lower expiratory splinting can coincide with palatal or pharyngeal narrowing during vulnerable sleep stages. Your clinician can help interpret these findings in context.',
+      });
+    }
+
+    if (cvm && cvm.maxIpapClippedPct > 25) {
+      insights.push({
+        id: nextId(),
+        type: 'actionable',
+        title: 'Custom VAuto Adaptive Boost Reached Max IPAP Ceiling',
+        body: `${cvm.maxIpapClippedPct.toFixed(1)}% of breaths reached the ${settings?.ipap ?? 0} cmH2O Max IPAP limit (${cvm.maxIpapHeadroomMedian.toFixed(1)} cmH2O median headroom).`,
+        category: 'therapy',
+        context: 'When adaptive volume boost meets the configured Max IPAP ceiling, peak inspiratory pressure support is capped during flow-limited runs. Your clinician can help interpret these findings in context.',
+      });
+    }
+
+    insights.push({
+      id: nextId(),
+      type: 'info',
+      title: 'Therapy Context: Custom VAuto Firmware Parameters',
+      body: `Custom VAuto ran with EPAP ${settings?.epap ?? 0} / IPAP ${settings?.ipap ?? 0} cmH2O, ASV Max +${customVAuto.asvMax.toFixed(1)} cmH2O, ASV Sens ${customVAuto.asvSens} (${customVAuto.asvSensMultiplier.toFixed(2)}x), EPS ${epsVal === 0 ? 'Off' : `-${epsVal.toFixed(1)} cmH2O`}, and Exh. Shape ${shapeLvl} (${retentionPct.toFixed(1)}% retention).`,
+      category: 'therapy',
+    });
+  } else if (settings?.papMode || settings?.epap !== undefined) {
     const mode = settings.papMode ?? 'PAP';
     const epap = settings.epap !== undefined ? `EPAP ${settings.epap} cmH2O` : '';
     const ipap = settings.ipap !== undefined ? `, IPAP ${settings.ipap} cmH2O` : '';

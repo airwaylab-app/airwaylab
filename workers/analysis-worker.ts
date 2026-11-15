@@ -4,7 +4,7 @@
 // ============================================================
 
 import { parseEDF } from '../lib/parsers/edf-parser';
-import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, filterCSLFiles, filterPLDFiles, findSTRFile, findIdentificationFile, findCustomSettingsFile, extractFolderDate, extractPLDFilenameDate } from '../lib/parsers/night-grouper';
+import { groupByNight, filterBRPFiles, filterSA2Files, filterEVEFiles, filterCSLFiles, filterPLDFiles, findSTRFile, findIdentificationFile, findCustomSettingsFile, findVAutoGlobalSettingsFile, extractFolderDate, extractPLDFilenameDate } from '../lib/parsers/night-grouper';
 import { parsePLD, computePLDSummary } from '../lib/parsers/pld-parser';
 import { parseSA2 } from '../lib/parsers/sa2-parser';
 import { extractSettings, parseIdentification, getSettingsForDate, getSTRSignalLabels } from '../lib/parsers/settings-extractor';
@@ -209,7 +209,7 @@ async function processFiles(
 
   deviceModel = parseIdentification(identificationText ?? '', currentSettingsText);
 
-  // airbreak-plus custom settings (CSG.tgt / CSG.set)
+  // airbreak-plus custom settings (CSG.tgt / CSG.set) & global VAuto bounds (VGL.tgt / VGL.set)
   let customSettingsText: string | undefined;
   const customSettingsFileInfo = findCustomSettingsFile(fileList);
   if (customSettingsFileInfo) {
@@ -222,13 +222,25 @@ async function processFiles(
     }
   }
 
+  let vautoGlobalSettingsText: string | undefined;
+  const vautoGlobalFileInfo = findVAutoGlobalSettingsFile(fileList);
+  if (vautoGlobalFileInfo) {
+    const vglFile = files.find((f) => {
+      const p = f.path.toLowerCase();
+      return p.endsWith('vgl.tgt') || p.endsWith('vgl.set');
+    });
+    if (vglFile) {
+      vautoGlobalSettingsText = decoder.decode(vglFile.buffer);
+    }
+  }
+
   let strSignalLabels: string[] = [];
   let dailySummary: Record<string, import('../lib/types').MachineSummaryStats> = {};
   if (strFileInfo) {
     const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
       try {
-        dailySettings = extractSettings(strFile.buffer, deviceModel, customSettingsText);
+        dailySettings = extractSettings(strFile.buffer, deviceModel, customSettingsText, vautoGlobalSettingsText);
       } catch {
         // STR parsing failed — continue without settings
       }

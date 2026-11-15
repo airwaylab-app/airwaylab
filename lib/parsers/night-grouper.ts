@@ -231,3 +231,17 @@ export function findCustomSettingsFile(
   );
 }
 
+
+/**
+ * Find ResMed global VAuto settings file (VGL.tgt or VGL.set) from file list (case-insensitive).
+ */
+export function findVAutoGlobalSettingsFile(
+  files: { name: string; path: string }[]
+): { name: string; path: string } | null {
+  return (
+    files.find((f) => {
+      const name = f.name.toLowerCase();
+      return name === "vgl.tgt" || name === "vgl.set";
+    }) ?? null
+  );
+}

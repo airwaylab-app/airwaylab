@@ -112,9 +112,9 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
 
           {/* Configured Firmware Settings */}
           {selectedNight.settings?.customVAuto && (
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <div className="rounded-lg bg-card/60 p-2.5">
-                <div className="text-[10px] text-muted-foreground">ASV Max (Adaptive Cap)</div>
+                <div className="text-[10px] text-muted-foreground">ASV Max (Boost Cap)</div>
                 <div className="font-mono text-sm font-semibold">
                   +{selectedNight.settings.customVAuto.asvMax.toFixed(1)} <span className="text-xs font-normal text-muted-foreground">cmH&#8322;O</span>
                 </div>
@@ -123,6 +123,28 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
                 <div className="text-[10px] text-muted-foreground">ASV Sens (PID Gain)</div>
                 <div className="font-mono text-sm font-semibold">
                   {selectedNight.settings.customVAuto.asvSens} <span className="text-xs font-normal text-muted-foreground">({selectedNight.settings.customVAuto.asvSensMultiplier.toFixed(2)}x)</span>
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">EPS (Exhale Relief)</div>
+                <div className="font-mono text-sm font-semibold">
+                  {selectedNight.settings.customVAuto.eps !== undefined
+                    ? selectedNight.settings.customVAuto.eps === 0
+                      ? 'Off'
+                      : `-${selectedNight.settings.customVAuto.eps.toFixed(1)}`
+                    : '-1.0'}{' '}
+                  {selectedNight.settings.customVAuto.eps !== 0 && (
+                    <span className="text-xs font-normal text-muted-foreground">cmH&#8322;O</span>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">Exh. Shape</div>
+                <div className="font-mono text-sm font-semibold">
+                  Level {selectedNight.settings.customVAuto.exhaleShape ?? 0}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    (s={(selectedNight.settings.customVAuto.exhaleShapeExponent ?? -0.75).toFixed(2)})
+                  </span>
                 </div>
               </div>
               <div className="rounded-lg bg-card/60 p-2.5">
@@ -143,7 +165,7 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
           {/* Delivered Metrics from customVAutoMetrics */}
           {sm.customVAutoMetrics && (
             <div className="mt-4 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 <div className="rounded-lg bg-card/60 p-2.5">
                   <div className="text-[10px] text-muted-foreground">Delivered Peak PS</div>
                   <div className="font-mono text-sm font-semibold">
@@ -160,6 +182,12 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
                   <div className="text-[10px] text-muted-foreground">Mean Exhale Relief (EPS)</div>
                   <div className="font-mono text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                     -{sm.customVAutoMetrics.epsReliefMean.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">below EPAP</span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Exhale Support Retention</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {(sm.customVAutoMetrics.expiratoryRetentionPct ?? 37.5).toFixed(1)}% <span className="text-xs font-normal text-muted-foreground">AUC</span>
                   </div>
                 </div>
                 <div className="rounded-lg bg-card/60 p-2.5">

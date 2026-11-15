@@ -142,7 +142,7 @@ async function runImport(dataDirName) {
   deviceModel = parseIdentification(identificationText || '', currentSettingsText);
   console.log(`  Device Model:          ${deviceModel}`);
 
-  // airbreak-plus custom settings (CSG.tgt / CSG.set)
+  // airbreak-plus custom settings (CSG.tgt / CSG.set) & VGL.tgt
   let customSettingsText = null;
   const customSettingsFile = files.find((f) => {
     const p = f.path.toLowerCase();
@@ -153,16 +153,35 @@ async function runImport(dataDirName) {
     console.log(`  airbreak-plus settings: Found (${customSettingsFile.path})`);
   }
 
+  let vautoGlobalSettingsText = null;
+  const vautoGlobalFile = files.find((f) => {
+    const p = f.path.toLowerCase();
+    return p.endsWith('vgl.tgt') || p.endsWith('vgl.set');
+  });
+  if (vautoGlobalFile) {
+    vautoGlobalSettingsText = decoder.decode(vautoGlobalFile.buffer);
+    console.log(`  VAuto global settings: Found (${vautoGlobalFile.path})`);
+  }
+
   let dailySummary = {};
   if (strFileInfo) {
     const strFile = files.find((f) => f.path.toLowerCase().endsWith('str.edf'));
     if (strFile) {
       try {
-        dailySettings = extractSettings(strFile.buffer, deviceModel, customSettingsText || undefined);
+        dailySettings = extractSettings(
+          strFile.buffer,
+          deviceModel,
+          customSettingsText || undefined,
+          vautoGlobalSettingsText || undefined
+        );
         console.log(`  Extracted settings for ${Object.keys(dailySettings).length} days`);
-        const firstDaySettings = Object.values(dailySettings)[0];
-        if (firstDaySettings && firstDaySettings.customVAuto) {
-          console.log(`  Custom VAuto detected: Enabled=${firstDaySettings.customVAuto.enabled}, ASV Max=${firstDaySettings.customVAuto.asvMax}, Sens=${firstDaySettings.customVAuto.asvSens}`);
+        const latestDaySettings = Object.values(dailySettings).pop();
+        if (latestDaySettings && latestDaySettings.customVAuto) {
+          const cv = latestDaySettings.customVAuto;
+          console.log(
+            `  Custom VAuto detected: Enabled=${cv.enabled}, ASV Max=${cv.asvMax}, Sens=${cv.asvSens}, ` +
+            `EPS=${cv.eps ?? "default(1.0)"}, Exh. Shape=${cv.exhaleShape ?? 0}`
+          );
         }
       } catch (err) {
         console.warn(`  Warning: STR settings extraction failed:`, err.message);

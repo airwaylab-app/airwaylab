@@ -3,7 +3,7 @@
 // Models and analyzes delivered therapy for sessions using
 // airbreak-plus Custom VAuto firmware (m-kozlowski/airbreak-plus).
 // Reconstructs breath-by-breath adaptive boost, expiratory relief (EPS),
-// pre-trigger assist, and Max IPAP headroom/clipping.
+// exhale shape descent retention, pre-trigger assist, and Max IPAP headroom/clipping.
 // ============================================================
 
 import type { CustomVAutoMetrics, MachineSettings } from '../types';
@@ -29,6 +29,7 @@ const ASV_PID_MAX = 1.5;
 const ASV_LOW = 0.94;
 const ASV_HIGH = 0.96;
 const TR_COEFF = 0.025; // moving average weight per valid breath
+const ASV_DAMPEN_MAX = 0.4;
 
 function clamp(val: number, minVal: number, maxVal: number): number {
   return Math.max(minVal, Math.min(maxVal, val));
@@ -67,6 +68,15 @@ export function computeCustomVAutoMetrics(
   const asvMax = custom.asvMax;
   const sensMultiplier = custom.asvSensMultiplier;
 
+  // EPS from RDH (0.0-3.0 cmH2O; 0 = Off). Firmware 0xFFFF fallback when unconfigured is 1.0 cmH2O.
+  const configuredEps = custom.eps !== undefined ? clamp(custom.eps, 0.0, 3.0) : 1.0;
+
+  // Exh. Shape from RDW (0-7, default 0). Quadratic curve coefficient s = -0.75 + 0.25 * level.
+  const exhaleShape = custom.exhaleShape !== undefined ? clamp(Math.round(custom.exhaleShape), 0, 7) : 0;
+  const exhaleShapeExponent = Math.round((-0.75 + 0.25 * exhaleShape) * 100) / 100;
+  // Area under normalized expiratory support curve x_exp = xc + s * xc * (1 - xc) on [0, 1] is 0.5 + s/6
+  const expiratoryRetentionPct = Math.round((0.5 + exhaleShapeExponent / 6.0) * 1000) / 10;
+
   if (breaths.length < 10) {
     return null;
   }
@@ -75,6 +85,7 @@ export function computeCustomVAutoMetrics(
   let targetVol = 0.35; // moving target volume in liters
   let lastError = 0.0;
   let cumulativeError = 0.0;
+  let asvDampen = 0.0;
 
   const deliveredBoosts: number[] = [];
   const effectivePsList: number[] = [];
@@ -86,14 +97,12 @@ export function computeCustomVAutoMetrics(
   let exceededBreaths = 0;
   let shortTiBreaths = 0;
   let preTriggerAssists = 0;
+  let dampenedBreaths = 0;
 
   for (let bIdx = 0; bIdx < breaths.length; bIdx++) {
     const b = breaths[bIdx]!;
     const ti = b.ti;
     const tv = b.tidalVolume;
-
-    // Reset per-breath peak state on inspiration (matching airbreak-plus patches/my_asv.c)
-    let finalIps = 0.0;
 
     // 1. Ti 0.7s Gate for EPS Expiratory Relief and Valid Breath Update
     const qualifiesForEps = ti >= 0.7;
@@ -101,13 +110,21 @@ export function computeCustomVAutoMetrics(
       shortTiBreaths++;
     }
 
+    // Post-hyperpnea dampening offset (matching patches/my_asv.c)
+    const asvMod = asvDampen > 0.1 ? -ASV_DAMPEN_MAX * asvDampen : 0.0;
+    if (asvMod < 0) {
+      dampenedBreaths++;
+    }
+
     // 2. Adaptive Boost Simulation (matching my_asv.c)
     // Error is difference between current volume and moving reference volume
     let breathBoost = 0.0;
     if (asvMax > 0 && targetVol > 0.05) {
       const volRatio = tv / targetVol;
-      // Below 0.94 -> request boost; Above 0.96 -> reduce boost
-      const err = remap01c(volRatio, ASV_LOW, 0.4) - remap01c(volRatio, ASV_HIGH, 1.4);
+      // Below (0.94 + asvMod) -> request boost; Above (0.96 + 0.5*asvMod) -> reduce boost
+      const err =
+        remap01c(volRatio, ASV_LOW + asvMod, 0.4 + asvMod) -
+        remap01c(volRatio, ASV_HIGH + asvMod * 0.5, 1.4 + asvMod * 0.5);
 
       cumulativeError += ASV_PID_I * err;
       cumulativeError = clamp(cumulativeError, ASV_PID_MIN, ASV_PID_MAX);
@@ -119,17 +136,13 @@ export function computeCustomVAutoMetrics(
       const rawSignal = clamp(pTerm + cumulativeError + dTerm, ASV_PID_MIN, ASV_PID_MAX);
       const pidSignal = rawSignal * sensMultiplier;
 
-      // airbreak-plus caps adaptive factor at 1.0 + 1.5 = 2.5
       // Boost is added above base pressure shape, capped by ASV Max
       const requestedBoost = pidSignal * (basePs * 0.8);
       breathBoost = clamp(requestedBoost, 0.0, asvMax);
-      finalIps = basePs + breathBoost;
-    } else {
-      finalIps = basePs;
     }
 
     // 3. Headroom to Max IPAP Ceiling
-    // Delivered IPAP = estimated EPAP + basePs + breathBoost
+    // Delivered IPAP = configured Min EPAP + basePs + breathBoost
     const nominalIpap = minEpap + basePs + breathBoost;
     maxIpapHeadroomList.push(Math.max(0, maxIpap - nominalIpap));
 
@@ -150,15 +163,15 @@ export function computeCustomVAutoMetrics(
     const effectivePs = basePs + breathBoost;
     effectivePsList.push(effectivePs);
 
-    // 4. Expiratory Pressure Relief (EPS) calculation (from wrapper_limit_max_pdiff.c:L115 & custom_vauto.md)
+    // 4. Expiratory Pressure Relief (EPS) calculation (patches/wrapper_limit_max_pdiff.c)
     // In airbreak-plus:
-    // relief = clamp(0.2 * (EPAP - PS/2), 0.4, 1.6)
-    // relief = max(0, relief - 0.25 * (peak_support - PS))
-    // The pre-ramp reference cmd_epap is EPAP + PS/2, so (cmd_epap - PS) = EPAP - PS/2.
+    //   relief = max(0, EPS - 0.25 * max(0, peak_support - PS))
+    //   pressure_floor = min(4.0, cmd_epap_ramp + orig_ps)
     let epsRelief = 0.0;
-    if (qualifiesForEps) {
-      const nominalRelief = clamp((minEpap - basePs / 2.0) * 0.2, 0.4, 1.6);
-      epsRelief = Math.max(0.0, nominalRelief - (breathBoost * 0.25));
+    if (qualifiesForEps && configuredEps > 0) {
+      const rawRelief = Math.max(0.0, configuredEps - breathBoost * 0.25);
+      const maxFloorRelief = Math.max(0.0, minEpap - 4.0);
+      epsRelief = Math.min(rawRelief, maxFloorRelief);
     }
     epsReliefList.push(epsRelief);
 
@@ -167,8 +180,17 @@ export function computeCustomVAutoMetrics(
       preTriggerAssists++;
     }
 
-    // Update moving reference target for valid breaths (Ti > 0.7s)
+    // Update moving reference target and hyperpnea dampening for valid breaths (Ti >= 0.7s)
     if (qualifiesForEps && tv > 0.1 && tv < 1.2) {
+      if (bIdx >= 20) {
+        let errorVol = (tv - targetVol) / (targetVol + 0.001);
+        if (errorVol > 0) {
+          errorVol = Math.max(errorVol - 0.1, 0) * 1.25;
+        } else {
+          errorVol = (errorVol - 0.025) * 0.75;
+        }
+        asvDampen = clamp(asvDampen * 0.9 + errorVol, 0.0, 1.0);
+      }
       targetVol = targetVol + (tv - targetVol) * TR_COEFF;
     }
   }
@@ -202,5 +224,10 @@ export function computeCustomVAutoMetrics(
     shortTiUnder07sPct: round1((shortTiBreaths / total) * 100),
     preTriggerAssistPct: round1((preTriggerAssists / total) * 100),
     maxIpapHeadroomMedian: round1(percentile(maxIpapHeadroomList, 50)),
+    epsConfigured: round1(configuredEps),
+    exhaleShape,
+    exhaleShapeExponent,
+    expiratoryRetentionPct,
+    dampenedBreathPct: round1((dampenedBreaths / total) * 100),
   };
 }

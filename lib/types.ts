@@ -188,6 +188,12 @@ export interface CustomVAutoSettings {
   asvSens: ASVSensitivityLabel;
   /** ASV Sensitivity controller multiplier (0.50, 0.75, 1.00, 1.25, 1.50) */
   asvSensMultiplier: number;
+  /** Expiratory Pressure Relief below EPAP in cmH2O (from RDH, range 0.0-3.0 cmH2O, step 0.2; 0 = Off) */
+  eps?: number;
+  /** Expiratory descent curve shape level (from RDW, integer 0-7; 0 = steepest drop, 3 = stock curve, 7 = max retention) */
+  exhaleShape?: number;
+  /** Computed expiratory shape quadratic coefficient s = -0.75 + 0.25 * exhaleShape */
+  exhaleShapeExponent?: number;
   /** Custom multi-signal trigger and flow-shape cycle decisions (from RPH) */
   customTriggerCycle: boolean;
   /** Square Wave custom pressure shaping active (from RPF) */
@@ -239,6 +245,16 @@ export interface CustomVAutoMetrics {
   preTriggerAssistPct: number;
   /** Available headroom between delivered IPAP and Max IPAP ceiling (cmH2O) */
   maxIpapHeadroomMedian: number;
+  /** Configured EPS ceiling from firmware settings (cmH2O) */
+  epsConfigured?: number;
+  /** Configured Exhale Shape level (0-7) */
+  exhaleShape?: number;
+  /** Exhale Shape curve parameter s = -0.75 + 0.25 * exhaleShape */
+  exhaleShapeExponent?: number;
+  /** Normalized area-under-curve expiratory support retention percentage (37.5% at 0, 50% at 3, 66.7% at 7) */
+  expiratoryRetentionPct?: number;
+  /** Percentage of breaths where post-hyperpnea dampening reduced adaptive target */
+  dampenedBreathPct?: number;
 }
 
 export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';

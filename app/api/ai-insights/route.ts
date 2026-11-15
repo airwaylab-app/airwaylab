@@ -138,7 +138,7 @@ Focus on:
 - Cross-engine correlations the rule-based system misses (e.g. Glasgow flat-top scoring is elevated while NED M-shape percentage is low)
 - Patterns between WAT regularity/periodicity and Glasgow component breakdown
 - H1 vs H2 shifts across engines (positional or REM-related patterns)
-- Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features). Describe how these settings relate to the data patterns observed. Do NOT suggest specific adjustments or changes.
+- Therapy settings context: analyse ALL machine settings provided (pressure, EPR, ramp, humidity, mask type, trigger/cycle sensitivity, comfort features, and airbreak-plus Custom VAuto parameters including ASV Max, ASV Sens, EPS exhale relief, Exh. Shape descent curve, Custom T/C, and Square Wave). Describe how these settings and delivered Custom VAuto metrics relate to the data patterns observed. Do NOT suggest specific adjustments or changes.
 - Oximetry-flow correlations when oximetry data is present
 - Flow limitation as a primary symptom driver: research (Mann et al. 2024, Gold et al. 2003) shows IFL correlates with sleepiness independently of arousals at the population level. Note this is a group-level finding; describe what the data shows for this night without implying prediction for this individual. Frame flow limitation metrics (Glasgow, FL Score, NED) as potentially closer to the primary driver of symptoms than arousal-based metrics. A low arousal index does not mean flow limitation is insignificant.
 - When user-reported night context is provided (caffeine, alcohol, congestion, sleep position, stress, exercise): correlate these factors with the analysis findings. For example, afternoon caffeine + high disruptions, nasal congestion + elevated FL, back sleeping + H2 worsening, etc.
@@ -305,6 +305,66 @@ const SettingsSchema = z.object({
   autoSensitivity: z.number().optional(),
   tubeType: sanitizedString.optional(),
   heatedTubeLevel: z.number().nullable().optional(),
+  customVAuto: z.object({
+    enabled: z.boolean(),
+    asvMax: z.number(),
+    asvSens: sanitizedString,
+    asvSensMultiplier: z.number(),
+    eps: z.number().optional(),
+    exhaleShape: z.number().optional(),
+    exhaleShapeExponent: z.number().optional(),
+    customTriggerCycle: z.boolean(),
+    squareWave: z.boolean(),
+    asvBackupRate: z.boolean(),
+    autoEpap: z.boolean().optional(),
+    autoEpapMinEpap: z.number().optional(),
+    autoEpapMaxEpap: z.number().optional(),
+    fallTime: z.number().optional(),
+    ibr: z.boolean().optional(),
+    headerClock: z.boolean().optional(),
+    monitoring: z.boolean().optional(),
+  }).optional(),
+});
+
+const SettingsMetricsSchema = z.object({
+  breathCount: z.number(),
+  epapDetected: z.number(),
+  ipapDetected: z.number(),
+  psDetected: z.number(),
+  triggerDelayMedianMs: z.number(),
+  autoTriggerPct: z.number(),
+  tiMedianMs: z.number(),
+  teMedianMs: z.number(),
+  ieRatio: z.number(),
+  timeAtIpapMedianMs: z.number(),
+  ipapDwellMedianPct: z.number(),
+  prematureCyclePct: z.number(),
+  lateCyclePct: z.number(),
+  endExpPressureMean: z.number(),
+  endExpPressureSd: z.number(),
+  tidalVolumeMedianMl: z.number(),
+  tidalVolumeCv: z.number(),
+  minuteVentProxy: z.number(),
+  customVAutoMetrics: z.object({
+    active: z.boolean(),
+    asvBoostMean: z.number(),
+    asvBoostMax: z.number(),
+    boostedBreathPct: z.number(),
+    maxIpapClippedPct: z.number(),
+    maxIpapExceededPct: z.number().optional(),
+    epsReliefMean: z.number(),
+    epsReliefMax: z.number(),
+    effectivePsMedian: z.number(),
+    effectivePsP95: z.number(),
+    shortTiUnder07sPct: z.number(),
+    preTriggerAssistPct: z.number(),
+    maxIpapHeadroomMedian: z.number(),
+    epsConfigured: z.number().optional(),
+    exhaleShape: z.number().optional(),
+    exhaleShapeExponent: z.number().optional(),
+    expiratoryRetentionPct: z.number().optional(),
+    dampenedBreathPct: z.number().optional(),
+  }).optional(),
 });
 
 const MachineSummarySchema = z.object({
@@ -392,6 +452,7 @@ const NightSchema = z.object({
   wat: WatSchema,
   ned: NedSchema,
   oximetry: OximetrySchema.nullable().optional(),
+  settingsMetrics: SettingsMetricsSchema.nullable().optional(),
   machineSummary: MachineSummarySchema.nullable().optional(),
   settingsFingerprint: SettingsFingerprintSchema.nullable().optional(),
 });
@@ -428,6 +489,7 @@ function buildUserPrompt(body: RequestBody): string {
       wat: selected.wat,
       ned: selected.ned,
       oximetry: selected.oximetry,
+      settingsMetrics: selected.settingsMetrics ?? undefined,
       machineSummary: selected.machineSummary ?? undefined,
       settingsFingerprint: selected.settingsFingerprint ?? undefined,
     },
