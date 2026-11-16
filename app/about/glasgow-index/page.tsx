@@ -303,12 +303,42 @@ export default function GlasgowIndexPage() {
         </div>
       </section>
 
+      {/* Physiological Foundation */}
+      <section className="mb-12">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
+          Biomechanical &amp; physiological foundations
+        </h2>
+        <div className="rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
+          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+            The 9 morphological descriptors of the Glasgow Index map directly to established airway biophysics:
+          </p>
+          <ul className="mb-4 list-disc pl-5 space-y-1.5 text-xs text-muted-foreground">
+            <li>
+              <strong className="text-foreground">Starling Resistor Truncation (flatTop):</strong> Reflects flow limitation where maximal flow is fixed by upstream minus critical closing pressure (Pus - Pcrit), independent of patient effort (Patil et al., 2007).
+            </li>
+            <li>
+              <strong className="text-foreground">Palatal Flutter &amp; Collapse (multiPeak, spike):</strong> Aligns with endoscopic findings of velopharyngeal and lateral-wall oscillation (Genta et al., 2017).
+            </li>
+          </ul>
+          <Link
+            href="/research"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            Read more in our clinical research methodology &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* Related reading */}
       <section className="mb-10">
         <p className="text-xs text-muted-foreground">
           Learn more:{' '}
           <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
             see how the Glasgow Index fits into the four metrics AirwayLab measures
+          </Link>
+          {' '}&bull;{' '}
+          <Link href="/research" className="text-primary hover:text-primary/80">
+            empirical research &amp; peer-reviewed citations
           </Link>
         </p>
       </section>

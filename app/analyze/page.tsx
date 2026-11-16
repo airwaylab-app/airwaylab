@@ -149,6 +149,40 @@ function AnalyzePageInner() {
   const hasTriggeredAutoUpload = useRef(false);
   const thresholdModalRef = useRef<ThresholdSettingsModalHandle>(null);
   const [localDataCleared, setLocalDataCleared] = useState(false);
+  const [hasImportedData, setHasImportedData] = useState(false);
+  const [importedNightCount, setImportedNightCount] = useState(0);
+
+  const loadImportedData = useCallback(async () => {
+    const saved = await loadPersistedResults();
+    if (saved && saved.nights.length > 0) {
+      setPersistedData(saved);
+      hadOximetryRef.current = saved.nights.some((n) => !!n.oximetry);
+    } else {
+      try {
+        const res = await fetch('/api/local-import');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.nights?.length > 0) {
+            for (const n of data.nights) {
+              n.date = new Date(n.date);
+              if (n.sessionStartTime) n.sessionStartTime = new Date(n.sessionStartTime);
+            }
+            setPersistedData(data);
+            setHasImportedData(true);
+            setImportedNightCount(data.nights.length);
+            hadOximetryRef.current = data.nights.some((n: NightResult) => !!n.oximetry);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadImportedData();
+  }, [loadImportedData]);
+
 
   // Warn before closing/refreshing while analysis is in progress
   useEffect(() => {
@@ -789,7 +823,7 @@ function AnalyzePageInner() {
       )}
 
       {/* Returning user nudge — anonymous users with past results */}
-      {!user && lifetimeNights > 0 && status === 'idle' && !isDemo && (
+      {!user && lifetimeNights > 0 && status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto max-w-lg mb-4">
           <ReturningUserNudge
             previousNights={lifetimeNights}
@@ -799,7 +833,7 @@ function AnalyzePageInner() {
       )}
 
       {/* Engine upgrade banner — shown when cached results were from an older version */}
-      {engineUpgraded && status === 'idle' && !isDemo && (
+      {engineUpgraded && status === 'idle' && !isDemo && !persistedData && (
         <div className="mx-auto mb-4 max-w-lg">
           <div className="flex items-start gap-2.5 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
             <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
@@ -831,37 +865,39 @@ function AnalyzePageInner() {
       )}
 
       {/* Upload State — hidden when persisted results are loaded */}
-      {status === 'idle' && !isDemo && (
-        !persistedData ? (
-          <div className="mx-auto max-w-lg">
-            <DemoCTA onLoadDemo={loadDemo} />
-            <FileUpload onFilesSelected={handleFiles} />
-            {/* Mobile reminder — secondary, shown below file picker */}
-            <MobileEmailCapture className="mt-4 sm:hidden" />
+      {status === 'idle' && !isDemo && !persistedData && (
+        <div className="mx-auto max-w-lg">
+          {hasImportedData && (
+            <div className="mb-4 flex flex-col items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 p-4 text-center">
+              <p className="text-sm font-medium text-foreground">
+                Imported sleep data available ({importedNightCount} nights)
+              </p>
+              <Button size="sm" onClick={loadImportedData} className="gap-2">
+                <Activity className="h-4 w-4" />
+                Load Imported Sleep Data
+              </Button>
+            </div>
+          )}
+          <DemoCTA onLoadDemo={loadDemo} />
+          <FileUpload onFilesSelected={handleFiles} />
+          {/* Mobile reminder — secondary, shown below file picker */}
+          <MobileEmailCapture className="mt-4 sm:hidden" />
 
-            {/* Contextual help links */}
-            <p className="mt-3 text-center text-xs text-muted-foreground/70">
-              Not sure how to get your data?{' '}
-              <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
-                How to get your ResMed data
-              </Link>
-            </p>
-            <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
-              Not sure what to look for? Read{' '}
-              <Link href="/blog/what-is-a-good-ahi-on-cpap" className="text-primary hover:text-primary/80">
-                what a good AHI on CPAP looks like
-              </Link>
-              .
-            </p>
-          </div>
-        ) : (
-          <div className="mx-auto max-w-lg">
-            <DemoCTA onLoadDemo={loadDemo} />
-            <FileUpload onFilesSelected={handleFiles} />
-            {/* Mobile reminder — secondary, shown below file picker */}
-            <MobileEmailCapture className="mt-4 sm:hidden" />
-          </div>
-        )
+          {/* Contextual help links */}
+          <p className="mt-3 text-center text-xs text-muted-foreground/70">
+            Not sure how to get your data?{' '}
+            <Link href="/blog/resmed-airsense-10-sd-card" className="text-primary hover:text-primary/80">
+              How to get your ResMed data
+            </Link>
+          </p>
+          <p className="mt-1.5 text-center text-xs text-muted-foreground/70">
+            Not sure what to look for? Read{' '}
+            <Link href="/blog/what-is-a-good-ahi-on-cpap" className="text-primary hover:text-primary/80">
+              what a good AHI on CPAP looks like
+            </Link>
+            .
+          </p>
+        </div>
       )}
 
       {/* Medical disclaimer — below upload/welcome zone (MDR compliance) */}

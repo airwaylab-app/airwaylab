@@ -5,6 +5,8 @@
 
 import type { MachineSettings } from '../types';
 import { parseSTR } from './edf-parser';
+import { parseCustomSettings, parseVAutoGlobalSettings } from './custom-settings-parser';
+export { parseCustomSettings, parseVAutoGlobalSettings } from './custom-settings-parser';
 
 interface DailySettings {
   [date: string]: MachineSettings;
@@ -64,9 +66,16 @@ const TYPED_SIGNAL_LABELS = new Set([
  * Returns a map of date string (YYYY-MM-DD) → MachineSettings.
  * Captures all S.* prefix signals into extendedSettings alongside typed fields.
  */
-export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): DailySettings {
+export function extractSettings(
+  strBuffer: ArrayBuffer,
+  deviceModel: string,
+  customSettingsText?: string,
+  vautoGlobalSettingsText?: string
+): DailySettings {
   const { signals, startDateTime } = parseSTR(strBuffer);
   const dailySettings: DailySettings = {};
+  const parsedCustomVAuto = customSettingsText ? parseCustomSettings(customSettingsText) : null;
+  const parsedVAutoGlobal = vautoGlobalSettingsText ? parseVAutoGlobalSettings(vautoGlobalSettingsText) : null;
 
   // Log all signal labels for discovery
   const allLabels = signals.map((s) => s.label);
@@ -195,8 +204,8 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     const d = new Date(startDateTime.getTime() + daysDiff * 86400000);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    const ipap = ipapValues[i]!;
-    const epap = epapValues[i]!;
+    let ipap = ipapValues[i]!;
+    let epap = epapValues[i]!;
 
     if (isNaN(ipap) || isNaN(epap) || ipap <= 0 || epap <= 0) continue;
 
@@ -227,11 +236,19 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       }
     }
 
-    // VAuto devices (AC10 VAuto and AC11) use mode 8 for VAuto, not iVAPS.
+    // VAuto and ASV devices use mode 8 for VAuto/ASVAuto, not iVAPS.
     // AirCurve 10 ST-A uses mode 8 for iVAPS and must NOT be remapped.
     let papMode = MODE_MAP[modeNum] ?? `Mode ${modeNum}`;
-    if (isVAutoDevice && modeNum === 8) {
-      papMode = 'VAuto';
+    const isSTA = /st[-_]?a/i.test(deviceModel);
+    const isASV = /asv/i.test(deviceModel);
+    if (!isSTA && modeNum === 8) {
+      if (parsedCustomVAuto?.enabled) {
+        papMode = 'Custom VAuto';
+      } else if (isVAutoDevice) {
+        papMode = 'VAuto';
+      } else if (isASV) {
+        papMode = 'ASVAuto';
+      }
     }
 
     // Known-wrong-path guard (#1036): on AirSense in an auto mode (APAP/AutoSet,
@@ -244,11 +261,25 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
     const untrustedAutoSetRange =
       isAirSense && (modeNum === 1 || modeNum === 2 || modeNum === 3);
 
+    // For Custom VAuto (and VAuto with S.VA.* / VGL.tgt), prefer configured bounds
+    // over TgtEPAP.50/TgtIPAP.50 delivered medians so pressure headroom & EPS are accurate.
+    const isLastDay = i === len - 1;
+    let configuredPs = Math.round((ipap - epap) * 10) / 10;
+    if (parsedCustomVAuto?.enabled) {
+      const vaMinEpap = (isLastDay ? parsedVAutoGlobal?.minEpap : undefined) ?? extended['S.VA.MinEPAP'];
+      const vaMaxIpap = (isLastDay ? parsedVAutoGlobal?.maxIpap : undefined) ?? extended['S.VA.MaxIPAP'];
+      const vaPs = (isLastDay ? parsedVAutoGlobal?.pressureSupport : undefined) ?? extended['S.VA.PS'];
+      if (vaMinEpap !== undefined && vaMinEpap > 0) epap = vaMinEpap;
+      if (vaMaxIpap !== undefined && vaMaxIpap > 0) ipap = vaMaxIpap;
+      if (vaPs !== undefined && vaPs > 0) configuredPs = vaPs;
+      else configuredPs = Math.round((ipap - epap) * 10) / 10;
+    }
+
     dailySettings[dateStr] = {
       deviceModel,
       epap,
       ipap,
-      pressureSupport: Math.round((ipap - epap) * 10) / 10,
+      pressureSupport: configuredPs,
       papMode,
       riseTime: easyBreatheOn ? null : (riseTimeRaw !== undefined ? Math.round(riseTimeRaw) : null),
       trigger: sensitivityLabel(triggerRaw !== undefined ? Math.round(triggerRaw) : undefined),
@@ -267,6 +298,7 @@ export function extractSettings(strBuffer: ArrayBuffer, deviceModel: string): Da
       extendedSettings: Object.keys(extended).length > 0 ? extended : undefined,
       settingsSource: untrustedAutoSetRange ? 'unavailable' : 'extracted',
       ...(untrustedAutoSetRange ? { unavailableReason: 'untrusted_autoset_range' as const } : {}),
+      ...(parsedCustomVAuto ? { customVAuto: parsedCustomVAuto } : {}),
     };
   }
 

@@ -24,6 +24,7 @@
 
 # misc
 .DS_Store
+.nomedia
 *.pem
 *.key
 *.p12
@@ -58,7 +59,7 @@ prompts/
 !.github/prompts/
 specs/
 cache/
-research/
+/research/
 
 # WIP files (untracked dev work, excluded from tsc)
 _wip/
@@ -68,3 +69,18 @@ outreach*.md
 leads/
 contacts/
 *.contacts.md
+
+# Local sleep data & patient exports
+datasdcard/
+imported-data.json
+public/imported-data.json
+perplexity_upload_*
+public/perplexity_upload_*
+scripts/generate-*-pdf*.py
+scripts/bundle-*.cjs
+scripts/generate-perplexity-*.cjs
+scripts/inspect-*.cjs
+scripts/find-candidates.cjs
+scripts/generate-flow-visualizations.cjs
+scripts/print-night-summary.cjs
+

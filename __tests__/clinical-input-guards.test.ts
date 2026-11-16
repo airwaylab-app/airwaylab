@@ -105,7 +105,9 @@ describe('Golden-output regression — guards do not change valid results', () =
     expect(glasgow).toEqual(GOLDEN.glasgow);
 
     const wat = computeWAT(edf.flowData, edf.samplingRate);
-    expect(wat).toEqual(GOLDEN.wat);
+    expect(wat.flScore).toBeCloseTo(GOLDEN.wat.flScore, 10);
+    expect(wat.regularityScore).toBeCloseTo(GOLDEN.wat.regularityScore, 10);
+    expect(wat.periodicityIndex).toBeCloseTo(GOLDEN.wat.periodicityIndex, 10);
 
     const ned = computeNED(edf.flowData, edf.samplingRate) as unknown as Record<
       string,

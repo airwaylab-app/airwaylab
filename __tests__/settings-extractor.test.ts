@@ -450,6 +450,32 @@ describe('extractSettings — AirCurve 10 VAuto', () => {
     expect(result[dates[0]!]!.papMode).toBe('VAuto');
   });
 
+  it('maps mode 8 to ASVAuto for AirCurve 10 ASV', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 ASV');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    expect(result[dates[0]!]!.papMode).toBe('ASVAuto');
+  });
+
+  it('maps mode 8 to Custom VAuto when customSettingsText is enabled', () => {
+    const buf = buildSTRBuffer([
+      { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },
+      { label: 'TgtIPAP.50', values: [15], physMin: 4,  physMax: 25 },
+      { label: 'TgtEPAP.50', values: [8],  physMin: 4,  physMax: 25 },
+      { label: 'Mode',       values: [8],  physMin: 0,  physMax: 10 },
+    ]);
+    const result = extractSettings(buf, 'AirCurve 10 ASV', '#RPO 0001\n#RCM 0C8');
+    const dates = Object.keys(result);
+    expect(dates.length).toBeGreaterThan(0);
+    expect(result[dates[0]!]!.papMode).toBe('Custom VAuto');
+  });
+
   it('does NOT remap mode 8 for AirCurve 10 ST-A (iVAPS device)', () => {
     const buf = buildSTRBuffer([
       { label: 'Date',       values: [0],  physMin: 0,  physMax: 36500 },

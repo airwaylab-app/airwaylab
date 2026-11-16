@@ -173,6 +173,88 @@ export interface MachineSettings {
   tubeType?: string;
   /** BMC heated tube level */
   heatedTubeLevel?: number | null;
+  // airbreak-plus Custom VAuto settings (optional, populated when CSG.tgt/CSG.set is present)
+  customVAuto?: CustomVAutoSettings;
+}
+
+export type ASVSensitivityLabel = 'Very Low' | 'Low' | 'Med' | 'High' | 'Very High';
+
+export interface CustomVAutoSettings {
+  /** True when Custom VAuto patch is active (RPO = 1) */
+  enabled: boolean;
+  /** ASV Max setting in cmH2O (from RCM, range 0.0-10.0 cmH2O) */
+  asvMax: number;
+  /** ASV Sensitivity label (from RXM: Very Low, Low, Med, High, Very High) */
+  asvSens: ASVSensitivityLabel;
+  /** ASV Sensitivity controller multiplier (0.50, 0.75, 1.00, 1.25, 1.50) */
+  asvSensMultiplier: number;
+  /** Expiratory Pressure Relief below EPAP in cmH2O (from RDH, range 0.0-3.0 cmH2O, step 0.2; 0 = Off) */
+  eps?: number;
+  /** Expiratory descent curve shape level (from RDW, integer 0-7; 0 = steepest drop, 3 = stock curve, 7 = max retention) */
+  exhaleShape?: number;
+  /** Computed expiratory shape quadratic coefficient s = -0.75 + 0.25 * exhaleShape */
+  exhaleShapeExponent?: number;
+  /** Custom multi-signal trigger and flow-shape cycle decisions (from RPH) */
+  customTriggerCycle: boolean;
+  /** Square Wave custom pressure shaping active (from RPF) */
+  squareWave: boolean;
+  /** ASV Backup Rate setting (from RPW) */
+  asvBackupRate: boolean;
+  /** AutoEPAP enabled (from RSA) */
+  autoEpap?: boolean;
+  /** AutoEPAP Min EPAP (from RDF) */
+  autoEpapMinEpap?: number;
+  /** AutoEPAP Max EPAP (from RDM) */
+  autoEpapMaxEpap?: number;
+  /** Fall Time in 8ms ticks (from RCW) */
+  fallTime?: number;
+  /** ST iBR enabled (from RXW) */
+  ibr?: boolean;
+  /** Header Clock enabled (from RXF) */
+  headerClock?: boolean;
+  /** Therapy graph monitoring enabled (from RXH) */
+  monitoring?: boolean;
+  /** Raw UART settings parsed from CSG.tgt / CSG.set */
+  rawSettings?: Record<string, string | number>;
+}
+
+export interface CustomVAutoMetrics {
+  /** Whether Custom VAuto was active for this analysis */
+  active: boolean;
+  /** Mean adaptive boost delivered above base PS during inspiration (cmH2O) */
+  asvBoostMean: number;
+  /** Peak adaptive boost reached during inspiration (cmH2O) */
+  asvBoostMax: number;
+  /** Percentage of breaths that engaged adaptive boost (>0.1 cmH2O boost) */
+  boostedBreathPct: number;
+  /** Percentage of breaths where adaptive boost was clipped by Max IPAP ceiling */
+  maxIpapClippedPct: number;
+  /** Percentage of breaths where delivered IPAP exceeded menu Max IPAP due to adaptive boost */
+  maxIpapExceededPct?: number;
+  /** Mean expiratory pressure relief (EPS) below EPAP (cmH2O) */
+  epsReliefMean: number;
+  /** Peak expiratory pressure relief (EPS) below EPAP (cmH2O) */
+  epsReliefMax: number;
+  /** Effective delivered median PS across breaths (base PS + delivered boost) */
+  effectivePsMedian: number;
+  /** Effective delivered 95th percentile PS across breaths */
+  effectivePsP95: number;
+  /** Percentage of breaths with Ti < 0.7s that failed the EPS relief eligibility gate */
+  shortTiUnder07sPct: number;
+  /** Pre-trigger assist detected rate (% of breaths) */
+  preTriggerAssistPct: number;
+  /** Available headroom between delivered IPAP and Max IPAP ceiling (cmH2O) */
+  maxIpapHeadroomMedian: number;
+  /** Configured EPS ceiling from firmware settings (cmH2O) */
+  epsConfigured?: number;
+  /** Configured Exhale Shape level (0-7) */
+  exhaleShape?: number;
+  /** Exhale Shape curve parameter s = -0.75 + 0.25 * exhaleShape */
+  exhaleShapeExponent?: number;
+  /** Normalized area-under-curve expiratory support retention percentage (37.5% at 0, 50% at 3, 66.7% at 7) */
+  expiratoryRetentionPct?: number;
+  /** Percentage of breaths where post-hyperpnea dampening reduced adaptive target */
+  dampenedBreathPct?: number;
 }
 
 export type CaffeineLevel = 'none' | 'before-noon' | 'afternoon' | 'evening';
@@ -391,6 +473,9 @@ export interface SettingsMetrics {
   tidalVolumeP75Ml: number;
   tidalVolumeCv: number;
   minuteVentProxy: number;
+
+  // airbreak-plus Custom VAuto metrics (populated when customVAuto is active)
+  customVAutoMetrics?: CustomVAutoMetrics;
 }
 
 export interface CrossDeviceResults {

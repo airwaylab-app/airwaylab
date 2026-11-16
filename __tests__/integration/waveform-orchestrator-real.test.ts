@@ -105,11 +105,12 @@ vi.stubGlobal('Worker', MockWorker);
 let waveformOrchestrator: typeof import('@/lib/waveform-orchestrator').waveformOrchestrator;
 
 beforeEach(async () => {
-  vi.resetModules();
   workerPostMessage.mockClear();
   workerTerminate.mockClear();
-  const mod = await import('@/lib/waveform-orchestrator');
-  waveformOrchestrator = mod.waveformOrchestrator;
+  if (!waveformOrchestrator) {
+    const mod = await import('@/lib/waveform-orchestrator');
+    waveformOrchestrator = mod.waveformOrchestrator;
+  }
 });
 
 afterEach(() => {

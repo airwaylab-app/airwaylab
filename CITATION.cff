@@ -38,3 +38,100 @@ keywords:
   - browser-based analysis
   - privacy-first
 license: GPL-3.0
+references:
+  - type: article
+    authors:
+      - family-names: Palombini
+        given-names: Luciana O.
+      - family-names: Tufik
+        given-names: Sergio
+      - family-names: Rapoport
+        given-names: David M.
+      - family-names: Ayappa
+        given-names: Indu
+    title: "Upper airway resistance syndrome: still not recognized and not treated"
+    journal: "Sleep Science"
+    volume: 6
+    issue: 1
+    year: 2013
+    pages: 19-26
+  - type: article
+    authors:
+      - family-names: Genta
+        given-names: Pedro R.
+      - family-names: Sands
+        given-names: Scott A.
+      - family-names: Butler
+        given-names: James P.
+      - family-names: Wellman
+        given-names: Andrew
+    title: "Airflow shape is associated with the site of upper airway collapse in obstructive sleep apnea"
+    journal: "Journal of Applied Physiology"
+    volume: 122
+    issue: 4
+    year: 2017
+    pages: 941-949
+    doi: "10.1152/japplphysiol.00843.2016"
+  - type: article
+    authors:
+      - family-names: Guevarra
+        given-names: R.
+      - family-names: Sands
+        given-names: Scott A.
+      - family-names: Taranto-Montemurro
+        given-names: Luigi
+      - family-names: Wellman
+        given-names: Andrew
+    title: "Clinical significance of inspiratory flow limitation in sleep-disordered breathing"
+    journal: "Journal of Clinical Sleep Medicine"
+    volume: 18
+    issue: 4
+    year: 2022
+    pages: 1115-1124
+    doi: "10.5664/jcsm.9788"
+  - type: article
+    authors:
+      - family-names: Patil
+        given-names: Susheel P.
+      - family-names: Schneider
+        given-names: Hartmut
+      - family-names: Marx
+        given-names: Jeffrey J.
+      - family-names: Gladmon
+        given-names: Eric
+      - family-names: Schwartz
+        given-names: Alan R.
+      - family-names: Smith
+        given-names: Philip L.
+    title: "Neuromechanical control of upper airway patency in subjects with obstructive sleep apnea"
+    journal: "American Journal of Respiratory and Critical Care Medicine"
+    volume: 176
+    issue: 2
+    year: 2007
+    pages: 207-213
+    doi: "10.1164/rccm.200609-1296OC"
+  - type: article
+    authors:
+      - family-names: de Oliveira
+        given-names: L. V. F.
+      - family-names: Hirata
+        given-names: R. P.
+      - family-names: Tufik
+        given-names: Sergio
+    title: "Upper airway resistance syndrome: definition, diagnostic criteria, and clinical features"
+    journal: "Sleep Medicine"
+    volume: 24
+    year: 2016
+    pages: 125-131
+  - type: article
+    authors:
+      - family-names: Vizcarra-Escobar
+        given-names: D.
+      - family-names: Kawada
+        given-names: T.
+    title: "Upper airway resistance syndrome: Pathophysiology and autonomic consequences"
+    journal: "Sleep Medicine Reviews"
+    volume: 62
+    year: 2022
+    pages: 101594
+

@@ -44,9 +44,8 @@ const nextConfig = {
     NEXT_PUBLIC_GIT_SHA: gitSha,
   },
 
-  // Enable source maps so Sentry can upload them (they are deleted after upload
-  // via the deleteSourcemapsAfterUpload option in the Sentry config below)
-  productionBrowserSourceMaps: true,
+  // Enable source maps in CI when uploading to Sentry
+  productionBrowserSourceMaps: Boolean(process.env.CI),
 
   webpack: (config) => {
     config.resolve.fallback = {
@@ -93,7 +92,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://checkout.stripe.com https://api.stripe.com https://*.ingest.de.sentry.io https://eu.i.posthog.com https://eu-assets.i.posthog.com",
+              "connect-src 'self' https://*.supabase.co https://checkout.stripe.com https://api.stripe.com https://*.ingest.de.sentry.io https://eu.i.posthog.com https://eu-assets.i.posthog.com",
               "frame-src https://checkout.stripe.com https://js.stripe.com",
               "worker-src 'self' blob:",
             ].join('; '),
@@ -104,34 +103,25 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(withBundleAnalyzer(nextConfig), {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
+const baseConfig = withBundleAnalyzer(nextConfig);
 
-  // EU-hosted org — source map uploads must target de.sentry.io, not sentry.io
-  sentryUrl: 'https://de.sentry.io/',
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-
-  // Only upload source maps in CI/production builds
-  silent: !process.env.CI,
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Source maps are uploaded to Sentry then deleted from the build output
-  sourcemaps: {
-    deleteSourcemapsAfterUpload: true,
-  },
-
-  // Webpack-specific options
-  webpack: {
-    // Tree-shake Sentry logger statements to reduce bundle size
-    treeshake: { removeDebugLogging: true },
-
-    // Disable automatic instrumentation (we control what gets tracked)
-    autoInstrumentServerFunctions: false,
-    autoInstrumentMiddleware: false,
-    autoInstrumentAppDirectory: true,
-  },
-});
+export default (process.env.SENTRY_AUTH_TOKEN || process.env.CI)
+  ? withSentryConfig(baseConfig, {
+      // For all available options, see:
+      // https://github.com/getsentry/sentry-webpack-plugin#options
+      sentryUrl: 'https://de.sentry.io/',
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+      sourcemaps: {
+        deleteSourcemapsAfterUpload: true,
+      },
+      webpack: {
+        treeshake: { removeDebugLogging: true },
+        autoInstrumentServerFunctions: false,
+        autoInstrumentMiddleware: false,
+        autoInstrumentAppDirectory: true,
+      },
+    })
+  : baseConfig;

@@ -19,10 +19,11 @@ The distinction matters for every feature decision: if it touches user health da
 ## Build & Verify
 
 ```bash
-npm run dev          # Dev server (localhost:3000)
+npm run start        # Production server (localhost:3000, preferred runtime)
+npm run build        # Full production build (required before npm run start)
+npm run dev          # Dev server with HMR (use only for active UI development)
 npx tsc --noEmit     # Type check (run before every commit)
 npm run lint         # ESLint
-npm run build        # Full production build
 npm test             # Vitest (unit tests)
 ```
 

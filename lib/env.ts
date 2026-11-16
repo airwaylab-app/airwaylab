@@ -119,11 +119,6 @@ export function validateServerEnv() {
     );
   }
 
-  if (serverEnv.ANTHROPIC_API_KEY && !serverEnv.AI_INSIGHTS_API_KEY) {
-    warnings.push(
-      'ANTHROPIC_API_KEY is set but AI_INSIGHTS_API_KEY is missing — AI Insights endpoint will reject requests.'
-    );
-  }
 
   if (serverEnv.SUPABASE_URL && !serverEnv.SUPABASE_SERVICE_ROLE_KEY) {
     warnings.push(

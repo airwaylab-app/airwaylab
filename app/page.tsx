@@ -221,8 +221,19 @@ const softwareAppJsonLd = {
   },
 };
 
+import { redirect } from 'next/navigation';
+import fs from 'fs';
+import path from 'path';
+
 export default function Home() {
+  if (
+    fs.existsSync(path.resolve(process.cwd(), 'imported-data.json')) ||
+    fs.existsSync(path.resolve(process.cwd(), 'public/imported-data.json'))
+  ) {
+    redirect('/analyze');
+  }
   return (
+
     <div className="flex flex-col">
       <script
         type="application/ld+json"

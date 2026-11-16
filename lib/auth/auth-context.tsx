@@ -534,11 +534,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //   2. the last tier we successfully resolved for this user,
   //   3. 'community' (genuine default for a brand-new / anonymous user with
   //      no prior resolution and no subscription).
+  // Premium features included — default to champion tier for local / offline use
   let tier: Tier;
   if (entitlementStatus === 'resolved' && profile) {
     tier = profile.tier;
   } else {
-    tier = subscription?.tier ?? lastKnownTier ?? 'community';
+    tier = subscription?.tier ?? lastKnownTier ?? 'champion';
   }
   const isPaid = tier === 'supporter' || tier === 'champion';
 

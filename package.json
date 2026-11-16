@@ -3,25 +3,25 @@
   "version": "1.2.3",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "node scripts/check-version.mjs && next build --webpack",
-    "start": "next start",
-    "lint": "eslint .",
+    "dev": "node node_modules/next/dist/bin/next dev --webpack",
+    "import": "node scripts/import-sleep-data.cjs",
+    "build": "node scripts/check-version.mjs && node node_modules/next/dist/bin/next build --webpack",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
     "lint:mutations": "node scripts/check-no-mutation-or.mjs",
-    "check": "tsc --noEmit && eslint . && vitest run",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "knip": "knip",
-    "analyze": "ANALYZE=true next build --webpack",
-    "prepare": "husky"
+    "check": "node node_modules/typescript/bin/tsc --noEmit && node node_modules/eslint/bin/eslint.js . && node node_modules/vitest/vitest.mjs run",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "test": "node node_modules/vitest/vitest.mjs run",
+    "test:watch": "node node_modules/vitest/vitest.mjs",
+    "test:e2e": "node node_modules/@playwright/test/cli.js test",
+    "knip": "node node_modules/knip/bin/knip.js",
+    "analyze": "ANALYZE=true node node_modules/next/dist/bin/next build --webpack",
+    "prepare": "husky || true"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
     "@base-ui/react": "^1.2.0",
     "@sentry/nextjs": "^10.42.0",
     "@supabase/ssr": "^0.9.0",

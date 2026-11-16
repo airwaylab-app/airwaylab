@@ -292,6 +292,32 @@ export default function OximetryAnalysisPage() {
         </div>
       </section>
 
+      {/* Autonomic Surges & Clinical Evidence */}
+      <section className="mb-12">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
+          Autonomic heart-rate surges &amp; clinical evidence
+        </h2>
+        <div className="rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
+          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+            Standard oximetry only counts events that produce a 3% or 4% drop in oxygen. However, peer-reviewed clinical research demonstrates:
+          </p>
+          <ul className="mb-4 list-disc pl-5 space-y-1.5 text-xs text-muted-foreground">
+            <li>
+              <strong className="text-foreground">Guevarra et al. (2022):</strong> In mild sleep-disordered breathing and UARS, only 25% of flow-limited events cause a 3% desaturation, whereas 55% trigger sympathetic tachycardia (heart rate surge) and 67% cause an EEG arousal or heart rate spike.
+            </li>
+            <li>
+              <strong className="text-foreground">Cardiorespiratory Coupling:</strong> Detecting sympathetic pulse surges alongside airflow resistance unmasks sleep fragmentation that standard oximetry misses completely.
+            </li>
+          </ul>
+          <Link
+            href="/research"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            Review our autonomic surge research &amp; methodology &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* Related reading */}
       <section className="mb-10">
         <p className="text-xs text-muted-foreground">
@@ -300,6 +326,10 @@ export default function OximetryAnalysisPage() {
             four metrics AirwayLab measures
           </Link>{' '}
           — how oximetry fits alongside the flow-based analysis engines.
+          {' '}&bull;{' '}
+          <Link href="/research" className="text-primary hover:text-primary/80">
+            peer-reviewed oximetry &amp; autonomic research
+          </Link>
         </p>
       </section>
 

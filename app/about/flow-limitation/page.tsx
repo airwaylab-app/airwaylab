@@ -279,12 +279,45 @@ export default function FlowLimitationPage() {
         </div>
       </section>
 
+      {/* Peer-reviewed evidence & research methodology */}
+      <section className="mb-12">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
+          Peer-reviewed evidence &amp; clinical thresholds
+        </h2>
+        <div className="rounded-xl border border-border/50 bg-card/30 p-5 sm:p-6">
+          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+            AirwayLab&apos;s flow limitation metrics are grounded in peer-reviewed clinical sleep literature:
+          </p>
+          <ul className="mb-4 list-disc pl-5 space-y-1.5 text-xs text-muted-foreground">
+            <li>
+              <strong className="text-foreground">Palombini et al. (2013):</strong> Established the normative 95th percentile upper limit of 30% IFL in healthy adults; values &gt;30% represent abnormal upper airway resistance.
+            </li>
+            <li>
+              <strong className="text-foreground">Genta et al. (2016, 2017):</strong> Validated Negative Effort Dependence (NED) and bimodal M-shape airflow waveforms as structural markers of soft-palate and lateral-wall collapse.
+            </li>
+            <li>
+              <strong className="text-foreground">de Oliveira et al. (2016):</strong> Demonstrated that UARS presents with normal AHI (&lt;5/h) and normal SpO2 (&gt;90%), separated from controls by continuous airflow limitation &gt;6% TST and daytime fatigue.
+            </li>
+          </ul>
+          <Link
+            href="/research"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            Explore our complete empirical methodology &amp; bibliography &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* Related reading */}
       <section className="mb-10">
         <p className="text-xs text-muted-foreground">
           Learn more:{' '}
           <Link href="/blog/four-metrics-airwaylab-measures" className="text-primary hover:text-primary/80">
             how flow limitation fits into the four metrics AirwayLab measures
+          </Link>
+          {' '}&bull;{' '}
+          <Link href="/research" className="text-primary hover:text-primary/80">
+            clinical research and normative cutoffs
           </Link>
         </p>
       </section>

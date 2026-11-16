@@ -326,6 +326,20 @@ export async function loadPersistedResults(): Promise<{
       }
       if (raw !== null) fromLegacy = true;
     }
+    if (raw === null && typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/local-import');
+        if (res.ok) {
+          const imported = await res.json();
+          if (imported?.nights?.length > 0) {
+            raw = JSON.stringify(imported);
+            fromLegacy = true;
+          }
+        }
+      } catch {
+        // Network or fetch unavailable
+      }
+    }
     if (raw === null) return null;
 
     const data = JSON.parse(raw);
@@ -371,12 +385,19 @@ export async function loadPersistedResults(): Promise<{
       return null;
     }
 
-    // Valid data sourced from the legacy localStorage blob — migrate it into
-    // IndexedDB so future loads are IDB-backed (best-effort, original JSON).
-    if (fromLegacy && idbAvailable()) {
-      void saveSummaryRecord(raw, data.savedAt).catch(() => {
-        // Best-effort migration — the localStorage copy still serves this load.
-      });
+    // Valid data sourced from the legacy localStorage blob or local import — migrate it into
+    // IndexedDB and localStorage so future loads are fast and offline-ready.
+    if (fromLegacy) {
+      try {
+        localStorage.setItem(STORAGE_KEY, raw);
+      } catch {
+        // ignore
+      }
+      if (idbAvailable()) {
+        void saveSummaryRecord(raw, data.savedAt).catch(() => {
+          // Best-effort migration — the localStorage copy still serves this load.
+        });
+      }
     }
 
     // Restore Date objects and migrate missing fields

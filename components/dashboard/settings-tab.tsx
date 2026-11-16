@@ -8,6 +8,7 @@ import type { NightResult } from '@/lib/types';
 import type { ThresholdDef } from '@/lib/thresholds';
 import { SETTINGS_METHODOLOGIES } from '@/lib/metric-explanations';
 import { useThresholds } from '@/components/common/thresholds-provider';
+import { Cpu, AlertTriangle, Wind } from 'lucide-react';
 
 interface Props {
   selectedNight: NightResult;
@@ -86,6 +87,142 @@ export function SettingsTab({ selectedNight, previousNight, nights = [] }: Props
           Based on {sm.breathCount.toLocaleString()} analyzed breaths
         </p>
       </div>
+
+      {/* airbreak-plus Custom VAuto Section */}
+      {(selectedNight.settings?.customVAuto?.enabled || sm.customVAutoMetrics?.active) && (
+        <Card className="border-primary/30 bg-primary/[0.03] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Cpu className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  airbreak-plus Custom VAuto
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                    Firmware Active
+                  </span>
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Patched within-breath adaptive controller, expiratory pressure relief (EPS), and fuzzy trigger/cycle.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Configured Firmware Settings */}
+          {selectedNight.settings?.customVAuto && (
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">ASV Max (Boost Cap)</div>
+                <div className="font-mono text-sm font-semibold">
+                  +{selectedNight.settings.customVAuto.asvMax.toFixed(1)} <span className="text-xs font-normal text-muted-foreground">cmH&#8322;O</span>
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">ASV Sens (PID Gain)</div>
+                <div className="font-mono text-sm font-semibold">
+                  {selectedNight.settings.customVAuto.asvSens} <span className="text-xs font-normal text-muted-foreground">({selectedNight.settings.customVAuto.asvSensMultiplier.toFixed(2)}x)</span>
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">EPS (Exhale Relief)</div>
+                <div className="font-mono text-sm font-semibold">
+                  {selectedNight.settings.customVAuto.eps !== undefined
+                    ? selectedNight.settings.customVAuto.eps === 0
+                      ? 'Off'
+                      : `-${selectedNight.settings.customVAuto.eps.toFixed(1)}`
+                    : '-1.0'}{' '}
+                  {selectedNight.settings.customVAuto.eps !== 0 && (
+                    <span className="text-xs font-normal text-muted-foreground">cmH&#8322;O</span>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">Exh. Shape</div>
+                <div className="font-mono text-sm font-semibold">
+                  Level {selectedNight.settings.customVAuto.exhaleShape ?? 0}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    (s={(selectedNight.settings.customVAuto.exhaleShapeExponent ?? -0.75).toFixed(2)})
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">Custom T/C</div>
+                <div className="font-mono text-sm font-semibold">
+                  {selectedNight.settings.customVAuto.customTriggerCycle ? 'Enabled' : 'Disabled'}
+                </div>
+              </div>
+              <div className="rounded-lg bg-card/60 p-2.5">
+                <div className="text-[10px] text-muted-foreground">Waveform Shaping</div>
+                <div className="font-mono text-sm font-semibold">
+                  {selectedNight.settings.customVAuto.squareWave ? 'Square Wave' : 'Standard'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delivered Metrics from customVAutoMetrics */}
+          {sm.customVAutoMetrics && (
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Delivered Peak PS</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {sm.customVAutoMetrics.effectivePsP95.toFixed(1)} <span className="text-xs font-normal text-muted-foreground">cmH&#8322;O (P95)</span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Breaths Boosted</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {sm.customVAutoMetrics.boostedBreathPct.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Mean Exhale Relief (EPS)</div>
+                  <div className="font-mono text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    -{sm.customVAutoMetrics.epsReliefMean.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">below EPAP</span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Exhale Support Retention</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {(sm.customVAutoMetrics.expiratoryRetentionPct ?? 37.5).toFixed(1)}% <span className="text-xs font-normal text-muted-foreground">AUC</span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-card/60 p-2.5">
+                  <div className="text-[10px] text-muted-foreground">Pre-Trigger Assist</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {sm.customVAutoMetrics.preTriggerAssistPct.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+
+              {/* Clipping alert if Max IPAP is choking the adaptive boost */}
+              {sm.customVAutoMetrics.maxIpapClippedPct > 30 && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <span className="font-semibold">Max IPAP Ceiling Clipping Detected ({sm.customVAutoMetrics.maxIpapClippedPct.toFixed(1)}% of breaths): </span>
+                    Your machine hit the Max IPAP ceiling of {selectedNight.settings.ipap} cmH&#8322;O during boosted inspirations, restricting the full adaptive support needed for flow limitation.
+                  </div>
+                </div>
+              )}
+
+              {/* Short Ti warning if breaths < 0.7s lost EPS relief */}
+              {sm.customVAutoMetrics.shortTiUnder07sPct > 10 && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-800 dark:text-blue-200">
+                  <Wind className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <span className="font-semibold">Short Inspiration Notice ({sm.customVAutoMetrics.shortTiUnder07sPct.toFixed(1)}% breaths &lt; 0.7s): </span>
+                    The firmware requires Ti &ge; 0.7s to activate expiratory pressure relief (EPS). Breaths terminating under 700ms did not receive negative expiratory offset. Consider adjusting Ti Min to 0.7s–0.8s.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Trigger Response */}
       <div>

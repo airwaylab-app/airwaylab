@@ -4,7 +4,8 @@
 // Computes trigger delay, cycle timing, IPAP dwell, ventilation metrics.
 // ============================================================
 
-import type { SettingsMetrics } from '../types';
+import type { SettingsMetrics, MachineSettings } from '../types';
+import { computeCustomVAutoMetrics, type BreathInfo } from './custom-vauto-engine';
 
 // --- Helpers ---
 
@@ -112,7 +113,8 @@ function smoothFlow(flowData: Float32Array, samplingRate: number): Float32Array 
 export function computeSettingsMetrics(
   flowData: Float32Array,
   pressureData: Float32Array,
-  samplingRate: number
+  samplingRate: number,
+  machineSettings?: MachineSettings
 ): SettingsMetrics | null {
   if (!pressureData || pressureData.length === 0) return null;
   if (flowData.length < samplingRate * 60) return null;
@@ -159,6 +161,7 @@ export function computeSettingsMetrics(
   let lateCycles = 0;
   const tidalVolumes: number[] = [];
   const endExpPressures: number[] = [];
+  const breathInfoList: BreathInfo[] = [];
   let totalBreaths = 0;
 
   for (let idx = 0; idx < inspStarts.length - 1; idx++) {
@@ -282,6 +285,23 @@ export function computeSettingsMetrics(
       }
       endExpPressures.push(eepSum / preInspSamples);
     }
+
+    let breathPeakPress = epap;
+    for (let k = 0; k < inspLen; k++) {
+      if (pressureData[start + k]! > breathPeakPress) breathPeakPress = pressureData[start + k]!;
+    }
+
+    breathInfoList.push({
+      inspStart: start,
+      expStart: expAbsStart,
+      inspEnd: end,
+      ti: tiS,
+      te: teS,
+      peakFlow,
+      tidalVolume: tv,
+      peakPressure: breathPeakPress,
+      endExpPressure: endExpPressures[endExpPressures.length - 1] ?? epap,
+    });
   }
 
   // Step 5: Aggregate
@@ -305,7 +325,7 @@ export function computeSettingsMetrics(
   const totalTimeSec = tiValues.reduce((a, b) => a + b, 0) + teValues.reduce((a, b) => a + b, 0);
   const totalTimeHrs = totalTimeSec / 3600;
 
-  return {
+  const metrics: SettingsMetrics = {
     breathCount: totalBreaths,
 
     epapDetected: epap,
@@ -342,4 +362,13 @@ export function computeSettingsMetrics(
       ? round1(tidalVolumes.reduce((a, b) => a + b, 0) / totalTimeHrs)
       : 0,
   };
+
+  if (machineSettings?.customVAuto?.enabled) {
+    const cvm = computeCustomVAutoMetrics(breathInfoList, machineSettings, samplingRate);
+    if (cvm) {
+      metrics.customVAutoMetrics = cvm;
+    }
+  }
+
+  return metrics;
 }

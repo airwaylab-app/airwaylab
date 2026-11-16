@@ -14,6 +14,7 @@ import {
   Handshake,
   Lock,
   Mail,
+  BookOpen,
 } from 'lucide-react';
 import { CommunityCounter } from '@/components/common/community-counter';
 
@@ -389,6 +390,94 @@ export default function ResearchPage() {
             >
               dev@airwaylab.app
             </a>
+          </p>
+        </div>
+      </section>
+
+      {/* ---- Foundational Peer-Reviewed Research & Empirical Methodology ---- */}
+      <section className="mb-14">
+        <div className="mb-6 flex items-center gap-2.5">
+          <BookOpen className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            Empirical Thresholds &amp; Foundational Research
+          </h2>
+        </div>
+        <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+          AirwayLab&apos;s analysis engines are grounded in peer-reviewed pneumotachography,
+          Starling resistor biophysics, and neuro-autonomic literature:
+        </p>
+
+        {/* Empirical Table */}
+        <div className="mb-8 overflow-x-auto rounded-xl border border-border/50 bg-card/30">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-border/50 bg-card/60 text-muted-foreground">
+                <th className="px-4 py-3 font-semibold">Diagnostic Metric</th>
+                <th className="px-4 py-3 font-semibold">Empirical Cutoff</th>
+                <th className="px-4 py-3 font-semibold">Foundational Literature</th>
+                <th className="px-4 py-3 font-semibold">Physiological Rationale</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30 text-muted-foreground">
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">Total IFL Burden (% TST)</td>
+                <td className="px-4 py-3 text-emerald-400">&lt; 15% (Target)<br />&gt; 30% (Pathological)</td>
+                <td className="px-4 py-3">Palombini et al. (2013)</td>
+                <td className="px-4 py-3">Normative 95th percentile upper limit in asymptomatic healthy adults (mean 8.8% &plusmn; 10.4%).</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">Negative Effort Dependence (NED)</td>
+                <td className="px-4 py-3 text-emerald-400">&lt; 20% (Normal)<br />&ge; 34% (Clear FL)</td>
+                <td className="px-4 py-3">Genta et al. (2017)</td>
+                <td className="px-4 py-3">Quantifies flow drop mid-breath despite escalating respiratory effort; concave tube-law dynamics.</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">M-Shape Palatal Collapse</td>
+                <td className="px-4 py-3 text-emerald-400">&lt; 2.0% of breaths</td>
+                <td className="px-4 py-3">Genta et al. (2016, 2017)</td>
+                <td className="px-4 py-3">Identifies velopharyngeal soft-palate flutter and lateral-wall collapse vs tongue base.</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">Autonomic Heart-Rate Surges</td>
+                <td className="px-4 py-3 text-emerald-400">&ge; 6 &amp; 10 bpm surges</td>
+                <td className="px-4 py-3">Guevarra et al. (2022)</td>
+                <td className="px-4 py-3">55% of IFL events trigger sympathetic pulse surges without causing oxygen desaturation.</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">Recovery Breaths &amp; Arousal</td>
+                <td className="px-4 py-3 text-emerald-400">NED &lt; 10% &amp; Qpeak &gt; 1.5&times;</td>
+                <td className="px-4 py-3">Guevarra et al. (2022);<br />Mansour et al. (2019)</td>
+                <td className="px-4 py-3">Flow-limited sequences terminating with &ge;200% recovery surge predict cortical/autonomic arousal.</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-foreground">Starling Resistor flatTop</td>
+                <td className="px-4 py-3 text-emerald-400">&lt; 0.15 index score</td>
+                <td className="px-4 py-3">Patil et al. (2007)</td>
+                <td className="px-4 py-3">Inspiratory flow truncation where maximal flow is fixed by upstream minus critical closing pressure (Pus - Pcrit).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Citations list */}
+        <div className="space-y-3 text-xs text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Palombini et al. (2013).</strong> &quot;Upper airway resistance syndrome: still not recognized and not treated.&quot; <em>Sleep Science</em>, 6(1), 19-26.
+          </p>
+          <p>
+            <strong className="text-foreground">Genta et al. (2017).</strong> &quot;Airflow shape is associated with the site of upper airway collapse in obstructive sleep apnea.&quot; <em>J Appl Physiol</em>, 122(4), 941-949.
+          </p>
+          <p>
+            <strong className="text-foreground">Guevarra et al. (2022).</strong> &quot;Clinical significance of inspiratory flow limitation in sleep-disordered breathing.&quot; <em>J Clin Sleep Med</em>, 18(4), 1115-1124.
+          </p>
+          <p>
+            <strong className="text-foreground">Patil et al. (2007).</strong> &quot;Neuromechanical control of upper airway patency in subjects with obstructive sleep apnea.&quot; <em>Am J Respir Crit Care Med</em>, 176(2), 207-213.
+          </p>
+          <p>
+            <strong className="text-foreground">de Oliveira et al. (2016).</strong> &quot;Upper airway resistance syndrome: definition, diagnostic criteria, and clinical features.&quot; <em>Sleep Med</em>, 24, 125-131.
+          </p>
+          <p>
+            <strong className="text-foreground">Gold et al. (2003).</strong> &quot;Inspiratory airflow dynamics during sleep in women with fibromyalgia.&quot; <em>Sleep</em>, 26(4), 459-466.
           </p>
         </div>
       </section>
