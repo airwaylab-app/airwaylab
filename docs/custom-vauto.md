@@ -1,5 +1,7 @@
 # Custom VAuto
 
+Written by [m-kozlowski](github.com/m-kozlowski/) of [m-kozlowski/airbreak-plus](https://www.github.com/m-kozlowski/airbreak-plus)
+
 The `stm32-plus.bin` build can replace the stock VAuto within-breath
 pressure-support behavior with Custom VAuto.
 
